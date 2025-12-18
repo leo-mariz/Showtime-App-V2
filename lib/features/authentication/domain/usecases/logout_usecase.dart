@@ -1,0 +1,48 @@
+import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/errors/failure.dart';
+import 'package:app/core/services/auth_service.dart';
+import 'package:app/core/services/biometric_auth_service.dart';
+import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:dartz/dartz.dart';
+
+/// UseCase: Logout do usuário
+/// 
+/// RESPONSABILIDADES:
+/// - Deslogar do Firebase Auth
+/// - Limpar cache local
+/// - Opcionalmente desabilitar biometria
+class LogoutUseCase {
+  final IAuthRepository repository;
+  final IAuthServices authServices;
+  final IBiometricAuthService? biometricService;
+
+  LogoutUseCase({
+    required this.repository,
+    required this.authServices,
+    this.biometricService,
+  });
+
+  Future<Either<Failure, void>> call({bool resetBiometrics = false}) async {
+    try {
+      // 1. Deslogar do Firebase Auth
+      await authServices.logout();
+
+      // 2. Limpar cache local
+      final clearResult = await repository.clearCache();
+      clearResult.fold(
+        (failure) => throw failure,
+        (_) => null,
+      );
+
+      // 3. Desabilitar biometria se solicitado
+      if (resetBiometrics && biometricService != null) {
+        await biometricService!.disableBiometrics();
+      }
+
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+}
+

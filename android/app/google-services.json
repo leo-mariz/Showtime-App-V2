@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "45946172412",
+    "project_id": "showtime-v2-homolog",
+    "storage_bucket": "showtime-v2-homolog.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:45946172412:android:d2c7659efb326b9e347879",
+        "android_client_info": {
+          "package_name": "com.itsshowtime.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlFqjG5fS4qKRe358QnO0lxDAQbJFuylg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

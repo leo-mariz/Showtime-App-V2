@@ -1,0 +1,17 @@
+[
+    {
+      "featureType": "all",
+      "elementType": "labels",
+      "stylers": [
+        { "visibility": "off" }
+      ]
+    },
+    {
+      "featureType": "administrative.neighborhood",
+      "elementType": "labels.text",
+      "stylers": [
+        { "visibility": "on" },
+        { "color": "#444444" }
+      ]
+    }
+  ]

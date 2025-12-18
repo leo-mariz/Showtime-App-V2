@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      dart_mappable_builder:
+        options:
+          # Ignora arquivos do auto_route
+          exclude:
+            - "**/*.gr.dart"
+            - "**/*.g.dart"
+            - "**/auto_router_config.dart"
+      auto_route_generator:
+        options:
+          # Ignora arquivos do dart_mappable
+          exclude:
+            - "**/*.mapper.dart"

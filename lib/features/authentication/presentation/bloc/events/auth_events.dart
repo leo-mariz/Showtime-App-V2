@@ -78,3 +78,28 @@ class UserLogoutEvent extends AuthEvent {
   @override
   List<Object?> get props => [resetBiometrics ?? false];
 }
+
+// Eventos para validação de documentos
+class CheckCpfExistsEvent extends AuthEvent {
+  final String cpf;
+
+  CheckCpfExistsEvent({required this.cpf});
+
+  @override
+  List<Object?> get props => [cpf];
+}
+
+class CheckCnpjExistsEvent extends AuthEvent {
+  final String cnpj;
+
+  CheckCnpjExistsEvent({required this.cnpj});
+
+  @override
+  List<Object?> get props => [cnpj];
+}
+
+// Evento para verificar se deve mostrar prompt de biometria
+class CheckShouldShowBiometricsPromptEvent extends AuthEvent {}
+
+// Evento para verificar se biometria está habilitada
+class CheckBiometricsEnabledEvent extends AuthEvent {}

@@ -1,5 +1,7 @@
+import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/authentication/presentation/widgets/auth_base_page.dart';
 import 'package:app/features/authentication/presentation/widgets/progress_indicator.dart';
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/profile_selection_step.dart';
@@ -7,6 +9,16 @@ import 'package:app/features/authentication/presentation/widgets/onboarding_step
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/terms_step.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
+import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
+import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/client/client_entity.dart';
+import 'package:app/features/authentication/domain/entities/register_entity.dart';
 
 @RoutePage(deferredLoading: true)
 class OnboardingScreen extends StatefulWidget {
@@ -60,6 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Estados de validação
   bool _showTermsError = false;
   bool _isLoading = false;
+  bool _isDocumentValid = false; // Indica se documento está validado e disponível
 
   @override
   void initState() {
@@ -90,7 +103,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthBasePage(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthSuccess) {
+          context.showSuccess(state.message);
+          context.router.replace(NavigationRoute(isArtist: _isArtist!));
+        } else if (state is AuthFailure) {
+          context.showError(state.error);
+          setState(() => _isLoading = false);
+        } else if (state is AuthConnectionFailure) {
+          context.showError(state.message);
+          setState(() => _isLoading = false);
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final isLoading = state is AuthLoading || _isLoading;
+          
+          return AuthBasePage(
       title: _getTitle(),
       subtitle: _getSubtitle(),
       showBackButton: _currentStep < 0,
@@ -112,8 +142,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         DSSizedBoxSpacing.vertical(32),
         
         // Botões de navegação
-        _buildNavigationButtons(),
+        _buildNavigationButtons(isLoading),
       ],
+    );
+        },
+      ),
     );
   }
 
@@ -158,6 +191,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             setState(() => _selectedGender = gender);
           },
           isCnpj: _isCnpj,
+          onDocumentValidationChanged: (isValid) {
+            setState(() => _isDocumentValid = isValid);
+          },
         ),
       1 => TermsStep(
           key: const ValueKey('terms'),
@@ -182,7 +218,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     };
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildNavigationButtons(bool isLoading) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,11 +229,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: CustomButton(
               label: 'Voltar',
               filled: false,
-              // backgroundColor: colorScheme.surfaceContainerHighest,
               textColor: colorScheme.onPrimaryContainer,
-              // icon: Icons.arrow_back_ios_new_outlined,
-              // iconOnLeft: true,
-              onPressed: _isLoading ? () {} : _handlePrevious,
+              onPressed: isLoading ? null : _handlePrevious,
             ),
           ),
         
@@ -207,11 +240,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         if (_currentStep >= 0)
           Expanded(
             child: CustomButton(
-              label: _currentStep == _totalSteps - 1 ? 'Finalizar' : 'Próximo',
+              label: isLoading 
+                  ? (_currentStep == _totalSteps - 1 ? 'Finalizando...' : 'Carregando...')
+                  : (_currentStep == _totalSteps - 1 ? 'Finalizar' : 'Próximo'),
               filled: true,
-              // icon: Icons.arrow_forward_ios_outlined,
-              // iconOnRight: true,
-              onPressed: _isLoading ? () {} : _handleNext,
+              onPressed: isLoading ? null : _handleNext,
             ),
           ),
       ],
@@ -239,9 +272,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _handleNext() {
     // Validação do step 0 (dados básicos)
     if (_currentStep == 0) {
-      if (_formKey.currentState?.validate() ?? false) {
-        setState(() => _currentStep++);
+      // Validar formulário
+      if (!(_formKey.currentState?.validate() ?? false)) {
+        return;
       }
+      
+      // Validar se documento está disponível (não existe no banco)
+      if (!_isDocumentValid) {
+        context.showError('Por favor, verifique se o documento está disponível antes de continuar');
+        return;
+      }
+      
+      setState(() => _currentStep++);
       return;
     }
     
@@ -259,36 +301,48 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _handleSubmit() {
     setState(() => _isLoading = true);
     
-    // TODO: Implementar lógica de submissão
-    // Aqui você vai criar a RegisterEntity e enviar para o backend
+    // Criar UserEntity
+    final user = UserEntity(
+      email: widget.email,
+      phoneNumber: _phoneNumberController.text.trim(),
+      isCnpj: _isCnpj,
+      isArtist: _isArtist,
+      agreedToPrivacyPolicy: _isPrivacyPolicyAccepted,
+      cpfUser: _isCnpj
+          ? null
+          : CpfUserEntity(
+              cpf: _cpfController.text.replaceAll(RegExp(r'[^\d]'), ''),
+              firstName: _nameController.text.trim(),
+              lastName: _lastNameController.text.trim(),
+              birthDate: _birthdateController.text.trim(),
+              gender: _selectedGender,
+            ),
+      cnpjUser: _isCnpj
+          ? CnpjUserEntity(
+              cnpj: _cnpjController.text.replaceAll(RegExp(r'[^\d]'), ''),
+              companyName: _companyNameController.text.trim(),
+              fantasyName: _fantasyNameController.text.trim(),
+              stateRegistration: _stateRegistrationController.text.trim(),
+            )
+          : null,
+    );
+
+    // Criar ArtistEntity ou ClientEntity
+    final artist = _isArtist == true
+        ? ArtistEntity.defaultEntity()
+        : ArtistEntity.defaultEntity();
     
-    print('=== DADOS DO ONBOARDING ===');
-    print('Email: ${widget.email}');
-    print('É Artista: $_isArtist');
-    print('É CNPJ: $_isCnpj');
-    print('Telefone: ${_phoneNumberController.text}');
-    if (_isCnpj) {
-      print('CNPJ: ${_cnpjController.text}');
-      print('Razão Social: ${_companyNameController.text}');
-      print('Nome Fantasia: ${_fantasyNameController.text}');
-    } else {
-      print('CPF: ${_cpfController.text}');
-      print('Nome: ${_nameController.text}');
-      print('Sobrenome: ${_lastNameController.text}');
-      print('Data Nascimento: ${_birthdateController.text}');
-      print('Gênero: $_selectedGender');
-    }
-    print('Termos aceitos: $_isTermsOfUseAccepted');
-    print('Privacidade aceita: $_isPrivacyPolicyAccepted');
-    
-    // Simulação de envio
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        // TODO: Navegar para próxima tela após sucesso
-        // context.router.replace(HomeRoute());
-      }
-    });
+    final client = ClientEntity.defaultClientEntity();
+
+    // Criar RegisterEntity
+    final register = RegisterEntity(
+      user: user,
+      artist: artist,
+      client: client,
+    );
+
+    // Enviar para o bloc
+    context.read<AuthBloc>().add(RegisterUserOnboardingEvent(register: register));
   }
 }
 

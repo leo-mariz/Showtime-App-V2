@@ -31,10 +31,16 @@ class LoginWithBiometricsUseCase {
       }
 
       // 2. Autenticar com biometria
-      final didAuthenticate = await biometricService.authenticateWithBiometrics();
+      bool didAuthenticate = false;
+      try {
+        didAuthenticate = await biometricService.authenticateWithBiometrics();
+      } catch (e) {
+        // Se houver exceção (ex: usuário cancelou), considerar como falha
+        return const Left(AuthFailure('Biometria cancelada ou incorreta'));
+      }
       
       if (!didAuthenticate) {
-        return const Left(AuthFailure('Biometria incorreta'));
+        return const Left(AuthFailure('Biometria incorreta ou cancelada'));
       }
 
       // 3. Recuperar credenciais salvas

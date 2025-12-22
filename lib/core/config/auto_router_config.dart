@@ -32,6 +32,10 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ProfessionalInfoRoute.page, path: '/professional-info'),
     AutoRoute(page: PresentationsRoute.page, path: '/presentations'),
     AutoRoute(page: AvailabilityRoute.page, path: '/availability'),
+    AutoRoute(page: DocumentsRoute.page, path: '/documents'),
+    AutoRoute(page: BankAccountRoute.page, path: '/bank-account'),
+    AutoRoute(page: GroupsRoute.page, path: '/groups'),
+    AutoRoute(page: ArtistProfileViewRoute.page, path: '/artist-profile-view'),
 
     //Artist Dashboard Routes
 

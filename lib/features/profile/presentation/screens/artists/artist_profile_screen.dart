@@ -78,7 +78,9 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
               IconMenuButton(
                 icon: Icons.group,
                 label: 'Conjuntos',
-                onPressed: () {},
+                onPressed: () {
+                  router.push(const GroupsRoute());
+                },
                 showWarning: false,
               ),
             ],

@@ -1,4 +1,5 @@
 
+import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/features/profile/presentation/widgets/artist_area_option_card.dart';
@@ -14,6 +15,7 @@ class RegisterDataAreaScreen extends StatelessWidget {
     
     final colorScheme = Theme.of(context).colorScheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final router = AutoRouter.of(context);
 
     return BasePage(
       showAppBar: true,
@@ -29,7 +31,9 @@ class RegisterDataAreaScreen extends StatelessWidget {
               description: 'Faça o envio dos seus documentos.',
               icon: Icons.document_scanner,
               iconColor: onPrimaryContainer,
-              onTap: () {},
+              onTap: () {
+                router.push(const DocumentsRoute());
+              },
             ),
 
             DSSizedBoxSpacing.vertical(8),
@@ -40,7 +44,9 @@ class RegisterDataAreaScreen extends StatelessWidget {
               description: 'Adicione seus dados bancários para receber pagamentos.',
               icon: Icons.payments,
               iconColor: onPrimaryContainer,
-              onTap: () {},
+              onTap: () {
+                router.push(const BankAccountRoute());
+              },
             ),
           ],
         ),

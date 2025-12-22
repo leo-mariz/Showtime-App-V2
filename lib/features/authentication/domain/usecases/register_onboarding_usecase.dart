@@ -34,11 +34,17 @@ class RegisterOnboardingUseCase {
       final isCnpj = user.isCnpj ?? false;
 
       // 1. Obter UID do usuário autenticado
-      final uidResult = await repository.getUserUid();
-      final uid = uidResult.fold(
-        (failure) => throw failure,
-        (uid) => uid,
-      );
+      // Primeiro tenta buscar do Firebase Auth (mais confiável após login)
+      String? uid = await authServices.getUserUid();
+      
+      // Se não encontrar no Firebase Auth, tenta buscar do cache
+      if (uid == null || uid.isEmpty) {
+        final uidResult = await repository.getUserUid();
+        uid = uidResult.fold(
+          (failure) => null,
+          (cachedUid) => cachedUid,
+        );
+      }
 
       if (uid == null || uid.isEmpty) {
         return const Left(AuthFailure('Usuário não autenticado'));

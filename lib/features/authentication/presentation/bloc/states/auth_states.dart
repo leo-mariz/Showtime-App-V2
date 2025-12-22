@@ -117,6 +117,76 @@ class BiometricFailure extends AuthState {
 
 class AuthLoggedOut extends AuthState {}
 
+// Estado para quando o perfil do usuário não corresponde ao tipo selecionado
+class AuthProfileMismatch extends AuthState {
+  final String error;
+
+  AuthProfileMismatch({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// Estados para validação de documentos
+class DocumentValidationLoading extends AuthState {
+  final String document; // CPF ou CNPJ sendo validado
+
+  DocumentValidationLoading({required this.document});
+
+  @override
+  List<Object?> get props => [document];
+}
+
+class DocumentValidationSuccess extends AuthState {
+  final String document;
+  final bool exists; // true se já existe, false se está disponível
+
+  DocumentValidationSuccess({
+    required this.document,
+    required this.exists,
+  });
+
+  @override
+  List<Object?> get props => [document, exists];
+}
+
+class DocumentValidationFailure extends AuthState {
+  final String document;
+  final String error;
+
+  DocumentValidationFailure({
+    required this.document,
+    required this.error,
+  });
+
+  @override
+  List<Object?> get props => [document, error];
+}
+
+// Estado para verificar se deve mostrar prompt de biometria
+class CheckShouldShowBiometricsPromptSuccess extends AuthState {
+  final bool shouldShow;
+  final UserEntity? user; // User para passar ao modal se shouldShow for true
+
+  CheckShouldShowBiometricsPromptSuccess({
+    required this.shouldShow,
+    this.user,
+  });
+
+  @override
+  List<Object?> get props => [shouldShow, user];
+}
+
+// Estado para verificar se biometria está habilitada
+class CheckBiometricsEnabledSuccess extends AuthState {
+  final bool isEnabled;
+
+  CheckBiometricsEnabledSuccess({required this.isEnabled});
+
+  @override
+  List<Object?> get props => [isEnabled];
+}
+
 
 
 

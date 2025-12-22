@@ -1,4 +1,5 @@
 import 'package:app/core/errors/failure.dart' as domain;
+import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/features/authentication/domain/usecases/check_user_logged_in_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/disable_biometrics_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/login_usecase.dart';
@@ -8,8 +9,12 @@ import 'package:app/features/authentication/domain/usecases/register_email_passw
 import 'package:app/features/authentication/domain/usecases/register_onboarding_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/send_password_reset_email_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/enable_biometrics_usecase.dart';
-import 'package:app/features/authentication/presentation/bloc/events/users_events.dart';
-import 'package:app/features/authentication/presentation/bloc/states/users_states.dart';
+import 'package:app/features/authentication/domain/usecases/check_cpf_exists_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_cnpj_exists_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_should_show_biometrics_prompt_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_biometrics_enabled_usecase.dart';
+import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
+import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -22,6 +27,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginWithBiometricsUseCase loginWithBiometricsUseCase;
   final DisableBiometricsUseCase disableBiometricsUseCase;
   final LogoutUseCase logoutUseCase;
+  final CheckCpfExistsUseCase checkCpfExistsUseCase;
+  final CheckCnpjExistsUseCase checkCnpjExistsUseCase;
+  final CheckShouldShowBiometricsPromptUseCase checkShouldShowBiometricsPromptUseCase;
+  final CheckBiometricsEnabledUseCase checkBiometricsEnabledUseCase;
 
   AuthBloc({
     required this.loginUseCase,
@@ -33,6 +42,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.loginWithBiometricsUseCase,
     required this.disableBiometricsUseCase,
     required this.logoutUseCase,
+    required this.checkCpfExistsUseCase,
+    required this.checkCnpjExistsUseCase,
+    required this.checkShouldShowBiometricsPromptUseCase,
+    required this.checkBiometricsEnabledUseCase,
   }) : super(AuthInitial()) {
     on<RegisterUserEmailAndPasswordEvent>(_onRegisterUserEmailAndPasswordEvent);
     on<LoginUserEvent>(_onLoginUserEvent);
@@ -46,6 +59,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     on<DisableBiometricsEvent>(_onDisableBiometricsEvent);
     on<UserLogoutEvent>(_onLogoutEvent);
+    
+    on<CheckCpfExistsEvent>(_onCheckCpfExistsEvent);
+    on<CheckCnpjExistsEvent>(_onCheckCnpjExistsEvent);
+    on<CheckShouldShowBiometricsPromptEvent>(_onCheckShouldShowBiometricsPromptEvent);
+    on<CheckBiometricsEnabledEvent>(_onCheckBiometricsEnabledEvent);
   }
 
   Future<void> _onRegisterUserEmailAndPasswordEvent(
@@ -83,21 +101,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     
     final result = await loginUseCase.call(event.user);
     
+    // Extrair failure ou sucesso usando fold
+    final failure = result.fold(
+      (l) => l,
+      (r) => null,
+    );
+    
+    if (failure != null) {
+      // Verificar se é erro de perfil incompatível
+      final isProfileMismatch = failure.message.contains('não possui perfil de') ||
+          failure.message.contains('selecione o tipo de conta correto');
+      
+      if (isProfileMismatch) {
+        // Fazer logout imediato para não deixar sessão aberta
+        await logoutUseCase.call();
+        emit(AuthProfileMismatch(error: failure.message));
+        emit(AuthInitial());
+        return;
+      }
+      
+      // Outros tipos de erro
+      if (failure is domain.NetworkFailure) {
+        emit(AuthConnectionFailure(message: failure.message));
+      } else if (failure is domain.IncompleteDataFailure) {
+        emit(AuthDataIncomplete(message: failure.message));
+      } else {
+        emit(AuthFailure(error: failure.message));
+      }
+      emit(AuthInitial());
+    } else {
+      // Login bem-sucedido
+      emit(LoginSuccess(user: event.user));
+      // Verificar se deve mostrar prompt de biometria após login bem-sucedido
+      await _checkAndShowBiometricsPrompt(event.user, emit);
+      emit(AuthInitial());
+    }
+  }
+
+  Future<void> _checkAndShowBiometricsPrompt(
+    UserEntity user,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await checkShouldShowBiometricsPromptUseCase.call();
+    
     result.fold(
       (failure) {
-        // Mensagem user-friendly já vem do failure
-        if (failure is domain.NetworkFailure) {
-          emit(AuthConnectionFailure(message: failure.message));
-        } else if (failure is domain.IncompleteDataFailure) {
-          emit(AuthDataIncomplete(message: failure.message));
-        } else {
-          emit(AuthFailure(error: failure.message));
-        }
-        emit(AuthInitial());
+        // Em caso de erro, não mostrar prompt
+        emit(CheckShouldShowBiometricsPromptSuccess(
+          shouldShow: false,
+          user: null,
+        ));
       },
-      (_) {
-        emit(LoginSuccess(user: event.user));
-        emit(AuthInitial());
+      (shouldShow) {
+        emit(CheckShouldShowBiometricsPromptSuccess(
+          shouldShow: shouldShow,
+          user: shouldShow ? user : null,
+        ));
       },
     );
   }
@@ -206,23 +265,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     
-    final result = await loginWithBiometricsUseCase.call();
-    
-    result.fold(
-      (failure) {
-        // Mensagem user-friendly já vem do failure, com fallback
-        final message = failure is domain.AuthFailure 
-            ? failure.message 
-            : 'Erro ao autenticar com biometria. Por favor, faça login com email e senha.';
-        
-        emit(BiometricFailure(message));
-        emit(AuthInitial());
-      },
-      (isArtist) {
-        emit(LoginWithBiometricsSuccess(isArtist: isArtist));
-        emit(AuthInitial());
-      },
-    );
+    try {
+      final result = await loginWithBiometricsUseCase.call();
+      
+      result.fold(
+        (failure) {
+          // Qualquer falha no fluxo de biometria deve redirecionar para LoginScreen
+          // Mensagem user-friendly já vem do failure, com fallback
+          final message = failure is domain.AuthFailure 
+              ? failure.message 
+              : 'Erro ao autenticar com biometria. Por favor, faça login com email e senha.';
+          
+          emit(BiometricFailure(message));
+          emit(AuthInitial());
+        },
+        (isArtist) {
+          // APENAS se tudo der certo, emitir sucesso
+          emit(LoginWithBiometricsSuccess(isArtist: isArtist));
+          emit(AuthInitial());
+        },
+      );
+    } catch (e) {
+      // Em caso de exceção inesperada, também redirecionar para LoginScreen
+      emit(BiometricFailure('Erro ao autenticar com biometria. Por favor, faça login com email e senha.'));
+      emit(AuthInitial());
+    }
   }
 
   Future<void> _onDisableBiometricsEvent(
@@ -264,6 +331,105 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (_) {
         emit(AuthLoggedOut());
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  Future<void> _onCheckCpfExistsEvent(
+    CheckCpfExistsEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(DocumentValidationLoading(document: event.cpf));
+    
+    final result = await checkCpfExistsUseCase.call(event.cpf);
+    
+    result.fold(
+      (failure) {
+        emit(DocumentValidationFailure(
+          document: event.cpf,
+          error: failure.message,
+        ));
+        emit(AuthInitial());
+      },
+      (exists) {
+        emit(DocumentValidationSuccess(
+          document: event.cpf,
+          exists: exists,
+        ));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  Future<void> _onCheckCnpjExistsEvent(
+    CheckCnpjExistsEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(DocumentValidationLoading(document: event.cnpj));
+    
+    final result = await checkCnpjExistsUseCase.call(event.cnpj);
+    
+    result.fold(
+      (failure) {
+        emit(DocumentValidationFailure(
+          document: event.cnpj,
+          error: failure.message,
+        ));
+        emit(AuthInitial());
+      },
+      (exists) {
+        emit(DocumentValidationSuccess(
+          document: event.cnpj,
+          exists: exists,
+        ));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  Future<void> _onCheckShouldShowBiometricsPromptEvent(
+    CheckShouldShowBiometricsPromptEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await checkShouldShowBiometricsPromptUseCase.call();
+    
+    result.fold(
+      (failure) {
+        // Em caso de erro, não mostrar prompt
+        emit(CheckShouldShowBiometricsPromptSuccess(
+          shouldShow: false,
+          user: null,
+        ));
+        emit(AuthInitial());
+      },
+      (shouldShow) {
+        // Este evento não tem user, então não podemos mostrar o prompt
+        // Este handler é mantido para compatibilidade, mas o fluxo principal
+        // é através do _checkAndShowBiometricsPrompt após login
+        emit(CheckShouldShowBiometricsPromptSuccess(
+          shouldShow: shouldShow,
+          user: null,
+        ));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  Future<void> _onCheckBiometricsEnabledEvent(
+    CheckBiometricsEnabledEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await checkBiometricsEnabledUseCase.call();
+    
+    result.fold(
+      (failure) {
+        // Em caso de erro, considerar como não habilitada
+        emit(CheckBiometricsEnabledSuccess(isEnabled: false));
+        emit(AuthInitial());
+      },
+      (isEnabled) {
+        emit(CheckBiometricsEnabledSuccess(isEnabled: isEnabled));
         emit(AuthInitial());
       },
     );

@@ -33,6 +33,7 @@ class AuthRepositoryImpl implements IAuthRepository {
   Future<Either<Failure, String?>> getUserUid() async {
     try {
       final uid = await localDataSource.getUserUid();
+      
       return Right(uid);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

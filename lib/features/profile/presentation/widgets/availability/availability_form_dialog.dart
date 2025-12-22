@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
@@ -10,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-/// Dialog para criar/editar disponibilidade
+/// Modal para criar/editar disponibilidade
 class AvailabilityFormDialog extends StatefulWidget {
   final AvailabilityEntity? availability;
   final DateTime? initialDate;
@@ -22,6 +23,25 @@ class AvailabilityFormDialog extends StatefulWidget {
     this.initialDate,
     required this.onSave,
   });
+
+  /// Exibe o modal de disponibilidade
+  static Future<void> show({
+    required BuildContext context,
+    AvailabilityEntity? availability,
+    DateTime? initialDate,
+    required Function(AvailabilityEntity) onSave,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AvailabilityFormDialog(
+        availability: availability,
+        initialDate: initialDate,
+        onSave: onSave,
+      ),
+    );
+  }
 
   @override
   State<AvailabilityFormDialog> createState() => _AvailabilityFormDialogState();
@@ -47,7 +67,7 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
   bool _isRecurring = false;
   List<String> _selectedDays = [];
   AddressInfoEntity? _selectedAddress;
-  double _radiusKm = 10.0;
+  double _radiusKm = 0.1; // Inicia com 100 metros
 
   // Mock de endereços - TODO: Buscar do artista
   final List<AddressInfoEntity> _availableAddresses = [
@@ -109,6 +129,11 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
     _radiusKm = availability.raioAtuacao;
     _valueController.text = availability.valorShow.toStringAsFixed(2);
     _radiusController.text = _radiusKm.toStringAsFixed(1);
+    // Garante que o raio mínimo seja 0.1 km (100 metros)
+    if (_radiusKm < 0.1) {
+      _radiusKm = 0.1;
+      _radiusController.text = _radiusKm.toStringAsFixed(1);
+    }
     _updateControllers();
   }
 
@@ -325,50 +350,72 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.viewInsets.bottom;
+    final screenHeight = mediaQuery.size.height;
 
-    return Dialog(
-      backgroundColor: colorScheme.surface,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-          maxWidth: MediaQuery.of(context).size.width * 0.9,
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: screenHeight * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(20),
         ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      widget.availability != null
-                          ? 'Editar Disponibilidade'
-                          : 'Nova Disponibilidade',
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimary,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            // Header com drag handle
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Divider(),
-              
-              // Content
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.availability != null
+                        ? 'Editar Disponibilidade'
+                        : 'Nova Disponibilidade',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: colorScheme.onPrimary,
+                  ),
+                ],
+              ),
+            ),
+            // const Divider(height: 1),
+            
+            // Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                  bottom: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       // Período
                       SelectableRow(
                         label: 'Data início',
@@ -407,7 +454,10 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                       
                       // Recorrência
                       SwitchListTile(
-                        title: const Text('Repetir'),
+                        title: Text('Recorrência?', style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),),
+                        activeColor: colorScheme.onPrimaryContainer,
                         value: _isRecurring,
                         onChanged: (value) {
                           setState(() {
@@ -431,38 +481,94 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                       ],
                       DSSizedBoxSpacing.vertical(16),
                       
-                      // Valor
-                      Text(
-                        'Valor/hora',
-                        style: textTheme.bodyMedium,
-                      ),
-                      DSSizedBoxSpacing.vertical(8),
-                      TextFormField(
-                        controller: _valueController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      // Valor/hora
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  'Valor/hora',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  
+                                ),
+                              ),
+                              Expanded(
+                                flex: 3,
+                                child: TextFormField(
+                                  controller: _valueController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textAlign: TextAlign.end,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                  ],
+                                  decoration: InputDecoration(
+                                    hintText: '0.00',
+                                    prefixText: 'R\$/h ',
+                                    filled: true,
+                                    fillColor: colorScheme.surfaceContainerHighest,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                                      borderSide: BorderSide(
+                                        color: colorScheme.onPrimaryContainer,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    errorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                                      borderSide: BorderSide(
+                                        color: colorScheme.error,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    focusedErrorBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                                      borderSide: BorderSide(
+                                        color: colorScheme.error,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: DSSize.width(12),
+                                      vertical: DSSize.height(12),
+                                    ),
+                                    errorStyle: const TextStyle(height: 0, fontSize: 0),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Digite o valor';
+                                    }
+                                    final num = double.tryParse(value.replaceAll(',', '.'));
+                                    if (num == null || num <= 0) {
+                                      return 'Valor inválido';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                        decoration: InputDecoration(
-                          hintText: '0.00',
-                          prefixText: 'R\$ ',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Digite o valor';
-                          }
-                          final num = double.tryParse(value.replaceAll(',', '.'));
-                          if (num == null || num <= 0) {
-                            return 'Valor inválido';
-                          }
-                          return null;
-                        },
                       ),
                       DSSizedBoxSpacing.vertical(16),
                       
                       // Endereço
                       SelectableRow(
-                        label: 'Endereço',
+                        label: 'Endereço base',
                         value: _selectedAddress?.title ?? 'Selecione',
                         onTap: _selectAddress,
                       ),
@@ -491,10 +597,12 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                               flex: 4,
                               child: Slider(
                                 value: _radiusKm,
-                                min: 1,
-                                max: 100,
-                                divisions: 99,
-                                label: '${_radiusKm.toStringAsFixed(1)} km',
+                                min: 0.1,
+                                max: 50.0,
+                                divisions: 999, // Permite incrementos de 0.1 (100 metros)
+                                label: _radiusKm >= 1
+                                    ? '${_radiusKm.toStringAsFixed(1)} km'
+                                    : '${(_radiusKm * 1000).toStringAsFixed(0)} m',
                                 onChanged: (value) {
                                   setState(() {
                                     _radiusKm = value;
@@ -513,13 +621,13 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                                 inputFormatters: [
                                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
                                 ],
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   suffixText: 'km',
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8), vertical: DSSize.height(12)),
                                 ),
                                 onChanged: (value) {
                                   final num = double.tryParse(value.replaceAll(',', '.'));
-                                  if (num != null && num >= 1 && num <= 100) {
+                                  if (num != null && num >= 0.1 && num <= 100) {
                                     setState(() {
                                       _radiusKm = num;
                                     });
@@ -530,8 +638,8 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                                     return null;
                                   }
                                   final num = double.tryParse(value.replaceAll(',', '.'));
-                                  if (num == null || num < 1 || num > 100) {
-                                    return 'Entre 1 e 100';
+                                  if (num == null || num < 0.1 || num > 100) {
+                                    return 'Entre 0.1 e 100';
                                   }
                                   return null;
                                 },
@@ -545,9 +653,26 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                 ),
               ),
               
-              // Actions
-              Padding(
-                padding: const EdgeInsets.all(16),
+            // Actions - fixo na parte inferior
+            Container(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: bottomPadding > 0 ? bottomPadding + 16 : 16,
+              ),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
                 child: Row(
                   children: [
                     Expanded(
@@ -567,8 +692,8 @@ class _AvailabilityFormDialogState extends State<AvailabilityFormDialog> {
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

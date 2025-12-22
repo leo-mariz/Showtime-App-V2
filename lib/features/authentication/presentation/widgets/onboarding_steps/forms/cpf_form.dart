@@ -1,10 +1,18 @@
+import 'dart:async';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/formatters/input_formatters.dart';
 import 'package:app/core/shared/widgets/dropdown_button.dart';
+import 'package:app/core/shared/widgets/document_field_with_validation.dart';
+import 'package:app/core/shared/widgets/document_validation_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/validators/input_validator.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
+import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:cpf_cnpj_validator/cpf_validator.dart';
 
 class CpfForm extends StatefulWidget {
   final TextEditingController nameController;
@@ -15,6 +23,7 @@ class CpfForm extends StatefulWidget {
   final String? selectedGender;
   final List<String> genderOptions;
   final Function(String?) onGenderChanged;
+  final Function(bool) onValidationChanged; // Callback quando validação muda
 
   const CpfForm({
     super.key,
@@ -26,6 +35,7 @@ class CpfForm extends StatefulWidget {
     required this.selectedGender,
     required this.genderOptions,
     required this.onGenderChanged,
+    required this.onValidationChanged,
   });
 
   @override
@@ -33,27 +43,115 @@ class CpfForm extends StatefulWidget {
 }
 
 class CpfFormState extends State<CpfForm> {
-
   final _cpfMask = MaskTextInputFormatter(
     mask: '###.###.###-##',
     filter: {"#": RegExp(r'[0-9]')},
   );
 
-  // final _phoneMask = MaskTextInputFormatter(
-  //   mask: '(##) #####-####',
-  //   filter: {"#": RegExp(r'[0-9]')},
-  // );
+  Timer? _debounceTimer;
+  String? _lastValidatedCpf;
+  DocumentValidationStatus? _validationStatus;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.cpfController.addListener(_onCpfChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    widget.cpfController.removeListener(_onCpfChanged);
+    super.dispose();
+  }
+
+  void _onCpfChanged() {
+    if (_validationStatus == DocumentValidationStatus.loading) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final cleanCpf = widget.cpfController.text.replaceAll(RegExp(r'[^\d]'), '');
+      final cpfText = widget.cpfController.text;
+
+      // Se CPF não está completo, reset status
+      if (cleanCpf.length != 11) {
+        setState(() {
+          _validationStatus = null;
+          _errorMessage = null;
+        });
+        widget.onValidationChanged(false);
+        return;
+      }
+
+      // Verificar se CPF é válido (formato) antes de buscar
+      if (!CPFValidator.isValid(cpfText)) {
+        // CPF inválido - mostrar erro de formato
+        setState(() {
+          _validationStatus = DocumentValidationStatus.error;
+          _errorMessage = 'CPF inválido';
+        });
+        widget.onValidationChanged(false);
+        return;
+      }
+
+      // CPF válido e completo - buscar no banco se for diferente do último validado
+      if (cleanCpf != _lastValidatedCpf) {
+        _validateCpf(cleanCpf);
+      }
+    });
+  }
+
+  void _validateCpf(String cpf) {
+    setState(() {
+      _validationStatus = DocumentValidationStatus.loading;
+      _lastValidatedCpf = cpf;
+    });
+
+    context.read<AuthBloc>().add(CheckCpfExistsEvent(cpf: cpf));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CustomTextField(
-          label: 'CPF',
-          controller: widget.cpfController,
-          validator: Validators.validateCPF,
-          inputFormatters: [_cpfMask],
-        ),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is DocumentValidationSuccess && state.document == _lastValidatedCpf) {
+          setState(() {
+            _validationStatus = state.exists
+                ? DocumentValidationStatus.exists
+                : DocumentValidationStatus.available;
+            _errorMessage = state.exists ? 'Este CPF já está em uso' : null;
+          });
+          widget.onValidationChanged(!state.exists);
+        } else if (state is DocumentValidationFailure && state.document == _lastValidatedCpf) {
+          setState(() {
+            _validationStatus = DocumentValidationStatus.error;
+            _errorMessage = state.error;
+          });
+          widget.onValidationChanged(false);
+        }
+      },
+      child: Column(
+        children: [
+          DocumentFieldWithValidation(
+            label: 'CPF',
+            controller: widget.cpfController,
+            validator: Validators.validateCPF,
+            inputFormatters: [_cpfMask],
+            validationStatus: _validationStatus,
+            errorMessage: _errorMessage,
+            onChanged: (value) {
+              // Reset status quando usuário edita
+              if (_validationStatus != null) {
+                setState(() {
+                  _validationStatus = null;
+                  _errorMessage = null;
+                  _lastValidatedCpf = null;
+                });
+                widget.onValidationChanged(false);
+              }
+            },
+          ),
         DSSizedBoxSpacing.vertical(4),
         Row(
           children: [
@@ -74,7 +172,7 @@ class CpfFormState extends State<CpfForm> {
             ),
           ],
         ),
-        DSSizedBoxSpacing.vertical(4),
+        DSSizedBoxSpacing.vertical(8),
         Row(
           children: [
             Expanded(
@@ -101,7 +199,8 @@ class CpfFormState extends State<CpfForm> {
             ),
           ],
         ),
-      ],
+        ],
+      ),
     );
   }
 }

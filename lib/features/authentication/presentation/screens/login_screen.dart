@@ -1,4 +1,5 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
+import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/enums/user_type.dart';
 import 'package:app/core/shared/widgets/link_text.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,12 @@ import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:app/features/authentication/presentation/widgets/user_type_selector.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
+import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/features/authentication/presentation/widgets/biometrics_prompt_dialog.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage(deferredLoading: true)
 class LoginScreen extends StatefulWidget {
@@ -21,7 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   UserType _selectedUserType = UserType.artist;
-  bool _isLoading = false;
+  bool _waitingForBiometricsCheck = false;
+  UserEntity? _pendingUser;
 
   @override
   void dispose() {
@@ -31,78 +39,174 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    final router = AutoRouter.of(context);
-    router.push(NavigationRoute(isArtist: true));
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Validação básica
+    if (email.isEmpty) {
+      _showErrorMessage('Por favor, informe seu email');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showErrorMessage('Por favor, informe sua senha');
+      return;
+    }
+
+    // Criar UserEntity com os dados do formulário
+    final user = UserEntity(
+      email: email,
+      password: password,
+      isArtist: _selectedUserType == UserType.artist,
+    );
+
+    // Disparar evento de login
+    context.read<AuthBloc>().add(LoginUserEvent(user: user));
+  }
+
+  void _showErrorMessage(String message) {
+    context.showError(message);
   }
 
   @override
   Widget build(BuildContext context) {
     final router = AutoRouter.of(context);
-    return AuthBasePage(
-      title: 'LOGIN',
-      subtitle: 'Acessar conta',
-      children: [
-        
-        // Campo de Email
-        CustomTextField(
-          label: 'Email',
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          onChanged: (value) {
-          },
-        ),
-        
-        DSSizedBoxSpacing.vertical(4),
-        
-        // Campo de Senha
-        CustomTextField(
-          label: 'Senha',
-          obscureText: true,
-          isPassword: true,
-          keyboardType: TextInputType.text,
-          controller: _passwordController,
-          onChanged: (value) {
-          },
-        ),
-        
-        DSSizedBoxSpacing.vertical(20),
-
-        // Link para esqueci senha
-        Align(
-          alignment: Alignment.centerRight,
-          child: CustomLinkText(
-            text: 'Esqueci minha senha',
-            onTap: () {
-              router.push(const ForgotPasswordRoute());
-            },
-          ),
-        ),
-        
-        DSSizedBoxSpacing.vertical(12),
-        
-        // Seleção de Tipo de Usuário
-        UserTypeSelector(
-          selectedType: _selectedUserType,
-          onChanged: (type) {
-            if (!_isLoading) {
-              setState(() => _selectedUserType = type);
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is LoginSuccess) {
+          // Mostrar mensagem de sucesso
+          context.showSuccess('Login realizado com sucesso!');
+          
+          // Aguardar verificação de biometria antes de navegar
+          setState(() {
+            _waitingForBiometricsCheck = true;
+            _pendingUser = state.user;
+          });
+        } else if (state is CheckShouldShowBiometricsPromptSuccess) {
+          // Mostrar modal de biometria se necessário
+          if (state.shouldShow && state.user != null) {
+            // Mostrar modal e aguardar seu fechamento antes de navegar
+            BiometricsPromptDialog.show(
+              context: context,
+              user: state.user!,
+            ).then((_) {
+              // Modal foi fechado, agora navegar (se estava aguardando)
+              if (_waitingForBiometricsCheck && _pendingUser != null) {
+                final isArtist = _pendingUser!.isArtist ?? false;
+                router.replaceAll([NavigationRoute(isArtist: isArtist)]);
+                setState(() {
+                  _waitingForBiometricsCheck = false;
+                  _pendingUser = null;
+                });
+              }
+            });
+          } else {
+            // Não deve mostrar modal, navegar imediatamente
+            if (_waitingForBiometricsCheck && _pendingUser != null) {
+              final isArtist = _pendingUser!.isArtist ?? false;
+              router.replaceAll([NavigationRoute(isArtist: isArtist)]);
+              setState(() {
+                _waitingForBiometricsCheck = false;
+                _pendingUser = null;
+              });
             }
-          },
-        ),
-        
-        DSSizedBoxSpacing.vertical(48),
-        
-        // Botão de Login
-        CustomButton(
-          label: _isLoading ? 'Entrando...' : 'Entrar',
-          filled: true,
-          onPressed: _isLoading ? () {} : _handleLogin,
-        ),
-        
-        DSSizedBoxSpacing.vertical(16),
-        
-        
-      ],
+          }
+        } else if (state is AuthProfileMismatch) {
+          // Erro de perfil incompatível - logout já foi feito, apenas mostrar erro
+          context.showError(state.error);
+        } else if (state is AuthFailure) {
+          context.showError(state.error);
+        } else if (state is AuthConnectionFailure) {
+          context.showError(state.message);
+        } else if (state is AuthDataIncomplete) {
+          context.showSuccess(state.message);
+          router.replace(OnboardingRoute(email: _emailController.text.trim()));
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+
+          return AuthBasePage(
+            title: 'LOGIN',
+            subtitle: 'Acessar conta',
+            children: [
+              
+              // Campo de Email
+              CustomTextField(
+                label: 'Email',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                // enabled: !isLoading,
+                onChanged: (value) {
+                },
+              ),
+              
+              DSSizedBoxSpacing.vertical(4),
+              
+              // Campo de Senha
+              CustomTextField(
+                label: 'Senha',
+                obscureText: true,
+                isPassword: true,
+                keyboardType: TextInputType.text,
+                controller: _passwordController,
+                // enabled: !isLoading,
+                onChanged: (value) {
+                },
+              ),
+              
+              DSSizedBoxSpacing.vertical(20),
+
+              // Link para esqueci senha
+              Align(
+                alignment: Alignment.centerRight,
+                child: IgnorePointer(
+                  ignoring: isLoading,
+                  child: Opacity(
+                    opacity: isLoading ? 0.5 : 1.0,
+                    child: CustomLinkText(
+                      text: 'Esqueci minha senha',
+                      onTap: () {
+                        router.push(const ForgotPasswordRoute());
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              
+              DSSizedBoxSpacing.vertical(12),
+              
+              // Seleção de Tipo de Usuário
+              IgnorePointer(
+                ignoring: isLoading,
+                child: Opacity(
+                  opacity: isLoading ? 0.5 : 1.0,
+                  child: UserTypeSelector(
+                    selectedType: _selectedUserType,
+                    onChanged: (type) {
+                      setState(() => _selectedUserType = type);
+                    },
+                  ),
+                ),
+              ),
+              
+              DSSizedBoxSpacing.vertical(48),
+              
+              // Botão de Login
+              CustomButton(
+                label: isLoading ? 'Entrando...' : 'Entrar',
+                filled: true,
+                onPressed: isLoading ? null : _handleLogin,
+              ),
+              
+              DSSizedBoxSpacing.vertical(16),
+              
+              
+            ],
+          );
+        },
+      ),
     );
   }
 }

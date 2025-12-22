@@ -1,0 +1,325 @@
+import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
+import 'package:app/core/domain/artist/artist_groups/group_member_entity.dart';
+import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/features/profile/presentation/widgets/groups/create_group_modal.dart';
+import 'package:app/features/profile/presentation/widgets/groups/group_card.dart';
+import 'package:app/features/profile/presentation/widgets/groups/group_invite_card.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
+
+@RoutePage(deferredLoading: true)
+class GroupsScreen extends StatefulWidget {
+  const GroupsScreen({super.key});
+
+  @override
+  State<GroupsScreen> createState() => _GroupsScreenState();
+}
+
+class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  // TODO: Substituir por dados reais do artista (Bloc/Repository)
+  String? _currentArtistUid; // UID do artista atual
+  List<GroupEntity> _myGroups = [];
+  List<GroupEntity> _pendingInvites = []; // Grupos com convites pendentes
+  Map<String, String> _inviteInvitedBy = {}; // UID do grupo -> nome de quem convidou
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    _loadGroups();
+    _loadPendingInvites();
+  }
+
+  void _onTabChanged() {
+    setState(() {}); // Atualiza para mostrar/esconder FAB
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _loadGroups() {
+    // TODO: Carregar grupos do artista
+    setState(() {
+      _myGroups = [
+        GroupEntity(
+          uid: 'group1',
+          groupName: 'Banda Rock',
+          profilePicture: null,
+          dateRegistered: DateTime.now().subtract(const Duration(days: 30)),
+          members: [
+            // Mock: artista atual é admin deste grupo
+            GroupMemberEntity(
+              artistUid: _currentArtistUid,
+              isAdmin: true,
+              isApproved: true,
+            ),
+          ],
+          isActive: true,
+        ),
+        GroupEntity(
+          uid: 'group2',
+          groupName: 'Trio Acústico',
+          profilePicture: null,
+          dateRegistered: DateTime.now().subtract(const Duration(days: 15)),
+          members: [
+            // Mock: artista atual NÃO é admin deste grupo
+            GroupMemberEntity(
+              artistUid: 'other_artist_uid',
+              isAdmin: true,
+              isApproved: true,
+            ),
+            GroupMemberEntity(
+              artistUid: _currentArtistUid,
+              isAdmin: false,
+              isApproved: true,
+            ),
+          ],
+          isActive: true,
+        ),
+      ];
+    });
+  }
+
+  void _loadPendingInvites() {
+    // TODO: Carregar convites pendentes
+    final invite1 = GroupEntity(
+      uid: 'invite1',
+      groupName: 'Grupo de Jazz',
+      profilePicture: null,
+      dateRegistered: DateTime.now().subtract(const Duration(days: 5)),
+      members: [
+        GroupMemberEntity(
+          artistUid: 'admin_artist_uid',
+          isAdmin: true,
+          isApproved: true,
+        ),
+      ],
+      isActive: true,
+    );
+    
+    setState(() {
+      _pendingInvites = [invite1];
+      _inviteInvitedBy = {
+        'invite1': 'João Silva', // Nome de quem convidou (admin do grupo)
+      };
+    });
+  }
+
+  void _showCreateGroupModal() {
+    CreateGroupModal.show(
+      context: context,
+      onCreate: (group) {
+        setState(() {
+          _myGroups.add(group);
+        });
+      },
+    );
+  }
+
+  /// Verifica se o artista atual é administrador do grupo
+  bool _isCurrentArtistAdmin(GroupEntity group) {
+    if (_currentArtistUid == null || group.members == null) return false;
+    
+    final currentMember = group.members!.firstWhere(
+      (member) => member.artistUid == _currentArtistUid,
+      orElse: () => GroupMemberEntity(isAdmin: false),
+    );
+    
+    return currentMember.isAdmin;
+  }
+
+  void _onAcceptInvite(GroupEntity group) {
+    setState(() {
+      _pendingInvites.remove(group);
+      _inviteInvitedBy.remove(group.uid);
+      _myGroups.add(group);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Convite para ${group.groupName} aceito!')),
+    );
+    // TODO: Implementar aceitação via Bloc/Repository
+  }
+
+  void _onRejectInvite(GroupEntity group) {
+    setState(() {
+      _pendingInvites.remove(group);
+      _inviteInvitedBy.remove(group.uid);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Convite para ${group.groupName} recusado.')),
+    );
+    // TODO: Implementar recusa via Bloc/Repository
+  }
+
+  void _onGroupTap(GroupEntity group) {
+    final isAdmin = _isCurrentArtistAdmin(group);
+    // TODO: Navegar para detalhes do grupo
+    // Se for admin, permitir edição; se não, apenas visualização
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isAdmin
+              ? 'Detalhes de ${group.groupName} (modo edição - você é admin)'
+              : 'Detalhes de ${group.groupName} (somente visualização)',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return BasePage(
+      showAppBar: true,
+      appBarTitle: 'Conjuntos',
+      showAppBarBackButton: true,
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
+              onPressed: _showCreateGroupModal,
+              backgroundColor: colorScheme.onPrimaryContainer,
+              foregroundColor: colorScheme.primaryContainer,
+              child: const Icon(Icons.add),
+            )
+          : null,
+      child: Column(
+        children: [
+          // Tabs
+          TabBar(
+            controller: _tabController,
+            labelColor: colorScheme.onPrimaryContainer,
+            labelStyle: textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelColor: colorScheme.onSurfaceVariant,
+            indicatorColor: colorScheme.onPrimaryContainer,
+            tabs: const [
+              Tab(text: 'Meus Grupos'),
+              Tab(text: 'Convites'),
+            ],
+          ),
+          DSSizedBoxSpacing.vertical(16),
+
+          // Conteúdo das tabs
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildMyGroupsTab(colorScheme, textTheme),
+                _buildInvitesTab(colorScheme, textTheme),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyGroupsTab(ColorScheme colorScheme, TextTheme textTheme) {
+    if (_myGroups.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.group_outlined,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            DSSizedBoxSpacing.vertical(16),
+            Text(
+              'Nenhum grupo encontrado',
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            DSSizedBoxSpacing.vertical(8),
+            Text(
+              'Toque no botão + para criar um novo grupo',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      itemCount: _myGroups.length,
+      itemBuilder: (context, index) {
+        final group = _myGroups[index];
+        final isAdmin = _isCurrentArtistAdmin(group);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GroupCard(
+            group: group,
+            isAdmin: isAdmin,
+            onTap: () => _onGroupTap(group),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInvitesTab(ColorScheme colorScheme, TextTheme textTheme) {
+    if (_pendingInvites.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.mail_outline,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            DSSizedBoxSpacing.vertical(16),
+            Text(
+              'Nenhum convite pendente',
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            DSSizedBoxSpacing.vertical(8),
+            Text(
+              'Quando você receber convites para grupos,\neles aparecerão aqui',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 0),
+      itemCount: _pendingInvites.length,
+      itemBuilder: (context, index) {
+        final invite = _pendingInvites[index];
+        final invitedBy = _inviteInvitedBy[invite.uid];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GroupInviteCard(
+            group: invite,
+            invitedBy: invitedBy,
+            onAccept: () => _onAcceptInvite(invite),
+            onReject: () => _onRejectInvite(invite),
+          ),
+        );
+      },
+    );
+  }
+}
+

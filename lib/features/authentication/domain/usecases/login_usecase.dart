@@ -76,7 +76,7 @@ class LoginUseCase {
         isCnpj = true;
       } else {
         return const Left(IncompleteDataFailure(
-          'Usuário não possui informações de CPF ou CNPJ',
+          'Para continuar, precisamos de mais algumas informações.',
           missingFields: ['cpfUser', 'cnpjUser'],
         ));
       }
@@ -90,9 +90,9 @@ class LoginUseCase {
         );
 
         if (artist == ArtistEntity()) {
-          return const Left(IncompleteDataFailure(
-            'Usuário não possui perfil de artista',
-            missingFields: ['artistProfile'],
+          // Retornar AuthFailure para forçar logout e manter na tela de login
+          return const Left(AuthFailure(
+            'Usuário não possui perfil de artista. Por favor, selecione o tipo de conta correto.',
           ));
         }
       } else {
@@ -103,9 +103,9 @@ class LoginUseCase {
         );
 
         if (client == ClientEntity()) {
-          return const Left(IncompleteDataFailure(
-            'Usuário não possui perfil de cliente',
-            missingFields: ['clientProfile'],
+          // Retornar AuthFailure para forçar logout e manter na tela de login
+          return const Left(AuthFailure(
+            'Usuário não possui perfil de cliente. Por favor, selecione o tipo de conta correto.',
           ));
         }
       }

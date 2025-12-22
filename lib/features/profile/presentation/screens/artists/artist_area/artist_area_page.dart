@@ -1,6 +1,7 @@
 
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/features/profile/presentation/widgets/artist_area_option_card.dart';
 import 'package:auto_route/auto_route.dart';
@@ -16,6 +17,14 @@ class ArtistAreaScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
     final router = AutoRouter.of(context);
+
+    final artist = ArtistEntity(
+      uid: '123',
+      artistName: 'John Doe',
+      profilePicture: null,
+      rating: 4.5,
+      finalizedContracts: 10,
+    );
 
     return BasePage(
       showAppBar: true,
@@ -65,6 +74,8 @@ class ArtistAreaScreen extends StatelessWidget {
               },
             ),
 
+            
+
             DSSizedBoxSpacing.vertical(8),
 
             // Opção: Endereços
@@ -73,7 +84,7 @@ class ArtistAreaScreen extends StatelessWidget {
               title: 'Endereços',
               description: 'Defina os seus endereços.',
               iconColor: onPrimaryContainer,
-              onTap: () {},
+              onTap: () => router.push(const AddressesListRoute()),
             ),
 
             DSSizedBoxSpacing.vertical(8),
@@ -84,7 +95,7 @@ class ArtistAreaScreen extends StatelessWidget {
               description: 'Visualize como sua página aparece para os clientes',
               icon: Icons.person_outline_rounded,
               iconColor: onPrimaryContainer,
-              onTap: () {},
+              onTap: () => router.push(ArtistProfileViewRoute(artist: artist)),
             ),
           ],
         ),

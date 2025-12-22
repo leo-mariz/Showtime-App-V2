@@ -23,13 +23,10 @@ class TabsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!_hasGenres && !_hasTalents) {
-      return const SizedBox.shrink();
-    }
-
+    // Sempre mostrar as tabs, mesmo quando não houver dados
     final List<String> tabs = [];
-    if (_hasGenres) tabs.add('Estilos');
-    if (_hasTalents) tabs.add('Talentos');
+    tabs.add('Estilos');
+    tabs.add('Talentos');
 
     return DefaultTabController(
       length: tabs.length,
@@ -51,8 +48,8 @@ class TabsSection extends StatelessWidget {
             height: _hasTalents ? DSSize.height(220) : DSSize.height(120),
             child: TabBarView(
               children: [
-                if (_hasGenres) _buildGenresTab(),
-                if (_hasTalents) _buildTalentsTab(context),
+                _buildGenresTab(context),
+                _buildTalentsTab(context),
               ],
             ),
           ),
@@ -61,7 +58,25 @@ class TabsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildGenresTab() {
+  Widget _buildGenresTab(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
+    if (!_hasGenres) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
+          child: Text(
+            'Adicione seus estilos musicais',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
       child: Wrap(
@@ -75,14 +90,20 @@ class TabsSection extends StatelessWidget {
   }
 
   Widget _buildTalentsTab(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     final talents = artist.presentationMedias ?? {};
     
     if (talents.isEmpty) {
       return Center(
-        child: Text(
-          'Nenhum talento disponível',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
+          child: Text(
+            'Adicione vídeos de suas apresentações',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ),
       );

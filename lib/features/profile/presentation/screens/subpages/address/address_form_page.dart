@@ -162,23 +162,23 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Título',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
-              DSSizedBoxSpacing.vertical(6),
+              DSSizedBoxSpacing.vertical(8),
               CustomTextField(
                 controller: titleController,
                 label: 'Título do endereço',
               ),
-              DSSizedBoxSpacing.vertical(28),
+              DSSizedBoxSpacing.vertical(24),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'CEP',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  'Endereço',
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
-              DSSizedBoxSpacing.vertical(8),
+              DSSizedBoxSpacing.vertical(16),
               Row(
                 children: [
                   Expanded(
@@ -218,22 +218,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 controller: districtController,
                 label: 'Bairro',
                 enabled: false,
-              ),
-              DSSizedBoxSpacing.vertical(16),
-              Row(
-                children: [
-                  Text(
-                      'Número',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  
-                  DSSizedBoxSpacing.horizontal(120),
-                  Text(
-                      'Complemento (opcional)',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  
-                ],
               ),
               DSSizedBoxSpacing.vertical(8),
               Row(

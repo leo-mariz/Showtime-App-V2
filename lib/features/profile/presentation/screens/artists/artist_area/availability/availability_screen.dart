@@ -200,37 +200,33 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   }
 
   void _showNewAvailabilityDialog(DateTime selectedDate) {
-    showDialog(
+    AvailabilityFormDialog.show(
       context: context,
-      builder: (context) => AvailabilityFormDialog(
-        initialDate: selectedDate,
-        onSave: (availability) {
-          setState(() {
-            _availabilities.add(availability);
-          });
-          Navigator.of(context).pop();
-        },
-      ),
+      initialDate: selectedDate,
+      onSave: (availability) {
+        setState(() {
+          _availabilities.add(availability);
+        });
+        Navigator.of(context).pop();
+      },
     );
   }
 
   void _showEditAvailabilityDialog(AvailabilityEntity availability) {
-    showDialog(
+    AvailabilityFormDialog.show(
       context: context,
-      builder: (context) => AvailabilityFormDialog(
-        availability: availability,
-        onSave: (updatedAvailability) {
-          setState(() {
-            final index = _availabilities.indexWhere(
-              (av) => av.id == availability.id,
-            );
-            if (index != -1) {
-              _availabilities[index] = updatedAvailability;
-            }
-          });
-          Navigator.of(context).pop();
-        },
-      ),
+      availability: availability,
+      onSave: (updatedAvailability) {
+        setState(() {
+          final index = _availabilities.indexWhere(
+            (av) => av.id == availability.id,
+          );
+          if (index != -1) {
+            _availabilities[index] = updatedAvailability;
+          }
+        });
+        Navigator.of(context).pop();
+      },
     );
   }
 
@@ -268,17 +264,24 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       showAppBar: true,
       appBarTitle: 'Disponibilidade',
       showAppBarBackButton: true,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showNewAvailabilityDialog(DateTime.now()),
+        backgroundColor: colorScheme.onPrimaryContainer,
+        foregroundColor: colorScheme.primaryContainer,
+        child: const Icon(Icons.add),
+      ),
       child: Column(
         children: [
           // Tabs
           TabBar(
             controller: _tabController,
             labelColor: colorScheme.onPrimaryContainer,
+            labelStyle: textTheme.bodyMedium,
             unselectedLabelColor: colorScheme.onSurfaceVariant,
             indicatorColor: colorScheme.onPrimaryContainer,
             tabs: const [
-              Tab(text: 'Calendário'),
-              Tab(text: 'Lista'),
+              Tab(text: 'Disponibilidades', icon: Icon(Icons.list)),
+              Tab(text: 'Agenda', icon: Icon(Icons.calendar_month)),
             ],
           ),
           
@@ -287,21 +290,15 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
             child: TabBarView(
               controller: _tabController,
               children: [
+                // Tab 2: Lista
+                _buildListTab(colorScheme, textTheme),
                 // Tab 1: Calendário
                 _buildCalendarTab(colorScheme, textTheme),
                 
-                // Tab 2: Lista
-                _buildListTab(colorScheme, textTheme),
               ],
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showNewAvailabilityDialog(DateTime.now()),
-        backgroundColor: colorScheme.onPrimaryContainer,
-        foregroundColor: colorScheme.primaryContainer,
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -470,7 +467,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Minhas Disponibilidades',
+                '',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onPrimary,

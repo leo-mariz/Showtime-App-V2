@@ -1,12 +1,9 @@
-import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
-import 'package:app/features/artist_profile/presentation/widgets/artist_footer.dart';
-import 'package:app/features/artist_profile/presentation/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/features/artist_profile/presentation/widgets/tabs_section.dart';
 import 'package:auto_route/auto_route.dart';
@@ -14,16 +11,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 @RoutePage(deferredLoading: true)
-class ArtistProfileScreen extends StatelessWidget {
+class ArtistProfileViewScreen extends StatelessWidget {
   final ArtistEntity artist;
   final bool isFavorite;
-  final bool viewOnly;
 
-  const ArtistProfileScreen({
+  const ArtistProfileViewScreen({
     super.key,
     required this.artist,
     this.isFavorite = false,
-    this.viewOnly = false,
   });
 
   void _onVideoTap(BuildContext context, String videoUrl) {
@@ -64,25 +59,6 @@ class ArtistProfileScreen extends StatelessWidget {
     );
   }
 
-  void _onRequestPressed(BuildContext context) {
-    final router = context.router;
-    final address = artist.residenceAddress;
-    final addressString = address != null
-        ? '${address.street ?? ''}, ${address.number ?? ''} - ${address.district ?? ''}, ${address.city ?? ''}'
-        : 'Endereço não disponível';
-    
-    router.push(
-      RequestRoute(
-        selectedDate: DateTime.now(),
-        selectedAddress: addressString,
-        artist: artist,
-        pricePerHour: artist.professionalInfo?.hourlyRate ?? 0.0,
-        minimumDuration: Duration(
-          minutes: artist.professionalInfo?.minimumShowDuration ?? 30,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +66,7 @@ class ArtistProfileScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
+    final onPrimary = colorScheme.onPrimary;
 
     return BasePage(
       horizontalPadding: 0,
@@ -119,6 +96,28 @@ class ArtistProfileScreen extends StatelessWidget {
                             ? colorScheme.surfaceContainerHighest
                             : null,
                       ),
+                      child: artist.profilePicture == null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: DSSize.width(48),
+                                    color: onSurfaceVariant.withOpacity(0.6),
+                                  ),
+                                  DSSizedBoxSpacing.vertical(8),
+                                  Text(
+                                    'Adicione uma foto de perfil',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : null,
                     ),
                     // Gradiente
                     Container(
@@ -180,7 +179,7 @@ class ArtistProfileScreen extends StatelessWidget {
                       Text(
                         artist.artistName ?? 'Artista',
                         style: textTheme.headlineLarge?.copyWith(
-                          color: onPrimaryContainer,
+                          color: onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -194,28 +193,31 @@ class ArtistProfileScreen extends StatelessWidget {
                           DSSizedBoxSpacing.horizontal(8),
                           CustomBadge(title: 'Contratos', value: artist.finalizedContracts.toString(), color: onPrimaryContainer),
                           const Spacer(),
-                          FavoriteButton(
-                            isFavorite: isFavorite,
-                            onTap: () {
-                              // TODO: Implementar toggle de favorito
-                            },
-                          ),
+                          // FavoriteButton(
+                          //   isFavorite: isFavorite,
+                          //   onTap: () {
+                          //     // TODO: Implementar toggle de favorito
+                          //   },
+                          // ),
                         ],
                       ),
 
                       DSSizedBoxSpacing.vertical(16),
 
                       // Bio completa
-                      if (artist.professionalInfo?.bio != null) ...[
-                        Text(
-                          artist.professionalInfo!.bio!,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: onSurfaceVariant,
-                            height: 1.5,
-                          ),
+                      Text(
+                        artist.professionalInfo?.bio ?? 'Adicione uma biografia para descrever seu trabalho e experiência.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: artist.professionalInfo?.bio != null
+                              ? onSurfaceVariant
+                              : onSurfaceVariant.withOpacity(0.6),
+                          height: 1.5,
+                          fontStyle: artist.professionalInfo?.bio == null
+                              ? FontStyle.italic
+                              : FontStyle.normal,
                         ),
-                        DSSizedBoxSpacing.vertical(24),
-                      ],
+                      ),
+                      DSSizedBoxSpacing.vertical(24),
 
                       // Tabs de Estilos/Talentos
                       TabsSection(
@@ -228,16 +230,6 @@ class ArtistProfileScreen extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Footer fixo
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ArtistFooter(
-              onRequestPressed: () => _onRequestPressed(context),
             ),
           ),
         ],

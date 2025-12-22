@@ -31,6 +31,7 @@ class BasicInfoStep extends StatefulWidget {
   
   final Function(bool) onDocumentTypeChanged;
   final bool isCnpj;
+  final Function(bool) onDocumentValidationChanged;
 
   const BasicInfoStep({
     super.key,
@@ -51,6 +52,7 @@ class BasicInfoStep extends StatefulWidget {
     required this.onGenderChanged,
     required this.onDocumentTypeChanged,
     required this.isCnpj,
+    required this.onDocumentValidationChanged,
   });
 
   @override
@@ -120,6 +122,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 fantasyNameController: widget.fantasyNameController,
                 stateRegistrationController: widget.stateRegistrationController,
                 phoneNumberController: widget.phoneNumberController,
+                onValidationChanged: widget.onDocumentValidationChanged,
               ),
             ] else ...[
               CpfForm(
@@ -131,6 +134,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 selectedGender: widget.selectedGender,
                 phoneNumberController: widget.phoneNumberController,
                 onGenderChanged: widget.onGenderChanged,
+                onValidationChanged: widget.onDocumentValidationChanged,
               ),
             ],
         ],

@@ -29,15 +29,15 @@ class CustomDropdownButton extends StatelessWidget {
       decoration: InputDecoration(
         hintStyle: TextStyle(color: onSurfaceContainerColor),
         labelText: labelText,
-        labelStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: onSurfaceContainerColor, fontSize: calculateFontSize(16), fontWeight: FontWeight.w500),
+        labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: onSurfaceContainerColor),
         filled: true,
         fillColor: surfaceContainerColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(DSSize.width(15)),
+          borderRadius: BorderRadius.circular(DSSize.width(16)),
           borderSide: BorderSide(color: surfaceContainerColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(DSSize.width(15)),
+          borderRadius: BorderRadius.circular(DSSize.width(16)),
           borderSide: BorderSide(color: textColor),
         )
       ),

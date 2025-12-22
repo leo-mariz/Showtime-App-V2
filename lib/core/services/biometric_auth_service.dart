@@ -31,23 +31,36 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   // Verifica se o dispositivo suporta biometria
   @override
   Future<bool> isDeviceSupported() async {
-    final isDeviceSupported = await _localAuth.isDeviceSupported();
-    return isDeviceSupported;
+    try {
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      return isDeviceSupported;
+    } catch (e) {
+      // Em caso de erro (ex: emulador sem biometria), retornar false
+      return false;
+    }
   }
 
   @override
   Future<bool> canCheckBiometrics() async {
-    final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-    return canCheckBiometrics;
+    try {
+      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      return canCheckBiometrics;
+    } catch (e) {
+      // Em caso de erro (ex: emulador sem biometria), retornar false
+      return false;
+    }
   }
 
   @override
   Future<bool> isBiometricsAvailable() async {
     try {
       final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
+      final bool isDeviceSupported = await _localAuth.isDeviceSupported();
+      // Biometria está disponível se o dispositivo suporta E pode verificar biometria
+      final bool canAuthenticate = canAuthenticateWithBiometrics && isDeviceSupported;
       return canAuthenticate;
     } catch (e) {
+      // Em caso de erro (ex: emulador sem biometria configurada), retornar false
       return false;
     }
   }
@@ -55,8 +68,14 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   // Verifica se o usuário já habilitou biometria
   @override
   Future<bool> isBiometricsEnabled() async {
-    final storedCredentials = await _secureStorage.read(key: SecureStorageKeys.credentials);
-    return storedCredentials != null;
+    try {
+      final storedCredentials = await _secureStorage.read(key: SecureStorageKeys.credentials);
+      final isEnabled = storedCredentials != null;
+      return isEnabled;
+    } catch (e) {
+      // Em caso de erro ao ler storage, considerar como não habilitado
+      return false;
+    }
   }
 
   @override
@@ -67,24 +86,29 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   // Autentica com biometria e retorna as credenciais salvas
   @override
   Future<bool> authenticateWithBiometrics() async {
-    final bool didAuthenticate = await _localAuth.authenticate(
-      localizedReason: 'Autentique-se para entrar',
-      options: const AuthenticationOptions(
-        stickyAuth: true,
-        biometricOnly: false,
-        useErrorDialogs: true,
-      ),
-      authMessages: const <AuthMessages>[
-        AndroidAuthMessages(
-          signInTitle: 'Adicione sua biometria para fazer login.',
-          cancelButton: 'Cancelar',
+    try {
+      final bool didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Autentique-se para entrar',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+          useErrorDialogs: true,
         ),
-        IOSAuthMessages(
-          cancelButton: 'Cancelar',
-        ),
-      ],
-    );
-    return didAuthenticate;
+        authMessages: const <AuthMessages>[
+          AndroidAuthMessages(
+            signInTitle: 'Adicione sua biometria para fazer login.',
+            cancelButton: 'Cancelar',
+          ),
+          IOSAuthMessages(
+            cancelButton: 'Cancelar',
+          ),
+        ],
+      );
+      return didAuthenticate;
+    } catch (e) {
+      // Em caso de exceção, considerar como falha
+      return false;
+    }
   }
 
   // Salva as credenciais de forma segura

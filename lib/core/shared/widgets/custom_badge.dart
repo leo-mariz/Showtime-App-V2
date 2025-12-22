@@ -2,12 +2,18 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:flutter/material.dart';
 
 /// Widget de badge de avaliação no formato x,x ⭐
-class RatingBadge extends StatelessWidget {
-  final double rating;
+class CustomBadge extends StatelessWidget {
+  final String? title;
+  final String value;
+  final IconData? icon;
+  final Color? color;
 
-  const RatingBadge({
+  const CustomBadge({
     super.key,
-    required this.rating,
+    this.title,
+    required this.value,
+    this.icon,
+    this.color,
   });
 
   @override
@@ -15,6 +21,7 @@ class RatingBadge extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final onPrimary = colorScheme.onPrimary;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -29,18 +36,30 @@ class RatingBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            rating.toStringAsFixed(1),
+            value,
             style: textTheme.bodyMedium?.copyWith(
-              color: onPrimaryContainer,
+              color: onPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(width: DSSize.width(4)),
-          Icon(
-            Icons.star,
-            color: onPrimaryContainer,
-            size: DSSize.width(16),
-          ),
+          if (icon != null) ...[
+            Icon(
+              icon,
+              color: onPrimaryContainer,
+              size: DSSize.width(16),
+            ),
+          ],
+          if (title != null) ...[
+            SizedBox(width: DSSize.width(4)),
+            Text(
+              title!,
+              style: textTheme.bodySmall?.copyWith(
+                color: onPrimary.withOpacity(0.8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );

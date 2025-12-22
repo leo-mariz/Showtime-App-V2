@@ -95,7 +95,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             style: textTheme.bodyMedium?.copyWith(
               color: widget.enabled 
                   ? textColor 
-                  : colorScheme.onSurface.withValues(alpha: 0.4 * 255),
+                  : colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.normal,
             ),
             decoration: InputDecoration(
@@ -114,8 +114,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 ) 
               : null,
               fillColor: widget.enabled 
-                  ? surfaceContainerColor.withValues(alpha: (0.95 * 255))
-                  : surfaceContainerColor.withValues(alpha: (0.8 * 255)),
+                  ? surfaceContainerColor
+                  : colorScheme.surfaceContainerHighest.withOpacity(0.4),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(DSSize.width(16)),
                 borderSide: BorderSide(
@@ -129,7 +129,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(DSSize.width(16)),
                 borderSide: BorderSide(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.2 * 255),
+                  color: colorScheme.surfaceContainer,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -156,17 +156,17 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 vertical: labelPaddingV,
               ),
               decoration: BoxDecoration(
-                color: _shouldFloat
+                color:
+                 _shouldFloat
                     ? colorScheme.onPrimary
-                    : Colors.transparent,
+                    :
+                     Colors.transparent,
                 borderRadius: BorderRadius.circular(DSSize.width(6)),
               ),
               child: Text(
                 widget.label,
                 style: TextStyle(
-                  color: !widget.enabled
-                      ? colorScheme.onSurface.withValues(alpha: 0.4 * 255)
-                      : _shouldFloat
+                  color: _shouldFloat
                           ? colorScheme.primary
                           : onSurfaceContainerColor,
                   fontWeight: _shouldFloat ? FontWeight.normal : FontWeight.bold,

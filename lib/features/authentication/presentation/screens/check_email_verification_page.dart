@@ -30,24 +30,24 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     if (user != null && user.emailVerified) {
       final router = AutoRouter.of(context);
       router.maybePop();
-      // router.replace(const OnboardingFlowRoute());
+      router.replace(OnboardingRoute(email: widget.email));
       
-    // } else {
-    //   setState(() {
-    //     _message = 'E-mail ainda não verificado. Verifique sua caixa de entrada.';
-    //     _isLoading = false;
-    //   });
+    } else {
+      setState(() {
+        _message = 'E-mail ainda não verificado. Verifique sua caixa de entrada.';
+        _isLoading = false;
+      });
     }
   }
 
-  // Future<void> _checkNewEmailVerified(String newEmail) async {
-  //   setState(() {
-  //     _isLoading = true;
-  //     _message = null;
-  //   });
-  //   final router = AutoRouter.of(context);
+  Future<void> _checkNewEmailVerified(String newEmail) async {
+    setState(() {
+      _isLoading = true;
+      _message = null;
+    });
+    final router = AutoRouter.of(context);
 
-  // }
+  }
 
   Future<void> _resendVerificationEmail() async {
     setState(() {
@@ -93,19 +93,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             DSSizedBoxSpacing.vertical(16),
             CustomButton(
               label: widget.isChangeEmail ? "Já verifiquei meu novo e-mail" : "Já verifiquei meu e-mail",
-              // onPressed: _isLoading ? () {} : _checkEmailVerified,
-              onPressed: () {
-                router.push(OnboardingRoute(email: widget.email));
-              },
+              onPressed: _isLoading ? () {} : _checkEmailVerified,
             ),
             DSSizedBoxSpacing.vertical(16),
             if (!widget.isChangeEmail)
             CustomButton(
               label: "Reenviar e-mail de verificação",
-              // onPressed: _isLoading ? () {} : _resendVerificationEmail,
-              onPressed: () {
-                router.push(OnboardingRoute(email: widget.email));
-              },
+              onPressed: _isLoading ? () {} : _resendVerificationEmail,
             ),
           ],
         ),

@@ -20,6 +20,10 @@ class ProgressIndicatorWidget extends StatelessWidget {
     
     return Row(
       children: List.generate(totalSteps, (index) {
+        // Step 0 = primeira barra (index 0), Step 1 = segunda barra (index 1)
+        // Quando currentStep = 0, primeira barra (index 0) deve estar preenchida
+        // Quando currentStep = 1, ambas as barras (index 0 e 1) devem estar preenchidas
+        // Usamos index <= currentStep para preencher todas as barras até o step atual
         final isActive = index <= currentStep;
         
         return Expanded(
@@ -28,7 +32,7 @@ class ProgressIndicatorWidget extends StatelessWidget {
             height: DSSize.height(4),
             decoration: BoxDecoration(
               color: isActive 
-                ? colorScheme.primaryContainer 
+                ? colorScheme.onPrimary 
                 : colorScheme.primaryContainer.withValues(alpha: 0.3 * 255),
               borderRadius: BorderRadius.circular(DSSize.width(2)),
             ),

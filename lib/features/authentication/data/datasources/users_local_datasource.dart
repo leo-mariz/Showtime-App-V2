@@ -40,7 +40,8 @@ class AuthLocalDataSourceImpl implements IAuthLocalDataSource {
         UserEntityReference.cachedKey(),
       );
       
-      if (userInfo != {}) {
+      // Verificar se userInfo não é vazio (Map vazio retorna {})
+      if (userInfo.isNotEmpty && userInfo.keys.isNotEmpty) {
         final userEntity = UserEntityMapper.fromMap(userInfo);
         return userEntity.uid;
       }

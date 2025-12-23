@@ -12,8 +12,8 @@ import 'package:firebase_core/firebase_core.dart';
 
 // Authentication imports
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:app/features/authentication/data/datasources/users_remote_datasource.dart';
-import 'package:app/features/authentication/data/datasources/users_local_datasource.dart';
+import 'package:app/features/authentication/data/datasources/auth_remote_datasource.dart';
+import 'package:app/features/authentication/data/datasources/auth_local_datasource.dart';
 import 'package:app/features/authentication/data/repositories/users_repository_impl.dart';
 import 'package:app/features/authentication/domain/usecases/login_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_user_logged_in_usecase.dart';
@@ -121,6 +121,8 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
     checkBiometricsEnabledUseCase: checkBiometricsEnabledUseCase,
   );
 }
+
+
 
 Future <void> main() async {
 

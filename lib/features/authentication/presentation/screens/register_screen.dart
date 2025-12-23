@@ -1,7 +1,6 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/shared/widgets/link_text.dart';
-import 'package:app/core/shared/widgets/password_field.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:app/features/authentication/presentation/widgets/auth_base_page.dart';
@@ -26,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -90,20 +90,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
     
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state is RegisterLoading) {
+          setState(() {
+            _isLoading = true;
+          });
+        } else if (state is AuthInitial) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         if (state is AuthSuccess) {
+          // Resetar loading antes de navegar
+          setState(() {
+            _isLoading = false;
+          });
           // Mostrar mensagem de sucesso
           context.showSuccess(state.message);
           // Navegar para tela de verificação de email
           router.push(EmailVerificationRoute(email: _emailController.text.trim()));
         } else if (state is AuthFailure) {
+          setState(() {
+            _isLoading = false;
+          });
           context.showError(state.error);
         } else if (state is AuthConnectionFailure) {
+          setState(() {
+            _isLoading = false;
+          });
           context.showError(state.message);
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
-          final isLoading = state is AuthLoading;
 
           return AuthBasePage(
             title: 'CADASTRO',
@@ -114,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: 'Email',
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                enabled: !isLoading,
+                enabled: !_isLoading,
                 onChanged: (value) {},
               ),
               
@@ -127,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 isPassword: true,
                 keyboardType: TextInputType.text,
                 controller: _passwordController,
-                enabled: !isLoading,
+                enabled: !_isLoading,
                 onChanged: (value) {},
               ),
 
@@ -140,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 isPassword: true,
                 keyboardType: TextInputType.text,
                 controller: _confirmPasswordController,
-                enabled: !isLoading,
+                enabled: !_isLoading,
                 onChanged: (value) {},
               ),
               
@@ -148,18 +166,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               // Botão de Cadastrar
               CustomButton(
-                label: isLoading ? 'Cadastrando...' : 'Cadastrar',
+                key: ValueKey('register_screen_button'),
+                label: _isLoading ? 'Cadastrando...' : 'Cadastrar',
                 filled: true,
-                onPressed: isLoading ? null : _handleRegister,
+                onPressed: _isLoading ? null : _handleRegister,
               ),
               
               DSSizedBoxSpacing.vertical(190),
               
               // Link "Já tenho uma conta"
               IgnorePointer(
-                ignoring: isLoading,
+                ignoring: _isLoading,
                 child: Opacity(
-                  opacity: isLoading ? 0.5 : 1.0,
+                  opacity: _isLoading ? 0.5 : 1.0,
                   child: Center(
                     child: CustomLinkText(
                       text: 'Já possui uma conta? Faça login',

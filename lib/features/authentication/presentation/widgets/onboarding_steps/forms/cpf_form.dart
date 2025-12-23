@@ -132,12 +132,12 @@ class CpfFormState extends State<CpfForm> {
         }
       },
       child: Column(
-        children: [
+      children: [
           DocumentFieldWithValidation(
-            label: 'CPF',
-            controller: widget.cpfController,
-            validator: Validators.validateCPF,
-            inputFormatters: [_cpfMask],
+          label: 'CPF',
+          controller: widget.cpfController,
+          validator: Validators.validateCPF,
+          inputFormatters: [_cpfMask],
             validationStatus: _validationStatus,
             errorMessage: _errorMessage,
             onChanged: (value) {
@@ -151,7 +151,7 @@ class CpfFormState extends State<CpfForm> {
                 widget.onValidationChanged(false);
               }
             },
-          ),
+        ),
         DSSizedBoxSpacing.vertical(4),
         Row(
           children: [
@@ -199,7 +199,7 @@ class CpfFormState extends State<CpfForm> {
             ),
           ],
         ),
-        ],
+      ],
       ),
     );
   }

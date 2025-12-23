@@ -17,7 +17,21 @@ class AuthConnectionFailure extends AuthState {
 
 class AuthInitial extends AuthState {}
 
-class AuthLoading extends AuthState {}
+class LoginInitial extends AuthState {}
+
+class LoginLoading extends AuthState {}
+
+class RegisterLoading extends AuthState {}
+
+class RegisterOnboardingLoading extends AuthState {}
+
+class InitialLoading extends AuthState {} // ou CheckBiometricsLoading
+
+class CheckUserLoggedInLoading extends AuthState {}
+
+class LogoutLoading extends AuthState {}
+
+class EnableBiometricsLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {
   final UserEntity? user;

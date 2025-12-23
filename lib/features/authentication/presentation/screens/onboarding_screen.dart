@@ -73,6 +73,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _showTermsError = false;
   bool _isLoading = false;
   bool _isDocumentValid = false; // Indica se documento está validado e disponível
+  
 
   @override
   void initState() {
@@ -105,6 +106,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state is RegisterOnboardingLoading) {
+          setState(() {
+            _isLoading = true;
+          });
+        } else if (state is AuthInitial) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         if (state is AuthSuccess) {
           context.showSuccess(state.message);
           context.router.replace(NavigationRoute(isArtist: _isArtist!));
@@ -118,7 +128,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       },
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
-          final isLoading = state is AuthLoading || _isLoading;
+          final isLoading = state is RegisterOnboardingLoading || _isLoading;
           
           return AuthBasePage(
       title: _getTitle(),
@@ -298,9 +308,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  void _handleSubmit() {
-    setState(() => _isLoading = true);
-    
+  void _handleSubmit() {    
     // Criar UserEntity
     final user = UserEntity(
       email: widget.email,

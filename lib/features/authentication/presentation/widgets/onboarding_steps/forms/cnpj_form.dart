@@ -124,13 +124,13 @@ class CnpjFormState extends State<CnpjForm> {
         }
       },
       child: Column(
-        children: [
+      children: [
           DocumentFieldWithValidation(
-            label: 'CNPJ',
-            controller: widget.cnpjController,
-            inputFormatters: [_cnpjMask],
-            validator: Validators.validateCNPJ,
-            keyboardType: TextInputType.number,
+          label: 'CNPJ',
+          controller: widget.cnpjController,
+          inputFormatters: [_cnpjMask],
+          validator: Validators.validateCNPJ,
+          keyboardType: TextInputType.number,
             validationStatus: _validationStatus,
             errorMessage: _errorMessage,
             onChanged: (value) {
@@ -144,7 +144,7 @@ class CnpjFormState extends State<CnpjForm> {
                 widget.onValidationChanged(false);
               }
             },
-          ),
+        ),
         DSSizedBoxSpacing.vertical(4),
         CustomTextField(
           label: 'Razão Social',
@@ -157,7 +157,7 @@ class CnpjFormState extends State<CnpjForm> {
           controller: widget.fantasyNameController,
           validator: Validators.validateIsNull,
         ),
-        ],
+      ],
       ),
     );
   }

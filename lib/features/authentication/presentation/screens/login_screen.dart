@@ -27,6 +27,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
   UserType _selectedUserType = UserType.artist;
   bool _waitingForBiometricsCheck = false;
   UserEntity? _pendingUser;
@@ -71,17 +72,25 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final router = AutoRouter.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is LoginSuccess) {
-          // Mostrar mensagem de sucesso
-          context.showSuccess('Login realizado com sucesso!');
-          
-          // Aguardar verificação de biometria antes de navegar
+        if (state is LoginLoading) {
           setState(() {
+            _isLoading = true;
+          });
+        } else if (state is AuthInitial) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        
+        if (state is LoginSuccess) {
+          // Resetar loading e aguardar verificação de biometria antes de navegar
             _waitingForBiometricsCheck = true;
             _pendingUser = state.user;
-          });
+          // Mostrar mensagem de sucesso
+          context.showSuccess('Login realizado com sucesso!');
         } else if (state is CheckShouldShowBiometricsPromptSuccess) {
           // Mostrar modal de biometria se necessário
           if (state.shouldShow && state.user != null) {
@@ -112,7 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
             }
           }
         } else if (state is AuthProfileMismatch) {
-          // Erro de perfil incompatível - logout já foi feito, apenas mostrar erro
           context.showError(state.error);
         } else if (state is AuthFailure) {
           context.showError(state.error);
@@ -124,9 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          final isLoading = state is AuthLoading;
-
+      builder: (context, state) {
           return AuthBasePage(
             title: 'LOGIN',
             subtitle: 'Acessar conta',
@@ -137,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'Email',
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                // enabled: !isLoading,
+                enabled: !_isLoading,
                 onChanged: (value) {
                 },
               ),
@@ -151,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 isPassword: true,
                 keyboardType: TextInputType.text,
                 controller: _passwordController,
-                // enabled: !isLoading,
+                enabled: !_isLoading,
                 onChanged: (value) {
                 },
               ),
@@ -162,9 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: IgnorePointer(
-                  ignoring: isLoading,
+                  ignoring: _isLoading,
                   child: Opacity(
-                    opacity: isLoading ? 0.5 : 1.0,
+                    opacity: _isLoading ? 0.5 : 1.0,
                     child: CustomLinkText(
                       text: 'Esqueci minha senha',
                       onTap: () {
@@ -179,14 +185,14 @@ class _LoginScreenState extends State<LoginScreen> {
               
               // Seleção de Tipo de Usuário
               IgnorePointer(
-                ignoring: isLoading,
+                ignoring: _isLoading,
                 child: Opacity(
-                  opacity: isLoading ? 0.5 : 1.0,
+                  opacity: _isLoading ? 0.5 : 1.0,
                   child: UserTypeSelector(
-                    selectedType: _selectedUserType,
-                    onChanged: (type) {
+                  selectedType: _selectedUserType,
+                  onChanged: (type) {
                       setState(() => _selectedUserType = type);
-                    },
+                  },
                   ),
                 ),
               ),
@@ -195,13 +201,18 @@ class _LoginScreenState extends State<LoginScreen> {
               
               // Botão de Login
               CustomButton(
-                label: isLoading ? 'Entrando...' : 'Entrar',
+                key: ValueKey('login_screen_button'),
+                label: _isLoading ? 'Entrando...' : 'Entrar',
                 filled: true,
-                onPressed: isLoading ? null : _handleLogin,
+                iconColor: colorScheme.primaryContainer,
+                textColor: colorScheme.primaryContainer,
+                backgroundColor: colorScheme.onPrimaryContainer,
+                onPressed: _isLoading ? null : _handleLogin,
+                isLoading: _isLoading,
               ),
+
               
               DSSizedBoxSpacing.vertical(16),
-              
               
             ],
           );

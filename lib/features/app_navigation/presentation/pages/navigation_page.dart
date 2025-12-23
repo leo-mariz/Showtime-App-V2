@@ -5,8 +5,8 @@ import 'package:app/features/explore/presentation/screens/explore_screen.dart';
 import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:app/features/contracts/presentation/screens/clients/client_contracts_screen.dart';
 import 'package:app/features/placeholders/placeholder_page.dart';
-import 'package:app/features/profile/presentation/screens/artists/artist_profile_screen.dart';
-import 'package:app/features/profile/presentation/screens/clients/client_profile_screen.dart';
+import 'package:app/features/profile/artists/presentation/screens/artist_profile_screen.dart';
+import 'package:app/features/profile/clients/presentation/screens/client_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 

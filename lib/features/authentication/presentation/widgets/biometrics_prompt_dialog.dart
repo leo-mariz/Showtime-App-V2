@@ -122,7 +122,7 @@ class BiometricsPromptDialog extends StatelessWidget {
                       },
                       child: BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
-                          final isLoading = state is AuthLoading;
+                          final isLoading = state is EnableBiometricsLoading;
 
                           return CustomButton(
                             label: isLoading ? 'Habilitando...' : 'Habilitar',
@@ -144,19 +144,19 @@ class BiometricsPromptDialog extends StatelessWidget {
 
               DSSizedBoxSpacing.vertical(12),
 
-              // Link "Não mostrar novamente"
-              TextButton(
-                onPressed: () {
-                  // TODO: Salvar preferência de não mostrar novamente
-                  Navigator.of(context).pop();
-                },
-                child: Text(
-                  'Não mostrar novamente',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+              // // Link "Não mostrar novamente"
+              // TextButton(
+              //   onPressed: () {
+              //     // TODO: Salvar preferência de não mostrar novamente
+              //     Navigator.of(context).pop();
+              //   },
+              //   child: Text(
+              //     'Não mostrar novamente',
+              //     style: textTheme.bodySmall?.copyWith(
+              //       color: colorScheme.onSurfaceVariant,
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),

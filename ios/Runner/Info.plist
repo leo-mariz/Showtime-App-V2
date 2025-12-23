@@ -51,5 +51,7 @@
 	<string>Precisamos da sua localização para encontrar endereços próximos e facilitar o cadastro de endereços.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Precisamos da sua localização para encontrar endereços próximos e facilitar o cadastro de endereços.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Habilite o Face ID para fazer login de forma rápida e segura.</string>
 </dict>
 </plist>

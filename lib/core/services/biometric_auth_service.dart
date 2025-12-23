@@ -32,8 +32,8 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   @override
   Future<bool> isDeviceSupported() async {
     try {
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
-      return isDeviceSupported;
+    final isDeviceSupported = await _localAuth.isDeviceSupported();
+    return isDeviceSupported;
     } catch (e) {
       // Em caso de erro (ex: emulador sem biometria), retornar false
       return false;
@@ -43,8 +43,8 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   @override
   Future<bool> canCheckBiometrics() async {
     try {
-      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      return canCheckBiometrics;
+    final canCheckBiometrics = await _localAuth.canCheckBiometrics;
+    return canCheckBiometrics;
     } catch (e) {
       // Em caso de erro (ex: emulador sem biometria), retornar false
       return false;
@@ -69,7 +69,7 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   @override
   Future<bool> isBiometricsEnabled() async {
     try {
-      final storedCredentials = await _secureStorage.read(key: SecureStorageKeys.credentials);
+    final storedCredentials = await _secureStorage.read(key: SecureStorageKeys.credentials);
       final isEnabled = storedCredentials != null;
       return isEnabled;
     } catch (e) {
@@ -80,31 +80,79 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
 
   @override
   Future<List<BiometricType>> getAvailableBiometrics() async {
+    try {
     return await _localAuth.getAvailableBiometrics();
+    } catch (e) {
+      // Em caso de erro, retornar lista vazia
+      return [];
+    }
   }
 
   // Autentica com biometria e retorna as credenciais salvas
   @override
   Future<bool> authenticateWithBiometrics() async {
     try {
-      final bool didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Autentique-se para entrar',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-          useErrorDialogs: true,
+      // Verificar se há biometria disponível no dispositivo
+      final availableBiometrics = await getAvailableBiometrics();
+      final hasBiometrics = availableBiometrics.isNotEmpty;
+      
+      // Se houver biometria disponível, tentar primeiro apenas com biometria
+      // Isso força o Face ID/Touch ID no iOS e evita mostrar PIN primeiro
+      if (hasBiometrics) {
+        try {
+          final bool didAuthenticate = await _localAuth.authenticate(
+            localizedReason: 'Autentique-se para entrar',
+            options: const AuthenticationOptions(
+              stickyAuth: true,
+              biometricOnly: true, // Forçar apenas biometria quando disponível
+              useErrorDialogs: true,
+            ),
+            authMessages: const <AuthMessages>[
+              AndroidAuthMessages(
+                signInTitle: 'Autentique-se com biometria',
+                cancelButton: 'Cancelar',
+                biometricHint: '',
+                biometricNotRecognized: 'Biometria não reconhecida',
+                biometricSuccess: 'Biometria reconhecida',
+                deviceCredentialsRequiredTitle: 'Credenciais do dispositivo necessárias',
+                deviceCredentialsSetupDescription: 'Configure credenciais do dispositivo',
+              ),
+              IOSAuthMessages(
+                cancelButton: 'Cancelar',
+                goToSettingsButton: 'Ir para Configurações',
+                goToSettingsDescription: 'Por favor, configure biometria',
+                lockOut: 'Biometria bloqueada. Use senha do dispositivo.',
+              ),
+            ],
+          );
+          return didAuthenticate;
+        } catch (e) {
+          // Se falhar com biometricOnly: true, pode ser porque o usuário cancelou
+          // ou porque após várias tentativas falhas, o sistema bloqueou
+          // Neste caso, retornar false (o sistema já mostrou o erro apropriado)
+          return false;
+        }
+      } else {
+        // Se não houver biometria disponível, permitir PIN/senha como fallback
+    final bool didAuthenticate = await _localAuth.authenticate(
+      localizedReason: 'Autentique-se para entrar',
+      options: const AuthenticationOptions(
+        stickyAuth: true,
+            biometricOnly: false, // Permitir PIN/senha quando não há biometria
+        useErrorDialogs: true,
+      ),
+      authMessages: const <AuthMessages>[
+        AndroidAuthMessages(
+              signInTitle: 'Autentique-se',
+          cancelButton: 'Cancelar',
         ),
-        authMessages: const <AuthMessages>[
-          AndroidAuthMessages(
-            signInTitle: 'Adicione sua biometria para fazer login.',
-            cancelButton: 'Cancelar',
-          ),
-          IOSAuthMessages(
-            cancelButton: 'Cancelar',
-          ),
-        ],
-      );
-      return didAuthenticate;
+        IOSAuthMessages(
+          cancelButton: 'Cancelar',
+        ),
+      ],
+    );
+    return didAuthenticate;
+      }
     } catch (e) {
       // Em caso de exceção, considerar como falha
       return false;
@@ -114,6 +162,7 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
   // Salva as credenciais de forma segura
   @override
   Future<void> enableBiometrics(String email, String password, bool isArtist) async {
+    try {
     final credentials = {
       SecureStorageKeys.email: email,
       SecureStorageKeys.password: password,
@@ -124,21 +173,46 @@ class BiometricAuthServiceImpl implements IBiometricAuthService{
       key: SecureStorageKeys.credentials,
       value: json.encode(credentials),
     );
+    } catch (e) {
+      // Re-lançar exceção para que o use case possa tratar adequadamente
+      rethrow;
+    }
   }
   
   @override
   Future<Map<String, String>?> getCredentials() async {
+    try {
     final storedCredentials = await _secureStorage.read(key: SecureStorageKeys.credentials);
     if (storedCredentials != null) {
+        try {
       return Map<String, String>.from(json.decode(storedCredentials));
+        } catch (e) {
+          // Erro ao decodificar JSON - credenciais corrompidas
+          // Limpar credenciais inválidas
+          try {
+            await _secureStorage.delete(key: SecureStorageKeys.credentials);
+          } catch (_) {
+            // Ignora erro ao deletar
     }
     return null;
+        }
+      }
+      return null;
+    } catch (e) {
+      // Erro ao ler do secure storage
+      return null;
+    }
   }
 
   // Desabilita a biometria
   @override
   Future<void> disableBiometrics() async {
+    try {
     await _secureStorage.delete(key: SecureStorageKeys.credentials);
+    } catch (e) {
+      // Ignora erro ao deletar (pode não existir)
+      // Não re-lança para não quebrar o fluxo
+    }
   }
 }
 

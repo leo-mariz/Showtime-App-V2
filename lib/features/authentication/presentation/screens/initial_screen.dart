@@ -11,8 +11,20 @@ import 'package:app/features/authentication/presentation/bloc/states/auth_states
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage()
-class InitialScreen extends StatelessWidget {
+class InitialScreen extends StatefulWidget {
   const InitialScreen({super.key});
+
+  @override
+  State<InitialScreen> createState() => _InitialScreenState();
+}
+
+class _InitialScreenState extends State<InitialScreen> {
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   void _handleLoginButton(BuildContext context) {
     // Verificar se biometria está habilitada
@@ -27,6 +39,15 @@ class InitialScreen extends StatelessWidget {
     
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        if (state is InitialLoading) {
+          setState(() {
+            _isLoading = true;
+          });
+        } else if (state is AuthInitial) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         if (state is CheckBiometricsEnabledSuccess) {
           if (state.isEnabled) {
             // Biometria habilitada, tentar login com biometria
@@ -53,57 +74,56 @@ class InitialScreen extends StatelessWidget {
         }
       },
       child: PopScope(
-        canPop: false,
-        child: BasePage(
-        child: Center(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                CustomLogo(size: 140),
-                Text(
-                  "A magia da música e da arte\n tornando seus momentos\n inesquecíveis.",
-                  textAlign: TextAlign.center,
-                  style: textTheme.headlineSmall!.copyWith(color: colorScheme.onPrimaryContainer),
-                ),
-                // Botão Fazer Login
-                DSSizedBoxSpacing.vertical(40),
-                // Botão Cadastrar-se
-                CustomButton(
-                  label: 'Cadastre-se',
-                  filled: true,
-                  icon: Icons.person_add,
-                  iconColor: colorScheme.primaryContainer,
-                  textColor: colorScheme.primaryContainer,
-                  backgroundColor: colorScheme.onPrimaryContainer,
-                  onPressed: () {
-                    router.push(const RegisterRoute());
-                  },
-                ),
-                // Espaçamento entre botões
-                DSSizedBoxSpacing.vertical(16),
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isLoading = state is AuthLoading;
-                    
-                    return CustomButton(
-                      label: isLoading ? 'Verificando...' : 'Fazer Login',
+      canPop: false,
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {                    
+          return  BasePage(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomLogo(size: 140),
+                    Text(
+                      "A magia da música e da arte\n tornando seus momentos\n inesquecíveis.",
+                      textAlign: TextAlign.center,
+                      style: textTheme.headlineSmall!.copyWith(color: colorScheme.onPrimaryContainer),
+                    ),
+                    // Botão Fazer Login
+                    DSSizedBoxSpacing.vertical(40),
+                    // Botão Cadastrar-se
+                    CustomButton(
+                      key: ValueKey('initial_screen_register_button'),
+                      label: 'Cadastre-se',
+                      filled: true,
+                      icon: Icons.person_add,
+                      iconColor: colorScheme.primaryContainer,
+                      textColor: colorScheme.primaryContainer,
+                      backgroundColor: colorScheme.onPrimaryContainer,
+                      onPressed: _isLoading ? null : () {
+                        router.push(const RegisterRoute());
+                      },
+                    ),
+                    // Espaçamento entre botões
+                    DSSizedBoxSpacing.vertical(16),
+                    CustomButton(
+                      key: const ValueKey('initial_screen_login_button'),
+                      label: _isLoading ? 'Verificando...' : 'Fazer Login',
                       icon: Icons.login,
                       iconColor: colorScheme.onPrimaryContainer,
                       textColor: colorScheme.onPrimaryContainer,
                       backgroundColor: colorScheme.primaryContainer,
                       filled: true,
-                      onPressed: isLoading ? null : () => _handleLoginButton(context),
-                    );
-                  },
+                      onPressed: _isLoading ? null : () => _handleLoginButton(context),
+                    ),
+                  ]),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
-      ),
       ),
     );
   }

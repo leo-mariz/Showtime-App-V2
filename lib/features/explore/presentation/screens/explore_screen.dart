@@ -1,9 +1,11 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
+import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
@@ -23,8 +25,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   // TODO: Substituir por dados reais do Bloc
-  String _currentAddress = 'Residencia Sao Paulo';
+  AddressInfoEntity? _selectedAddress;
   DateTime _selectedDate = DateTime.now();
+
+  String get _currentAddressDisplay {
+    if (_selectedAddress == null) {
+      return 'Selecione um endereço';
+    }
+    return _selectedAddress!.title;
+  }
   
   @override
   void dispose() {
@@ -47,7 +56,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Flexible(
                 flex: 6,
                 child: AddressSelector(
-                  currentAddress: _currentAddress,
+                  currentAddress: _currentAddressDisplay,
                   onAddressTap: _onAddressSelected,
                 ),
               ),
@@ -117,9 +126,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  void _onAddressSelected() {
-    // TODO: Abrir bottomsheet/modal com lista de endereços
-    print('📍 Seletor de endereço clicado');
+  void _onAddressSelected() async {
+    final selectedAddress = await AddressesModal.show(
+      context: context,
+      selectedAddress: _selectedAddress,
+    );
+
+    if (selectedAddress != null) {
+      setState(() {
+        _selectedAddress = selectedAddress;
+      });
+    }
   }
 
   void _onDateSelected() async {
@@ -162,7 +179,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final router = AutoRouter.of(context);
     router.push(RequestRoute(
       selectedDate: _selectedDate,
-      selectedAddress: _currentAddress,
+      selectedAddress: _currentAddressDisplay,
       artist: ArtistEntity(
         uid: 'artist_$index',
         artistName: 'Artista ${index + 1}',

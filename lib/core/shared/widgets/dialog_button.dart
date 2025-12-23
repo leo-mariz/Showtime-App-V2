@@ -15,6 +15,7 @@ class DialogButton extends StatelessWidget {
   final DialogButtonType type;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final Color? textColor;
   final Color? borderColor;
   final double? fontSize;
   final FontWeight? fontWeight;
@@ -31,6 +32,7 @@ class DialogButton extends StatelessWidget {
     this.type = DialogButtonType.primary,
     this.backgroundColor,
     this.foregroundColor,
+    this.textColor,
     this.borderColor,
     this.fontSize,
     this.fontWeight,
@@ -48,6 +50,7 @@ class DialogButton extends StatelessWidget {
     this.onPressed,
     this.backgroundColor,
     this.foregroundColor,
+    this.textColor,
     this.fontSize,
     this.fontWeight,
     this.borderRadius,
@@ -65,6 +68,7 @@ class DialogButton extends StatelessWidget {
     this.onPressed,
     this.backgroundColor,
     this.foregroundColor,
+    this.textColor,
     this.borderColor,
     this.fontSize,
     this.fontWeight,
@@ -81,6 +85,7 @@ class DialogButton extends StatelessWidget {
     required this.text,
     this.onPressed,
     this.foregroundColor,
+    this.textColor,
     this.fontSize,
     this.fontWeight,
     this.padding,
@@ -113,6 +118,7 @@ class DialogButton extends StatelessWidget {
 
     switch (type) {
       case DialogButtonType.primary:
+        final textColorToUse = textColor ?? colorScheme.primaryContainer;
         return ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
@@ -125,14 +131,16 @@ class DialogButton extends StatelessWidget {
             ),
             padding: padding ?? EdgeInsets.symmetric(
               vertical: DSSize.height(12),
+              horizontal: DSSize.width(12),
             ),
             elevation: 0,
             shadowColor: Colors.transparent,
           ),
-          child: _buildContent(theme),
+          child: _buildContent(theme, textColorToUse),
         );
 
       case DialogButtonType.secondary:
+        final textColorToUse = textColor ?? colorScheme.onPrimary;
         return ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
@@ -151,10 +159,11 @@ class DialogButton extends StatelessWidget {
               vertical: DSSize.height(12),
             ),
           ),
-          child: _buildContent(theme),
+          child: _buildContent(theme, textColorToUse),
         );
 
       case DialogButtonType.text:
+        final textColorToUse = textColor ?? colorScheme.onPrimary;
         return TextButton(
           onPressed: isLoading ? null : onPressed,
           style: TextButton.styleFrom(
@@ -164,12 +173,12 @@ class DialogButton extends StatelessWidget {
               vertical: DSSize.height(8),
             ),
           ),
-          child: _buildContent(theme),
+          child: _buildContent(theme, textColorToUse),
         );
     }
   }
 
-  Widget _buildContent(ThemeData theme) {
+  Widget _buildContent(ThemeData theme, Color? textColor) {
     if (isLoading) {
       return SizedBox(
         height: DSSize.height(20),
@@ -188,6 +197,7 @@ class DialogButton extends StatelessWidget {
       style: theme.textTheme.bodyMedium?.copyWith(
         fontSize: fontSize ?? DSSize.width(14),
         fontWeight: fontWeight ?? FontWeight.w600,
+        color: textColor ?? theme.colorScheme.primaryContainer,
       ),
     );
 

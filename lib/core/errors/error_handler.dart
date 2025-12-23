@@ -1,5 +1,6 @@
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Utilitário centralizado para conversão de exceções para failures
@@ -113,6 +114,28 @@ class ErrorHandler {
     };
 
     return AuthFailure(message, originalError: e);
+  }
+
+  /// Extrai status code de FirebaseException quando disponível
+  /// 
+  /// Mapeia códigos de erro do Firestore para códigos HTTP equivalentes
+  /// para facilitar tratamento de erros nos datasources
+  static int? getStatusCode(FirebaseException e) {
+    return switch (e.code) {
+      'permission-denied' => 403,
+      'not-found' => 404,
+      'already-exists' => 409,
+      'unavailable' => 503,
+      'deadline-exceeded' => 504,
+      'resource-exhausted' => 429,
+      'failed-precondition' => 412,
+      'aborted' => 409,
+      'out-of-range' => 400,
+      'unimplemented' => 501,
+      'internal' => 500,
+      'unauthenticated' => 401,
+      _ => null,
+    };
   }
 }
 

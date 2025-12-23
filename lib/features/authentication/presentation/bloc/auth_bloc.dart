@@ -70,7 +70,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     RegisterUserEmailAndPasswordEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(RegisterLoading());
     
     final result = await registerEmailPasswordUseCase.call(event.user);
     
@@ -97,11 +97,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LoginUserEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(LoginLoading());
     
     final result = await loginUseCase.call(event.user);
     
-    // Extrair failure ou sucesso usando fold
+    // Extrair failure ou sucesso
     final failure = result.fold(
       (l) => l,
       (r) => null,
@@ -116,12 +116,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Fazer logout imediato para não deixar sessão aberta
         await logoutUseCase.call();
         emit(AuthProfileMismatch(error: failure.message));
-        emit(AuthInitial());
-        return;
-      }
-      
-      // Outros tipos de erro
-      if (failure is domain.NetworkFailure) {
+      } else if (failure is domain.NetworkFailure) {
         emit(AuthConnectionFailure(message: failure.message));
       } else if (failure is domain.IncompleteDataFailure) {
         emit(AuthDataIncomplete(message: failure.message));
@@ -132,7 +127,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } else {
       // Login bem-sucedido
       emit(LoginSuccess(user: event.user));
-      // Verificar se deve mostrar prompt de biometria após login bem-sucedido
       await _checkAndShowBiometricsPrompt(event.user, emit);
       emit(AuthInitial());
     }
@@ -142,6 +136,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     UserEntity user,
     Emitter<AuthState> emit,
   ) async {
+    emit(LoginLoading());
     final result = await checkShouldShowBiometricsPromptUseCase.call();
     
     result.fold(
@@ -165,7 +160,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     RegisterUserOnboardingEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(RegisterOnboardingLoading());
     
     final result = await registerOnboardingUseCase.call(event.register);
     
@@ -204,7 +199,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckUserLoggedInEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(CheckUserLoggedInLoading());
     
     final result = await checkUserLoggedInUseCase.call();
     
@@ -228,7 +223,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     EnableBiometricsEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(EnableBiometricsLoading());
     
     final result = await enableBiometricsUseCase.call(event.user);
     
@@ -263,28 +258,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LoginWithBiometricsEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(LoginLoading());
     
     try {
-      final result = await loginWithBiometricsUseCase.call();
-      
-      result.fold(
-        (failure) {
+    final result = await loginWithBiometricsUseCase.call();
+    
+    result.fold(
+      (failure) {
           // Qualquer falha no fluxo de biometria deve redirecionar para LoginScreen
-          // Mensagem user-friendly já vem do failure, com fallback
-          final message = failure is domain.AuthFailure 
-              ? failure.message 
-              : 'Erro ao autenticar com biometria. Por favor, faça login com email e senha.';
-          
-          emit(BiometricFailure(message));
-          emit(AuthInitial());
-        },
-        (isArtist) {
+        // Mensagem user-friendly já vem do failure, com fallback
+        final message = failure is domain.AuthFailure 
+            ? failure.message 
+            : 'Erro ao autenticar com biometria. Por favor, faça login com email e senha.';
+        
+        emit(BiometricFailure(message));
+        emit(AuthInitial());
+      },
+      (isArtist) {
           // APENAS se tudo der certo, emitir sucesso
-          emit(LoginWithBiometricsSuccess(isArtist: isArtist));
-          emit(AuthInitial());
-        },
-      );
+        emit(LoginWithBiometricsSuccess(isArtist: isArtist));
+        emit(AuthInitial());
+      },
+    );
     } catch (e) {
       // Em caso de exceção inesperada, também redirecionar para LoginScreen
       emit(BiometricFailure('Erro ao autenticar com biometria. Por favor, faça login com email e senha.'));
@@ -296,7 +291,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     DisableBiometricsEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(LogoutLoading());
     
     final result = await disableBiometricsUseCase.call();
     
@@ -317,7 +312,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     UserLogoutEvent event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(LogoutLoading());
     
     final result = await logoutUseCase.call(
       resetBiometrics: event.resetBiometrics ?? false,
@@ -392,6 +387,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckShouldShowBiometricsPromptEvent event,
     Emitter<AuthState> emit,
   ) async {
+    emit(InitialLoading());
     final result = await checkShouldShowBiometricsPromptUseCase.call();
     
     result.fold(
@@ -420,8 +416,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckBiometricsEnabledEvent event,
     Emitter<AuthState> emit,
   ) async {
+    emit(InitialLoading());
+
     final result = await checkBiometricsEnabledUseCase.call();
-    
     result.fold(
       (failure) {
         // Em caso de erro, considerar como não habilitada

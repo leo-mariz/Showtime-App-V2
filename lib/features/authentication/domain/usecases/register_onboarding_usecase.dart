@@ -39,11 +39,11 @@ class RegisterOnboardingUseCase {
       
       // Se não encontrar no Firebase Auth, tenta buscar do cache
       if (uid == null || uid.isEmpty) {
-        final uidResult = await repository.getUserUid();
+      final uidResult = await repository.getUserUid();
         uid = uidResult.fold(
           (failure) => null,
           (cachedUid) => cachedUid,
-        );
+      );
       }
 
       if (uid == null || uid.isEmpty) {

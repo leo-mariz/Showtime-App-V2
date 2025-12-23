@@ -1,3 +1,4 @@
+import 'package:app/core/domain/user/user_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 part 'address_info_entity.mapper.dart';
@@ -40,12 +41,21 @@ class AddressInfoEntity with AddressInfoEntityMappable {
 }
 
 extension AddressInfoEntityReference on AddressInfoEntity {
-  static DocumentReference firebaseUidReference(FirebaseFirestore firestore, String uid) {
-    return firestore.collection('Addresses').doc(uid);
+  /// Referência à subcoleção de endereços do usuário
+  /// users/{uid}/Addresses
+  static CollectionReference firebaseCollectionReference(FirebaseFirestore firestore, String uid) {
+    final usersDocRef = UserEntityReference.firebaseUidReference(firestore, uid);
+    return usersDocRef.collection('Addresses');
   }
 
-  static CollectionReference firebaseCollectionReference(FirebaseFirestore firestore) {
-    return firestore.collection('Addresses');
+  /// Referência a um documento específico na subcoleção de endereços
+  /// users/{uid}/Addresses/{addressId}
+  static DocumentReference firebaseDocumentReference(
+    FirebaseFirestore firestore,
+    String uid,
+    String addressId,
+  ) {
+    return firebaseCollectionReference(firestore, uid).doc(addressId);
   }
 
   static String cachedKey() {

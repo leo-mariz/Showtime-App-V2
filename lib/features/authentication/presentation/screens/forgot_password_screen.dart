@@ -57,36 +57,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         builder: (context, state) {
           final isLoading = state is ForgotPasswordLoading;
 
-          return AuthBasePage(
-            title: 'ESQUECI MINHA SENHA',
-            subtitle: 'Redefina sua senha',
-            children: [
+    return AuthBasePage(
+      title: 'ESQUECI MINHA SENHA',
+      subtitle: 'Redefina sua senha',
+      children: [
               Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Campo de Email
-                    CustomTextField(
-                      label: 'Email',
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+        // Campo de Email
+        CustomTextField(
+          label: 'Email',
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
                       validator: Validators.validateEmail,
                       enabled: !isLoading,
                       onChanged: (value) {},
-                    ),
+        ),
 
-                    DSSizedBoxSpacing.vertical(16),
+        DSSizedBoxSpacing.vertical(16),
 
-                    Text(
-                      'Um link para redefinir sua senha será enviado para seu endereço de email',
+        Text(
+          'Um link para redefinir sua senha será enviado para seu endereço de email',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             color: Theme.of(context).colorScheme.onPrimary,
                           ),
-                    ),
-
-                    DSSizedBoxSpacing.vertical(24),
-
+        ),
+        
+        DSSizedBoxSpacing.vertical(24),
+        
                     // Botão de Enviar
                     IgnorePointer(
                       ignoring: isLoading,
@@ -96,9 +96,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           label: isLoading
                               ? 'Enviando...'
                               : 'Enviar link de redefinição',
-                          filled: true,
+          filled: true,
                           onPressed: isLoading ? null : _handleForgotPassword,
-                        ),
+        ),        
                       ),
                     ),
                   ],

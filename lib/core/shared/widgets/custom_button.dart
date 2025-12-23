@@ -22,6 +22,7 @@ class CustomButton extends StatelessWidget {
   final bool iconOnRight;
   final bool iconOnLeft;
   final CustomButtonType? buttonType;
+  final bool isLoading;
 
   const CustomButton({
     super.key,
@@ -37,6 +38,7 @@ class CustomButton extends StatelessWidget {
     this.iconOnRight = false,
     this.iconOnLeft = false,
     this.buttonType,
+    this.isLoading = false,
   });
 
   @override
@@ -46,7 +48,7 @@ class CustomButton extends StatelessWidget {
     final double buttonWidth = width > 0 ? DSSize.width(width) : double.infinity;
     final double buttonHeight = height > 0 ? DSSize.height(height) : DSSize.height(48);
     
-    // Aplica estilos baseado no tipo de botão, se especificado
+    // Aplica estilos baseado no tipo de botão
     final bool effectiveFilled;
     final Color effectiveBackgroundColor;
     final Color effectiveTextColor;
@@ -70,36 +72,50 @@ class CustomButton extends StatelessWidget {
           break;
       }
     } else {
-      // Mantém comportamento padrão se tipo não especificado
       effectiveFilled = filled;
       effectiveBackgroundColor = backgroundColor ?? colorScheme.onPrimaryContainer;
       effectiveTextColor = textColor ?? colorScheme.primaryContainer;
     }
     
-    // Determina a cor do ícone baseado no tipo de botão
     final effectiveIconColor = iconColor ?? effectiveTextColor;
     
-    // Widget de conteúdo (texto + ícone opcional)
-    Widget buildContent(Color textColorToUse) {
-      if (icon == null) {
-        // Sem ícone: apenas texto centralizado
-        return Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontSize: calculateFontSize(16),
-            fontWeight: FontWeight.bold,
-            color: textColorToUse,
-          ),
-        );
-      } else {
-        // Com ícone: usa Stack para posicionar ícone e texto
+    // Construir o conteúdo do botão
+    Widget buildButtonContent() {
+      // Widget de texto
+      final textWidget = Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontSize: calculateFontSize(16),
+          fontWeight: FontWeight.bold,
+          color: effectiveTextColor,
+        ) ?? TextStyle(
+          fontSize: calculateFontSize(16),
+          fontWeight: FontWeight.bold,
+          color: effectiveTextColor,
+        ),
+      );
+      
+      // Indicador de loading
+      final loadingIndicator = SizedBox(
+        width: DSSize.width(16),
+        height: DSSize.width(16),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(effectiveTextColor),
+        ),
+      );
+      
+      // Se tem ícone, usar Stack
+      if (icon != null) {
         return Stack(
           children: [
-            if (iconOnLeft) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.only(left: DSSize.width(8)),
+            // Ícone à esquerda
+            if (iconOnLeft)
+              Positioned(
+                left: DSSize.width(8),
+                top: 0,
+                bottom: 0,
+                child: Center(
                   child: Icon(
                     icon,
                     color: effectiveIconColor,
@@ -107,25 +123,13 @@ class CustomButton extends StatelessWidget {
                   ),
                 ),
               ),
-              DSSizedBoxSpacing.horizontal(100),
-            ],
+            // Ícone à direita
             if (iconOnRight)
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: EdgeInsets.only(right: DSSize.width(8)),
-                  child: Icon(
-                    icon,
-                    color: effectiveIconColor,
-                    size: DSSize.width(20),
-                  ),
-                ),
-              )
-            else
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.only(left: DSSize.width(8)),
+              Positioned(
+                right: DSSize.width(8),
+                top: 0,
+                bottom: 0,
+                child: Center(
                   child: Icon(
                     icon,
                     color: effectiveIconColor,
@@ -133,22 +137,91 @@ class CustomButton extends StatelessWidget {
                   ),
                 ),
               ),
-            Align(
-              alignment: Alignment.center,
-              child: Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontSize: calculateFontSize(16),
-                  fontWeight: FontWeight.bold,
-                  color: textColorToUse,
+            // Ícone padrão (esquerda se não especificado)
+            if (!iconOnLeft && !iconOnRight)
+              Positioned(
+                left: DSSize.width(8),
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Icon(
+                    icon,
+                    color: effectiveIconColor,
+                    size: DSSize.width(20),
+                  ),
                 ),
               ),
+            // Conteúdo central (texto + loading)
+            Center(
+              child: isLoading
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        textWidget,
+                        DSSizedBoxSpacing.horizontal(8),
+                        loadingIndicator,
+                      ],
+                    )
+                  : textWidget,
             ),
           ],
         );
+      } else {
+        // Sem ícone: apenas texto + loading
+        return isLoading
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  textWidget,
+                  DSSizedBoxSpacing.horizontal(8),
+                  loadingIndicator,
+                ],
+              )
+            : textWidget;
       }
     }
     
+    // Criar o conteúdo uma vez
+    final buttonContent = buildButtonContent();
+    
+    // Usar GestureDetector quando desabilitado para garantir que o conteúdo seja renderizado
+    final isDisabled = isLoading || onPressed == null;
+    
+    if (isDisabled) {
+      // Quando desabilitado, usar Container com GestureDetector para garantir renderização
+      return SizedBox(
+        width: buttonWidth,
+        height: buttonHeight,
+        child: Container(
+          decoration: BoxDecoration(
+            color: effectiveFilled 
+                ? effectiveBackgroundColor.withOpacity(0.6) 
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(DSSize.width(30)),
+            border: effectiveFilled 
+                ? null 
+                : Border.all(
+                    color: effectiveBackgroundColor.withOpacity(0.6),
+                    width: 1,
+                  ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: null, // Sempre null quando desabilitado
+              borderRadius: BorderRadius.circular(DSSize.width(30)),
+              child: Center(
+                child: buttonContent,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Quando habilitado, usar ElevatedButton ou OutlinedButton normalmente
     return SizedBox(
       width: buttonWidth,
       height: buttonHeight,
@@ -162,7 +235,7 @@ class CustomButton extends StatelessWidget {
                 ),
               ),
               onPressed: onPressed,
-              child: buildContent(effectiveTextColor),
+              child: buttonContent,
             )
           : OutlinedButton(
               style: OutlinedButton.styleFrom(
@@ -173,10 +246,8 @@ class CustomButton extends StatelessWidget {
                 side: BorderSide(color: effectiveBackgroundColor, width: 1),
               ),
               onPressed: onPressed,
-              child: buildContent(effectiveTextColor),
+              child: buttonContent,
             ),
     );
   }
 }
-
-

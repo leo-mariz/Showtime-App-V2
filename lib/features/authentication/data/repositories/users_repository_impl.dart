@@ -5,8 +5,8 @@ import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
 import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/authentication/data/datasources/users_local_datasource.dart';
-import 'package:app/features/authentication/data/datasources/users_remote_datasource.dart';
+import 'package:app/features/authentication/data/datasources/auth_local_datasource.dart';
+import 'package:app/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:app/features/authentication/domain/repositories/users_repository.dart';
 import 'package:dartz/dartz.dart';
 

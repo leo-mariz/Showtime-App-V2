@@ -21,15 +21,16 @@ class AddAddressUseCase {
   Future<Either<Failure, String>> call(String uid, AddressInfoEntity address) async {
     try {
       // Validar UID
+      print('uid: $uid');
       if (uid.isEmpty) {
         return const Left(ValidationFailure('UID do usuário não pode ser vazio'));
       }
-
+      print('address: $address');
       // Validar dados do endereço
       if (address.zipCode.isEmpty) {
         return const Left(ValidationFailure('CEP não pode ser vazio'));
       }
-
+      print('repository: $repository');
       // Adicionar endereço
       final result = await repository.addAddress(uid, address);
 

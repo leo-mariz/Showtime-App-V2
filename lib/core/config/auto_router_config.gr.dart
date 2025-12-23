@@ -13,10 +13,12 @@ import 'package:app/core/domain/addresses/address_info_entity.dart' as _i35;
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart'
     as _i37;
 import 'package:app/core/domain/event/event_entity.dart' as _i36;
+import 'package:app/features/addresses/presentation/screens/address_form_page.dart'
+    deferred as _i1;
+import 'package:app/features/addresses/presentation/screens/addresses_list_page.dart'
+    deferred as _i2;
 import 'package:app/features/app_navigation/presentation/pages/navigation_page.dart'
     deferred as _i23;
-import 'package:app/features/explore/presentation/screens/artist_profile_screen.dart'
-    deferred as _i5;
 import 'package:app/features/authentication/presentation/screens/check_email_verification_page.dart'
     deferred as _i15;
 import 'package:app/features/authentication/presentation/screens/forgot_password_screen.dart'
@@ -37,6 +39,8 @@ import 'package:app/features/contracts/presentation/screens/clients/event_reques
     deferred as _i16;
 import 'package:app/features/contracts/presentation/screens/clients/event_request/request_screen.dart'
     deferred as _i30;
+import 'package:app/features/explore/presentation/screens/artist_profile_screen.dart'
+    deferred as _i5;
 import 'package:app/features/profile/artists/presentation/screens/artist_area/artist_area_page.dart'
     deferred as _i3;
 import 'package:app/features/profile/artists/presentation/screens/artist_area/availability/availability_screen.dart'
@@ -55,10 +59,6 @@ import 'package:app/features/profile/artists/presentation/screens/register_data/
     deferred as _i14;
 import 'package:app/features/profile/artists/presentation/screens/register_data/register_data_area_screen.dart'
     deferred as _i28;
-import 'package:app/features/addresses/presentation/screens/address_form_page.dart'
-    deferred as _i1;
-import 'package:app/features/addresses/presentation/screens/addresses_list_page.dart'
-    deferred as _i2;
 import 'package:app/features/profile/shared/presentation/screens/login_security/delete_account/delete_account_page.dart'
     deferred as _i13;
 import 'package:app/features/profile/shared/presentation/screens/login_security/login_history/login_history_page.dart'

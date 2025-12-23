@@ -8,74 +8,70 @@ abstract class AddressesEvent extends Equatable {
 
 // ==================== GET ADDRESSES EVENTS ====================
 
-class GetAddressesEvent extends AddressesEvent {
-  final String uid;
+class GetAddressesEvent extends AddressesEvent {}
 
-  GetAddressesEvent({required this.uid});
+// ==================== GET ADDRESS EVENT ====================
+
+class GetAddressEvent extends AddressesEvent {
+  final String addressId;
+
+  GetAddressEvent({required this.addressId});
 
   @override
-  List<Object?> get props => [uid];
+  List<Object?> get props => [addressId];
 }
 
 // ==================== ADD ADDRESS EVENTS ====================
 
 class AddAddressEvent extends AddressesEvent {
-  final String uid;
   final AddressInfoEntity address;
 
   AddAddressEvent({
-    required this.uid,
     required this.address,
   });
 
   @override
-  List<Object?> get props => [uid, address];
+  List<Object?> get props => [address];
 }
 
 // ==================== UPDATE ADDRESS EVENTS ====================
 
 class UpdateAddressEvent extends AddressesEvent {
-  final String uid;
   final String addressId;
   final AddressInfoEntity address;
 
   UpdateAddressEvent({
-    required this.uid,
     required this.addressId,
     required this.address,
   });
 
   @override
-  List<Object?> get props => [uid, addressId, address];
+  List<Object?> get props => [addressId, address];
 }
 
 // ==================== DELETE ADDRESS EVENTS ====================
 
 class DeleteAddressEvent extends AddressesEvent {
-  final String uid;
   final String addressId;
 
   DeleteAddressEvent({
-    required this.uid,
     required this.addressId,
   });
 
   @override
-  List<Object?> get props => [uid, addressId];
+  List<Object?> get props => [addressId];
 }
 
 // ==================== SET PRIMARY ADDRESS EVENTS ====================
 
 class SetPrimaryAddressEvent extends AddressesEvent {
-  final String uid;
   final String addressId;
 
   SetPrimaryAddressEvent({
-    required this.uid,
     required this.addressId,
   });
 
   @override
-  List<Object?> get props => [uid, addressId];
+  List<Object?> get props => [addressId];
 }
 

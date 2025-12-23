@@ -21,6 +21,12 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
   @override
   final String id = 'AddressInfoEntity';
 
+  static String? _$uid(AddressInfoEntity v) => v.uid;
+  static const Field<AddressInfoEntity, String> _f$uid = Field(
+    'uid',
+    _$uid,
+    opt: true,
+  );
   static String _$title(AddressInfoEntity v) => v.title;
   static const Field<AddressInfoEntity, String> _f$title = Field(
     'title',
@@ -102,6 +108,7 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
 
   @override
   final MappableFields<AddressInfoEntity> fields = const {
+    #uid: _f$uid,
     #title: _f$title,
     #zipCode: _f$zipCode,
     #street: _f$street,
@@ -118,6 +125,7 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
 
   static AddressInfoEntity _instantiate(DecodingData data) {
     return AddressInfoEntity(
+      uid: data.dec(_f$uid),
       title: data.dec(_f$title),
       zipCode: data.dec(_f$zipCode),
       street: data.dec(_f$street),
@@ -205,6 +213,7 @@ abstract class AddressInfoEntityCopyWith<
 >
     implements ClassCopyWith<$R, $In, $Out> {
   $R call({
+    String? uid,
     String? title,
     String? zipCode,
     String? street,
@@ -233,6 +242,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
       AddressInfoEntityMapper.ensureInitialized();
   @override
   $R call({
+    Object? uid = $none,
     String? title,
     String? zipCode,
     Object? street = $none,
@@ -247,6 +257,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
     Object? complement = $none,
   }) => $apply(
     FieldCopyWithData({
+      if (uid != $none) #uid: uid,
       if (title != null) #title: title,
       if (zipCode != null) #zipCode: zipCode,
       if (street != $none) #street: street,
@@ -263,6 +274,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
   );
   @override
   AddressInfoEntity $make(CopyWithData data) => AddressInfoEntity(
+    uid: data.get(#uid, or: $value.uid),
     title: data.get(#title, or: $value.title),
     zipCode: data.get(#zipCode, or: $value.zipCode),
     street: data.get(#street, or: $value.street),

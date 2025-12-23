@@ -16,7 +16,9 @@ class GetAddressesLoading extends AddressesState {}
 class GetAddressesSuccess extends AddressesState {
   final List<AddressInfoEntity> addresses;
 
-  GetAddressesSuccess({required this.addresses});
+  GetAddressesSuccess({
+    required this.addresses,
+  });
 
   @override
   List<Object?> get props => [addresses];
@@ -26,6 +28,28 @@ class GetAddressesFailure extends AddressesState {
   final String error;
 
   GetAddressesFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== GET ADDRESS STATES ====================
+
+class GetAddressLoading extends AddressesState {}
+
+class GetAddressSuccess extends AddressesState {
+  final AddressInfoEntity address;
+
+  GetAddressSuccess({required this.address});
+
+  @override
+  List<Object?> get props => [address];
+}
+
+class GetAddressFailure extends AddressesState {
+  final String error;
+
+  GetAddressFailure({required this.error});
 
   @override
   List<Object?> get props => [error];

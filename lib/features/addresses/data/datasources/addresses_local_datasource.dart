@@ -9,16 +9,14 @@ import 'package:app/core/services/auto_cache_service.dart';
 /// - Lança [CacheException] em caso de erro
 /// - NÃO faz validações de negócio
 abstract class IAddressesLocalDataSource {
-  /// Retorna lista de endereços em cache, ou lista vazia se não existir
-  /// Lança [CacheException] em caso de erro
   Future<List<AddressInfoEntity>> getCachedAddresses();
-  
-  /// Salva lista de endereços em cache
-  /// Lança [CacheException] em caso de erro
+
   Future<void> cacheAddresses(List<AddressInfoEntity> addresses);
   
-  /// Limpa cache de endereços
-  /// Lança [CacheException] em caso de erro
+  Future<AddressInfoEntity> getSingleCachedAddress(String addressId);
+
+  Future<void> cacheSingleAddress(AddressInfoEntity address);
+  
   Future<void> clearAddressesCache();
 }
 
@@ -36,20 +34,18 @@ class AddressesLocalDataSourceImpl implements IAddressesLocalDataSource {
       );
       
       // Verificar se dados não são vazios
-      if (cachedData.isEmpty || !cachedData.containsKey('addresses')) {
+      if (cachedData.isEmpty) {
         return [];
       }
 
-      final addressesList = cachedData['addresses'] as List<dynamic>?;
-      if (addressesList == null || addressesList.isEmpty) {
-        return [];
+      List<AddressInfoEntity> addressesList = [];
+      for (var entry in cachedData.entries) {
+        final addressMap = entry.value as Map<String, dynamic>;
+        final addressEntity = AddressInfoEntityMapper.fromMap(addressMap);
+        final addressWithId = addressEntity.copyWith(uid: entry.key);
+        addressesList.add(addressWithId);
       }
-
-      return addressesList
-          .map((addressMap) => AddressInfoEntityMapper.fromMap(
-                Map<String, dynamic>.from(addressMap as Map),
-              ))
-          .toList();
+      return addressesList;
     } catch (e, stackTrace) {
       throw CacheException(
         'Erro ao obter endereços do cache',
@@ -63,12 +59,21 @@ class AddressesLocalDataSourceImpl implements IAddressesLocalDataSource {
   Future<void> cacheAddresses(List<AddressInfoEntity> addresses) async {
     try {
       final cacheKey = AddressInfoEntityReference.cachedKey();
-      final addressesMap = {
-        'addresses': addresses.map((address) => address.toMap()).toList(),
-      };
+
+      final addressesMap = <String, dynamic>{};
       
+      for (var address in addresses) {
+        if (address.uid == null || address.uid!.isEmpty) {
+          throw CacheException(
+            'Endereço sem UID não pode ser salvo no cache. UID: ${address.uid}',
+          );
+        }
+        addressesMap[address.uid!] = address.toMap();
+      }
+
       await autoCacheService.cacheDataString(cacheKey, addressesMap);
     } catch (e, stackTrace) {
+      if (e is CacheException) rethrow;
       throw CacheException(
         'Erro ao salvar endereços no cache',
         originalError: e,
@@ -76,6 +81,55 @@ class AddressesLocalDataSourceImpl implements IAddressesLocalDataSource {
       );
     }
   }
+
+  @override
+  Future<AddressInfoEntity> getSingleCachedAddress(String addressId) async {
+    try {
+      final cachedData = await autoCacheService.getCachedDataString(
+        AddressInfoEntityReference.cachedKey(),
+      );
+      
+      if (cachedData.isEmpty || !cachedData.containsKey(addressId)) {
+        throw CacheException('Endereço não encontrado no cache: $addressId');
+      }
+      
+      final addressMap = cachedData[addressId] as Map<String, dynamic>;
+      final addressEntity = AddressInfoEntityMapper.fromMap(addressMap);
+      final addressWithId = addressEntity.copyWith(uid: addressId);
+      return addressWithId;
+    } catch (e, stackTrace) {
+      if (e is CacheException) rethrow;
+      throw CacheException(
+        'Erro ao obter endereço do cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> cacheSingleAddress(AddressInfoEntity address) async {
+    try {
+      if (address.uid == null || address.uid!.isEmpty) {
+        throw CacheException('Endereço deve ter um UID válido para ser salvo no cache');
+      }
+      
+      final cacheKey = AddressInfoEntityReference.cachedKey();
+      // Busca cache existente para não sobrescrever outros endereços
+      final existingCache = await autoCacheService.getCachedDataString(cacheKey);
+      final addressMap = address.toMap();
+      existingCache[address.uid!] = addressMap;
+      await autoCacheService.cacheDataString(cacheKey, existingCache);
+    } catch (e, stackTrace) {
+      if (e is CacheException) rethrow;
+      throw CacheException(
+        'Erro ao salvar endereço no cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+  
 
   @override
   Future<void> clearAddressesCache() async {

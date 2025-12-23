@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/services/cep_service.dart';
 import 'package:app/core/config/setup_locator.dart';
-import 'package:flutter/material.dart';
+import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
+import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
+import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage(deferredLoading: true)
 class AddressFormPage extends StatefulWidget {
@@ -32,7 +37,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
   
   AddressInfoEntity? existingAddress;
-  bool isLoading = false;
+  bool isLoadingCep = false;
+  String? _currentUserId;
   final ICepService _cepService = getIt<ICepService>();
   Timer? _debounceTimer;
   String? _lastSearchedCep; // Armazena o último CEP buscado com sucesso
@@ -40,24 +46,37 @@ class _AddressFormPageState extends State<AddressFormPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.existingAddress != null) {
-      existingAddress = widget.existingAddress;
-      titleController.text = existingAddress!.title;
-      zipController.text = existingAddress!.zipCode;
-      streetController.text = existingAddress!.street ?? '';
-      numberController.text = existingAddress!.number ?? '';
-      complementController?.text = existingAddress!.complement ?? '';
-      districtController.text = existingAddress!.district ?? '';
-      cityController.text = existingAddress!.city ?? '';
-      stateController.text = existingAddress!.state ?? '';
-      latitude = existingAddress!.latitude ?? 0.0;
-      longitude = existingAddress!.longitude ?? 0.0;
-      // Marca o CEP existente como já buscado para evitar busca automática
-      _lastSearchedCep = existingAddress!.zipCode.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Se recebeu existingAddress com uid, busca o endereço via BLoC
+    if (widget.existingAddress?.uid != null) {
+      context.read<AddressesBloc>().add(
+        GetAddressEvent(
+          addressId: widget.existingAddress!.uid!,
+        ),
+      );
+    } else if (widget.existingAddress != null) {
+      // Se recebeu existingAddress sem uid, usa diretamente (caso legado)
+      _populateForm(widget.existingAddress!);
     }
     
     // Listener para busca automática quando CEP tiver 8 dígitos
     zipController.addListener(_onCepChanged);
+  }
+
+  void _populateForm(AddressInfoEntity address) {
+    existingAddress = address;
+    titleController.text = address.title;
+    zipController.text = address.zipCode;
+    streetController.text = address.street ?? '';
+    numberController.text = address.number ?? '';
+    complementController?.text = address.complement ?? '';
+    districtController.text = address.district ?? '';
+    cityController.text = address.city ?? '';
+    stateController.text = address.state ?? '';
+    latitude = address.latitude ?? 0.0;
+    longitude = address.longitude ?? 0.0;
+    // Marca o CEP existente como já buscado para evitar busca automática
+    _lastSearchedCep = address.zipCode.replaceAll(RegExp(r'[^\d]'), '');
   }
 
   @override
@@ -69,7 +88,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
   void _onCepChanged() {
     // Se estiver carregando, não faz nada
-    if (isLoading) return;
+    if (isLoadingCep) return;
     
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -80,7 +99,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
       // 2. Não estiver carregando
       // 3. O CEP for diferente do último buscado (evita loop)
       if (cleanCep.length == 8 && 
-          !isLoading && 
+          !isLoadingCep && 
           cleanCep != _lastSearchedCep) {
         _locateAddressByCep();
       }
@@ -106,7 +125,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
     }
 
     setState(() {
-      isLoading = true;
+      isLoadingCep = true;
     });
 
     try {
@@ -121,7 +140,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
         cityController.text = cepInfo.city ?? '';
         stateController.text = cepInfo.state ?? '';
         zipController.text = cepInfo.cep; // CEP formatado retornado pela API
-        isLoading = false;
+        isLoadingCep = false;
         _lastSearchedCep = cleanCep; // Marca este CEP como já buscado
       });
       
@@ -129,149 +148,226 @@ class _AddressFormPageState extends State<AddressFormPage> {
       zipController.addListener(_onCepChanged);
     } catch (e) {
       setState(() {
-        isLoading = false;
+        isLoadingCep = false;
         // Em caso de erro, não marca como buscado, permitindo nova tentativa
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().replaceAll('ServerException: ', ''),
-            ),
-          ),
+        context.showError(
+          e.toString().replaceAll('ServerException: ', ''),
         );
       }
     }
   }
 
+  void _handleSave() {
+    if (titleController.text.trim().isEmpty) {
+      context.showError('Por favor, informe um título para o endereço');
+      return;
+    }
 
+    if (zipController.text.trim().isEmpty) {
+      context.showError('Por favor, informe o CEP');
+      return;
+    }
 
+    if (numberController.text.trim().isEmpty) {
+      context.showError('Por favor, informe o número');
+      return;
+    }
 
-  
-  @override
-  Widget build(BuildContext context) {
-    return BasePage(
-      showAppBar: true,
-      appBarTitle: existingAddress == null ? 'Adicionar Endereço' : 'Editar Endereço',
-      showAppBarBackButton: true,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Título',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              DSSizedBoxSpacing.vertical(8),
-              CustomTextField(
-                controller: titleController,
-                label: 'Título do endereço',
-              ),
-              DSSizedBoxSpacing.vertical(24),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Endereço',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              DSSizedBoxSpacing.vertical(16),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomTextField(
-                      controller: zipController,
-                      label: 'CEP',
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  if (isLoading) ...[
-                    DSSizedBoxSpacing.horizontal(8),
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              DSSizedBoxSpacing.vertical(8),
-              Text(
-                'Digite o CEP. Os demais campos serão preenchidos automaticamente.',
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.start,
-              ),
-              DSSizedBoxSpacing.vertical(16),
-              CustomTextField(
-                controller: streetController,
-                label: 'Rua',
-                enabled: false,
-              ),
-              DSSizedBoxSpacing.vertical(16),
-              CustomTextField(
-                controller: districtController,
-                label: 'Bairro',
-                enabled: false,
-              ),
-              DSSizedBoxSpacing.vertical(8),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: CustomTextField(
-                      controller: numberController,
-                      label: 'Número',
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  DSSizedBoxSpacing.horizontal(16),
-                  Expanded(
-                    flex: 1,
-                    child: CustomTextField(
-                      controller: complementController ?? TextEditingController(),
-                      label: 'Complemento (opcional)',
-                    ),
-                  ),
-                ],
-              ),
-              DSSizedBoxSpacing.vertical(16),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: CustomTextField(
-                      controller: cityController,
-                      label: 'Cidade',
-                      enabled: false,
-                    ),
-                  ),
-                  DSSizedBoxSpacing.horizontal(16),
-                  Expanded(
-                    flex: 1,
-                    child: CustomTextField(
-                      controller: stateController,
-                      label: 'Estado',
-                      enabled: false,
-                    ),
-                  ),
-                ],
-              ),              
-              DSSizedBoxSpacing.vertical(40),
-              CustomButton(
-                label: 'Salvar',
-                textColor: Theme.of(context).colorScheme.primaryContainer,
-                backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                onPressed: () {},
-              ),
-            ],
-          ),
+    final address = AddressInfoEntity(
+      uid: existingAddress?.uid,
+      title: titleController.text.trim(),
+      zipCode: zipController.text.trim(),
+      street: streetController.text.trim().isEmpty ? null : streetController.text.trim(),
+      number: numberController.text.trim(),
+      complement: complementController?.text.trim().isEmpty ?? true
+          ? null
+          : complementController?.text.trim(),
+      district: districtController.text.trim().isEmpty ? null : districtController.text.trim(),
+      city: cityController.text.trim().isEmpty ? null : cityController.text.trim(),
+      state: stateController.text.trim().isEmpty ? null : stateController.text.trim(),
+      latitude: latitude,
+      longitude: longitude,
+      isPrimary: existingAddress?.isPrimary ?? false,
+    );
+
+    if (existingAddress?.uid != null && existingAddress!.uid!.isNotEmpty) {
+      // Atualizar endereço existente
+      context.read<AddressesBloc>().add(
+        UpdateAddressEvent(
+          addressId: existingAddress!.uid!,
+          address: address,
         ),
       );
+    } else {
+      // Adicionar novo endereço
+      context.read<AddressesBloc>().add(
+        AddAddressEvent(
+          address: address,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AddressesBloc, AddressesState>(
+      listener: (context, state) {
+        if (state is GetAddressSuccess) {
+          _populateForm(state.address);
+        } else if (state is GetAddressFailure) {
+          context.showError(state.error);
+        } else if (state is AddAddressSuccess) {
+          context.showSuccess('Endereço adicionado com sucesso');
+          Navigator.of(context).pop();
+        } else if (state is AddAddressFailure) {
+          context.showError(state.error);
+        } else if (state is UpdateAddressSuccess) {
+          context.showSuccess('Endereço atualizado com sucesso');
+          Navigator.of(context).pop();
+        } else if (state is UpdateAddressFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BlocBuilder<AddressesBloc, AddressesState>(
+        builder: (context, state) {
+          final isLoading = state is GetAddressLoading ||
+              state is AddAddressLoading ||
+              state is UpdateAddressLoading;
+
+          return BasePage(
+            showAppBar: true,
+            appBarTitle: existingAddress == null ? 'Adicionar Endereço' : 'Editar Endereço',
+            showAppBarBackButton: true,
+            child: state is GetAddressLoading
+              ? const Center(child: CircularProgressIndicator())
+              : GestureDetector(
+                onTap: () => FocusScope.of(context).unfocus(),
+                behavior: HitTestBehavior.opaque,
+                child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Título',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                    DSSizedBoxSpacing.vertical(8),
+                    CustomTextField(
+                      controller: titleController,
+                      label: 'Título do endereço',
+                    ),
+                    DSSizedBoxSpacing.vertical(24),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Endereço',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: zipController,
+                            label: 'CEP',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        if (isLoadingCep) ...[
+                          DSSizedBoxSpacing.horizontal(8),
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    DSSizedBoxSpacing.vertical(8),
+                    Text(
+                      'Digite o CEP. Os demais campos serão preenchidos automaticamente.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.start,
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    CustomTextField(
+                      controller: streetController,
+                      label: 'Rua',
+                      enabled: false,
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    CustomTextField(
+                      controller: districtController,
+                      label: 'Bairro',
+                      enabled: false,
+                    ),
+                    DSSizedBoxSpacing.vertical(8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: CustomTextField(
+                            controller: numberController,
+                            label: 'Número',
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        DSSizedBoxSpacing.horizontal(16),
+                        Expanded(
+                          flex: 1,
+                          child: CustomTextField(
+                            controller: complementController ?? TextEditingController(),
+                            label: 'Complemento (opcional)',
+                          ),
+                        ),
+                      ],
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: CustomTextField(
+                            controller: cityController,
+                            label: 'Cidade',
+                            enabled: false,
+                          ),
+                        ),
+                        DSSizedBoxSpacing.horizontal(16),
+                        Expanded(
+                          flex: 1,
+                          child: CustomTextField(
+                            controller: stateController,
+                            label: 'Estado',
+                            enabled: false,
+                          ),
+                        ),
+                      ],
+                    ),              
+                    DSSizedBoxSpacing.vertical(40),
+                    CustomButton(
+                      label: 'Salvar',
+                      textColor: Theme.of(context).colorScheme.primaryContainer,
+                      backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                      isLoading: isLoading,
+                      onPressed: isLoading ? null : _handleSave,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

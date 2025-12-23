@@ -5,6 +5,7 @@ part 'address_info_entity.mapper.dart';
 
 @MappableClass()
 class AddressInfoEntity with AddressInfoEntityMappable {
+  String? uid;
   String title;
   @MappableField(key: 'cep')
   final String zipCode;
@@ -25,6 +26,7 @@ class AddressInfoEntity with AddressInfoEntityMappable {
 
 
   AddressInfoEntity({
+    this.uid,
     this.title = '',
     required this.zipCode,
     this.street,

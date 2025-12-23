@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -34,35 +36,37 @@ import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/services/auto_cache_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Addresses imports
+import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
+import 'package:app/features/addresses/data/datasources/addresses_remote_datasource.dart';
+import 'package:app/features/addresses/data/datasources/addresses_local_datasource.dart';
+import 'package:app/features/addresses/data/repositories/addresses_repository_impl.dart';
+import 'package:app/features/addresses/domain/usecases/get_addresses_usecase.dart';
+import 'package:app/features/addresses/domain/usecases/get_address_usecase.dart';
+import 'package:app/features/addresses/domain/usecases/add_address_usecase.dart';
+import 'package:app/features/addresses/domain/usecases/update_address_usecase.dart';
+import 'package:app/features/addresses/domain/usecases/delete_address_usecase.dart';
+import 'package:app/features/addresses/domain/usecases/set_primary_address_usecase.dart';
+
 /// Factory function para criar o AuthBloc com todas as dependências
-AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biometricService, ILocalCacheService localCacheService, FirebaseFirestore firestore) {
-
-  // 3. Criar DataSources
-  final remoteDataSource = AuthRemoteDataSourceImpl(firestore: firestore);
-  final localDataSource = AuthLocalDataSourceImpl(autoCacheService: localCacheService);
-
-  // 4. Criar Repository
-  final repository = AuthRepositoryImpl(
-    remoteDataSource: remoteDataSource,
-    localDataSource: localDataSource,
-  );
+AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biometricService, ILocalCacheService localCacheService, FirebaseFirestore firestore, IAuthRepository authRepository) {
 
   // 5. Criar UseCases
   final loginUseCase = LoginUseCase(
-    repository: repository,
+    repository: authRepository,
     authServices: authServices,
   );
   final checkUserLoggedInUseCase = CheckUserLoggedInUseCase(
-    repository: repository,
+    repository: authRepository,
     authServices: authServices,
   );
   final registerEmailPasswordUseCase = RegisterEmailPasswordUseCase(
-    repository: repository,
+      repository: authRepository,
     authServices: authServices,
   );
   final sendWelcomeEmailUsecase = SendWelcomeEmailUsecase();
   final registerOnboardingUseCase = RegisterOnboardingUseCase(
-    repository: repository,
+    repository: authRepository,
     authServices: authServices,
     sendWelcomeEmailUsecase: sendWelcomeEmailUsecase,
   );
@@ -70,7 +74,7 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
     authServices: authServices,
   );
   final enableBiometricsUseCase = EnableBiometricsUseCase(
-    repository: repository,
+    repository: authRepository,
     authServices: authServices,
     biometricService: biometricService,
   );
@@ -83,17 +87,17 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
   );
 
   final logoutUseCase = LogoutUseCase(
-    repository: repository,
+    repository: authRepository,
     authServices: authServices,
     biometricService: biometricService,
   );
 
   final checkCpfExistsUseCase = CheckCpfExistsUseCase(
-    repository: repository,
+    repository: authRepository,
   );
 
   final checkCnpjExistsUseCase = CheckCnpjExistsUseCase(
-    repository: repository,
+    repository: authRepository,
   );
 
   final checkShouldShowBiometricsPromptUseCase = CheckShouldShowBiometricsPromptUseCase(
@@ -122,7 +126,37 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
   );
 }
 
+/// Factory function para criar o AddressesBloc com todas as dependências
+AddressesBloc _createAddressesBloc(ILocalCacheService localCacheService, FirebaseFirestore firestore, GetUserUidUseCase getUserUidUseCase) {
+  // 1. Criar DataSources
+  final remoteDataSource = AddressesRemoteDataSourceImpl(firestore: firestore);
+  final localDataSource = AddressesLocalDataSourceImpl(autoCacheService: localCacheService);
 
+  // 2. Criar Repository
+  final repository = AddressesRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    localDataSource: localDataSource,
+  );
+
+  // 3. Criar UseCases
+  final getAddressesUseCase = GetAddressesUseCase(repository: repository);
+  final getAddressUseCase = GetAddressUseCase(repository: repository);
+  final addAddressUseCase = AddAddressUseCase(repository: repository);
+  final updateAddressUseCase = UpdateAddressUseCase(repository: repository);
+  final deleteAddressUseCase = DeleteAddressUseCase(repository: repository);
+  final setPrimaryAddressUseCase = SetPrimaryAddressUseCase(repository: repository);
+
+  // 4. Criar e retornar AddressesBloc
+  return AddressesBloc(
+    getAddressesUseCase: getAddressesUseCase,
+    getAddressUseCase: getAddressUseCase,
+    addAddressUseCase: addAddressUseCase,
+    updateAddressUseCase: updateAddressUseCase,
+    deleteAddressUseCase: deleteAddressUseCase,
+    setPrimaryAddressUseCase: setPrimaryAddressUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
 
 Future <void> main() async {
 
@@ -130,7 +164,7 @@ Future <void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AutoCacheInitializer.initialize();
   setupLocator();
-
+  
   //Services
   final authServices = getIt<IAuthServices>();
   final firestore = getIt<FirebaseFirestore>();
@@ -139,12 +173,30 @@ Future <void> main() async {
 
   final appRouter = AppRouter();
 
-  // Criar AuthBloc
-  final authBloc = _createAuthBloc(authServices, biometricService, localCacheService, firestore);
+  // Authentication
+  final authRemoteDataSource = AuthRemoteDataSourceImpl(firestore: firestore);
+  final authLocalDataSource = AuthLocalDataSourceImpl(autoCacheService: localCacheService);
+  final authRepository = AuthRepositoryImpl(remoteDataSource: authRemoteDataSource, localDataSource: authLocalDataSource);
+  final getUserUidUseCase = GetUserUidUseCase(repository: authRepository, authServices: authServices);
 
   runApp(MultiBlocProvider(
         providers: [
-          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider(
+            create: (context) => _createAuthBloc(
+              authServices, 
+              biometricService, 
+              localCacheService, 
+              firestore, 
+              authRepository
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createAddressesBloc(
+              localCacheService, 
+              firestore, 
+              getUserUidUseCase
+          ),
+        ),
         ],
         child: MyApp(appRouter: appRouter),
       ),

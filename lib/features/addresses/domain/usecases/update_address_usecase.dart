@@ -20,7 +20,6 @@ class UpdateAddressUseCase {
 
   Future<Either<Failure, void>> call(
     String uid,
-    String addressId,
     AddressInfoEntity address,
   ) async {
     try {
@@ -30,7 +29,7 @@ class UpdateAddressUseCase {
       }
 
       // Validar ID do endereço
-      if (addressId.isEmpty) {
+      if (address.uid == null || address.uid!.isEmpty) {
         return const Left(ValidationFailure('ID do endereço não pode ser vazio'));
       }
 
@@ -40,7 +39,7 @@ class UpdateAddressUseCase {
       }
 
       // Atualizar endereço
-      final result = await repository.updateAddress(uid, addressId, address);
+      final result = await repository.updateAddress(uid, address);
 
       return result.fold(
         (failure) => Left(failure),

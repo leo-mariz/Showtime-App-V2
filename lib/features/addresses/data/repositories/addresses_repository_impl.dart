@@ -24,6 +24,18 @@ class AddressesRepositoryImpl implements IAddressesRepository {
   // ==================== GET OPERATIONS ====================
 
   @override
+  Future<Either<Failure, AddressInfoEntity>> getAddress(String uid, String addressId) async {
+    try {
+      // Busca diretamente do remoto para garantir que temos o endereço mais atualizado
+      final address = await remoteDataSource.getAddress(uid, addressId);
+      
+      return Right(address);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<AddressInfoEntity>>> getAddresses(String uid) async {
     try {
       // Primeiro tenta buscar do cache
@@ -63,10 +75,10 @@ class AddressesRepositoryImpl implements IAddressesRepository {
       final addressId = await remoteDataSource.addAddress(uid, address);
       
       // Busca lista atualizada do remoto
-      final updatedAddresses = await remoteDataSource.getAddresses(uid);
+      final updatedAddresses = address.copyWith(uid: addressId);
       
       // Atualiza cache com lista atualizada
-      await localDataSource.cacheAddresses(updatedAddresses);
+      await localDataSource.cacheSingleAddress(updatedAddresses);
       
       return Right(addressId);
     } catch (e) {
@@ -79,12 +91,11 @@ class AddressesRepositoryImpl implements IAddressesRepository {
   @override
   Future<Either<Failure, void>> updateAddress(
     String uid,
-    String addressId,
     AddressInfoEntity address,
   ) async {
     try {
       // Atualiza no remoto
-      await remoteDataSource.updateAddress(uid, addressId, address);
+      await remoteDataSource.updateAddress(uid, address.copyWith(uid: address.uid!));
       
       // Busca lista atualizada do remoto
       final updatedAddresses = await remoteDataSource.getAddresses(uid);

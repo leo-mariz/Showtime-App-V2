@@ -16,31 +16,33 @@ import 'package:dartz/dartz.dart';
 abstract class IAddressesRepository {
   // ==================== GET OPERATIONS ====================
   
-  Future<Either<Failure, List<AddressInfoEntity>>> getAddresses(String uid);
+  Future<Either<Failure, List<AddressInfoEntity>>> getAddresses(String userUid);
+    
+  /// Busca um endereço específico por ID
+  Future<Either<Failure, AddressInfoEntity>> getAddress(String userUid, String addressId);
 
   // ==================== CREATE OPERATIONS ====================
   
   /// Adiciona um novo endereço à subcoleção do usuário
   /// Retorna o ID do endereço criado
-  Future<Either<Failure, String>> addAddress(String uid, AddressInfoEntity address);
+  Future<Either<Failure, String>> addAddress(String userUid, AddressInfoEntity address);
 
   // ==================== UPDATE OPERATIONS ====================
   
   /// Atualiza um endereço existente na subcoleção
   Future<Either<Failure, void>> updateAddress(
-    String uid,
-    String addressId,
+    String userUid,
     AddressInfoEntity address,
   );
 
   // ==================== DELETE OPERATIONS ====================
   
   /// Remove um endereço da subcoleção
-  Future<Either<Failure, void>> deleteAddress(String uid, String addressId);
+  Future<Either<Failure, void>> deleteAddress(String userUid, String addressId);
 
   // ==================== SET PRIMARY OPERATIONS ====================
   
   /// Define um endereço como primário (e remove primário dos outros)
-  Future<Either<Failure, void>> setPrimaryAddress(String uid, String addressId);
+  Future<Either<Failure, void>> setPrimaryAddress(String userUid, String addressId);
 }
 

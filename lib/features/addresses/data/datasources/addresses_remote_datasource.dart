@@ -14,28 +14,33 @@ abstract class IAddressesRemoteDataSource {
   /// Busca lista de endereços do usuário
   /// Retorna lista vazia se não existir
   /// Lança [ServerException] em caso de erro
-  Future<List<AddressInfoEntity>> getAddresses(String uid);
+  Future<List<AddressInfoEntity>> getAddresses(String userUid);
+  
+  /// Busca um endereço específico por ID
+  /// Lança [ServerException] em caso de erro
+  /// Lança [NotFoundException] se o endereço não existir
+  Future<AddressInfoEntity> getAddress(String userUid, String addressId);
   
   /// Adiciona um novo endereço à subcoleção do usuário
   /// Retorna o ID do documento criado
   /// Lança [ServerException] em caso de erro
   /// Lança [ValidationException] se UID não estiver presente
-  Future<String> addAddress(String uid, AddressInfoEntity address);
+  Future<String> addAddress(String userUid, AddressInfoEntity address);
   
   /// Atualiza um endereço existente na subcoleção
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o endereço não existir
-  Future<void> updateAddress(String uid, String addressId, AddressInfoEntity address);
+  Future<void> updateAddress(String userUid, AddressInfoEntity address);
   
   /// Remove um endereço da subcoleção
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o endereço não existir
-  Future<void> deleteAddress(String uid, String addressId);
+  Future<void> deleteAddress(String userUid, String addressId);
   
   /// Define um endereço como primário (e remove primário dos outros)
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o endereço não existir
-  Future<void> setPrimaryAddress(String uid, String addressId);
+  Future<void> setPrimaryAddress(String userUid, String addressId);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -45,9 +50,9 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
   AddressesRemoteDataSourceImpl({required this.firestore});
 
   @override
-  Future<List<AddressInfoEntity>> getAddresses(String uid) async {
+  Future<List<AddressInfoEntity>> getAddresses(String userUid) async {
     try {
-      if (uid.isEmpty) {
+      if (userUid.isEmpty) {
         throw const ValidationException(
           'UID do usuário não pode ser vazio',
         );
@@ -55,7 +60,7 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
 
       final collectionReference = AddressInfoEntityReference.firebaseCollectionReference(
         firestore,
-        uid,
+        userUid,
       );
       
       final querySnapshot = await collectionReference.get();
@@ -67,7 +72,8 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
       return querySnapshot.docs
           .map((doc) {
             final addressMap = doc.data() as Map<String, dynamic>;
-            return AddressInfoEntityMapper.fromMap(addressMap);
+            final address = AddressInfoEntityMapper.fromMap(addressMap);
+            return address.copyWith(uid: doc.id);
           })
           .toList();
     } on FirebaseException catch (e, stackTrace) {
@@ -89,9 +95,57 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
   }
 
   @override
-  Future<String> addAddress(String uid, AddressInfoEntity address) async {
+  Future<AddressInfoEntity> getAddress(String userUid, String addressId) async {
     try {
-      if (uid.isEmpty) {
+      if (userUid.isEmpty) {
+        throw const ValidationException(
+          'UID do usuário não pode ser vazio',
+        );
+      }
+
+      if (addressId.isEmpty) {
+        throw const ValidationException(
+          'ID do endereço não pode ser vazio',
+        );
+      }
+
+      final documentReference = AddressInfoEntityReference.firebaseDocumentReference(
+        firestore,
+        userUid,
+        addressId,
+      );
+
+      final snapshot = await documentReference.get();
+      
+      if (!snapshot.exists) {
+        throw NotFoundException('Endereço não encontrado: $addressId');
+      }
+
+      final addressMap = snapshot.data() as Map<String, dynamic>;
+      final address = AddressInfoEntityMapper.fromMap(addressMap);
+      return address.copyWith(uid: snapshot.id);
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar endereço no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException || e is NotFoundException) rethrow;
+      
+      throw ServerException(
+        'Erro inesperado ao buscar endereço',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<String> addAddress(String userUid, AddressInfoEntity address) async {
+    try {
+      if (userUid.isEmpty) {
         throw const ValidationException(
           'UID do usuário não pode ser vazio',
         );
@@ -99,7 +153,7 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
 
       final collectionReference = AddressInfoEntityReference.firebaseCollectionReference(
         firestore,
-        uid,
+        userUid,
       );
 
       // Criar novo documento na subcoleção
@@ -129,26 +183,27 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
 
   @override
   Future<void> updateAddress(
-    String uid,
-    String addressId,
+    String userUid,
     AddressInfoEntity address,
   ) async {
     try {
-      if (uid.isEmpty) {
+      if (userUid.isEmpty) {
         throw const ValidationException(
           'UID do usuário não pode ser vazio',
         );
       }
 
-      if (addressId.isEmpty) {
+      final addressId = address.uid;
+
+      if (addressId == null || addressId.isEmpty) {
         throw const ValidationException(
-          'ID do endereço não pode ser vazio',
+          'UID do endereço não pode ser vazio',
         );
       }
 
       final documentReference = AddressInfoEntityReference.firebaseDocumentReference(
         firestore,
-        uid,
+        userUid,
         addressId,
       );
 
@@ -180,9 +235,9 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
   }
 
   @override
-  Future<void> deleteAddress(String uid, String addressId) async {
+  Future<void> deleteAddress(String userUid, String addressId) async {
     try {
-      if (uid.isEmpty) {
+      if (userUid.isEmpty) {
         throw const ValidationException(
           'UID do usuário não pode ser vazio',
         );
@@ -196,7 +251,7 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
 
       final documentReference = AddressInfoEntityReference.firebaseDocumentReference(
         firestore,
-        uid,
+        userUid,
         addressId,
       );
 
@@ -227,9 +282,9 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
   }
 
   @override
-  Future<void> setPrimaryAddress(String uid, String addressId) async {
+  Future<void> setPrimaryAddress(String userUid, String addressId) async {
     try {
-      if (uid.isEmpty) {
+      if (userUid.isEmpty) {
         throw const ValidationException(
           'UID do usuário não pode ser vazio',
         );
@@ -243,7 +298,7 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
 
       final collectionReference = AddressInfoEntityReference.firebaseCollectionReference(
         firestore,
-        uid,
+        userUid,
       );
 
       // Buscar todos os endereços

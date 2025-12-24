@@ -28,7 +28,6 @@ class ArtistEntity with ArtistEntityMappable {
   List<AvailabilityEntity>? availability;
   double rating;
   int finalizedContracts;
-  // SocialMediaLinksEntity? socialMediaLinks;
 
   ArtistEntity({
     this.uid,
@@ -49,7 +48,6 @@ class ArtistEntity with ArtistEntityMappable {
     this.availability = const [],
     this.rating = 0,
     this.finalizedContracts = 0,
-    // this.socialMediaLinks,
   });
 
   // Método de fábrica para criar uma entidade padrão

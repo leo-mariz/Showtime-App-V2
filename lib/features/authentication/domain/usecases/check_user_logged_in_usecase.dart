@@ -3,7 +3,9 @@ import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
+import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// Modelo de resposta do UseCase
@@ -24,12 +26,16 @@ class UserLoggedInResponse {
 /// - Determinar tipo de perfil (Artist ou Client)
 /// - Limpar cache se não houver perfil válido
 class CheckUserLoggedInUseCase {
-  final IAuthRepository repository;
+  final IAuthRepository authRepository;
   final IAuthServices authServices;
+  final IClientsRepository clientsRepository;
+  final IArtistsRepository artistsRepository;
 
   CheckUserLoggedInUseCase({
-    required this.repository,
+    required this.authRepository,
     required this.authServices,
+    required this.clientsRepository,
+    required this.artistsRepository,
   });
 
   Future<Either<Failure, UserLoggedInResponse>> call() async {
@@ -45,7 +51,7 @@ class CheckUserLoggedInUseCase {
       }
 
       // 2. Obter UID do usuário
-      final uidResult = await repository.getUserUid();
+      final uidResult = await authRepository.getUserUid();
       final uid = uidResult.fold(
         (failure) => throw failure,
         (uid) => uid,
@@ -56,7 +62,7 @@ class CheckUserLoggedInUseCase {
       }
 
       // 3. Verificar tipo de perfil (Artist ou Client)
-      final artistResult = await repository.getArtistData(uid);
+      final artistResult = await artistsRepository.getArtist(uid);
       final artist = artistResult.fold(
         (failure) => throw failure,
         (artist) => artist,
@@ -69,7 +75,7 @@ class CheckUserLoggedInUseCase {
         ));
       }
 
-      final clientResult = await repository.getClientData(uid);
+      final clientResult = await clientsRepository.getClient(uid);
       final client = clientResult.fold(
         (failure) => throw failure,
         (client) => client,
@@ -83,7 +89,7 @@ class CheckUserLoggedInUseCase {
       }
 
       // 4. Nenhum perfil encontrado - limpar cache
-      await repository.clearCache();
+      await authRepository.clearCache();
       
       return const Left(IncompleteDataFailure(
         'Usuário não possui perfil completo',

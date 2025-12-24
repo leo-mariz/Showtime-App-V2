@@ -2,9 +2,12 @@ import 'package:app/core/domain/artist/artist_individual/incomplete_sections/inc
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/authentication/domain/entities/register_entity.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/send_welcome_email_usecase.dart';
+import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Completar cadastro com dados do onboarding
@@ -17,12 +20,18 @@ import 'package:dartz/dartz.dart';
 /// - Calcular seções incompletas (Artist)
 /// - Enviar email de boas-vindas
 class RegisterOnboardingUseCase {
-  final IAuthRepository repository;
+  final IAuthRepository authRepository;
+  final IClientsRepository clientsRepository;
+  final IUsersRepository usersRepository;
+  final IArtistsRepository artistsRepository;
   final IAuthServices authServices;
   final SendWelcomeEmailUsecase sendWelcomeEmailUsecase;
 
   RegisterOnboardingUseCase({
-    required this.repository,
+    required this.authRepository,
+    required this.clientsRepository,
+    required this.usersRepository,
+    required this.artistsRepository,
     required this.authServices,
     required this.sendWelcomeEmailUsecase,
   });
@@ -39,7 +48,7 @@ class RegisterOnboardingUseCase {
       
       // Se não encontrar no Firebase Auth, tenta buscar do cache
       if (uid == null || uid.isEmpty) {
-      final uidResult = await repository.getUserUid();
+      final uidResult = await authRepository.getUserUid();
         uid = uidResult.fold(
           (failure) => null,
           (cachedUid) => cachedUid,
@@ -58,7 +67,7 @@ class RegisterOnboardingUseCase {
         }
 
         // Verificar se CNPJ já existe
-        final cnpjExistsResult = await repository.cnpjExists(cnpjUser.cnpj ?? '');
+        final cnpjExistsResult = await usersRepository.cnpjExists(cnpjUser.cnpj ?? '');
         final cnpjExists = cnpjExistsResult.fold(
           (failure) => throw failure,
           (exists) => exists,
@@ -68,7 +77,7 @@ class RegisterOnboardingUseCase {
           return const Left(ValidationFailure('CNPJ já cadastrado'));
         }
 
-        final saveCnpjResult = await repository.setCnpjUserInfo(uid, cnpjUser);
+        final saveCnpjResult = await usersRepository.setCnpjUserInfo(uid, cnpjUser);
         saveCnpjResult.fold(
           (failure) => throw failure,
           (_) => null,
@@ -80,7 +89,7 @@ class RegisterOnboardingUseCase {
         }
 
         // Verificar se CPF já existe
-        final cpfExistsResult = await repository.cpfExists(cpfUser.cpf ?? '');
+        final cpfExistsResult = await usersRepository.cpfExists(cpfUser.cpf ?? '');
         final cpfExists = cpfExistsResult.fold(
           (failure) => throw failure,
           (exists) => exists,
@@ -90,7 +99,7 @@ class RegisterOnboardingUseCase {
           return const Left(ValidationFailure('CPF já cadastrado'));
         }
 
-        final saveCpfResult = await repository.setCpfUserInfo(uid, cpfUser);
+        final saveCpfResult = await usersRepository.setCpfUserInfo(uid, cpfUser);
         saveCpfResult.fold(
           (failure) => throw failure,
           (_) => null,
@@ -122,7 +131,7 @@ class RegisterOnboardingUseCase {
           artist = artist.copyWith(artistName: artistName);
         }
 
-        final saveArtistResult = await repository.setArtistData(uid, artist);
+        final saveArtistResult = await artistsRepository.addArtist(uid, artist);
         saveArtistResult.fold(
           (failure) => throw failure,
           (_) => null,
@@ -131,7 +140,7 @@ class RegisterOnboardingUseCase {
         var client = register.client;
         client = client.copyWith(uid: uid);
 
-        final saveClientResult = await repository.setClientData(uid, client);
+        final saveClientResult = await clientsRepository.addClient(uid, client);
         saveClientResult.fold(
           (failure) => throw failure,
           (_) => null,
@@ -145,7 +154,7 @@ class RegisterOnboardingUseCase {
         isEmailVerified: isEmailVerified,
       );
 
-      final updateUserResult = await repository.setUserData(userToUpdate);
+      final updateUserResult = await usersRepository.setUserData(userToUpdate);
       updateUserResult.fold(
         (failure) => throw failure,
         (_) => null,

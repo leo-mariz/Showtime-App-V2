@@ -1,6 +1,18 @@
 import 'dart:io';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/core/users/data/datasources/users_local_datasource.dart';
+import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
+import 'package:app/core/users/data/repositories/users_repository_impl.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/profile/artists/data/datasources/artists_local_datasource.dart';
+import 'package:app/features/profile/artists/data/datasources/artists_remote_datasource.dart';
+import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
+import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
+import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
+import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
+import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
 import 'package:app/firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,9 +26,8 @@ import 'package:firebase_core/firebase_core.dart';
 
 // Authentication imports
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:app/features/authentication/data/datasources/auth_remote_datasource.dart';
 import 'package:app/features/authentication/data/datasources/auth_local_datasource.dart';
-import 'package:app/features/authentication/data/repositories/users_repository_impl.dart';
+import 'package:app/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:app/features/authentication/domain/usecases/login_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_user_logged_in_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/register_email_password_usecase.dart';
@@ -27,8 +38,8 @@ import 'package:app/features/authentication/domain/usecases/login_with_biometric
 import 'package:app/features/authentication/domain/usecases/disable_biometrics_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/logout_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/send_welcome_email_usecase.dart';
-import 'package:app/features/authentication/domain/usecases/check_cpf_exists_usecase.dart';
-import 'package:app/features/authentication/domain/usecases/check_cnpj_exists_usecase.dart';
+import 'package:app/core/users/domain/usecases/check_cpf_exists_usecase.dart';
+import 'package:app/core/users/domain/usecases/check_cnpj_exists_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_should_show_biometrics_prompt_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_biometrics_enabled_usecase.dart';
 import 'package:app/core/services/biometric_auth_service.dart';
@@ -49,24 +60,39 @@ import 'package:app/features/addresses/domain/usecases/delete_address_usecase.da
 import 'package:app/features/addresses/domain/usecases/set_primary_address_usecase.dart';
 
 /// Factory function para criar o AuthBloc com todas as dependências
-AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biometricService, ILocalCacheService localCacheService, FirebaseFirestore firestore, IAuthRepository authRepository) {
+AuthBloc _createAuthBloc(IAuthServices authServices, 
+                          IBiometricAuthService biometricService, 
+                          ILocalCacheService localCacheService, 
+                          FirebaseFirestore firestore, 
+                          IAuthRepository authRepository, 
+                          IUsersRepository usersRepository, 
+                          IArtistsRepository artistsRepository, 
+                          IClientsRepository clientsRepository) {
 
   // 5. Criar UseCases
   final loginUseCase = LoginUseCase(
-    repository: authRepository,
+    usersRepository: usersRepository,
+    artistsRepository: artistsRepository,
+    clientsRepository: clientsRepository,
+    authRepository: authRepository,
     authServices: authServices,
   );
   final checkUserLoggedInUseCase = CheckUserLoggedInUseCase(
-    repository: authRepository,
+    authRepository: authRepository,
+    clientsRepository: clientsRepository,
+    artistsRepository: artistsRepository,
     authServices: authServices,
   );
   final registerEmailPasswordUseCase = RegisterEmailPasswordUseCase(
-      repository: authRepository,
+    usersRepository: usersRepository,
     authServices: authServices,
   );
   final sendWelcomeEmailUsecase = SendWelcomeEmailUsecase();
   final registerOnboardingUseCase = RegisterOnboardingUseCase(
-    repository: authRepository,
+    authRepository: authRepository,
+    usersRepository: usersRepository,
+    artistsRepository: artistsRepository,
+    clientsRepository: clientsRepository,
     authServices: authServices,
     sendWelcomeEmailUsecase: sendWelcomeEmailUsecase,
   );
@@ -74,7 +100,7 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
     authServices: authServices,
   );
   final enableBiometricsUseCase = EnableBiometricsUseCase(
-    repository: authRepository,
+    authRepository: authRepository,
     authServices: authServices,
     biometricService: biometricService,
   );
@@ -87,17 +113,17 @@ AuthBloc _createAuthBloc(IAuthServices authServices, IBiometricAuthService biome
   );
 
   final logoutUseCase = LogoutUseCase(
-    repository: authRepository,
+    authRepository: authRepository,
     authServices: authServices,
     biometricService: biometricService,
   );
 
   final checkCpfExistsUseCase = CheckCpfExistsUseCase(
-    repository: authRepository,
+    usersRepository: usersRepository,
   );
 
   final checkCnpjExistsUseCase = CheckCnpjExistsUseCase(
-    repository: authRepository,
+    usersRepository: usersRepository,
   );
 
   final checkShouldShowBiometricsPromptUseCase = CheckShouldShowBiometricsPromptUseCase(
@@ -174,10 +200,24 @@ Future <void> main() async {
   final appRouter = AppRouter();
 
   // Authentication
-  final authRemoteDataSource = AuthRemoteDataSourceImpl(firestore: firestore);
   final authLocalDataSource = AuthLocalDataSourceImpl(autoCacheService: localCacheService);
-  final authRepository = AuthRepositoryImpl(remoteDataSource: authRemoteDataSource, localDataSource: authLocalDataSource);
+  final authRepository = AuthRepositoryImpl(localDataSource: authLocalDataSource);
   final getUserUidUseCase = GetUserUidUseCase(repository: authRepository, authServices: authServices);
+
+  // Users
+  final usersLocalDataSource = UsersLocalDataSourceImpl(autoCacheService: localCacheService);
+  final usersRemoteDataSource = UsersRemoteDataSourceImpl(firestore: firestore);
+  final usersRepository = UsersRepositoryImpl(localDataSource: usersLocalDataSource, remoteDataSource: usersRemoteDataSource);
+
+  // Artists
+  final artistsLocalDataSource = ArtistsLocalDataSourceImpl(autoCacheService: localCacheService);
+  final artistsRemoteDataSource = ArtistsRemoteDataSourceImpl(firestore: firestore);
+  final artistsRepository = ArtistsRepositoryImpl(localDataSource: artistsLocalDataSource, remoteDataSource: artistsRemoteDataSource);
+
+  // Clients
+  final clientsLocalDataSource = ClientsLocalDataSourceImpl(autoCacheService: localCacheService);
+  final clientsRemoteDataSource = ClientsRemoteDataSourceImpl(firestore: firestore);
+  final clientsRepository = ClientsRepositoryImpl(localDataSource: clientsLocalDataSource, remoteDataSource: clientsRemoteDataSource);
 
   runApp(MultiBlocProvider(
         providers: [
@@ -187,7 +227,10 @@ Future <void> main() async {
               biometricService, 
               localCacheService, 
               firestore, 
-              authRepository
+              authRepository,
+              usersRepository,
+              artistsRepository,
+              clientsRepository,
             ),
           ),
           BlocProvider(

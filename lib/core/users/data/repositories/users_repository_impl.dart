@@ -1,13 +1,11 @@
-import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
 import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/authentication/data/datasources/auth_local_datasource.dart';
-import 'package:app/features/authentication/data/datasources/auth_remote_datasource.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/core/users/data/datasources/users_local_datasource.dart';
+import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// Implementação do Repository de Autenticação
@@ -18,13 +16,13 @@ import 'package:dartz/dartz.dart';
 /// - NÃO faz validações de negócio (isso é responsabilidade dos UseCases)
 /// 
 /// REGRA: Este repository é SIMPLES e GENÉRICO
-class AuthRepositoryImpl implements IAuthRepository {
-  final IAuthRemoteDataSource remoteDataSource;
-  final IAuthLocalDataSource localDataSource;
+class UsersRepositoryImpl implements IUsersRepository {
+  final IUsersRemoteDataSource remoteDataSource;
+  final IUsersLocalDataSource localDataSource;
 
-  AuthRepositoryImpl({
+  UsersRepositoryImpl({
     required this.remoteDataSource,
-      required this.localDataSource,
+    required this.localDataSource,
     });
 
   // ==================== GET OPERATIONS ====================
@@ -49,32 +47,6 @@ class AuthRepositoryImpl implements IAuthRepository {
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
-  }
-
-  @override
-  Future<Either<Failure, ArtistEntity>> getArtistData(String uid) async {
-    try {
-      final artist = await remoteDataSource.getFirestoreArtistData(uid);
-      if (artist != ArtistEntity()) {
-          await localDataSource.cacheArtistInfo(artist);
-      }
-      return Right(artist);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-      }
-  }
-  
-  @override
-  Future<Either<Failure, ClientEntity>> getClientData(String uid) async {
-    try {
-      final client = await remoteDataSource.getFirestoreClientData(uid);
-      if (client != ClientEntity()) {
-        await localDataSource.cacheClientInfo(client);
-      }
-      return Right(client);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-      }
   }
 
   // ==================== SET OPERATIONS ====================
@@ -116,34 +88,6 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
   }
 
-  @override
-  Future<Either<Failure, void>> setArtistData(
-    String uid,
-    ArtistEntity artist,
-  ) async {
-    try {
-      await remoteDataSource.setFirestoreArtistData(uid, artist);
-      await localDataSource.cacheArtistInfo(artist);
-      return const Right(null);
-      } catch (e) {
-      return Left(ErrorHandler.handle(e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> setClientData(
-    String uid,
-    ClientEntity client,
-  ) async {
-    try {
-      await remoteDataSource.setFirestoreClientData(uid, client);
-      await localDataSource.cacheClientInfo(client);
-      return const Right(null);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-      }
-  }
-
   // ==================== VERIFICATION OPERATIONS ====================
 
   @override
@@ -171,18 +115,6 @@ class AuthRepositoryImpl implements IAuthRepository {
     try {
       final exists = await remoteDataSource.emailExists(email);
       return Right(exists);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-    }
-  }
-
-  // ==================== CACHE OPERATIONS ====================
-
-  @override
-  Future<Either<Failure, void>> clearCache() async {
-    try {
-      await localDataSource.clearCache();
-      return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

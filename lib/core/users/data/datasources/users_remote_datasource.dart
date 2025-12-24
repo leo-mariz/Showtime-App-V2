@@ -1,6 +1,3 @@
-
-import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
 import 'package:app/core/domain/user/user_entity.dart';
@@ -15,7 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// - Lança exceções tipadas (ServerException, NetworkException, etc)
 /// - NÃO faz validações de negócio
 /// - NÃO faz verificações (use métodos específicos como cpfExists)
-abstract class IAuthRemoteDataSource {
+abstract class IUsersRemoteDataSource {
   /// Salva/atualiza dados do usuário no Firestore
   /// Lança [ServerException] em caso de erro
   /// Lança [ValidationException] se UID não estiver presente
@@ -28,24 +25,6 @@ abstract class IAuthRemoteDataSource {
   /// Salva/atualiza dados CNPJ do usuário
   /// Lança [ServerException] em caso de erro
   Future<void> setFirestoreCnpjUserInfo(String uid, CnpjUserEntity data);
-  
-  /// Salva/atualiza dados do cliente
-  /// Lança [ServerException] em caso de erro
-  Future<void> setFirestoreClientData(String uid, ClientEntity data);
-  
-  /// Salva/atualiza dados do artista
-  /// Lança [ServerException] em caso de erro
-  Future<void> setFirestoreArtistData(String uid, ArtistEntity data);
-  
-  /// Busca dados do cliente
-  /// Retorna ClientEntity vazio se não existir
-  /// Lança [ServerException] em caso de erro
-  Future<ClientEntity> getFirestoreClientData(String uid);
-  
-  /// Busca dados do artista
-  /// Retorna ArtistEntity vazio se não existir
-  /// Lança [ServerException] em caso de erro
-  Future<ArtistEntity> getFirestoreArtistData(String uid);
   
   /// Busca dados do usuário
   /// Retorna UserEntity com email vazio se não existir
@@ -66,10 +45,10 @@ abstract class IAuthRemoteDataSource {
 }
 
 /// Implementação do DataSource remoto usando Firestore
-class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
+class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
   final FirebaseFirestore firestore;
 
-  AuthRemoteDataSourceImpl({required this.firestore});
+  UsersRemoteDataSourceImpl({required this.firestore});
 
   @override
   Future<void> setFirestoreUserData(UserEntity data) async {
@@ -175,117 +154,6 @@ class AuthRemoteDataSourceImpl implements IAuthRemoteDataSource {
     }
   }
 
-  @override
-  Future<void> setFirestoreClientData(String uid, ClientEntity data) async {
-    try {
-      final documentReference = ClientEntityReference.firebaseUidReference(
-        firestore,
-        uid,
-      );
-      final clientMap = data.toMap();
-      await documentReference.set(clientMap);
-    } on FirebaseException catch (e, stackTrace) {
-      throw ServerException(
-        'Erro ao salvar dados do cliente no Firestore: ${e.message}',
-        statusCode: ErrorHandler.getStatusCode(e),
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      throw ServerException(
-        'Erro inesperado ao salvar dados do cliente',
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  @override
-  Future<void> setFirestoreArtistData(String uid, ArtistEntity data) async {
-    try {
-      final documentReference = ArtistEntityReference.firebaseUidReference(
-        firestore,
-        uid,
-      );
-      final artistMap = data.toMap();
-      await documentReference.set(artistMap);
-    } on FirebaseException catch (e, stackTrace) {
-      throw ServerException(
-        'Erro ao salvar dados do artista no Firestore: ${e.message}',
-        statusCode: ErrorHandler.getStatusCode(e),
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      throw ServerException(
-        'Erro inesperado ao salvar dados do artista',
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  @override
-  Future<ClientEntity> getFirestoreClientData(String uid) async {
-    try {
-      final documentReference = ClientEntityReference.firebaseUidReference(
-        firestore,
-        uid,
-      );
-      final snapshot = await documentReference.get();
-      
-      if (snapshot.exists) {
-        final clientMap = snapshot.data() as Map<String, dynamic>;
-        return ClientEntityMapper.fromMap(clientMap);
-      }
-      
-      return ClientEntity();
-    } on FirebaseException catch (e, stackTrace) {
-      throw ServerException(
-        'Erro ao buscar dados do cliente no Firestore: ${e.message}',
-        statusCode: ErrorHandler.getStatusCode(e),
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      throw ServerException(
-        'Erro inesperado ao buscar dados do cliente',
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
-  @override
-  Future<ArtistEntity> getFirestoreArtistData(String uid) async {
-    try {
-      final documentReference = ArtistEntityReference.firebaseUidReference(
-        firestore,
-        uid,
-      );
-      final snapshot = await documentReference.get();
-      
-      if (snapshot.exists) {
-        final artistMap = snapshot.data() as Map<String, dynamic>;
-        return ArtistEntityMapper.fromMap(artistMap);
-      }
-      
-      return ArtistEntity();
-    } on FirebaseException catch (e, stackTrace) {
-      throw ServerException(
-        'Erro ao buscar dados do artista no Firestore: ${e.message}',
-        statusCode: ErrorHandler.getStatusCode(e),
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      throw ServerException(
-        'Erro inesperado ao buscar dados do artista',
-        originalError: e,
-        stackTrace: stackTrace,
-      );
-    }
-  }
 
   @override
   Future<UserEntity> getFirestoreUserData(String uid) async {

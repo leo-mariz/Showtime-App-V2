@@ -1,23 +1,28 @@
+
 import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/auto_cache_service.dart';
 
 /// Interface do DataSource local (cache)
 /// Responsável APENAS por operações de cache
-abstract class IAuthLocalDataSource {
+abstract class IUsersLocalDataSource {
   /// Retorna o UID do usuário em cache, ou null se não existir
   Future<String?> getUserUid();
   
+  /// Salva informações do usuário em cache
+  /// Lança [CacheException] em caso de erro
+  Future<void> cacheUserInfo(UserEntity userInfo);
+  
   /// Limpa todo o cache
   /// Lança [CacheException] em caso de erro
-  Future<void> clearCache();
+  Future<void> clearUsersCache();
 }
 
 /// Implementação do DataSource local usando ILocalCacheService
-class AuthLocalDataSourceImpl implements IAuthLocalDataSource {
+class UsersLocalDataSourceImpl implements IUsersLocalDataSource {
   final ILocalCacheService autoCacheService;
 
-  AuthLocalDataSourceImpl({required this.autoCacheService});
+  UsersLocalDataSourceImpl({required this.autoCacheService});
 
   @override
   Future<String?> getUserUid() async {
@@ -43,9 +48,26 @@ class AuthLocalDataSourceImpl implements IAuthLocalDataSource {
   }
 
   @override
-  Future<void> clearCache() async {
+  Future<void> cacheUserInfo(UserEntity userInfo) async {
     try {
-      await autoCacheService.clearCache();
+      final userInfoCacheKey = UserEntityReference.cachedKey();
+      final userMap = userInfo.toMap();
+      await autoCacheService.cacheDataString(userInfoCacheKey, userMap);
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao salvar informações do usuário no cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> clearUsersCache() async {
+    try {
+      await autoCacheService.deleteCachedDataString(
+        UserEntityReference.cachedKey(),
+      );
     } catch (e, stackTrace) {
       throw CacheException(
         'Erro ao limpar cache',

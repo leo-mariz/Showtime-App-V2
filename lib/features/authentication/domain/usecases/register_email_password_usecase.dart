@@ -2,7 +2,7 @@ import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Registrar usuário com email e senha
@@ -14,12 +14,12 @@ import 'package:dartz/dartz.dart';
 /// - Salvar dados iniciais no Firestore
 /// - Enviar email de verificação
 class RegisterEmailPasswordUseCase {
-  final IAuthRepository repository;
   final IAuthServices authServices;
+  final IUsersRepository usersRepository;
 
   RegisterEmailPasswordUseCase({
-    required this.repository,
     required this.authServices,
+    required this.usersRepository,
   });
 
   Future<Either<Failure, String>> call(UserEntity user) async {
@@ -41,7 +41,7 @@ class RegisterEmailPasswordUseCase {
       }
 
       // 2. Verificar se email já existe
-      final emailExistsResult = await repository.emailExists(email);
+      final emailExistsResult = await usersRepository.emailExists(email);
       final emailExists = emailExistsResult.fold(
         (failure) => throw failure,
         (exists) => exists,
@@ -70,7 +70,7 @@ class RegisterEmailPasswordUseCase {
         isEmailVerified: false,
       );
 
-      final saveResult = await repository.setUserData(userToSave);
+      final saveResult = await usersRepository.setUserData(userToSave);
       
       return saveResult.fold(
         (failure) => Left(failure),

@@ -2,7 +2,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/services/biometric_auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Logout do usuário
@@ -12,12 +12,12 @@ import 'package:dartz/dartz.dart';
 /// - Limpar cache local
 /// - Opcionalmente desabilitar biometria
 class LogoutUseCase {
-  final IAuthRepository repository;
+  final IAuthRepository authRepository;
   final IAuthServices authServices;
   final IBiometricAuthService? biometricService;
 
   LogoutUseCase({
-    required this.repository,
+    required this.authRepository,
     required this.authServices,
     this.biometricService,
   });
@@ -28,7 +28,7 @@ class LogoutUseCase {
       await authServices.logout();
 
       // 2. Limpar cache local
-      final clearResult = await repository.clearCache();
+      final clearResult = await authRepository.clearCache();
       clearResult.fold(
         (failure) => throw failure,
         (_) => null,

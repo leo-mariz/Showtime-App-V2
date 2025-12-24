@@ -1,7 +1,7 @@
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 
 class GetUserUidUseCase {

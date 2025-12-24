@@ -3,7 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/services/biometric_auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// Resultado da operação de habilitar biometria
@@ -23,12 +23,12 @@ enum BiometricsResult {
 /// - Autenticar com biometria
 /// - Salvar credenciais criptografadas
 class EnableBiometricsUseCase {
-  final IAuthRepository repository;
+  final IAuthRepository authRepository;
   final IAuthServices authServices;
   final IBiometricAuthService biometricService;
 
   EnableBiometricsUseCase({
-    required this.repository,
+    required this.authRepository,
     required this.authServices,
     required this.biometricService,
   });
@@ -69,13 +69,13 @@ class EnableBiometricsUseCase {
       } catch (e) {
         // Em caso de erro, fazer logout e limpar cache por segurança
         await authServices.logout();
-        await repository.clearCache();
+        await authRepository.clearCache();
         return const Right(BiometricsResult.enableFailed);
       }
     } catch (e) {
       // Em caso de erro crítico, fazer logout e limpar cache
       await authServices.logout();
-      await repository.clearCache();
+      await authRepository.clearCache();
       
       return Left(ErrorHandler.handle(e));
     }

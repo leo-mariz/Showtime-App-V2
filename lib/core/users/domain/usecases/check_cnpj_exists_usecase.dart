@@ -1,6 +1,6 @@
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Verificar se CNPJ já existe no banco de dados
@@ -9,10 +9,10 @@ import 'package:dartz/dartz.dart';
 /// - Validar formato do CNPJ
 /// - Verificar existência no banco de dados
 class CheckCnpjExistsUseCase {
-  final IAuthRepository repository;
+  final IUsersRepository usersRepository;
 
   CheckCnpjExistsUseCase({
-    required this.repository,
+    required this.usersRepository,
   });
 
   Future<Either<Failure, bool>> call(String cnpj) async {
@@ -26,7 +26,7 @@ class CheckCnpjExistsUseCase {
       }
 
       // Verificar se existe no banco
-      final result = await repository.cnpjExists(cleanCnpj);
+      final result = await usersRepository.cnpjExists(cleanCnpj);
 
       return result.fold(
         (failure) => Left(failure),

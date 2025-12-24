@@ -9,8 +9,8 @@ import 'package:app/features/authentication/domain/usecases/register_email_passw
 import 'package:app/features/authentication/domain/usecases/register_onboarding_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/send_password_reset_email_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/enable_biometrics_usecase.dart';
-import 'package:app/features/authentication/domain/usecases/check_cpf_exists_usecase.dart';
-import 'package:app/features/authentication/domain/usecases/check_cnpj_exists_usecase.dart';
+import 'package:app/core/users/domain/usecases/check_cpf_exists_usecase.dart';
+import 'package:app/core/users/domain/usecases/check_cnpj_exists_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_should_show_biometrics_prompt_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_biometrics_enabled_usecase.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';

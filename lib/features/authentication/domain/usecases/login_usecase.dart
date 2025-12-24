@@ -6,7 +6,10 @@ import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
-import 'package:app/features/authentication/domain/repositories/users_repository.dart';
+import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
+import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Login de usuário
@@ -19,12 +22,18 @@ import 'package:dartz/dartz.dart';
 /// - Verificar se dados estão completos
 /// - Salvar dados no cache
 class LoginUseCase {
-  final IAuthRepository repository;
+  final IAuthRepository authRepository;
   final IAuthServices authServices;
+  final IClientsRepository clientsRepository;
+  final IArtistsRepository artistsRepository;
+  final IUsersRepository usersRepository;
 
   LoginUseCase({
-    required this.repository,
+    required this.authRepository,
+    required this.clientsRepository,
+    required this.artistsRepository,
     required this.authServices,
+    required this.usersRepository,
   });
 
   Future<Either<Failure, void>> call(UserEntity user) async {
@@ -62,7 +71,7 @@ class LoginUseCase {
       }
 
       // 4. Carregar dados do usuário
-      final userResult = await repository.getUserData(uid);
+      final userResult = await usersRepository.getUserData(uid);
       final userEntity = userResult.fold(
         (failure) => throw failure,
         (user) => user,
@@ -83,7 +92,7 @@ class LoginUseCase {
 
       // 6. Carregar e validar perfil (Artist ou Client)
       if (isArtist) {
-        final artistResult = await repository.getArtistData(uid);
+        final artistResult = await artistsRepository.getArtist(uid);
         final artist = artistResult.fold(
           (failure) => throw failure,
           (artist) => artist,
@@ -96,7 +105,7 @@ class LoginUseCase {
           ));
         }
       } else {
-        final clientResult = await repository.getClientData(uid);
+        final clientResult = await clientsRepository.getClient(uid);
         final client = clientResult.fold(
           (failure) => throw failure,
           (client) => client,
@@ -118,7 +127,7 @@ class LoginUseCase {
         isEmailVerified: isEmailVerified,
       );
 
-      final updateResult = await repository.setUserData(updatedUser);
+      final updateResult = await usersRepository.setUserData(updatedUser);
       updateResult.fold(
         (failure) => throw failure,
         (_) => null,

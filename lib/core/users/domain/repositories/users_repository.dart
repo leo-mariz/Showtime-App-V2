@@ -1,5 +1,3 @@
-import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
 import 'package:app/core/domain/user/user_entity.dart';
@@ -16,7 +14,7 @@ import 'package:dartz/dartz.dart';
 /// - Set: Salvar dados
 /// - Verification: Verificar existência
 /// - Cache: Operações de cache
-abstract class IAuthRepository {
+abstract class IUsersRepository {
   // ==================== GET OPERATIONS ====================
   
   /// Retorna o UID do usuário em cache ou null
@@ -24,12 +22,6 @@ abstract class IAuthRepository {
 
   /// Busca dados do usuário no Firestore e salva no cache
   Future<Either<Failure, UserEntity>> getUserData(String uid);
-  
-  /// Busca dados do artista no Firestore e salva no cache
-  Future<Either<Failure, ArtistEntity>> getArtistData(String uid);
-  
-  /// Busca dados do cliente no Firestore e salva no cache
-  Future<Either<Failure, ClientEntity>> getClientData(String uid);
 
   // ==================== SET OPERATIONS ====================
   
@@ -42,12 +34,6 @@ abstract class IAuthRepository {
   /// Salva dados CNPJ do usuário no Firestore
   Future<Either<Failure, void>> setCnpjUserInfo(String uid, CnpjUserEntity cnpjUser);
 
-  /// Salva dados do artista no Firestore e cache
-  Future<Either<Failure, void>> setArtistData(String uid, ArtistEntity artist);
-
-  /// Salva dados do cliente no Firestore e cache
-  Future<Either<Failure, void>> setClientData(String uid, ClientEntity client);
-
   // ==================== VERIFICATION OPERATIONS ====================
   
   /// Verifica se CPF já existe no banco
@@ -58,9 +44,4 @@ abstract class IAuthRepository {
 
   /// Verifica se email já existe no banco
   Future<Either<Failure, bool>> emailExists(String email);
-
-  // ==================== CACHE OPERATIONS ====================
-  
-  /// Limpa todo o cache local
-  Future<Either<Failure, void>> clearCache();
 }

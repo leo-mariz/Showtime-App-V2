@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
-import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
-import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
+import 'package:app/core/users/domain/entities/cnpj/cnpj_user_entity.dart';
+import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
 part 'user_entity.mapper.dart';
 
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';

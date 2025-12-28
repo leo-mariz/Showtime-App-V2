@@ -12,10 +12,12 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
-import 'package:app/core/domain/user/user_entity.dart';
-import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
-import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
+import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
+import 'package:app/core/users/domain/entities/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/features/authentication/domain/entities/register_entity.dart';
@@ -61,6 +63,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _emailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
   
+  // Controller nome artístico (apenas para artistas)
+  final _artistNameController = TextEditingController();
+  
   // Estado CPF
   String? _selectedGender;
   final List<String> _genderOptions = ['Masculino', 'Feminino', 'Não informar'];
@@ -73,6 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _showTermsError = false;
   bool _isLoading = false;
   bool _isDocumentValid = false; // Indica se documento está validado e disponível
+  bool _hasDocumentBeenVerified = false; // Indica se a verificação no banco já foi realizada
+  bool _isArtistNameValid = true; // Indica se nome artístico está válido (opcional, então começa como true)
   
 
   @override
@@ -98,13 +105,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Controllers compartilhados
     _emailController.dispose();
     _phoneNumberController.dispose();
+    _artistNameController.dispose();
     
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(
+          value: context.read<AuthBloc>(),
+        ),
+        BlocProvider.value(
+          value: context.read<ArtistsBloc>(),
+        ),
+        BlocProvider.value(
+          value: context.read<UsersBloc>(),
+        ),
+      ],
+      child: BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is RegisterOnboardingLoading) {
           setState(() {
@@ -131,31 +151,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           final isLoading = state is RegisterOnboardingLoading || _isLoading;
           
           return AuthBasePage(
-      title: _getTitle(),
-      subtitle: _getSubtitle(),
-      showBackButton: _currentStep < 0,
-      children: [
-        // Progress Indicator (só aparece após seleção de perfil)
-        if (_currentStep >= 0) ...[
-          ProgressIndicatorWidget(
-            totalSteps: _totalSteps,
-            currentStep: _currentStep,
-          ),
-          DSSizedBoxSpacing.vertical(16),
-        ],        
-        // // Conteúdo do step atual
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 150),
-          child: _buildCurrentStep(),
-        ),
-        
-        DSSizedBoxSpacing.vertical(32),
-        
-        // Botões de navegação
-        _buildNavigationButtons(isLoading),
-      ],
-    );
+            title: _getTitle(),
+            subtitle: _getSubtitle(),
+            showBackButton: _currentStep < 0,
+            children: [
+              // Progress Indicator (só aparece após seleção de perfil)
+              if (_currentStep >= 0) ...[
+                ProgressIndicatorWidget(
+                  totalSteps: _totalSteps,
+                  currentStep: _currentStep,
+                ),
+                DSSizedBoxSpacing.vertical(16),
+              ],        
+              // // Conteúdo do step atual
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                child: _buildCurrentStep(),
+              ),
+              
+              DSSizedBoxSpacing.vertical(32),
+              
+              // Botões de navegação
+              _buildNavigationButtons(isLoading),
+            ],
+          );
         },
+      ),
       ),
     );
   }
@@ -192,18 +213,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           companyNameController: _companyNameController,
           fantasyNameController: _fantasyNameController,
           stateRegistrationController: _stateRegistrationController,
+          artistNameController: _isArtist! ? _artistNameController : null,
           selectedGender: _selectedGender,
           genderOptions: _genderOptions,
           onDocumentTypeChanged: (isCnpj) {
-            setState(() => _isCnpj = isCnpj);
+            setState(() {
+              _isCnpj = isCnpj;
+              _hasDocumentBeenVerified = false; // Reset quando muda tipo de documento
+              _isDocumentValid = false;
+            });
           },
           onGenderChanged: (gender) {
             setState(() => _selectedGender = gender);
           },
           isCnpj: _isCnpj,
           onDocumentValidationChanged: (isValid) {
-            setState(() => _isDocumentValid = isValid);
+            setState(() {
+              _isDocumentValid = isValid;
+              _hasDocumentBeenVerified = true; // Marca que a verificação foi realizada
+            });
           },
+          onArtistNameValidationChanged: _isArtist!
+              ? (isValid) {
+                  setState(() => _isArtistNameValid = isValid);
+                }
+              : null,
         ),
       1 => TermsStep(
           key: const ValueKey('terms'),
@@ -282,14 +316,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _handleNext() {
     // Validação do step 0 (dados básicos)
     if (_currentStep == 0) {
-      // Validar formulário
+      // Validar formulário (vazio, formato inválido, etc)
       if (!(_formKey.currentState?.validate() ?? false)) {
+        return; // O validator já mostrou a mensagem de erro apropriada
+      }
+      
+      // Só verificar disponibilidade no banco se o documento foi verificado
+      if (_hasDocumentBeenVerified && !_isDocumentValid) {
+        // Documento foi verificado no banco e já está em uso
+        final documentType = _isCnpj ? 'CNPJ' : 'CPF';
+        context.showError('Este $documentType já está em uso');
         return;
       }
       
-      // Validar se documento está disponível (não existe no banco)
-      if (!_isDocumentValid) {
-        context.showError('Por favor, verifique se o documento está disponível antes de continuar');
+      // Se o documento ainda não foi verificado no banco, aguardar
+      if (!_hasDocumentBeenVerified) {
+        final documentType = _isCnpj ? 'CNPJ' : 'CPF';
+        context.showError('Por favor, aguarde a verificação do $documentType');
+        return;
+      }
+      
+      // Validar nome artístico se for artista e tiver preenchido
+      if (_isArtist == true && _artistNameController.text.trim().isNotEmpty && !_isArtistNameValid) {
+        context.showError('Por favor, verifique se o nome artístico está disponível antes de continuar');
         return;
       }
       
@@ -337,7 +386,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     // Criar ArtistEntity ou ClientEntity
     final artist = _isArtist == true
-        ? ArtistEntity.defaultEntity()
+        ? ArtistEntity.defaultEntity().copyWith(
+            artistName: _artistNameController.text.trim().isNotEmpty
+                ? _artistNameController.text.trim()
+                : null,
+          )
         : ArtistEntity.defaultEntity();
     
     final client = ClientEntity.defaultClientEntity();

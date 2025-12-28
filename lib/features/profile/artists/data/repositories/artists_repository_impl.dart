@@ -47,11 +47,50 @@ class ArtistsRepositoryImpl implements IArtistsRepository {
   ) async {
     try {
       await remoteDataSource.addArtist(uid, artist);
-      await localDataSource.cacheArtist(artist);
+      final artistWithUid = artist.copyWith(uid: uid);
+      await localDataSource.cacheArtist(artistWithUid);
       return const Right(null);
       } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
   }
 
+  // ==================== UPDATE OPERATIONS ====================
+
+  @override
+  Future<Either<Failure, void>> updateArtist(
+    String uid,
+    ArtistEntity artist,
+  ) async {
+    try {
+      // Atualiza no remoto
+      await remoteDataSource.updateArtist(uid, artist);
+      
+      // Atualiza cache com o artista atualizado
+      final artistWithUid = artist.copyWith(uid: uid);
+      await localDataSource.cacheArtist(artistWithUid);
+      
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  // ==================== VERIFICATION OPERATIONS ====================
+
+  @override
+  Future<Either<Failure, bool>> artistNameExists(
+    String artistName, {
+    String? excludeUid,
+  }) async {
+    try {
+      final exists = await remoteDataSource.artistNameExists(
+        artistName,
+        excludeUid: excludeUid,
+      );
+      return Right(exists);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }

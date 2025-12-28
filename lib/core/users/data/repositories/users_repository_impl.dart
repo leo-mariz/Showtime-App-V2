@@ -1,6 +1,6 @@
-import 'package:app/core/domain/user/cnpj/cnpj_user_entity.dart';
-import 'package:app/core/domain/user/cpf/cpf_user_entity.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/cnpj/cnpj_user_entity.dart';
+import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/users/data/datasources/users_local_datasource.dart';

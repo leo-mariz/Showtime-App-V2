@@ -1,6 +1,6 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/client/client_entity.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 part 'register_entity.mapper.dart';
 

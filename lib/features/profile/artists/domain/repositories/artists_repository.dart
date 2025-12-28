@@ -23,4 +23,14 @@ abstract class IArtistsRepository {
   /// Salva dados do artista no Firestore e cache
   Future<Either<Failure, void>> addArtist(String uid, ArtistEntity artist);
 
+  // ==================== UPDATE OPERATIONS ====================
+  
+  /// Atualiza um artista existente
+  Future<Either<Failure, void>> updateArtist(String uid, ArtistEntity artist);
+
+  // ==================== VERIFICATION OPERATIONS ====================
+  
+  /// Verifica se nome artístico já existe
+  /// [excludeUid] - UID do artista a ser excluído da verificação
+  Future<Either<Failure, bool>> artistNameExists(String artistName, {String? excludeUid});
 }

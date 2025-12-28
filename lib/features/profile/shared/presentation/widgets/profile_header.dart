@@ -7,7 +7,6 @@ class ProfileHeader extends StatelessWidget {
   final String? imageUrl;
   final String name;
   final bool isArtist;
-  final String? userId;
   final VoidCallback? onProfilePictureTap;
   final bool isLoadingProfilePicture;
   final VoidCallback? onSwitchUserType;
@@ -18,7 +17,6 @@ class ProfileHeader extends StatelessWidget {
     this.imageUrl,
     required this.name,
     required this.isArtist,
-    this.userId,
     this.onProfilePictureTap,
     this.isLoadingProfilePicture = false,
     this.onSwitchUserType,

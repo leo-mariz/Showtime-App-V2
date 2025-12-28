@@ -56,21 +56,21 @@ class Validators {
 
   static String? validateCPF(String? cpf) {
     if (cpf == null || cpf.isEmpty) {
-      return 'CPF é obrigatório';
+      return 'Preencha o CPF';
     }
     final isCpfValid = CPFValidator.isValid(cpf);
-    return isCpfValid ? null : 'CPF inválido';
+    return isCpfValid ? null : 'Digite um CPF válido';
   }
 
   static String? validateCNPJ(String? cnpj) {
     if (cnpj == null || cnpj.isEmpty) {
-      return 'CNPJ é obrigatório';
+      return 'Preencha o CNPJ';
     }
     
     final isCnpjValid = CNPJValidator.isValid(cnpj);
 
     // Verifica se os dígitos calculados são iguais aos dígitos informados
-    return isCnpjValid ? null : 'CNPJ inválido';
+    return isCnpjValid ? null : 'Digite um CNPJ válido';
   }
 
   static String? validatePassword(String? value) {
@@ -101,19 +101,36 @@ class Validators {
       return 'Data de nascimento é obrigatória';
     }
 
+    // Verificar se a data está completa (dd/MM/yyyy = 10 caracteres)
+    if (value.length != 10) {
+      return 'Digite uma data válida (dd/MM/yyyy)';
+    }
+
     try {
-      // Formata a data no formato esperado (ajuste conforme o formato usado)
+      // Formata a data no formato esperado
       final DateFormat formatter = DateFormat('dd/MM/yyyy');
       final DateTime birthDate = formatter.parseStrict(value);
 
       final DateTime today = DateTime.now();
       final DateTime eighteenYearsAgo = DateTime(today.year - 18, today.month, today.day);
+      final DateTime maxAge = DateTime(today.year - 120, today.month, today.day);
 
+      // Verificar se a data não é futura
+      if (birthDate.isAfter(today)) {
+        return 'Data de nascimento não pode ser futura';
+      }
+
+      // Verificar idade mínima (18 anos)
       if (birthDate.isAfter(eighteenYearsAgo)) {
         return 'Você deve ter 18 anos';
       }
+
+      // Verificar idade máxima (120 anos)
+      if (birthDate.isBefore(maxAge)) {
+        return 'Data de nascimento inválida';
+      }
     } catch (e) {
-      return 'Data de nascimento inválida';
+      return 'Digite uma data válida (dd/MM/yyyy)';
     }
 
     return null; // Validação bem-sucedida

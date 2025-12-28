@@ -9,9 +9,9 @@ import 'package:app/core/validators/input_validator.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
-import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/core/users/presentation/bloc/events/users_events.dart';
+import 'package:app/core/users/presentation/bloc/states/users_states.dart';
 import 'package:cpf_cnpj_validator/cpf_validator.dart';
 
 class CpfForm extends StatefulWidget {
@@ -71,10 +71,21 @@ class CpfFormState extends State<CpfForm> {
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      final cleanCpf = widget.cpfController.text.replaceAll(RegExp(r'[^\d]'), '');
-      final cpfText = widget.cpfController.text;
+      final cpfText = widget.cpfController.text.trim();
+      final cleanCpf = cpfText.replaceAll(RegExp(r'[^\d]'), '');
 
-      // Se CPF não está completo, reset status
+      // 1. Verificar se campo não está vazio
+      if (cpfText.isEmpty) {
+        setState(() {
+          _validationStatus = null;
+          _errorMessage = null;
+          _lastValidatedCpf = null; // Reset para permitir nova validação quando preencher
+        });
+        widget.onValidationChanged(false);
+        return;
+      }
+
+      // 2. Verificar se CPF está completo (11 dígitos)
       if (cleanCpf.length != 11) {
         setState(() {
           _validationStatus = null;
@@ -84,18 +95,18 @@ class CpfFormState extends State<CpfForm> {
         return;
       }
 
-      // Verificar se CPF é válido (formato) antes de buscar
+      // 3. Verificar se CPF é válido (formato) antes de buscar
       if (!CPFValidator.isValid(cpfText)) {
         // CPF inválido - mostrar erro de formato
         setState(() {
           _validationStatus = DocumentValidationStatus.error;
-          _errorMessage = 'CPF inválido';
+          _errorMessage = 'Digite um CPF válido';
         });
         widget.onValidationChanged(false);
         return;
       }
 
-      // CPF válido e completo - buscar no banco se for diferente do último validado
+      // 4. CPF válido e completo - buscar no banco se for diferente do último validado
       if (cleanCpf != _lastValidatedCpf) {
         _validateCpf(cleanCpf);
       }
@@ -108,12 +119,12 @@ class CpfFormState extends State<CpfForm> {
       _lastValidatedCpf = cpf;
     });
 
-    context.read<AuthBloc>().add(CheckCpfExistsEvent(cpf: cpf));
+    context.read<UsersBloc>().add(CheckCpfExistsEvent(cpf: cpf));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<UsersBloc, UsersState>(
       listener: (context, state) {
         if (state is DocumentValidationSuccess && state.document == _lastValidatedCpf) {
           setState(() {
@@ -173,31 +184,21 @@ class CpfFormState extends State<CpfForm> {
           ],
         ),
         DSSizedBoxSpacing.vertical(8),
-        Row(
-          children: [
-            Expanded(
-              flex: 7,
-              child: CustomTextField(
-                label: 'Data de Nascimento',
-                controller: widget.birthdateController,
-                validator: Validators.validateBirthdate,
-                inputFormatters: [
-                  DateInputFormatter(),
-                ],
-              ),
-            ),
-            DSSizedBoxSpacing.horizontal(20),
-            Expanded(
-              flex: 6,
-              child: CustomDropdownButton(
-                labelText: 'Gênero',
-                itemsList: widget.genderOptions,
-                selectedValue: widget.selectedGender,
-                onChanged: widget.onGenderChanged,
-                validator: Validators.validateIsNull,
-              ),
-            ),
+        CustomTextField(
+          label: 'Data de Nascimento',
+          controller: widget.birthdateController,
+          validator: Validators.validateBirthdate,
+          inputFormatters: [
+            DateInputFormatter(),
           ],
+        ),
+        DSSizedBoxSpacing.vertical(8),
+        CustomDropdownButton(
+          labelText: 'Gênero',
+          itemsList: widget.genderOptions,
+          selectedValue: widget.selectedGender,
+          onChanged: widget.onGenderChanged,
+          validator: Validators.validateIsNull,
         ),
       ],
       ),

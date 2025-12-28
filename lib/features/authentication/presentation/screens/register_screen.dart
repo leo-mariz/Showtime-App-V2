@@ -1,5 +1,5 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/core/shared/widgets/link_text.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
@@ -170,6 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 label: _isLoading ? 'Cadastrando...' : 'Cadastrar',
                 filled: true,
                 onPressed: _isLoading ? null : _handleRegister,
+                isLoading: _isLoading,
               ),
               
               DSSizedBoxSpacing.vertical(190),

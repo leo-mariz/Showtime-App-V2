@@ -1,5 +1,6 @@
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/cnpj_form.dart';
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/cpf_form.dart';
+import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/artist_name_field.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 
@@ -24,6 +25,9 @@ class BasicInfoStep extends StatefulWidget {
   final TextEditingController emailController;
   final TextEditingController phoneNumberController;
   
+  // Controller nome artístico (apenas para artistas)
+  final TextEditingController? artistNameController;
+  
   // Estado CPF
   final String? selectedGender;
   final List<String> genderOptions;
@@ -32,6 +36,7 @@ class BasicInfoStep extends StatefulWidget {
   final Function(bool) onDocumentTypeChanged;
   final bool isCnpj;
   final Function(bool) onDocumentValidationChanged;
+  final Function(bool)? onArtistNameValidationChanged;
 
   const BasicInfoStep({
     super.key,
@@ -47,12 +52,14 @@ class BasicInfoStep extends StatefulWidget {
     required this.stateRegistrationController,
     required this.emailController,
     required this.phoneNumberController,
+    this.artistNameController,
     required this.selectedGender,
     required this.genderOptions,
     required this.onGenderChanged,
     required this.onDocumentTypeChanged,
     required this.isCnpj,
     required this.onDocumentValidationChanged,
+    this.onArtistNameValidationChanged,
   });
 
   @override
@@ -67,6 +74,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
 
     return Form(
       key: widget.formKey,
+      autovalidateMode: AutovalidateMode.disabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -113,6 +121,15 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
           ),
           
           DSSizedBoxSpacing.vertical(8),
+          
+          // Campo de nome artístico (apenas para artistas)
+          if (widget.isArtist && widget.artistNameController != null) ...[
+            ArtistNameField(
+              controller: widget.artistNameController!,
+              onValidationChanged: widget.onArtistNameValidationChanged ?? (_) {},
+            ),
+            DSSizedBoxSpacing.vertical(16),
+          ],
           
             // Campos específicos
             if (widget.isCnpj) ...[

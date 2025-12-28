@@ -4,7 +4,10 @@ import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
+import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/authentication/domain/usecases/resend_email_verification_usecase.dart';
 import 'package:app/features/profile/artists/data/datasources/artists_local_datasource.dart';
 import 'package:app/features/profile/artists/data/datasources/artists_remote_datasource.dart';
 import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
@@ -22,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:app/core/config/auto_router_config.dart';
 import 'package:flutter_auto_cache/flutter_auto_cache.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 // import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Authentication imports
@@ -58,6 +62,30 @@ import 'package:app/features/addresses/domain/usecases/add_address_usecase.dart'
 import 'package:app/features/addresses/domain/usecases/update_address_usecase.dart';
 import 'package:app/features/addresses/domain/usecases/delete_address_usecase.dart';
 import 'package:app/features/addresses/domain/usecases/set_primary_address_usecase.dart';
+
+// Clients imports
+import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
+import 'package:app/features/profile/clients/domain/usecases/get_client_usecase.dart';
+import 'package:app/features/profile/clients/domain/usecases/update_client_usecase.dart';
+import 'package:app/features/profile/clients/domain/usecases/update_client_preferences_usecase.dart';
+import 'package:app/features/profile/clients/domain/usecases/update_client_profile_picture_usecase.dart';
+import 'package:app/features/profile/clients/domain/usecases/update_client_agreement_usecase.dart';
+
+// Artists imports
+import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_profile_picture_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_name_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
+
+// Users imports
+import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/core/users/domain/usecases/get_user_data_usecase.dart';
+
+import 'package:app/core/services/storage_service.dart';
 
 /// Factory function para criar o AuthBloc com todas as dependências
 AuthBloc _createAuthBloc(IAuthServices authServices, 
@@ -118,20 +146,24 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
     biometricService: biometricService,
   );
 
-  final checkCpfExistsUseCase = CheckCpfExistsUseCase(
-    usersRepository: usersRepository,
-  );
-
-  final checkCnpjExistsUseCase = CheckCnpjExistsUseCase(
-    usersRepository: usersRepository,
-  );
-
   final checkShouldShowBiometricsPromptUseCase = CheckShouldShowBiometricsPromptUseCase(
     biometricService: biometricService,
   );
 
   final checkBiometricsEnabledUseCase = CheckBiometricsEnabledUseCase(
     biometricService: biometricService,
+  );
+
+  final checkEmailVerifiedUseCase = CheckEmailVerifiedUseCase(
+    authServices: authServices,
+  );
+
+  final resendEmailVerificationUseCase = ResendEmailVerificationUseCase(
+    authServices: authServices,
+  );
+
+  final checkNewEmailVerifiedUseCase = CheckNewEmailVerifiedUseCase(
+    authServices: authServices,
   );
 
   // 6. Criar e retornar AuthBloc
@@ -145,10 +177,11 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
     loginWithBiometricsUseCase: loginWithBiometricsUseCase,
     disableBiometricsUseCase: disableBiometricsUseCase,
     logoutUseCase: logoutUseCase,
-    checkCpfExistsUseCase: checkCpfExistsUseCase,
-    checkCnpjExistsUseCase: checkCnpjExistsUseCase,
     checkShouldShowBiometricsPromptUseCase: checkShouldShowBiometricsPromptUseCase,
     checkBiometricsEnabledUseCase: checkBiometricsEnabledUseCase,
+    checkEmailVerifiedUseCase: checkEmailVerifiedUseCase,
+    resendEmailVerificationUseCase: resendEmailVerificationUseCase,
+    checkNewEmailVerifiedUseCase: checkNewEmailVerifiedUseCase,
   );
 }
 
@@ -184,10 +217,125 @@ AddressesBloc _createAddressesBloc(ILocalCacheService localCacheService, Firebas
   );
 }
 
+/// Factory function para criar o ClientsBloc com todas as dependências
+ClientsBloc _createClientsBloc(
+  IClientsRepository clientsRepository,
+  GetUserUidUseCase getUserUidUseCase,
+  IStorageService storageService,
+) {
+  // Criar UseCases
+  final getClientUseCase = GetClientUseCase(repository: clientsRepository);
+  final updateClientUseCase = UpdateClientUseCase(repository: clientsRepository);
+  final updateClientPreferencesUseCase = UpdateClientPreferencesUseCase(
+    getClientUseCase: getClientUseCase,
+    updateClientUseCase: updateClientUseCase,
+  );
+  final updateClientProfilePictureUseCase = UpdateClientProfilePictureUseCase(
+    getClientUseCase: getClientUseCase,
+    updateClientUseCase: updateClientUseCase,
+    storageService: storageService,
+  );
+  final updateClientAgreementUseCase = UpdateClientAgreementUseCase(
+    getClientUseCase: getClientUseCase,
+    updateClientUseCase: updateClientUseCase,
+  );
+
+  // Criar e retornar ClientsBloc
+  return ClientsBloc(
+    getClientUseCase: getClientUseCase,
+    updateClientUseCase: updateClientUseCase,
+    updateClientPreferencesUseCase: updateClientPreferencesUseCase,
+    updateClientProfilePictureUseCase: updateClientProfilePictureUseCase,
+    updateClientAgreementUseCase: updateClientAgreementUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+/// Factory function para criar o UsersBloc com todas as dependências
+UsersBloc _createUsersBloc(
+  IUsersRepository usersRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final getUserDataUseCase = GetUserDataUseCase(usersRepository: usersRepository);
+  final checkCpfExistsUseCase = CheckCpfExistsUseCase(usersRepository: usersRepository);
+  final checkCnpjExistsUseCase = CheckCnpjExistsUseCase(usersRepository: usersRepository);
+
+  // Criar e retornar UsersBloc
+  return UsersBloc(
+    getUserDataUseCase: getUserDataUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+    checkCpfExistsUseCase: checkCpfExistsUseCase,
+    checkCnpjExistsUseCase: checkCnpjExistsUseCase,
+  );
+}
+
+/// Factory function para criar o ArtistsBloc com todas as dependências
+ArtistsBloc _createArtistsBloc(
+  IArtistsRepository artistsRepository,
+  GetUserUidUseCase getUserUidUseCase,
+  IStorageService storageService,
+) {
+  // Criar UseCases
+  final getArtistUseCase = GetArtistUseCase(repository: artistsRepository);
+  final updateArtistUseCase = UpdateArtistUseCase(repository: artistsRepository);
+  final updateArtistProfilePictureUseCase = UpdateArtistProfilePictureUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+    storageService: storageService,
+  );
+  final checkArtistNameExistsUseCase = CheckArtistNameExistsUseCase(
+    repository: artistsRepository,
+  );
+  final updateArtistNameUseCase = UpdateArtistNameUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+    checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
+  );
+  final updateArtistProfessionalInfoUseCase = UpdateArtistProfessionalInfoUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+  );
+  final updateArtistAgreementUseCase = UpdateArtistAgreementUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+  );
+
+  // Criar e retornar ArtistsBloc
+  return ArtistsBloc(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+    updateArtistProfilePictureUseCase: updateArtistProfilePictureUseCase,
+    updateArtistNameUseCase: updateArtistNameUseCase,
+    updateArtistProfessionalInfoUseCase: updateArtistProfessionalInfoUseCase,
+    updateArtistAgreementUseCase: updateArtistAgreementUseCase,
+    checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
 Future <void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized(); 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Configurar Firebase App Check
+  await FirebaseAppCheck.instance.activate(
+    // Default provider for Android is the Play Integrity provider. You can use the "AndroidProvider" enum to choose
+    // your preferred provider. Choose from:
+    // 1. Debug provider
+    // 2. Safety Net provider
+    // 3. Play Integrity provider
+    androidProvider: AndroidProvider.debug,
+    // Default provider for iOS/macOS is the Device Check provider. You can use the "AppleProvider" enum to choose
+        // your preferred provider. Choose from:
+        // 1. Debug provider
+        // 2. Device Check provider
+        // 3. App Attest provider
+         // 4. App Attest provider with fallback to Device Check provider (App Attest provider is only available on iOS 14.0+, macOS 14.0+)
+     appleProvider: AppleProvider.debug, // Use debug para obter token de debug no Xcode
+  );
+  
   await AutoCacheInitializer.initialize();
   setupLocator();
   
@@ -196,6 +344,7 @@ Future <void> main() async {
   final firestore = getIt<FirebaseFirestore>();
   final localCacheService = getIt<ILocalCacheService>();
   final biometricService = getIt<IBiometricAuthService>();
+  final storageService = getIt<IStorageService>();
 
   final appRouter = AppRouter();
 
@@ -238,8 +387,28 @@ Future <void> main() async {
               localCacheService, 
               firestore, 
               getUserUidUseCase
+            ),
           ),
-        ),
+          BlocProvider(
+            create: (context) => _createClientsBloc(
+              clientsRepository,
+              getUserUidUseCase,
+              storageService,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createArtistsBloc(
+              artistsRepository,
+              getUserUidUseCase,
+              storageService,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createUsersBloc(
+              usersRepository,
+              getUserUidUseCase,
+            ),
+          ),
         ],
         child: MyApp(appRouter: appRouter),
       ),

@@ -34,10 +34,10 @@ class PhotoConfirmationDialog extends StatelessWidget {
           children: [
             // Título
             Text(
-              'Confirmar foto de perfil',
+              'Foto de perfil',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
+                color: colorScheme.onPrimaryContainer,
               ),
               textAlign: TextAlign.center,
             ),
@@ -93,10 +93,9 @@ class PhotoConfirmationDialog extends StatelessWidget {
               children: [
                 // Botão Cancelar
                 Expanded(
-                  child: DialogButton.secondary(
+                  child: DialogButton.text(
                     text: 'Cancelar',
                     foregroundColor: Theme.of(context).colorScheme.error,
-                    borderColor: Theme.of(context).colorScheme.error,
                     onPressed: onCancel,
                   ),
                 ),
@@ -107,7 +106,8 @@ class PhotoConfirmationDialog extends StatelessWidget {
                 Expanded(
                   child: DialogButton.primary(
                     text: 'Confirmar',
-                    onPressed: onConfirm,
+                    backgroundColor: colorScheme.onPrimaryContainer,
+                    onPressed: onConfirm ?? () => Navigator.of(context).pop(true),
                   ),
                 ),
               ],
@@ -130,7 +130,7 @@ class PhotoConfirmationDialog extends StatelessWidget {
       builder: (context) => PhotoConfirmationDialog(
         imageFile: imageFile,
         onConfirm: () => router.maybePop(true),
-        onCancel: () => router.maybePop(true),
+        onCancel: () => router.maybePop(false),
       ),
     );
   }

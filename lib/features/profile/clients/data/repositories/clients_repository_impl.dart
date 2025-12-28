@@ -29,6 +29,7 @@ class ClientsRepositoryImpl implements IClientsRepository {
       // Primeiro tenta buscar do cache
       try {
         final cachedClient = await localDataSource.getCachedClient();
+        
         if (cachedClient != null && cachedClient.uid == uid) {
           return Right(cachedClient);
         }

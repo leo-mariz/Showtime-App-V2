@@ -1,5 +1,5 @@
 import 'package:app/core/errors/failure.dart' as domain;
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/features/authentication/domain/usecases/check_user_logged_in_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/disable_biometrics_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/login_usecase.dart';
@@ -9,10 +9,11 @@ import 'package:app/features/authentication/domain/usecases/register_email_passw
 import 'package:app/features/authentication/domain/usecases/register_onboarding_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/send_password_reset_email_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/enable_biometrics_usecase.dart';
-import 'package:app/core/users/domain/usecases/check_cpf_exists_usecase.dart';
-import 'package:app/core/users/domain/usecases/check_cnpj_exists_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_should_show_biometrics_prompt_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_biometrics_enabled_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/resend_email_verification_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,10 +28,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginWithBiometricsUseCase loginWithBiometricsUseCase;
   final DisableBiometricsUseCase disableBiometricsUseCase;
   final LogoutUseCase logoutUseCase;
-  final CheckCpfExistsUseCase checkCpfExistsUseCase;
-  final CheckCnpjExistsUseCase checkCnpjExistsUseCase;
   final CheckShouldShowBiometricsPromptUseCase checkShouldShowBiometricsPromptUseCase;
   final CheckBiometricsEnabledUseCase checkBiometricsEnabledUseCase;
+  final CheckEmailVerifiedUseCase checkEmailVerifiedUseCase;
+  final ResendEmailVerificationUseCase resendEmailVerificationUseCase;
+  final CheckNewEmailVerifiedUseCase checkNewEmailVerifiedUseCase;
 
   AuthBloc({
     required this.loginUseCase,
@@ -42,10 +44,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.loginWithBiometricsUseCase,
     required this.disableBiometricsUseCase,
     required this.logoutUseCase,
-    required this.checkCpfExistsUseCase,
-    required this.checkCnpjExistsUseCase,
     required this.checkShouldShowBiometricsPromptUseCase,
     required this.checkBiometricsEnabledUseCase,
+    required this.checkEmailVerifiedUseCase,
+    required this.resendEmailVerificationUseCase,
+    required this.checkNewEmailVerifiedUseCase,
   }) : super(AuthInitial()) {
     on<RegisterUserEmailAndPasswordEvent>(_onRegisterUserEmailAndPasswordEvent);
     on<LoginUserEvent>(_onLoginUserEvent);
@@ -60,10 +63,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<DisableBiometricsEvent>(_onDisableBiometricsEvent);
     on<UserLogoutEvent>(_onLogoutEvent);
     
-    on<CheckCpfExistsEvent>(_onCheckCpfExistsEvent);
-    on<CheckCnpjExistsEvent>(_onCheckCnpjExistsEvent);
     on<CheckShouldShowBiometricsPromptEvent>(_onCheckShouldShowBiometricsPromptEvent);
     on<CheckBiometricsEnabledEvent>(_onCheckBiometricsEnabledEvent);
+    on<CheckEmailVerifiedEvent>(_onCheckEmailVerifiedEvent);
+    on<ResendEmailVerificationEvent>(_onResendEmailVerificationEvent);
+    on<CheckNewEmailVerifiedEvent>(_onCheckNewEmailVerifiedEvent);
   }
 
   Future<void> _onRegisterUserEmailAndPasswordEvent(
@@ -119,7 +123,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else if (failure is domain.NetworkFailure) {
         emit(AuthConnectionFailure(message: failure.message));
       } else if (failure is domain.IncompleteDataFailure) {
-        emit(AuthDataIncomplete(message: failure.message));
+        // Verificar se é especificamente email não verificado
+        final isEmailNotVerified = failure.missingFields?.contains('emailVerification') ?? false;
+        
+        if (isEmailNotVerified) {
+          // Emitir estado específico para email não verificado
+          emit(EmailNotVerified(email: event.user.email));
+        } else {
+          // Outros dados incompletos (ex: CPF/CNPJ)
+          emit(AuthDataIncomplete(message: failure.message));
+        }
       } else {
         emit(AuthFailure(error: failure.message));
       }
@@ -302,7 +315,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthInitial());
       },
       (_) {
-        emit(AuthSuccess(user: event.user, message: 'Biometria desabilitada com sucesso'));
+        emit(AuthSuccess(message: 'Biometria desabilitada com sucesso'));
         emit(AuthInitial());
       },
     );
@@ -326,58 +339,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (_) {
         emit(AuthLoggedOut());
-        emit(AuthInitial());
-      },
-    );
-  }
-
-  Future<void> _onCheckCpfExistsEvent(
-    CheckCpfExistsEvent event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(DocumentValidationLoading(document: event.cpf));
-    
-    final result = await checkCpfExistsUseCase.call(event.cpf);
-    
-    result.fold(
-      (failure) {
-        emit(DocumentValidationFailure(
-          document: event.cpf,
-          error: failure.message,
-        ));
-        emit(AuthInitial());
-      },
-      (exists) {
-        emit(DocumentValidationSuccess(
-          document: event.cpf,
-          exists: exists,
-        ));
-        emit(AuthInitial());
-      },
-    );
-  }
-
-  Future<void> _onCheckCnpjExistsEvent(
-    CheckCnpjExistsEvent event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(DocumentValidationLoading(document: event.cnpj));
-    
-    final result = await checkCnpjExistsUseCase.call(event.cnpj);
-    
-    result.fold(
-      (failure) {
-        emit(DocumentValidationFailure(
-          document: event.cnpj,
-          error: failure.message,
-        ));
-        emit(AuthInitial());
-      },
-      (exists) {
-        emit(DocumentValidationSuccess(
-          document: event.cnpj,
-          exists: exists,
-        ));
         emit(AuthInitial());
       },
     );
@@ -427,6 +388,74 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (isEnabled) {
         emit(CheckBiometricsEnabledSuccess(isEnabled: isEnabled));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  // ==================== CHECK EMAIL VERIFIED ====================
+
+  Future<void> _onCheckEmailVerifiedEvent(
+    CheckEmailVerifiedEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(CheckEmailVerifiedLoading());
+
+    final result = await checkEmailVerifiedUseCase.call();
+
+    result.fold(
+      (failure) {
+        emit(CheckEmailVerifiedFailure(error: failure.message));
+        emit(AuthInitial());
+      },
+      (isVerified) {
+        emit(CheckEmailVerifiedSuccess(isVerified: isVerified));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  // ==================== RESEND EMAIL VERIFICATION ====================
+
+  Future<void> _onResendEmailVerificationEvent(
+    ResendEmailVerificationEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(ResendEmailVerificationLoading());
+
+    final result = await resendEmailVerificationUseCase.call();
+
+    result.fold(
+      (failure) {
+        emit(ResendEmailVerificationFailure(error: failure.message));
+        emit(AuthInitial());
+      },
+      (_) {
+        emit(ResendEmailVerificationSuccess(
+          message: 'E-mail de verificação reenviado!',
+        ));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  // ==================== CHECK NEW EMAIL VERIFIED ====================
+
+  Future<void> _onCheckNewEmailVerifiedEvent(
+    CheckNewEmailVerifiedEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(CheckNewEmailVerifiedLoading());
+
+    final result = await checkNewEmailVerifiedUseCase.call(event.newEmail);
+
+    result.fold(
+      (failure) {
+        emit(CheckNewEmailVerifiedFailure(error: failure.message));
+        emit(AuthInitial());
+      },
+      (isVerified) {
+        emit(CheckNewEmailVerifiedSuccess(isVerified: isVerified));
         emit(AuthInitial());
       },
     );

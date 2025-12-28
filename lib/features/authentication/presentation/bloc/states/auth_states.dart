@@ -1,4 +1,4 @@
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthState extends Equatable {
@@ -62,6 +62,16 @@ class AuthDataIncomplete extends AuthState {
 
   @override
   List<Object?> get props => [message];
+}
+
+/// Estado para quando email não está verificado
+class EmailNotVerified extends AuthState {
+  final String email;
+
+  EmailNotVerified({required this.email});
+
+  @override
+  List<Object?> get props => [email];
 }
 
 
@@ -141,42 +151,6 @@ class AuthProfileMismatch extends AuthState {
   List<Object?> get props => [error];
 }
 
-// Estados para validação de documentos
-class DocumentValidationLoading extends AuthState {
-  final String document; // CPF ou CNPJ sendo validado
-
-  DocumentValidationLoading({required this.document});
-
-  @override
-  List<Object?> get props => [document];
-}
-
-class DocumentValidationSuccess extends AuthState {
-  final String document;
-  final bool exists; // true se já existe, false se está disponível
-
-  DocumentValidationSuccess({
-    required this.document,
-    required this.exists,
-  });
-
-  @override
-  List<Object?> get props => [document, exists];
-}
-
-class DocumentValidationFailure extends AuthState {
-  final String document;
-  final String error;
-
-  DocumentValidationFailure({
-    required this.document,
-    required this.error,
-  });
-
-  @override
-  List<Object?> get props => [document, error];
-}
-
 // Estado para verificar se deve mostrar prompt de biometria
 class CheckShouldShowBiometricsPromptSuccess extends AuthState {
   final bool shouldShow;
@@ -199,6 +173,67 @@ class CheckBiometricsEnabledSuccess extends AuthState {
 
   @override
   List<Object?> get props => [isEnabled];
+}
+
+// Estados para verificação de email
+class CheckEmailVerifiedLoading extends AuthState {}
+
+class CheckEmailVerifiedSuccess extends AuthState {
+  final bool isVerified;
+
+  CheckEmailVerifiedSuccess({required this.isVerified});
+
+  @override
+  List<Object?> get props => [isVerified];
+}
+
+class CheckEmailVerifiedFailure extends AuthState {
+  final String error;
+
+  CheckEmailVerifiedFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+class ResendEmailVerificationLoading extends AuthState {}
+
+class ResendEmailVerificationSuccess extends AuthState {
+  final String message;
+
+  ResendEmailVerificationSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class ResendEmailVerificationFailure extends AuthState {
+  final String error;
+
+  ResendEmailVerificationFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+class CheckNewEmailVerifiedLoading extends AuthState {}
+
+class CheckNewEmailVerifiedSuccess extends AuthState {
+  final bool isVerified;
+
+  CheckNewEmailVerifiedSuccess({required this.isVerified});
+
+  @override
+  List<Object?> get props => [isVerified];
+}
+
+class CheckNewEmailVerifiedFailure extends AuthState {
+  final String error;
+
+  CheckNewEmailVerifiedFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
 }
 
 

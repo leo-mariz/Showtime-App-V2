@@ -29,6 +29,7 @@ class CustomCircleAvatar extends StatelessWidget {
         GestureDetector(
           onTap: isLoading ? null : onEdit, // Desabilita tap durante carregamento
           child: CircleAvatar(
+            key: imageUrl != null ? ValueKey(imageUrl) : null,
             backgroundColor: secondaryColor,
             radius: DSSize.width(size / 2),
             backgroundImage: imageUrl != null && !isLoading

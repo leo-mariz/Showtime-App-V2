@@ -1,6 +1,6 @@
 import 'package:app/core/config/setup_locator.dart';
 import 'package:app/core/domain/email/email_entity.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/core/templates/email_templates.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/mail_services.dart';

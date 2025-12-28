@@ -4,13 +4,11 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
-import 'package:app/core/domain/user/user_entity.dart';
 import 'package:app/features/profile/shared/presentation/widgets/option_icon.dart';
 import 'package:app/features/profile/shared/presentation/widgets/option_switch.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,9 +37,8 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
     final confirmed = await _showDisableDialog();
     if (confirmed == true) {
       // Obter usuário atual para o evento
-      final user = await _getCurrentUser();
-      if (user != null && mounted) {
-        context.read<AuthBloc>().add(DisableBiometricsEvent(user: user));
+      if (mounted) {
+        context.read<AuthBloc>().add(DisableBiometricsEvent());
       } else {
         // Reverte o switch se não conseguir obter usuário
       setState(() {
@@ -64,17 +61,16 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
     final confirmed = await _showEnableDialog();
     if (confirmed == true) {
       // Obter usuário atual para o logout
-      final user = await _getCurrentUser();
-      if (user != null && mounted) {
+      if (mounted) {
         // Fazer logout - isso redirecionará para a tela de login
         // No login, já existe a lógica para pedir biometria após login bem-sucedido
         context.read<AuthBloc>().add(UserLogoutEvent());
       } else {
         // Reverte o switch se não conseguir obter usuário
-      setState(() {
+        setState(() {
           _biometriaHabilitada = false;
-      });
-      if (mounted) {
+        });
+        if (mounted) {
           context.showError('Erro ao obter informações do usuário');
         }
       }
@@ -104,33 +100,6 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
       confirmText: 'Confirmar',
       cancelText: 'Cancelar',
     );
-  }
-
-  /// Obtém o usuário atual para usar nos eventos
-  Future<UserEntity?> _getCurrentUser() async {
-    try {
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-      if (firebaseUser?.email == null) {
-        return null;
-      }
-
-      // Verificar se é artista através do CheckUserLoggedInUseCase
-      final authBloc = context.read<AuthBloc>();
-      final checkResult = await authBloc.checkUserLoggedInUseCase.call();
-      
-      return checkResult.fold(
-        (_) => null,
-        (response) {
-          return UserEntity(
-            uid: firebaseUser?.uid,
-            email: firebaseUser!.email!,
-            isArtist: response.isArtist,
-          );
-        },
-      );
-    } catch (e) {
-      return null;
-    }
   }
 
   @override

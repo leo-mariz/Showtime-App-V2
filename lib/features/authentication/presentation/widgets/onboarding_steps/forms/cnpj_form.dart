@@ -7,9 +7,9 @@ import 'package:app/core/validators/input_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
-import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
-import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/core/users/presentation/bloc/events/users_events.dart';
+import 'package:app/core/users/presentation/bloc/states/users_states.dart';
 import 'package:cpf_cnpj_validator/cnpj_validator.dart';
 
 class CnpjForm extends StatefulWidget {
@@ -63,10 +63,21 @@ class CnpjFormState extends State<CnpjForm> {
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      final cleanCnpj = widget.cnpjController.text.replaceAll(RegExp(r'[^\d]'), '');
-      final cnpjText = widget.cnpjController.text;
+      final cnpjText = widget.cnpjController.text.trim();
+      final cleanCnpj = cnpjText.replaceAll(RegExp(r'[^\d]'), '');
 
-      // Se CNPJ não está completo, reset status
+      // 1. Verificar se campo não está vazio
+      if (cnpjText.isEmpty) {
+        setState(() {
+          _validationStatus = null;
+          _errorMessage = null;
+          _lastValidatedCnpj = null; // Reset para permitir nova validação quando preencher
+        });
+        widget.onValidationChanged(false);
+        return;
+      }
+
+      // 2. Verificar se CNPJ está completo (14 dígitos)
       if (cleanCnpj.length != 14) {
         setState(() {
           _validationStatus = null;
@@ -76,18 +87,18 @@ class CnpjFormState extends State<CnpjForm> {
         return;
       }
 
-      // Verificar se CNPJ é válido (formato) antes de buscar
+      // 3. Verificar se CNPJ é válido (formato) antes de buscar
       if (!CNPJValidator.isValid(cnpjText)) {
         // CNPJ inválido - mostrar erro de formato
         setState(() {
           _validationStatus = DocumentValidationStatus.error;
-          _errorMessage = 'CNPJ inválido';
+          _errorMessage = 'Digite um CNPJ válido';
         });
         widget.onValidationChanged(false);
         return;
       }
 
-      // CNPJ válido e completo - buscar no banco se for diferente do último validado
+      // 4. CNPJ válido e completo - buscar no banco se for diferente do último validado
       if (cleanCnpj != _lastValidatedCnpj) {
         _validateCnpj(cleanCnpj);
       }
@@ -100,12 +111,12 @@ class CnpjFormState extends State<CnpjForm> {
       _lastValidatedCnpj = cnpj;
     });
 
-    context.read<AuthBloc>().add(CheckCnpjExistsEvent(cnpj: cnpj));
+    context.read<UsersBloc>().add(CheckCnpjExistsEvent(cnpj: cnpj));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<UsersBloc, UsersState>(
       listener: (context, state) {
         if (state is DocumentValidationSuccess && state.document == _lastValidatedCnpj) {
           setState(() {

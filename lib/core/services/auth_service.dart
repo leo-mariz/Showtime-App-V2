@@ -17,6 +17,7 @@ abstract class IAuthServices {
   Future<bool> isUserLoggedIn();
   Future<String?> getUserUid();
   Future<bool> isEmailVerified();
+  Future<void> reloadUser();
   Future<void> deleteAccount();
   Future<void> logout();
 }
@@ -359,6 +360,19 @@ class FirebaseAuthServicesImpl implements IAuthServices {
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro ao verificar se email está verificado',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> reloadUser() async {
+    try {
+      await _auth.currentUser?.reload();
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao recarregar dados do usuário',
         originalError: e,
         stackTrace: stackTrace,
       );

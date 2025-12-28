@@ -1,5 +1,5 @@
 
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/auto_cache_service.dart';
 

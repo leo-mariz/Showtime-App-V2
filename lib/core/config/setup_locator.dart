@@ -8,6 +8,7 @@ import 'package:app/core/services/image_cache_service.dart';
 import 'package:app/core/services/cep_service.dart';
 import 'package:app/core/services/biometric_auth_service.dart';
 import 'package:app/core/services/app_notification_service.dart';
+import 'package:app/core/services/storage_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final getIt = GetIt.instance;
@@ -44,6 +45,10 @@ void setupLocator() {
   
   getIt.registerLazySingleton<IAppNotificationService>(
     () => AppNotificationServiceImpl(),
+  );
+  
+  getIt.registerLazySingleton<IStorageService>(
+    () => StorageService(),
   );
   
   getIt.registerLazySingleton<FirebaseFirestore>(

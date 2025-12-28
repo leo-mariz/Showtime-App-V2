@@ -1,5 +1,5 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:app/core/enums/user_type.dart';
 import 'package:app/core/shared/widgets/link_text.dart';
 import 'package:flutter/material.dart';
@@ -126,7 +126,12 @@ class _LoginScreenState extends State<LoginScreen> {
           context.showError(state.error);
         } else if (state is AuthConnectionFailure) {
           context.showError(state.message);
+        } else if (state is EmailNotVerified) {
+          // Email não verificado - mostrar warning e redirecionar para verificação
+          context.showWarning('Por favor, verifique seu e-mail antes de continuar.');
+          router.replace(EmailVerificationRoute(email: state.email));
         } else if (state is AuthDataIncomplete) {
+          // Outros dados incompletos (ex: CPF/CNPJ) - redirecionar para onboarding
           context.showSuccess(state.message);
           router.replace(OnboardingRoute(email: _emailController.text.trim()));
         }

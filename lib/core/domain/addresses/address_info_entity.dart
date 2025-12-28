@@ -1,4 +1,4 @@
-import 'package:app/core/domain/user/user_entity.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 part 'address_info_entity.mapper.dart';

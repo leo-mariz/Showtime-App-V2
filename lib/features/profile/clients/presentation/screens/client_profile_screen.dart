@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
@@ -9,6 +10,7 @@ import 'package:app/features/profile/shared/presentation/widgets/logout_button.d
 import 'package:app/features/profile/shared/presentation/widgets/profile_header.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_option_tile.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_picture/photo_confirmation_dialog.dart';
+import 'package:app/features/profile/shared/presentation/widgets/profile_picture/profile_picture_options_menu.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
@@ -340,24 +342,141 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
 
   /// Gerencia o tap no avatar da foto de perfil
   Future<void> _handleProfilePictureTap() async {
-    // Selecionar imagem da galeria
-    final imageFile = await _imagePickerService.pickImageFromGallery();
-    
-    if (imageFile == null || !mounted) return;
+    if (!mounted) return;
 
-    // Mostrar dialog de confirmação
+    final clientsBloc = context.read<ClientsBloc>();
+    final client = clientsBloc.state is GetClientSuccess
+        ? (clientsBloc.state as GetClientSuccess).client
+        : null;
+    
+    final hasImage = client?.profilePicture != null && client!.profilePicture!.isNotEmpty;
+
+    // Mostrar modal de opções
+    final option = await ProfilePictureOptionsMenu.show(
+      context,
+      hasImage: hasImage,
+    );
+
+    if (option == null || !mounted) return;
+
+    switch (option) {
+      case ProfilePictureOption.view:
+        // Visualizar imagem em tela cheia
+        _showImageViewDialog(client?.profilePicture);
+        break;
+
+      case ProfilePictureOption.gallery:
+        // Selecionar da galeria
+        final imageFile = await _imagePickerService.pickImageFromGallery();
+        if (imageFile != null && mounted) {
+          await _confirmAndUpdateProfilePicture(imageFile);
+        }
+        break;
+
+      case ProfilePictureOption.camera:
+        // Capturar da câmera
+        final imageFile = await _imagePickerService.captureImageFromCamera();
+        if (imageFile != null && mounted) {
+          await _confirmAndUpdateProfilePicture(imageFile);
+        }
+        break;
+
+      case ProfilePictureOption.remove:
+        // Remover foto de perfil
+        await _confirmAndRemoveProfilePicture();
+        break;
+    }
+  }
+
+  /// Mostra a imagem em tela cheia
+  void _showImageViewDialog(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: DSSize.width(48),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: DSSize.height(16),
+              right: DSSize.width(16),
+              child: IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: DSSize.width(32),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Confirma e atualiza a foto de perfil
+  Future<void> _confirmAndUpdateProfilePicture(File imageFile) async {
     final confirmed = await PhotoConfirmationDialog.show(
       context,
       imageFile: imageFile,
     );
 
     if (confirmed == true && mounted) {
-      // Disparar evento de atualização
       context.read<ClientsBloc>().add(
         UpdateClientProfilePictureEvent(
           localFilePath: imageFile.path,
         ),
       );
+    }
+  }
+
+  /// Confirma e remove a foto de perfil
+  Future<void> _confirmAndRemoveProfilePicture() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remover foto de perfil'),
+        content: const Text('Tem certeza que deseja remover sua foto de perfil?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      // TODO: Implementar evento para remover foto de perfil
+      // Por enquanto, apenas mostra uma mensagem
+      context.showError('Funcionalidade de remoção em desenvolvimento');
     }
   }
 

@@ -79,6 +79,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_profi
 import 'package:app/features/profile/artists/domain/usecases/update_artist_name_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 
 // Users imports
@@ -300,6 +301,11 @@ ArtistsBloc _createArtistsBloc(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
   );
+  final updateArtistPresentationMediasUseCase = UpdateArtistPresentationMediasUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+    storageService: storageService,
+  );
 
   // Criar e retornar ArtistsBloc
   return ArtistsBloc(
@@ -309,6 +315,7 @@ ArtistsBloc _createArtistsBloc(
     updateArtistNameUseCase: updateArtistNameUseCase,
     updateArtistProfessionalInfoUseCase: updateArtistProfessionalInfoUseCase,
     updateArtistAgreementUseCase: updateArtistAgreementUseCase,
+    updateArtistPresentationMediasUseCase: updateArtistPresentationMediasUseCase,
     checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );

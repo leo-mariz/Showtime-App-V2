@@ -61,7 +61,6 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         } else if (state is CheckNewEmailVerifiedSuccess) {
           if (state.isVerified) {
             router.maybePop();
-            // TODO: Navegar para tela apropriada após verificação de novo email
           } else {
             context.showError('E-mail ainda não verificado. Verifique sua caixa de entrada.');
           }

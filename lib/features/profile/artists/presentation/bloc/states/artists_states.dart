@@ -106,6 +106,21 @@ class UpdateArtistAgreementFailure extends ArtistsState {
   List<Object?> get props => [error];
 }
 
+// ==================== UPDATE ARTIST PRESENTATION MEDIAS STATES ====================
+
+class UpdateArtistPresentationMediasLoading extends ArtistsState {}
+
+class UpdateArtistPresentationMediasSuccess extends ArtistsState {}
+
+class UpdateArtistPresentationMediasFailure extends ArtistsState {
+  final String error;
+
+  UpdateArtistPresentationMediasFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== CHECK ARTIST NAME EXISTS STATES ====================
 
 class CheckArtistNameExistsLoading extends ArtistsState {

@@ -81,24 +81,108 @@ class _CustomTextFieldState extends State<CustomTextField> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          TextField(
-            controller: widget.controller,
-            focusNode: _focusNode,
-            obscureText: widget.isPassword ? !_isPasswordVisible : widget.obscureText,
-            keyboardType: widget.keyboardType,
-            onChanged: widget.onChanged,
-            maxLines: widget.maxLines,
-            minLines: widget.minLines,
-            enabled: widget.enabled,
-            inputFormatters: widget.inputFormatters,
-            cursorColor: textColor,
-            style: textTheme.bodyMedium?.copyWith(
-              color: widget.enabled 
-                  ? textColor 
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.normal,
-            ),
-            decoration: InputDecoration(
+          // Usar TextFormField se houver validator, senão usar TextField
+          widget.validator != null
+              ? TextFormField(
+                  controller: widget.controller,
+                  focusNode: _focusNode,
+                  obscureText: widget.isPassword ? !_isPasswordVisible : widget.obscureText,
+                  keyboardType: widget.keyboardType,
+                  onChanged: widget.onChanged,
+                  maxLines: widget.maxLines,
+                  minLines: widget.minLines,
+                  enabled: widget.enabled,
+                  inputFormatters: widget.inputFormatters,
+                  validator: widget.validator,
+                  cursorColor: textColor,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: widget.enabled 
+                        ? textColor 
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  decoration: InputDecoration(
+                    errorStyle: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.error,
+                      fontSize: calculateFontSize(11),
+                    ),
+                    errorMaxLines: 2,
+                    hintStyle: textTheme.bodyMedium?.copyWith(color: textColor),
+                    filled: true,
+                    suffixIcon: widget.isPassword ? IconButton(
+                        icon: Icon(
+                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          color: textColor,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ) 
+                    : null,
+                    fillColor: widget.enabled 
+                        ? surfaceContainerColor
+                        : colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(
+                        // color: colorScheme.onPrimary.withValues(alpha: 0.5 * 255),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(color: surfaceContainerColor),
+                    ),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(
+                        color: colorScheme.surfaceContainer,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSSize.width(16)),
+                      borderSide: BorderSide(
+                        color: colorScheme.error,
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: DSSize.width(16),
+                      vertical: DSSize.height(18),
+                    ),
+                    labelText: null, // Não usar o label padrão
+                  ),
+                )
+              : TextField(
+                  controller: widget.controller,
+                  focusNode: _focusNode,
+                  obscureText: widget.isPassword ? !_isPasswordVisible : widget.obscureText,
+                  keyboardType: widget.keyboardType,
+                  onChanged: widget.onChanged,
+                  maxLines: widget.maxLines,
+                  minLines: widget.minLines,
+                  enabled: widget.enabled,
+                  inputFormatters: widget.inputFormatters,
+                  cursorColor: textColor,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: widget.enabled 
+                        ? textColor 
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  decoration: InputDecoration(
               hintStyle: textTheme.bodyMedium?.copyWith(color: textColor),
               filled: true,
                suffixIcon: widget.isPassword ? IconButton(
@@ -138,13 +222,13 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   color: colorScheme.onPrimary,
                 ),
               ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: DSSize.width(16),
-                vertical: DSSize.height(18),
-              ),
-              labelText: null, // Não usar o label padrão
-            ),
-          ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: DSSize.width(16),
+                      vertical: DSSize.height(18),
+                    ),
+                    labelText: null, // Não usar o label padrão
+                  ),
+                ),
           AnimatedPositioned(
             duration: const Duration(milliseconds: 180),
             left: labelLeft,

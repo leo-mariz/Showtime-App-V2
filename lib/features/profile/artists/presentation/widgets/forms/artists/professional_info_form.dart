@@ -12,6 +12,7 @@ class ProfessionalInfoForm extends StatelessWidget {
   final TextEditingController bioController;
   final VoidCallback onDurationTap;
   final String durationDisplayValue;
+  
 
   const ProfessionalInfoForm({
     super.key,

@@ -20,6 +20,7 @@ class InitialScreen extends StatefulWidget {
 
 class _InitialScreenState extends State<InitialScreen> {
   bool _isLoading = false;
+  bool _shouldHandleBiometricsCheck = false; // Flag para controlar se deve processar o resultado
 
   @override
   void initState() {
@@ -27,6 +28,10 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 
   void _handleLoginButton(BuildContext context) {
+    // Marcar que devemos processar o resultado da verificação
+    setState(() {
+      _shouldHandleBiometricsCheck = true;
+    });
     // Verificar se biometria está habilitada
     context.read<AuthBloc>().add(CheckBiometricsEnabledEvent());
   }
@@ -49,12 +54,18 @@ class _InitialScreenState extends State<InitialScreen> {
           });
         }
         if (state is CheckBiometricsEnabledSuccess) {
-          if (state.isEnabled) {
-            // Biometria habilitada, tentar login com biometria
-            context.read<AuthBloc>().add(LoginWithBiometricsEvent());
-          } else {
-            // Biometria não habilitada, ir para tela de login
-            router.push(const LoginRoute());
+          // Só processar se foi disparado a partir do botão de login desta tela
+          if (_shouldHandleBiometricsCheck) {
+            setState(() {
+              _shouldHandleBiometricsCheck = false; // Resetar flag
+            });
+            if (state.isEnabled) {
+              // Biometria habilitada, tentar login com biometria
+              context.read<AuthBloc>().add(LoginWithBiometricsEvent());
+            } else {
+              // Biometria não habilitada, ir para tela de login
+              router.push(const LoginRoute());
+            }
           }
         } else if (state is LoginWithBiometricsSuccess) {
           // Login com biometria bem-sucedido - APENAS neste caso navegar

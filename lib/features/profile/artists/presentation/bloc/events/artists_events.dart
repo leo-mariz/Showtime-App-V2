@@ -76,6 +76,19 @@ class UpdateArtistAgreementEvent extends ArtistsEvent {
   List<Object?> get props => [agreedToTerms];
 }
 
+// ==================== UPDATE ARTIST PRESENTATION MEDIAS EVENTS ====================
+
+class UpdateArtistPresentationMediasEvent extends ArtistsEvent {
+  final Map<String, String> talentLocalFilePaths; // Map<talent, localFilePath ou URL>
+
+  UpdateArtistPresentationMediasEvent({
+    required this.talentLocalFilePaths,
+  });
+
+  @override
+  List<Object?> get props => [talentLocalFilePaths];
+}
+
 // ==================== CHECK ARTIST NAME EXISTS EVENTS ====================
 
 class CheckArtistNameExistsEvent extends ArtistsEvent {

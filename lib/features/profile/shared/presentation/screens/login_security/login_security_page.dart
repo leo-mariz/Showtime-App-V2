@@ -142,7 +142,7 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
           }
         } else if (state is AuthLoggedOut) {
           // Logout bem-sucedido - redirecionar para tela de login
-          router.replaceAll([InitialRoute()]);
+          router.replaceAll([LoginRoute()]);
         } else if (state is AuthInitial) {
           setState(() {
             _isLoading = false;

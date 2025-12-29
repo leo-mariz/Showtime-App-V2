@@ -48,7 +48,7 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
 
     _debounceTimer?.cancel();
     // Debounce de 2 segundos
-    _debounceTimer = Timer(const Duration(milliseconds: 1200), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 1500), () {
       final name = widget.controller.text.trim();
 
       // Se nome está vazio, reset status (campo é opcional)

@@ -5,6 +5,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_profi
 import 'package:app/features/profile/artists/domain/usecases/update_artist_name_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
@@ -17,6 +18,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
   final UpdateArtistNameUseCase updateArtistNameUseCase;
   final UpdateArtistProfessionalInfoUseCase updateArtistProfessionalInfoUseCase;
   final UpdateArtistAgreementUseCase updateArtistAgreementUseCase;
+  final UpdateArtistPresentationMediasUseCase updateArtistPresentationMediasUseCase;
   final CheckArtistNameExistsUseCase checkArtistNameExistsUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
@@ -27,6 +29,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     required this.updateArtistNameUseCase,
     required this.updateArtistProfessionalInfoUseCase,
     required this.updateArtistAgreementUseCase,
+    required this.updateArtistPresentationMediasUseCase,
     required this.checkArtistNameExistsUseCase,
     required this.getUserUidUseCase,
   }) : super(ArtistsInitial()) {
@@ -36,6 +39,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     on<UpdateArtistNameEvent>(_onUpdateArtistNameEvent);
     on<UpdateArtistProfessionalInfoEvent>(_onUpdateArtistProfessionalInfoEvent);
     on<UpdateArtistAgreementEvent>(_onUpdateArtistAgreementEvent);
+    on<UpdateArtistPresentationMediasEvent>(_onUpdateArtistPresentationMediasEvent);
     on<CheckArtistNameExistsEvent>(_onCheckArtistNameExistsEvent);
   }
 
@@ -199,6 +203,33 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
       },
       (_) {
         emit(UpdateArtistAgreementSuccess());
+        emit(ArtistsInitial());
+      },
+    );
+  }
+
+  // ==================== UPDATE ARTIST PRESENTATION MEDIAS ====================
+
+  Future<void> _onUpdateArtistPresentationMediasEvent(
+    UpdateArtistPresentationMediasEvent event,
+    Emitter<ArtistsState> emit,
+  ) async {
+    emit(UpdateArtistPresentationMediasLoading());
+
+    final uid = await _getCurrentUserId();
+
+    final result = await updateArtistPresentationMediasUseCase.call(
+      uid!,
+      event.talentLocalFilePaths,
+    );
+
+    result.fold(
+      (failure) {
+        emit(UpdateArtistPresentationMediasFailure(error: failure.message));
+        emit(ArtistsInitial());
+      },
+      (_) {
+        emit(UpdateArtistPresentationMediasSuccess());
         emit(ArtistsInitial());
       },
     );

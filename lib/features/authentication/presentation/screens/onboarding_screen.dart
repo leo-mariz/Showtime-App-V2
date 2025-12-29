@@ -77,9 +77,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Estados de validação
   bool _showTermsError = false;
   bool _isLoading = false;
-  bool _isDocumentValid = false; // Indica se documento está validado e disponível
-  bool _hasDocumentBeenVerified = false; // Indica se a verificação no banco já foi realizada
   bool _isArtistNameValid = true; // Indica se nome artístico está válido (opcional, então começa como true)
+  bool _isCpfValid = true; // Indica se CPF está válido (disponível)
+  bool _isCnpjValid = true; // Indica se CNPJ está válido (disponível)
   
 
   @override
@@ -219,23 +219,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           onDocumentTypeChanged: (isCnpj) {
             setState(() {
               _isCnpj = isCnpj;
-              _hasDocumentBeenVerified = false; // Reset quando muda tipo de documento
-              _isDocumentValid = false;
+              // Reset estados de validação ao trocar tipo de documento
+              _isCpfValid = true;
+              _isCnpjValid = true;
             });
           },
           onGenderChanged: (gender) {
             setState(() => _selectedGender = gender);
           },
           isCnpj: _isCnpj,
-          onDocumentValidationChanged: (isValid) {
-            setState(() {
-              _isDocumentValid = isValid;
-              _hasDocumentBeenVerified = true; // Marca que a verificação foi realizada
-            });
-          },
           onArtistNameValidationChanged: _isArtist!
               ? (isValid) {
                   setState(() => _isArtistNameValid = isValid);
+                }
+              : null,
+          onCpfValidationChanged: !_isCnpj
+              ? (isValid) {
+                  setState(() => _isCpfValid = isValid);
+                }
+              : null,
+          onCnpjValidationChanged: _isCnpj
+              ? (isValid) {
+                  setState(() => _isCnpjValid = isValid);
                 }
               : null,
         ),
@@ -321,19 +326,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return; // O validator já mostrou a mensagem de erro apropriada
       }
       
-      // Só verificar disponibilidade no banco se o documento foi verificado
-      if (_hasDocumentBeenVerified && !_isDocumentValid) {
-        // Documento foi verificado no banco e já está em uso
-        final documentType = _isCnpj ? 'CNPJ' : 'CPF';
-        context.showError('Este $documentType já está em uso');
-        return;
-      }
-      
-      // Se o documento ainda não foi verificado no banco, aguardar
-      if (!_hasDocumentBeenVerified) {
-        final documentType = _isCnpj ? 'CNPJ' : 'CPF';
-        context.showError('Por favor, aguarde a verificação do $documentType');
-        return;
+      // Validar documento (CPF ou CNPJ) - verificar se está disponível
+      if (_isCnpj) {
+        if (!_isCnpjValid) {
+          context.showError('Este CNPJ já está em uso');
+          return;
+        }
+      } else {
+        if (!_isCpfValid) {
+          context.showError('Este CPF já está em uso');
+          return;
+        }
       }
       
       // Validar nome artístico se for artista e tiver preenchido

@@ -38,7 +38,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
   
   AddressInfoEntity? existingAddress;
   bool isLoadingCep = false;
-  String? _currentUserId;
   final ICepService _cepService = getIt<ICepService>();
   Timer? _debounceTimer;
   String? _lastSearchedCep; // Armazena o último CEP buscado com sucesso

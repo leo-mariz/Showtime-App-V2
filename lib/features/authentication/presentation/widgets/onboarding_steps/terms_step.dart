@@ -1,4 +1,7 @@
+import 'package:app/core/config/auto_router_config.gr.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 
@@ -25,6 +28,7 @@ class TermsStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final router = AutoRouter.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +43,7 @@ class TermsStep extends StatelessWidget {
               ? 'Li e aceito os Termos de Uso para Artistas'
               : 'Li e aceito os Termos de Uso para Anfitriões',
           onLinkTap: () {
-            // TODO: Abrir termos de uso
+            router.push(isArtist ? ArtistsTermsOfUseRoute() : ClientTermsOfUseRoute());
           },
         ),
         
@@ -51,7 +55,7 @@ class TermsStep extends StatelessWidget {
           onChanged: onPrivacyPolicyChanged,
           label: 'Li e aceito a Política de Privacidade',
           onLinkTap: () {
-            // TODO: Abrir política de privacidade
+            router.push(TermsOfPrivacyRoute());
           },
         ),
         
@@ -90,10 +94,10 @@ class _TermsCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
           width: DSSize.width(24),
@@ -115,18 +119,98 @@ class _TermsCheckbox extends StatelessWidget {
         ),
         DSSizedBoxSpacing.horizontal(12),
         Expanded(
-          child: GestureDetector(
-            onTap: onLinkTap,
-            child: Text(
-              label,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
+          child: _buildRichText(context, label),
         ),
       ],
+    );
+  }
+
+  Widget _buildRichText(BuildContext context, String label) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
+    // Identificar os textos que devem ter underline
+    final termosIndex = label.indexOf('Termos de Uso');
+    final politicaIndex = label.indexOf('Política de Privacidade');
+    
+    // Se não encontrar nenhum dos textos, retornar texto normal
+    if (termosIndex == -1 && politicaIndex == -1) {
+      return Text(
+        label,
+        style: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    
+    // Construir TextSpans
+    final spans = <TextSpan>[];
+    int currentIndex = 0;
+    
+    // Processar "Termos de Uso" se existir
+    if (termosIndex != -1) {
+      // Texto antes de "Termos de Uso"
+      if (termosIndex > currentIndex) {
+        spans.add(TextSpan(
+          text: label.substring(currentIndex, termosIndex),
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ));
+      }
+      
+      // "Termos de Uso" com underline e clicável
+      spans.add(TextSpan(
+        text: 'Termos de Uso',
+        style: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w600,
+        ),
+        recognizer: TapGestureRecognizer()..onTap = onLinkTap,
+      ));
+      
+      currentIndex = termosIndex + 'Termos de Uso'.length;
+    }
+    
+    // Processar "Política de Privacidade" se existir
+    if (politicaIndex != -1) {
+      // Texto antes de "Política de Privacidade"
+      if (politicaIndex > currentIndex) {
+        spans.add(TextSpan(
+          text: label.substring(currentIndex, politicaIndex),
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ));
+      }
+      
+      // "Política de Privacidade" com underline e clicável
+      spans.add(TextSpan(
+        text: 'Política de Privacidade',
+        style: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w600,
+        ),
+        recognizer: TapGestureRecognizer()..onTap = onLinkTap,
+      ));
+      
+      currentIndex = politicaIndex + 'Política de Privacidade'.length;
+    }
+    
+    // Texto restante após os links
+    if (currentIndex < label.length) {
+      spans.add(TextSpan(
+        text: label.substring(currentIndex),
+        style: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ));
+    }
+    
+    return Text.rich(
+      TextSpan(children: spans),
     );
   }
 }

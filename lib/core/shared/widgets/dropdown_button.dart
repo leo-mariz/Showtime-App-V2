@@ -1,4 +1,3 @@
-import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:flutter/material.dart';
 

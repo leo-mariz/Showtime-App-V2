@@ -5,7 +5,7 @@ import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/artist_dashboard/presentation/widgets/metric_card.dart';
-import 'package:app/features/artist_dashboard/presentation/widgets/period_filter_section.dart';
+// import 'package:app/features/artist_dashboard/presentation/widgets/period_filter_section.dart';
 import 'package:app/features/artist_dashboard/presentation/widgets/quick_action_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +19,8 @@ class ArtistDashboardScreen extends StatefulWidget {
 
 class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
   // Period filter state
-  DateTime? _startDate;
-  DateTime? _endDate;
+  // DateTime? _startDate;
+  // DateTime? _endDate;
 
   // Chart carousel state
   late PageController _chartPageController;
@@ -67,33 +67,33 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
     super.dispose();
   }
 
-  // Mock data filtrado (será calculado baseado no período selecionado)
-  double get _filteredEarnings {
-    if (_startDate == null || _endDate == null) return 0.0;
-    // Simulação: receita proporcional ao período
-    final days = _endDate!.difference(_startDate!).inDays;
-    return (monthEarnings / 30) * days;
-  }
+  // // Mock data filtrado (será calculado baseado no período selecionado)
+  // double get _filteredEarnings {
+  //   if (_startDate == null || _endDate == null) return 0.0;
+  //   // Simulação: receita proporcional ao período
+  //   final days = _endDate!.difference(_startDate!).inDays;
+  //   return (monthEarnings / 30) * days;
+  // }
 
-  int get _filteredRequests {
-    if (_startDate == null || _endDate == null) return 0;
-    // Simulação: solicitações no período
-    final days = _endDate!.difference(_startDate!).inDays;
-    return (pendingRequests * days / 30).round();
-  }
+  // int get _filteredRequests {
+  //   if (_startDate == null || _endDate == null) return 0;
+  //   // Simulação: solicitações no período
+  //   final days = _endDate!.difference(_startDate!).inDays;
+  //   return (pendingRequests * days / 30).round();
+  // }
 
-  int get _filteredPresentations {
-    if (_startDate == null || _endDate == null) return 0;
-    // Simulação: apresentações no período
-    final days = _endDate!.difference(_startDate!).inDays;
-    return (completedEvents * days / 30).round();
-  }
+  // int get _filteredPresentations {
+  //   if (_startDate == null || _endDate == null) return 0;
+  //   // Simulação: apresentações no período
+  //   final days = _endDate!.difference(_startDate!).inDays;
+  //   return (completedEvents * days / 30).round();
+  // }
 
-  double get _filteredAcceptanceRate {
-    if (_startDate == null || _endDate == null) return 0.0;
-    // Simulação: taxa de aceitação no período (pode variar)
-    return acceptanceRate + (DateTime.now().day % 10 - 5);
-  }
+  // double get _filteredAcceptanceRate {
+  //   if (_startDate == null || _endDate == null) return 0.0;
+  //   // Simulação: taxa de aceitação no período (pode variar)
+  //   return acceptanceRate + (DateTime.now().day % 10 - 5);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -460,115 +460,115 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
     );
   }
 
-  Widget _buildPeriodAnalysisSection(
-      TextTheme textTheme, ColorScheme colorScheme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Análise por Período',
-          style: textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        DSSizedBoxSpacing.vertical(16),
-        // Period filter
-        PeriodFilterSection(
-          startDate: _startDate,
-          endDate: _endDate,
-          onStartDateChanged: (date) {
-            setState(() {
-              _startDate = date;
-            });
-          },
-          onEndDateChanged: (date) {
-            setState(() {
-              _endDate = date;
-            });
-          },
-        ),
-        // Filtered metrics (only shown when period is selected)
-        if (_startDate != null && _endDate != null) ...[
-          DSSizedBoxSpacing.vertical(16),
-          _buildFilteredMetricsSection(textTheme, colorScheme),
-        ],
-      ],
-    );
-  }
+  // Widget _buildPeriodAnalysisSection(
+  //     TextTheme textTheme, ColorScheme colorScheme) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         'Análise por Período',
+  //         style: textTheme.titleSmall?.copyWith(
+  //           fontWeight: FontWeight.bold,
+  //         ),
+  //       ),
+  //       DSSizedBoxSpacing.vertical(16),
+  //       // Period filter
+  //       PeriodFilterSection(
+  //         startDate: _startDate,
+  //         endDate: _endDate,
+  //         onStartDateChanged: (date) {
+  //           setState(() {
+  //             _startDate = date;
+  //           });
+  //         },
+  //         onEndDateChanged: (date) {
+  //           setState(() {
+  //             _endDate = date;
+  //           });
+  //         },
+  //       ),
+  //       // Filtered metrics (only shown when period is selected)
+  //       if (_startDate != null && _endDate != null) ...[
+  //         DSSizedBoxSpacing.vertical(16),
+  //         _buildFilteredMetricsSection(textTheme, colorScheme),
+  //       ],
+  //     ],
+  //   );
+  // }
 
-  Widget _buildFilteredMetricsSection(
-      TextTheme textTheme, ColorScheme colorScheme) {
-    return CustomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Métricas do Período',
-                style: textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Icon(
-                Icons.analytics,
-                size: DSSize.width(20),
-                color: colorScheme.onPrimaryContainer,
-              ),
-            ],
-          ),
-          DSSizedBoxSpacing.vertical(8),
-          Text(
-            '${DateFormat('dd/MM/yyyy').format(_startDate!)} - ${DateFormat('dd/MM/yyyy').format(_endDate!)}',
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 11,
-            ),
-          ),
-          DSSizedBoxSpacing.vertical(16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.05,
-            children: [
-              MetricCard(
-                icon: Icons.attach_money,
-                value: _formatCurrency(_filteredEarnings),
-                label: 'Receita',
-                subtitle: 'No período',
-                iconColor: colorScheme.onTertiaryContainer,
-              ),
-              MetricCard(
-                icon: Icons.description,
-                value: '$_filteredRequests',
-                label: 'Solicitações',
-                subtitle: 'Recebidas',
-                iconColor: colorScheme.onSecondaryContainer,
-              ),
-              MetricCard(
-                icon: Icons.event_available,
-                value: '$_filteredPresentations',
-                label: 'Apresentações',
-                subtitle: 'Realizadas',
-                iconColor: colorScheme.onPrimaryContainer,
-              ),
-              MetricCard(
-                icon: Icons.trending_up,
-                value: '${_filteredAcceptanceRate.toStringAsFixed(0)}%',
-                label: 'Taxa de Aceitação',
-                subtitle: 'No período',
-                iconColor: colorScheme.onTertiaryContainer,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildFilteredMetricsSection(
+  //     TextTheme textTheme, ColorScheme colorScheme) {
+  //   return CustomCard(
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //           children: [
+  //             Text(
+  //               'Métricas do Período',
+  //               style: textTheme.titleSmall?.copyWith(
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             Icon(
+  //               Icons.analytics,
+  //               size: DSSize.width(20),
+  //               color: colorScheme.onPrimaryContainer,
+  //             ),
+  //           ],
+  //         ),
+  //         DSSizedBoxSpacing.vertical(8),
+  //         Text(
+  //           '${DateFormat('dd/MM/yyyy').format(_startDate!)} - ${DateFormat('dd/MM/yyyy').format(_endDate!)}',
+  //           style: textTheme.bodySmall?.copyWith(
+  //             color: colorScheme.onSurfaceVariant,
+  //             fontSize: 11,
+  //           ),
+  //         ),
+  //         DSSizedBoxSpacing.vertical(16),
+  //         GridView.count(
+  //           crossAxisCount: 2,
+  //           shrinkWrap: true,
+  //           physics: const NeverScrollableScrollPhysics(),
+  //           mainAxisSpacing: 16,
+  //           crossAxisSpacing: 16,
+  //           childAspectRatio: 1.05,
+  //           children: [
+  //             MetricCard(
+  //               icon: Icons.attach_money,
+  //               value: _formatCurrency(_filteredEarnings),
+  //               label: 'Receita',
+  //               subtitle: 'No período',
+  //               iconColor: colorScheme.onTertiaryContainer,
+  //             ),
+  //             MetricCard(
+  //               icon: Icons.description,
+  //               value: '$_filteredRequests',
+  //               label: 'Solicitações',
+  //               subtitle: 'Recebidas',
+  //               iconColor: colorScheme.onSecondaryContainer,
+  //             ),
+  //             MetricCard(
+  //               icon: Icons.event_available,
+  //               value: '$_filteredPresentations',
+  //               label: 'Apresentações',
+  //               subtitle: 'Realizadas',
+  //               iconColor: colorScheme.onPrimaryContainer,
+  //             ),
+  //             MetricCard(
+  //               icon: Icons.trending_up,
+  //               value: '${_filteredAcceptanceRate.toStringAsFixed(0)}%',
+  //               label: 'Taxa de Aceitação',
+  //               subtitle: 'No período',
+  //               iconColor: colorScheme.onTertiaryContainer,
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildQuickActions(TextTheme textTheme, ColorScheme colorScheme) {
     return Column(

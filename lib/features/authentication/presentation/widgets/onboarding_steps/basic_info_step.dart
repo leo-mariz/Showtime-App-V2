@@ -35,8 +35,9 @@ class BasicInfoStep extends StatefulWidget {
   
   final Function(bool) onDocumentTypeChanged;
   final bool isCnpj;
-  final Function(bool) onDocumentValidationChanged;
   final Function(bool)? onArtistNameValidationChanged;
+  final Function(bool)? onCpfValidationChanged;
+  final Function(bool)? onCnpjValidationChanged;
 
   const BasicInfoStep({
     super.key,
@@ -58,8 +59,9 @@ class BasicInfoStep extends StatefulWidget {
     required this.onGenderChanged,
     required this.onDocumentTypeChanged,
     required this.isCnpj,
-    required this.onDocumentValidationChanged,
     this.onArtistNameValidationChanged,
+    this.onCpfValidationChanged,
+    this.onCnpjValidationChanged,
   });
 
   @override
@@ -74,7 +76,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
 
     return Form(
       key: widget.formKey,
-      autovalidateMode: AutovalidateMode.disabled,
+      // autovalidateMode: AutovalidateMode.disabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -139,7 +141,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 fantasyNameController: widget.fantasyNameController,
                 stateRegistrationController: widget.stateRegistrationController,
                 phoneNumberController: widget.phoneNumberController,
-                onValidationChanged: widget.onDocumentValidationChanged,
+                onCnpjValidationChanged: widget.onCnpjValidationChanged,
               ),
             ] else ...[
               CpfForm(
@@ -151,7 +153,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
                 selectedGender: widget.selectedGender,
                 phoneNumberController: widget.phoneNumberController,
                 onGenderChanged: widget.onGenderChanged,
-                onValidationChanged: widget.onDocumentValidationChanged,
+                onCpfValidationChanged: widget.onCpfValidationChanged,
               ),
             ],
         ],

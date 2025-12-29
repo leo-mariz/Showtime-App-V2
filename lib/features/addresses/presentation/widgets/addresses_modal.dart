@@ -48,7 +48,6 @@ class AddressesModal extends StatefulWidget {
 
 class _AddressesModalState extends State<AddressesModal> {
   List<AddressInfoEntity> _addresses = [];
-  String? _currentUserId;
 
   @override
   void initState() {
@@ -100,7 +99,7 @@ class _AddressesModalState extends State<AddressesModal> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final surfaceContainerHighest = colorScheme.surface;
+    final surface = colorScheme.surface;
     final onPrimary = colorScheme.onPrimary;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
 
@@ -167,8 +166,8 @@ class _AddressesModalState extends State<AddressesModal> {
                         colors: [
                           Colors.transparent,
                           Colors.transparent,
-                          surfaceContainerHighest,
-                          surfaceContainerHighest,
+                          surface,
+                          surface,
                         ],
                         stops: const [0.0, 0.08, 0.08, 1.0],
                       ),
@@ -187,7 +186,7 @@ class _AddressesModalState extends State<AddressesModal> {
                   builder: (context, scrollController) {
                     return Container(
                       decoration: BoxDecoration(
-                        color: surfaceContainerHighest,
+                        color: surface,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(DSSize.width(20)),
                           topRight: Radius.circular(DSSize.width(20)),

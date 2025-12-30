@@ -17,7 +17,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       ProfessionalInfoEntityMapper.ensureInitialized();
       AddressInfoEntityMapper.ensureInitialized();
       BankAccountEntityMapper.ensureInitialized();
-      AvailabilityEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -61,6 +60,12 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       v.residenceAddress;
   static const Field<ArtistEntity, AddressInfoEntity> _f$residenceAddress =
       Field('residenceAddress', _$residenceAddress, opt: true);
+  static BankAccountEntity? _$bankAccount(ArtistEntity v) => v.bankAccount;
+  static const Field<ArtistEntity, BankAccountEntity> _f$bankAccount = Field(
+    'bankAccount',
+    _$bankAccount,
+    opt: true,
+  );
   static bool? _$approved(ArtistEntity v) => v.approved;
   static const Field<ArtistEntity, bool> _f$approved = Field(
     'approved',
@@ -71,12 +76,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
   static const Field<ArtistEntity, bool> _f$isActive = Field(
     'isActive',
     _$isActive,
-    opt: true,
-  );
-  static BankAccountEntity? _$bankAccount(ArtistEntity v) => v.bankAccount;
-  static const Field<ArtistEntity, BankAccountEntity> _f$bankAccount = Field(
-    'bankAccount',
-    _$bankAccount,
     opt: true,
   );
   static bool? _$hasIncompleteSections(ArtistEntity v) =>
@@ -113,10 +112,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     _$groupsInUids,
     opt: true,
   );
-  static List<AvailabilityEntity>? _$availability(ArtistEntity v) =>
-      v.availability;
-  static const Field<ArtistEntity, List<AvailabilityEntity>> _f$availability =
-      Field('availability', _$availability, opt: true, def: const []);
   static double _$rating(ArtistEntity v) => v.rating;
   static const Field<ArtistEntity, double> _f$rating = Field(
     'rating',
@@ -141,15 +136,14 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     #professionalInfo: _f$professionalInfo,
     #presentationMedias: _f$presentationMedias,
     #residenceAddress: _f$residenceAddress,
+    #bankAccount: _f$bankAccount,
     #approved: _f$approved,
     #isActive: _f$isActive,
-    #bankAccount: _f$bankAccount,
     #hasIncompleteSections: _f$hasIncompleteSections,
     #incompleteSections: _f$incompleteSections,
     #agreedToArtistTermsOfUse: _f$agreedToArtistTermsOfUse,
     #isOnAnyGroup: _f$isOnAnyGroup,
     #groupsInUids: _f$groupsInUids,
-    #availability: _f$availability,
     #rating: _f$rating,
     #finalizedContracts: _f$finalizedContracts,
   };
@@ -163,15 +157,14 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       professionalInfo: data.dec(_f$professionalInfo),
       presentationMedias: data.dec(_f$presentationMedias),
       residenceAddress: data.dec(_f$residenceAddress),
+      bankAccount: data.dec(_f$bankAccount),
       approved: data.dec(_f$approved),
       isActive: data.dec(_f$isActive),
-      bankAccount: data.dec(_f$bankAccount),
       hasIncompleteSections: data.dec(_f$hasIncompleteSections),
       incompleteSections: data.dec(_f$incompleteSections),
       agreedToArtistTermsOfUse: data.dec(_f$agreedToArtistTermsOfUse),
       isOnAnyGroup: data.dec(_f$isOnAnyGroup),
       groupsInUids: data.dec(_f$groupsInUids),
-      availability: data.dec(_f$availability),
       rating: data.dec(_f$rating),
       finalizedContracts: data.dec(_f$finalizedContracts),
     );
@@ -260,12 +253,6 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
   get incompleteSections;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
   get groupsInUids;
-  ListCopyWith<
-    $R,
-    AvailabilityEntity,
-    AvailabilityEntityCopyWith<$R, AvailabilityEntity, AvailabilityEntity>
-  >?
-  get availability;
   $R call({
     String? uid,
     String? profilePicture,
@@ -274,15 +261,14 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     ProfessionalInfoEntity? professionalInfo,
     Map<String, String>? presentationMedias,
     AddressInfoEntity? residenceAddress,
+    BankAccountEntity? bankAccount,
     bool? approved,
     bool? isActive,
-    BankAccountEntity? bankAccount,
     bool? hasIncompleteSections,
     Map<String, List<String>>? incompleteSections,
     bool? agreedToArtistTermsOfUse,
     bool? isOnAnyGroup,
     List<String>? groupsInUids,
-    List<AvailabilityEntity>? availability,
     double? rating,
     int? finalizedContracts,
   });
@@ -348,19 +334,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
-  ListCopyWith<
-    $R,
-    AvailabilityEntity,
-    AvailabilityEntityCopyWith<$R, AvailabilityEntity, AvailabilityEntity>
-  >?
-  get availability => $value.availability != null
-      ? ListCopyWith(
-          $value.availability!,
-          (v, t) => v.copyWith.$chain(t),
-          (v) => call(availability: v),
-        )
-      : null;
-  @override
   $R call({
     Object? uid = $none,
     Object? profilePicture = $none,
@@ -369,15 +342,14 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     Object? professionalInfo = $none,
     Object? presentationMedias = $none,
     Object? residenceAddress = $none,
+    Object? bankAccount = $none,
     Object? approved = $none,
     Object? isActive = $none,
-    Object? bankAccount = $none,
     Object? hasIncompleteSections = $none,
     Object? incompleteSections = $none,
     Object? agreedToArtistTermsOfUse = $none,
     Object? isOnAnyGroup = $none,
     Object? groupsInUids = $none,
-    Object? availability = $none,
     double? rating,
     int? finalizedContracts,
   }) => $apply(
@@ -389,9 +361,9 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       if (professionalInfo != $none) #professionalInfo: professionalInfo,
       if (presentationMedias != $none) #presentationMedias: presentationMedias,
       if (residenceAddress != $none) #residenceAddress: residenceAddress,
+      if (bankAccount != $none) #bankAccount: bankAccount,
       if (approved != $none) #approved: approved,
       if (isActive != $none) #isActive: isActive,
-      if (bankAccount != $none) #bankAccount: bankAccount,
       if (hasIncompleteSections != $none)
         #hasIncompleteSections: hasIncompleteSections,
       if (incompleteSections != $none) #incompleteSections: incompleteSections,
@@ -399,7 +371,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
         #agreedToArtistTermsOfUse: agreedToArtistTermsOfUse,
       if (isOnAnyGroup != $none) #isOnAnyGroup: isOnAnyGroup,
       if (groupsInUids != $none) #groupsInUids: groupsInUids,
-      if (availability != $none) #availability: availability,
       if (rating != null) #rating: rating,
       if (finalizedContracts != null) #finalizedContracts: finalizedContracts,
     }),
@@ -416,9 +387,9 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       or: $value.presentationMedias,
     ),
     residenceAddress: data.get(#residenceAddress, or: $value.residenceAddress),
+    bankAccount: data.get(#bankAccount, or: $value.bankAccount),
     approved: data.get(#approved, or: $value.approved),
     isActive: data.get(#isActive, or: $value.isActive),
-    bankAccount: data.get(#bankAccount, or: $value.bankAccount),
     hasIncompleteSections: data.get(
       #hasIncompleteSections,
       or: $value.hasIncompleteSections,
@@ -433,7 +404,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     ),
     isOnAnyGroup: data.get(#isOnAnyGroup, or: $value.isOnAnyGroup),
     groupsInUids: data.get(#groupsInUids, or: $value.groupsInUids),
-    availability: data.get(#availability, or: $value.availability),
     rating: data.get(#rating, or: $value.rating),
     finalizedContracts: data.get(
       #finalizedContracts,

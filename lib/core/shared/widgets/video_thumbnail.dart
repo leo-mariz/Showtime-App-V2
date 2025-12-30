@@ -103,23 +103,31 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                 // Placeholder em caso de erro ou não inicializado
                 Container(
                   color: colorScheme.surfaceContainerHighest,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.video_library,
-                        size: DSSize.width(48),
-                        color: onPrimary.withOpacity(0.5),
-                      ),
-                      SizedBox(height: DSSize.height(8)),
-                      Text(
-                        widget.talentName,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onPrimary.withOpacity(0.7),
+                  child: !_hasError && !_isInitialized
+                      ? Center(
+                          // Mostra loading enquanto está inicializando
+                          child: CircularProgressIndicator(
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : Column(
+                          // Mostra placeholder apenas se houver erro
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.video_library,
+                              size: DSSize.width(48),
+                              color: onPrimary.withOpacity(0.5),
+                            ),
+                            SizedBox(height: DSSize.height(8)),
+                            Text(
+                              widget.talentName,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: onPrimary.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 )
               else
                 // Vídeo inicializado

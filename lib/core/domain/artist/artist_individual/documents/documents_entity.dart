@@ -1,5 +1,7 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/enums/document_status_enum.dart';
+import 'package:app/core/enums/document_type_enum.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -11,12 +13,12 @@ part 'documents_entity.mapper.dart';
 
 @MappableClass()
 class DocumentsEntity with DocumentsEntityMappable {
-  String documentType;
+  String? idNumber;
+  String documentType; // Armazena como String no Firestore (ex: "Identity", "Residence", etc.)
   String? documentOption;
   String? url;
-  int status; // 0 - pending, 1 - analysis, 2 - approved, 3 - rejected
+  int status; // Armazena como int no Firestore (0, 1, 2, 3)
   AddressInfoEntity? address;
-  String? idNumber;
   String? observation;
 
   DocumentsEntity({
@@ -30,11 +32,42 @@ class DocumentsEntity with DocumentsEntityMappable {
   });
 }
 
+/// Extension para facilitar conversão entre enums e valores primitivos
+extension DocumentsEntityHelpers on DocumentsEntity {
+  /// Obtém o DocumentTypeEnum correspondente ao documentType
+  DocumentTypeEnum get documentTypeEnum {
+    return DocumentTypeEnum.values.firstWhere(
+      (type) => type.name == documentType,
+      orElse: () => DocumentTypeEnum.identity,
+    );
+  }
+
+  /// Define o documentType a partir de um DocumentTypeEnum
+  DocumentsEntity copyWithDocumentType(DocumentTypeEnum type) {
+    return copyWith(documentType: type.name);
+  }
+
+  /// Obtém o DocumentStatusEnum correspondente ao status
+  DocumentStatusEnum get statusEnum {
+    return DocumentStatusEnum.fromValue(status);
+  }
+
+  /// Define o status a partir de um DocumentStatusEnum
+  DocumentsEntity copyWithStatus(DocumentStatusEnum status) {
+    return copyWith(status: status.value);
+  }
+}
+
 extension DocumentsEntityReference on DocumentsEntity {
   //Firestore References
   static DocumentReference firebaseUidReference(FirebaseFirestore firestore, String uid, String documentType) {
     final artistCollectionRef = ArtistEntityReference.firebaseUidReference(firestore, uid);
     return artistCollectionRef.collection('Documents').doc(documentType);
+  }
+
+  static CollectionReference firebaseCollectionReference(FirebaseFirestore firestore, String uid) {
+    final artistCollectionRef = ArtistEntityReference.firebaseUidReference(firestore, uid);
+    return artistCollectionRef.collection('Documents');
   }
 
   //Firebase Storage References
@@ -49,20 +82,21 @@ extension DocumentsEntityReference on DocumentsEntity {
 }
 
 extension DocumentsEntityOptions on DocumentsEntity {
+  /// Retorna lista de tipos de documento como String (para compatibilidade)
   static List<String> documentTypes() {
-    return [
-      'Identity',
-      'Residence',
-      'Curriculum',
-      'Antecedents',
-    ];
+    return DocumentTypeEnum.values.map((type) => type.name).toList();
+  }
+
+  /// Retorna lista de tipos de documento como Enum
+  static List<DocumentTypeEnum> documentTypeEnums() {
+    return DocumentTypeEnum.values;
   }
 
   static List<String> identityDocumentOptions() {
     return [
       'RG',
       'CNH',
-      ];
+    ];
   }
 
   static List<String> residenceDocumentOptions() {
@@ -85,16 +119,24 @@ extension DocumentsEntityOptions on DocumentsEntity {
       'Certidão de Antecedentes Criminais',
     ];
   }
-  
-  
 
+  /// Retorna opções de documento por tipo (usando String para compatibilidade)
   static Map<String, List<String>> documentOptions() {
     return {
-      'Identity': identityDocumentOptions(),
-      'Residence': residenceDocumentOptions(),
-      'Curriculum': curriculumDocumentOptions(),
-      'Antecedents': antecedentsDocumentOptions(),
+      DocumentTypeEnum.identity.name: identityDocumentOptions(),
+      DocumentTypeEnum.residence.name: residenceDocumentOptions(),
+      DocumentTypeEnum.curriculum.name: curriculumDocumentOptions(),
+      DocumentTypeEnum.antecedents.name: antecedentsDocumentOptions(),
     };
   }
-  
+
+  /// Retorna opções de documento por tipo (usando Enum)
+  static Map<DocumentTypeEnum, List<String>> documentOptionsByEnum() {
+    return {
+      DocumentTypeEnum.identity: identityDocumentOptions(),
+      DocumentTypeEnum.residence: residenceDocumentOptions(),
+      DocumentTypeEnum.curriculum: curriculumDocumentOptions(),
+      DocumentTypeEnum.antecedents: antecedentsDocumentOptions(),
+    };
+  }
 }

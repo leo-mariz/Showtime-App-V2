@@ -303,15 +303,11 @@ class ArtistProfileViewRoute
     extends _i33.PageRouteInfo<ArtistProfileViewRouteArgs> {
   ArtistProfileViewRoute({
     _i34.Key? key,
-    required _i37.ArtistEntity artist,
-    bool isFavorite = false,
     List<_i33.PageRouteInfo>? children,
   }) : super(
          ArtistProfileViewRoute.name,
          args: ArtistProfileViewRouteArgs(
            key: key,
-           artist: artist,
-           isFavorite: isFavorite,
          ),
          initialChildren: children,
        );
@@ -326,8 +322,6 @@ class ArtistProfileViewRoute
         _i6.loadLibrary,
         () => _i6.ArtistProfileViewScreen(
           key: args.key,
-          artist: args.artist,
-          isFavorite: args.isFavorite,
         ),
       );
     },
@@ -337,32 +331,24 @@ class ArtistProfileViewRoute
 class ArtistProfileViewRouteArgs {
   const ArtistProfileViewRouteArgs({
     this.key,
-    required this.artist,
-    this.isFavorite = false,
   });
 
   final _i34.Key? key;
 
-  final _i37.ArtistEntity artist;
-
-  final bool isFavorite;
-
   @override
   String toString() {
-    return 'ArtistProfileViewRouteArgs{key: $key, artist: $artist, isFavorite: $isFavorite}';
+    return 'ArtistProfileViewRouteArgs{key: $key}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ArtistProfileViewRouteArgs) return false;
-    return key == other.key &&
-        artist == other.artist &&
-        isFavorite == other.isFavorite;
+    return key == other.key;
   }
 
   @override
-  int get hashCode => key.hashCode ^ artist.hashCode ^ isFavorite.hashCode;
+  int get hashCode => key.hashCode;
 }
 
 /// generated route for

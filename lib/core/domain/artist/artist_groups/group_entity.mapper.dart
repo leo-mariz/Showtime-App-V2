@@ -15,7 +15,6 @@ class GroupEntityMapper extends ClassMapperBase<GroupEntity> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = GroupEntityMapper._());
       ProfessionalInfoEntityMapper.ensureInitialized();
-      BankAccountEntityMapper.ensureInitialized();
       GroupMemberEntityMapper.ensureInitialized();
     }
     return _instance!;
@@ -62,12 +61,6 @@ class GroupEntityMapper extends ClassMapperBase<GroupEntity> {
     _$isActive,
     opt: true,
   );
-  static BankAccountEntity? _$bankAccount(GroupEntity v) => v.bankAccount;
-  static const Field<GroupEntity, BankAccountEntity> _f$bankAccount = Field(
-    'bankAccount',
-    _$bankAccount,
-    opt: true,
-  );
   static bool? _$hasIncompleteSections(GroupEntity v) =>
       v.hasIncompleteSections;
   static const Field<GroupEntity, bool> _f$hasIncompleteSections = Field(
@@ -105,7 +98,6 @@ class GroupEntityMapper extends ClassMapperBase<GroupEntity> {
     #presentationMedias: _f$presentationMedias,
     #dateRegistered: _f$dateRegistered,
     #isActive: _f$isActive,
-    #bankAccount: _f$bankAccount,
     #hasIncompleteSections: _f$hasIncompleteSections,
     #incompleteSections: _f$incompleteSections,
     #members: _f$members,
@@ -121,7 +113,6 @@ class GroupEntityMapper extends ClassMapperBase<GroupEntity> {
       presentationMedias: data.dec(_f$presentationMedias),
       dateRegistered: data.dec(_f$dateRegistered),
       isActive: data.dec(_f$isActive),
-      bankAccount: data.dec(_f$bankAccount),
       hasIncompleteSections: data.dec(_f$hasIncompleteSections),
       incompleteSections: data.dec(_f$incompleteSections),
       members: data.dec(_f$members),
@@ -197,8 +188,6 @@ abstract class GroupEntityCopyWith<$R, $In extends GroupEntity, $Out>
   get professionalInfo;
   MapCopyWith<$R, String, String, ObjectCopyWith<$R, String, String>>?
   get presentationMedias;
-  BankAccountEntityCopyWith<$R, BankAccountEntity, BankAccountEntity>?
-  get bankAccount;
   MapCopyWith<
     $R,
     String,
@@ -222,7 +211,6 @@ abstract class GroupEntityCopyWith<$R, $In extends GroupEntity, $Out>
     Map<String, String>? presentationMedias,
     DateTime? dateRegistered,
     bool? isActive,
-    BankAccountEntity? bankAccount,
     bool? hasIncompleteSections,
     Map<String, List<String>>? incompleteSections,
     List<GroupMemberEntity>? members,
@@ -257,10 +245,6 @@ class _GroupEntityCopyWithImpl<$R, $Out>
           (v) => call(presentationMedias: v),
         )
       : null;
-  @override
-  BankAccountEntityCopyWith<$R, BankAccountEntity, BankAccountEntity>?
-  get bankAccount =>
-      $value.bankAccount?.copyWith.$chain((v) => call(bankAccount: v));
   @override
   MapCopyWith<
     $R,
@@ -306,7 +290,6 @@ class _GroupEntityCopyWithImpl<$R, $Out>
     Object? presentationMedias = $none,
     Object? dateRegistered = $none,
     Object? isActive = $none,
-    Object? bankAccount = $none,
     Object? hasIncompleteSections = $none,
     Object? incompleteSections = $none,
     Object? members = $none,
@@ -320,7 +303,6 @@ class _GroupEntityCopyWithImpl<$R, $Out>
       if (presentationMedias != $none) #presentationMedias: presentationMedias,
       if (dateRegistered != $none) #dateRegistered: dateRegistered,
       if (isActive != $none) #isActive: isActive,
-      if (bankAccount != $none) #bankAccount: bankAccount,
       if (hasIncompleteSections != $none)
         #hasIncompleteSections: hasIncompleteSections,
       if (incompleteSections != $none) #incompleteSections: incompleteSections,
@@ -340,7 +322,6 @@ class _GroupEntityCopyWithImpl<$R, $Out>
     ),
     dateRegistered: data.get(#dateRegistered, or: $value.dateRegistered),
     isActive: data.get(#isActive, or: $value.isActive),
-    bankAccount: data.get(#bankAccount, or: $value.bankAccount),
     hasIncompleteSections: data.get(
       #hasIncompleteSections,
       or: $value.hasIncompleteSections,

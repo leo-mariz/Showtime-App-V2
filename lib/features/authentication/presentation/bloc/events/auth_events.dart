@@ -91,3 +91,25 @@ class CheckNewEmailVerifiedEvent extends AuthEvent {
   @override
   List<Object?> get props => [newEmail];
 }
+
+// ==================== REAUTHENTICATE USER EVENTS ====================
+
+class ReauthenticateUserEvent extends AuthEvent {
+  final String? password; // Opcional - só necessário se biometria não disponível
+
+  ReauthenticateUserEvent({this.password});
+
+  @override
+  List<Object?> get props => [password];
+}
+
+// ==================== SWITCH USER TYPE EVENTS ====================
+
+class SwitchUserTypeEvent extends AuthEvent {
+  final bool switchToArtist; // true = trocar para artista, false = trocar para cliente
+
+  SwitchUserTypeEvent({required this.switchToArtist});
+
+  @override
+  List<Object?> get props => [switchToArtist];
+}

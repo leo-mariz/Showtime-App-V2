@@ -14,7 +14,6 @@ class GroupEntity with GroupEntityMappable {
   String? groupName;
   ProfessionalInfoEntity? professionalInfo;
   Map<String, String>? presentationMedias;
-  BankAccountEntity? bankAccount;
   List<GroupMemberEntity>? members;
   List<String>? invitationEmails;
   DateTime? dateRegistered;
@@ -31,7 +30,6 @@ class GroupEntity with GroupEntityMappable {
     this.presentationMedias,
     this.dateRegistered,
     this.isActive,
-    this.bankAccount,
     this.hasIncompleteSections,
     this.incompleteSections,
     this.members,
@@ -49,17 +47,20 @@ class GroupEntity with GroupEntityMappable {
 }
   
 extension GroupEntityReference on GroupEntity {
+
+  static String collectionName = 'Groups';
+  
   static DocumentReference firebaseUidReference(FirebaseFirestore firestore, String uid) {
-    final artistCollectionRef = firestore.collection('Groups');
-    return artistCollectionRef.doc(uid);
+    final groupCollectionRef = firestore.collection(collectionName);
+    return groupCollectionRef.doc(uid);
   }
 
   static CollectionReference firebaseCollectionReference(FirebaseFirestore firestore) {
-    return firestore.collection('Groups');
+    return firestore.collection(collectionName);
   }
 
   static Reference firestorageReference(String uid) {
-    return FirebaseStorage.instance.ref().child('Groups').child(uid);
+    return FirebaseStorage.instance.ref().child(collectionName).child(uid);
   }
 
   static Reference firestorageProfilePictureReference(String uid) {
@@ -70,8 +71,12 @@ extension GroupEntityReference on GroupEntity {
     return firestorageReference(uid).child('presentationMedias');
   }
 
-  static String cachedKey() {
-    return 'CACHED_GROUP_INFO';
+  static String listCachedKey() {
+    return 'CACHED_GROUPS_INFO_LIST';
+  }
+
+  static String singleCachedKey(String uid) {
+    return 'CACHED_GROUP_INFO_$uid';
   }
 }
 

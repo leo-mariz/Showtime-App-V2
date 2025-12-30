@@ -67,14 +67,6 @@ class GroupIncompleteSectionsEntityMapper
     _$incompletePresentationMedias,
     mode: FieldMode.member,
   );
-  static bool _$incompleteBankAccount(GroupIncompleteSectionsEntity v) =>
-      v.incompleteBankAccount;
-  static const Field<GroupIncompleteSectionsEntity, bool>
-  _f$incompleteBankAccount = Field(
-    'incompleteBankAccount',
-    _$incompleteBankAccount,
-    mode: FieldMode.member,
-  );
   static bool _$incompleteMembersApproval(GroupIncompleteSectionsEntity v) =>
       v.incompleteMembersApproval;
   static const Field<GroupIncompleteSectionsEntity, bool>
@@ -92,7 +84,6 @@ class GroupIncompleteSectionsEntityMapper
     #incompleteGroupName: _f$incompleteGroupName,
     #incompleteProfessionalInfo: _f$incompleteProfessionalInfo,
     #incompletePresentationMedias: _f$incompletePresentationMedias,
-    #incompleteBankAccount: _f$incompleteBankAccount,
     #incompleteMembersApproval: _f$incompleteMembersApproval,
   };
 

@@ -41,7 +41,9 @@ class CustomDropdownButton extends StatelessWidget {
         )
       ),
       dropdownColor: surfaceContainerColor.withOpacity(0.9),
-      value: selectedValue,
+      value: (selectedValue != null && selectedValue!.isNotEmpty && itemsList.contains(selectedValue))
+          ? selectedValue
+          : null,
       items: itemsList.map((item) {
         return DropdownMenuItem<String>(
           value: item,

@@ -17,12 +17,14 @@ class AddArtistUseCase {
     required this.repository,
   });
 
-  Future<Either<Failure, void>> call(String uid, ArtistEntity artist) async {
+  Future<Either<Failure, void>> call(String uid) async {
     try {
       // Validar UID
       if (uid.isEmpty) {
         return const Left(ValidationFailure('UID do artista não pode ser vazio'));
       }
+
+      final artist = ArtistEntity.defaultEntity();
 
       // Validar se dateRegistered está presente (obrigatório)
       if (artist.dateRegistered == null) {

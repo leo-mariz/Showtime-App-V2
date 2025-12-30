@@ -1,4 +1,5 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:equatable/equatable.dart';
 
@@ -10,6 +11,19 @@ abstract class ArtistsEvent extends Equatable {
 // ==================== GET ARTIST EVENTS ====================
 
 class GetArtistEvent extends ArtistsEvent {}
+
+// ==================== ADD ARTIST EVENTS ====================
+
+class AddArtistEvent extends ArtistsEvent {
+  final ArtistEntity artist;
+
+  AddArtistEvent({
+    required this.artist,
+  });
+
+  @override
+  List<Object?> get props => [artist];
+}
 
 // ==================== UPDATE ARTIST EVENTS ====================
 
@@ -87,6 +101,19 @@ class UpdateArtistPresentationMediasEvent extends ArtistsEvent {
 
   @override
   List<Object?> get props => [talentLocalFilePaths];
+}
+
+// ==================== UPDATE ARTIST BANK ACCOUNT EVENTS ====================
+
+class UpdateArtistBankAccountEvent extends ArtistsEvent {
+  final BankAccountEntity bankAccount;
+
+  UpdateArtistBankAccountEvent({
+    required this.bankAccount,
+  });
+
+  @override
+  List<Object?> get props => [bankAccount];
 }
 
 // ==================== CHECK ARTIST NAME EXISTS EVENTS ====================

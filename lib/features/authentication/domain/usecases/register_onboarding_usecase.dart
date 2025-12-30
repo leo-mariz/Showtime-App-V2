@@ -1,4 +1,3 @@
-import 'package:app/core/domain/artist/artist_individual/incomplete_sections/incomplete_sections_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
@@ -110,16 +109,16 @@ class RegisterOnboardingUseCase {
       if (isArtist) {
         var artist = register.artist;
 
-        // Calcular seções incompletas
-        final incompleteSections = UserIncompleteSectionsEntity.verify(
-          artist: artist,
-          documents: [],
-        );
+        // // Calcular seções incompletas
+        // final incompleteSections = IncompleteSectionsEntity.verify(
+        //   artist: artist,
+        //   documents: [],
+        // );
         
         artist = artist.copyWith(
           uid: uid,
-          hasIncompleteSections: incompleteSections.hasIncompleteSections,
-          incompleteSections: incompleteSections.getGroupedIncompleteSections(),
+          // hasIncompleteSections: incompleteSections.hasIncompleteSections,
+          // incompleteSections: incompleteSections.getGroupedIncompleteSections(),
         );
 
         // Definir artistName se não fornecido

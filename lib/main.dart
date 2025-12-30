@@ -3,19 +3,31 @@ import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/artist_documents/data/datasources/documents_local_datasource.dart';
+import 'package:app/features/artist_documents/data/datasources/documents_remote_datasource.dart';
+import 'package:app/features/artist_documents/data/repositories/documents_repository_impl.dart';
+import 'package:app/features/artist_documents/domain/repositories/documents_repository.dart';
+import 'package:app/features/artist_documents/domain/usecases/get_documents_usecase.dart';
+import 'package:app/features/artist_documents/domain/usecases/set_document_usecase.dart';
+import 'package:app/features/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/authentication/domain/usecases/reauthenticate_user_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/resend_email_verification_usecase.dart';
 import 'package:app/features/profile/artists/data/datasources/artists_local_datasource.dart';
 import 'package:app/features/profile/artists/data/datasources/artists_remote_datasource.dart';
 import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
 import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/artists/domain/usecases/add_artist_usecase.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
 import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
 import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
+import 'package:app/features/profile/clients/domain/usecases/add_client_usecase.dart';
+import 'package:app/features/profile/shared/domain/usecases/switch_to_artist_usecase.dart';
+import 'package:app/features/profile/shared/domain/usecases/switch_to_client_usecase.dart';
 import 'package:app/firebase_options.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -80,6 +92,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_name_
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_bank_account_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 
 // Users imports
@@ -167,6 +180,34 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
     authServices: authServices,
   );
 
+  final getUserUidUseCase = GetUserUidUseCase(
+    repository: authRepository,
+    authServices: authServices,
+  );
+
+  final getUserDataUseCase = GetUserDataUseCase(
+    usersRepository: usersRepository,
+  );
+
+  final reauthenticateUserUseCase = ReauthenticateUserUseCase(
+    authServices: authServices,
+    biometricService: biometricService,
+    getUserUidUseCase: getUserUidUseCase,
+    getUserDataUseCase: getUserDataUseCase,
+  );
+
+  final getArtistUseCase = GetArtistUseCase(repository: artistsRepository);
+  final getClientUseCase = GetClientUseCase(repository: clientsRepository);
+
+  final switchToArtistUseCase = SwitchToArtistUseCase(
+    getUserUidUseCase: getUserUidUseCase,
+    getArtistUseCase: getArtistUseCase,
+  );
+  final switchToClientUseCase = SwitchToClientUseCase(
+    getUserUidUseCase: getUserUidUseCase,
+    getClientUseCase: getClientUseCase,
+  );
+
   // 6. Criar e retornar AuthBloc
   return AuthBloc(
     loginUseCase: loginUseCase,
@@ -183,6 +224,9 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
     checkEmailVerifiedUseCase: checkEmailVerifiedUseCase,
     resendEmailVerificationUseCase: resendEmailVerificationUseCase,
     checkNewEmailVerifiedUseCase: checkNewEmailVerifiedUseCase,
+    reauthenticateUserUseCase: reauthenticateUserUseCase,
+    switchToArtistUseCase: switchToArtistUseCase,
+    switchToClientUseCase: switchToClientUseCase,
   );
 }
 
@@ -240,10 +284,12 @@ ClientsBloc _createClientsBloc(
     getClientUseCase: getClientUseCase,
     updateClientUseCase: updateClientUseCase,
   );
+  final addClientUseCase = AddClientUseCase(repository: clientsRepository);
 
   // Criar e retornar ClientsBloc
   return ClientsBloc(
     getClientUseCase: getClientUseCase,
+    addClientUseCase: addClientUseCase,
     updateClientUseCase: updateClientUseCase,
     updateClientPreferencesUseCase: updateClientPreferencesUseCase,
     updateClientProfilePictureUseCase: updateClientProfilePictureUseCase,
@@ -306,18 +352,52 @@ ArtistsBloc _createArtistsBloc(
     updateArtistUseCase: updateArtistUseCase,
     storageService: storageService,
   );
+  final updateArtistBankAccountUseCase = UpdateArtistBankAccountUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+  final addArtistUseCase = AddArtistUseCase(repository: artistsRepository); 
 
   // Criar e retornar ArtistsBloc
   return ArtistsBloc(
     getArtistUseCase: getArtistUseCase,
+    addArtistUseCase: addArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
     updateArtistProfilePictureUseCase: updateArtistProfilePictureUseCase,
     updateArtistNameUseCase: updateArtistNameUseCase,
     updateArtistProfessionalInfoUseCase: updateArtistProfessionalInfoUseCase,
     updateArtistAgreementUseCase: updateArtistAgreementUseCase,
     updateArtistPresentationMediasUseCase: updateArtistPresentationMediasUseCase,
+    updateArtistBankAccountUseCase: updateArtistBankAccountUseCase,
     checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
     getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+/// Factory function para criar o DocumentsBloc com todas as dependências
+DocumentsBloc _createDocumentsBloc(
+  IDocumentsRepository documentsRepository,
+  GetUserUidUseCase getUserUidUseCase,
+  IStorageService storageService,
+) {
+  // 1. Criar DataSources
+
+  // 3. Criar UseCases
+  final getDocumentsUseCase = GetDocumentsUseCase(
+    documentsRepository: documentsRepository,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+  final setDocumentUseCase = SetDocumentUseCase(
+    documentsRepository: documentsRepository,
+    storageService: storageService,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+
+  // 4. Criar e retornar DocumentsBloc
+  return DocumentsBloc(
+    getDocumentsUseCase: getDocumentsUseCase,
+    setDocumentUseCase: setDocumentUseCase,
   );
 }
 
@@ -375,6 +455,12 @@ Future <void> main() async {
   final clientsRemoteDataSource = ClientsRemoteDataSourceImpl(firestore: firestore);
   final clientsRepository = ClientsRepositoryImpl(localDataSource: clientsLocalDataSource, remoteDataSource: clientsRemoteDataSource);
 
+
+  // Documents
+  final documentsLocalDataSource = DocumentsLocalDataSourceImpl(autoCacheService: localCacheService);
+  final documentsRemoteDataSource = DocumentsRemoteDataSourceImpl(firestore: firestore);
+  final documentsRepository = DocumentsRepositoryImpl(localDataSource: documentsLocalDataSource, remoteDataSource: documentsRemoteDataSource);
+
   runApp(MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -414,6 +500,13 @@ Future <void> main() async {
             create: (context) => _createUsersBloc(
               usersRepository,
               getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createDocumentsBloc(
+              documentsRepository,
+              getUserUidUseCase,
+              storageService,
             ),
           ),
         ],

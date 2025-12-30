@@ -12,7 +12,6 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
   bool incompleteGroupName;
   bool incompleteProfessionalInfo;
   bool incompletePresentationMedias;
-  bool incompleteBankAccount;
   bool incompleteMembersApproval;
 
   GroupIncompleteSectionsEntity._({
@@ -21,7 +20,6 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
     required this.incompleteGroupName,
     required this.incompleteProfessionalInfo,
     required this.incompletePresentationMedias,
-    required this.incompleteBankAccount,
     required this.incompleteMembersApproval,
   });
 
@@ -32,15 +30,13 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
     final bool incompleteGroupName = group.groupName == null || group.groupName!.isEmpty;
     final bool incompleteProfessionalInfo = _verifyProfessionalInfo(group.professionalInfo);
     final bool incompletePresentationMedias = _verifyPresentationMedias(group.presentationMedias);
-    final bool incompleteBankAccount = _verifyBankAccount(group.bankAccount);
-    final bool incompleteMembersApproval = _verifyMembersApproval(group.members);
+      final bool incompleteMembersApproval = _verifyMembersApproval(group.members);
 
     final bool hasIncompleteSections =
       incompleteProfilePicture ||
       incompleteGroupName ||
       incompleteProfessionalInfo ||
       incompletePresentationMedias ||
-      incompleteBankAccount ||
       incompleteMembersApproval;
 
     return GroupIncompleteSectionsEntity._(
@@ -49,7 +45,6 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
       incompleteGroupName: incompleteGroupName,
       incompleteProfessionalInfo: incompleteProfessionalInfo,
       incompletePresentationMedias: incompletePresentationMedias,
-      incompleteBankAccount: incompleteBankAccount,
       incompleteMembersApproval: incompleteMembersApproval,
     );
   }
@@ -99,7 +94,6 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
     if (incompleteGroupName) groupSections.add('Nome do grupo');
     if (incompleteProfessionalInfo) groupSections.add('Informações profissionais');
     if (incompletePresentationMedias) groupSections.add('Mídias de apresentação');
-    if (incompleteBankAccount) groupSections.add('Dados bancários');
     if (incompleteMembersApproval) groupSections.add('Aprovação dos membros');
 
     if (groupSections.isNotEmpty) {

@@ -1,8 +1,6 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
-// import 'package:app/core/domain/entities/artist/social_media_links_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:dart_mappable/dart_mappable.dart';
@@ -13,21 +11,20 @@ class ArtistEntity with ArtistEntityMappable {
   String? uid;
   String? profilePicture;
   String? artistName;
-  DateTime? dateRegistered;
   ProfessionalInfoEntity? professionalInfo;
   Map<String, String>? presentationMedias;
   final AddressInfoEntity? residenceAddress;
+  List<String>? groupsInUids;
+  Map<String, List<String>>? incompleteSections;
   BankAccountEntity? bankAccount;
   bool? approved;
   bool? isActive;
   bool? hasIncompleteSections;
-  Map<String, List<String>>? incompleteSections;
   bool? agreedToArtistTermsOfUse;
   bool? isOnAnyGroup;
-  List<String>? groupsInUids;
-  List<AvailabilityEntity>? availability;
   double rating;
   int finalizedContracts;
+  DateTime? dateRegistered;
 
   ArtistEntity({
     this.uid,
@@ -37,15 +34,14 @@ class ArtistEntity with ArtistEntityMappable {
     this.professionalInfo,
     this.presentationMedias,
     this.residenceAddress,
+    this.bankAccount,
     this.approved,
     this.isActive,
-    this.bankAccount,
     this.hasIncompleteSections,
     this.incompleteSections,
     this.agreedToArtistTermsOfUse,
     this.isOnAnyGroup,
     this.groupsInUids,
-    this.availability = const [],
     this.rating = 0,
     this.finalizedContracts = 0,
   });

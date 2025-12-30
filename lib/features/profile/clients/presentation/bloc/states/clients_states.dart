@@ -9,6 +9,21 @@ abstract class ClientsState extends Equatable {
 /// Estado inicial
 class ClientsInitial extends ClientsState {}
 
+// ==================== ADD CLIENT STATES ====================
+
+class AddClientLoading extends ClientsState {}
+
+class AddClientSuccess extends ClientsState {}
+
+class AddClientFailure extends ClientsState {
+  final String error;
+
+  AddClientFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== GET CLIENT STATES ====================
 
 class GetClientLoading extends ClientsState {}

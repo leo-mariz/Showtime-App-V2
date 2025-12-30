@@ -1,4 +1,5 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/profile/clients/domain/usecases/add_client_usecase.dart';
 import 'package:app/features/profile/clients/domain/usecases/get_client_usecase.dart';
 import 'package:app/features/profile/clients/domain/usecases/update_client_usecase.dart';
 import 'package:app/features/profile/clients/domain/usecases/update_client_preferences_usecase.dart';
@@ -10,13 +11,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
   final GetClientUseCase getClientUseCase;
+  final AddClientUseCase addClientUseCase;
   final UpdateClientUseCase updateClientUseCase;
   final UpdateClientPreferencesUseCase updateClientPreferencesUseCase;
   final UpdateClientProfilePictureUseCase updateClientProfilePictureUseCase;
   final UpdateClientAgreementUseCase updateClientAgreementUseCase;
   final GetUserUidUseCase getUserUidUseCase;
+  
   ClientsBloc({
     required this.getClientUseCase,
+    required this.addClientUseCase,
     required this.updateClientUseCase,
     required this.updateClientPreferencesUseCase,
     required this.updateClientProfilePictureUseCase,
@@ -24,6 +28,7 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
     required this.getUserUidUseCase,
   }) : super(ClientsInitial()) {
     on<GetClientEvent>(_onGetClientEvent);
+    on<AddClientEvent>(_onAddClientEvent);
     on<UpdateClientEvent>(_onUpdateClientEvent);
     on<UpdateClientPreferencesEvent>(_onUpdateClientPreferencesEvent);
     on<UpdateClientProfilePictureEvent>(_onUpdateClientProfilePictureEvent);
@@ -65,6 +70,30 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
       },
       (client) {
         emit(GetClientSuccess(client: client));
+      },
+    );
+  }
+
+  // ==================== ADD CLIENT ====================
+
+  Future<void> _onAddClientEvent(
+    AddClientEvent event,
+    Emitter<ClientsState> emit,
+  ) async {
+    emit(AddClientLoading());
+
+    final uid = await _getCurrentUserId();
+
+    final result = await addClientUseCase.call(uid!);
+
+    result.fold(
+      (failure) {
+        emit(AddClientFailure(error: failure.message));
+        emit(ClientsInitial());
+      },
+      (_) {
+        emit(AddClientSuccess());
+        emit(ClientsInitial());
       },
     );
   }

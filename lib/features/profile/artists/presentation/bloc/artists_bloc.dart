@@ -1,4 +1,5 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/profile/artists/domain/usecases/add_artist_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_profile_picture_usecase.dart';
@@ -6,6 +7,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_name_
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_bank_account_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
@@ -13,23 +15,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
   final GetArtistUseCase getArtistUseCase;
+  final AddArtistUseCase addArtistUseCase;
   final UpdateArtistUseCase updateArtistUseCase;
   final UpdateArtistProfilePictureUseCase updateArtistProfilePictureUseCase;
   final UpdateArtistNameUseCase updateArtistNameUseCase;
   final UpdateArtistProfessionalInfoUseCase updateArtistProfessionalInfoUseCase;
   final UpdateArtistAgreementUseCase updateArtistAgreementUseCase;
   final UpdateArtistPresentationMediasUseCase updateArtistPresentationMediasUseCase;
+  final UpdateArtistBankAccountUseCase updateArtistBankAccountUseCase;
   final CheckArtistNameExistsUseCase checkArtistNameExistsUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
   ArtistsBloc({
     required this.getArtistUseCase,
+    required this.addArtistUseCase,
     required this.updateArtistUseCase,
     required this.updateArtistProfilePictureUseCase,
     required this.updateArtistNameUseCase,
     required this.updateArtistProfessionalInfoUseCase,
     required this.updateArtistAgreementUseCase,
     required this.updateArtistPresentationMediasUseCase,
+    required this.updateArtistBankAccountUseCase,
     required this.checkArtistNameExistsUseCase,
     required this.getUserUidUseCase,
   }) : super(ArtistsInitial()) {
@@ -40,7 +46,9 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     on<UpdateArtistProfessionalInfoEvent>(_onUpdateArtistProfessionalInfoEvent);
     on<UpdateArtistAgreementEvent>(_onUpdateArtistAgreementEvent);
     on<UpdateArtistPresentationMediasEvent>(_onUpdateArtistPresentationMediasEvent);
+    on<UpdateArtistBankAccountEvent>(_onUpdateArtistBankAccountEvent);
     on<CheckArtistNameExistsEvent>(_onCheckArtistNameExistsEvent);
+    on<AddArtistEvent>(_onAddArtistEvent);
   }
 
   // ==================== HELPERS ====================
@@ -72,6 +80,41 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
       },
       (artist) {
         emit(GetArtistSuccess(artist: artist));
+      },
+    );
+  }
+
+  // ==================== ADD ARTIST ====================
+
+  Future<void> _onAddArtistEvent(
+    AddArtistEvent event,
+    Emitter<ArtistsState> emit,
+  ) async {
+    emit(AddArtistLoading());
+
+    final uid = await _getCurrentUserId();
+
+    if (uid == null) {
+      emit(AddArtistFailure(error: 'Usuário não autenticado'));
+      emit(ArtistsInitial());
+      return;
+    }
+
+    // Se artistName não foi fornecido, buscar dados do usuário para preencher
+    var artist = event.artist;
+    if (artist.artistName == null || artist.artistName!.isEmpty) {
+    }
+
+    final result = await addArtistUseCase.call(uid);
+
+    result.fold(
+      (failure) {
+        emit(AddArtistFailure(error: failure.message));
+        emit(ArtistsInitial());
+      },
+      (_) {
+        emit(AddArtistSuccess());
+        emit(ArtistsInitial());
       },
     );
   }
@@ -230,6 +273,28 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
       },
       (_) {
         emit(UpdateArtistPresentationMediasSuccess());
+        emit(ArtistsInitial());
+      },
+    );
+  }
+
+  // ==================== UPDATE ARTIST BANK ACCOUNT ====================
+
+  Future<void> _onUpdateArtistBankAccountEvent(
+    UpdateArtistBankAccountEvent event,
+    Emitter<ArtistsState> emit,
+  ) async {
+    emit(UpdateArtistBankAccountLoading());
+
+    final result = await updateArtistBankAccountUseCase.call(event.bankAccount);
+
+    result.fold(
+      (failure) {
+        emit(UpdateArtistBankAccountFailure(error: failure.message));
+        emit(ArtistsInitial());
+      },
+      (_) {
+        emit(UpdateArtistBankAccountSuccess());
         emit(ArtistsInitial());
       },
     );

@@ -9,6 +9,21 @@ abstract class ArtistsState extends Equatable {
 /// Estado inicial
 class ArtistsInitial extends ArtistsState {}
 
+// ==================== ADD ARTIST STATES ====================
+
+class AddArtistLoading extends ArtistsState {}
+
+class AddArtistSuccess extends ArtistsState {}
+
+class AddArtistFailure extends ArtistsState {
+  final String error;
+
+  AddArtistFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== GET ARTIST STATES ====================
 
 class GetArtistLoading extends ArtistsState {}
@@ -116,6 +131,21 @@ class UpdateArtistPresentationMediasFailure extends ArtistsState {
   final String error;
 
   UpdateArtistPresentationMediasFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== UPDATE ARTIST BANK ACCOUNT STATES ====================
+
+class UpdateArtistBankAccountLoading extends ArtistsState {}
+
+class UpdateArtistBankAccountSuccess extends ArtistsState {}
+
+class UpdateArtistBankAccountFailure extends ArtistsState {
+  final String error;
+
+  UpdateArtistBankAccountFailure({required this.error});
 
   @override
   List<Object?> get props => [error];

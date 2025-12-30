@@ -14,6 +14,9 @@ import 'package:app/features/authentication/domain/usecases/check_biometrics_ena
 import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/resend_email_verification_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/reauthenticate_user_usecase.dart';
+import 'package:app/features/profile/shared/domain/usecases/switch_to_artist_usecase.dart';
+import 'package:app/features/profile/shared/domain/usecases/switch_to_client_usecase.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +36,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final CheckEmailVerifiedUseCase checkEmailVerifiedUseCase;
   final ResendEmailVerificationUseCase resendEmailVerificationUseCase;
   final CheckNewEmailVerifiedUseCase checkNewEmailVerifiedUseCase;
+  final ReauthenticateUserUseCase reauthenticateUserUseCase;
+  final SwitchToArtistUseCase switchToArtistUseCase;
+  final SwitchToClientUseCase switchToClientUseCase;
 
   AuthBloc({
     required this.loginUseCase,
@@ -49,6 +55,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.checkEmailVerifiedUseCase,
     required this.resendEmailVerificationUseCase,
     required this.checkNewEmailVerifiedUseCase,
+    required this.reauthenticateUserUseCase,
+    required this.switchToArtistUseCase,
+    required this.switchToClientUseCase,
   }) : super(AuthInitial()) {
     on<RegisterUserEmailAndPasswordEvent>(_onRegisterUserEmailAndPasswordEvent);
     on<LoginUserEvent>(_onLoginUserEvent);
@@ -68,6 +77,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckEmailVerifiedEvent>(_onCheckEmailVerifiedEvent);
     on<ResendEmailVerificationEvent>(_onResendEmailVerificationEvent);
     on<CheckNewEmailVerifiedEvent>(_onCheckNewEmailVerifiedEvent);
+    on<ReauthenticateUserEvent>(_onReauthenticateUserEvent);
+    on<SwitchUserTypeEvent>(_onSwitchUserTypeEvent);
   }
 
   Future<void> _onRegisterUserEmailAndPasswordEvent(
@@ -456,6 +467,71 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (isVerified) {
         emit(CheckNewEmailVerifiedSuccess(isVerified: isVerified));
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  // ==================== REAUTHENTICATE USER ====================
+
+  Future<void> _onReauthenticateUserEvent(
+    ReauthenticateUserEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(ReauthenticateUserLoading());
+
+    // Se password é null, tenta biometria primeiro
+    final tryBiometrics = event.password == null;
+    
+    final result = await reauthenticateUserUseCase.call(
+      tryBiometrics: tryBiometrics,
+      password: event.password,
+    );
+
+    result.fold(
+      (failure) {
+        // Se é ValidationFailure, significa que biometria falhou e precisa de senha
+        if (failure is domain.ValidationFailure) {
+          emit(ReauthenticateUserBiometricFailure(error: failure.message));
+        } else {
+          // Outros erros (AuthFailure, etc) são falhas de senha
+          emit(ReauthenticateUserPasswordFailure(error: failure.message));
+        }
+        emit(AuthInitial());
+      },
+      (_) {
+        emit(ReauthenticateUserSuccess());
+        emit(AuthInitial());
+      },
+    );
+  }
+
+  // ==================== SWITCH USER TYPE ====================
+
+  Future<void> _onSwitchUserTypeEvent(
+    SwitchUserTypeEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(SwitchUserTypeLoading());
+
+    // Chamar o UseCase apropriado baseado no bool
+    final result = event.switchToArtist
+        ? await switchToArtistUseCase.call()
+        : await switchToClientUseCase.call();
+
+    result.fold(
+      (failure) {
+        emit(SwitchUserTypeFailure(error: failure.message));
+        emit(AuthInitial());
+      },
+      (profileExists) {
+        if (profileExists) {
+          // Perfil já existe, trocar diretamente
+          emit(SwitchUserTypeSuccess(isArtist: event.switchToArtist));
+        } else {
+          // Perfil não existe, precisa criar
+          emit(SwitchUserTypeNeedsCreation(switchToArtist: event.switchToArtist));
+        }
         emit(AuthInitial());
       },
     );

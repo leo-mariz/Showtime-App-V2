@@ -236,6 +236,64 @@ class CheckNewEmailVerifiedFailure extends AuthState {
   List<Object?> get props => [error];
 }
 
+// ==================== REAUTHENTICATE USER STATES ====================
+
+class ReauthenticateUserLoading extends AuthState {}
+
+class ReauthenticateUserSuccess extends AuthState {}
+
+/// Falha na reautenticação via biometria - deve mostrar dialog para senha
+class ReauthenticateUserBiometricFailure extends AuthState {
+  final String error;
+
+  ReauthenticateUserBiometricFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+/// Falha na reautenticação via senha - deve mostrar erro
+class ReauthenticateUserPasswordFailure extends AuthState {
+  final String error;
+
+  ReauthenticateUserPasswordFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== SWITCH USER TYPE STATES ====================
+
+class SwitchUserTypeLoading extends AuthState {}
+
+class SwitchUserTypeSuccess extends AuthState {
+  final bool isArtist;
+
+  SwitchUserTypeSuccess({required this.isArtist});
+
+  @override
+  List<Object?> get props => [isArtist];
+}
+
+class SwitchUserTypeFailure extends AuthState {
+  final String error;
+
+  SwitchUserTypeFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+/// Estado quando o perfil alternado não existe e precisa ser criado
+class SwitchUserTypeNeedsCreation extends AuthState {
+  final bool switchToArtist;
+
+  SwitchUserTypeNeedsCreation({required this.switchToArtist});
+
+  @override
+  List<Object?> get props => [switchToArtist];
+}
+
 
 
 

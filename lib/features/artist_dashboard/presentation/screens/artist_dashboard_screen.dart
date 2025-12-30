@@ -115,9 +115,9 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
             _buildHeader(textTheme, colorScheme, currentDate, isActive),
             DSSizedBoxSpacing.vertical(24),
 
-            // Main metrics grid
-            _buildMetricsGrid(colorScheme),
-            DSSizedBoxSpacing.vertical(24),
+            // // Main metrics grid
+            // _buildMetricsGrid(colorScheme),
+            // DSSizedBoxSpacing.vertical(24),
 
             // Earnings chart placeholder
             _buildEarningsChart(textTheme, colorScheme),

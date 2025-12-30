@@ -18,7 +18,7 @@ class DocumentModals {
   static Future<void> showIdentityModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity) onSave,
+    required Function(DocumentsEntity, String?) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -35,7 +35,7 @@ class DocumentModals {
   static Future<void> showResidenceModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity) onSave,
+    required Function(DocumentsEntity, String?) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -52,7 +52,7 @@ class DocumentModals {
   static Future<void> showCurriculumModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity) onSave,
+    required Function(DocumentsEntity, String?) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -69,7 +69,7 @@ class DocumentModals {
   static Future<void> showAntecedentsModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity) onSave,
+    required Function(DocumentsEntity, String?) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -86,7 +86,7 @@ class DocumentModals {
 // Modal de Identidade
 class _IdentityDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity) onSave;
+  final Function(DocumentsEntity, String?) onSave;
 
   const _IdentityDocumentModal({
     required this.document,
@@ -124,15 +124,12 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
         final document = DocumentsEntity(
           documentType: widget.document.documentType,
           documentOption: _selectedDocumentOption!,
-          url: file.path,
+          url: widget.document.url, // Mantém URL original (será atualizada após upload)
           status: 1,
           idNumber: _idNumberController.text,
         );
-        widget.onSave(document);
+        widget.onSave(document, file.path);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Documento enviado com sucesso!')),
-        );
       }
     }
   }
@@ -270,7 +267,7 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
 // Modal de Residência
 class _ResidenceDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity) onSave;
+  final Function(DocumentsEntity, String?) onSave;
 
   const _ResidenceDocumentModal({
     required this.document,
@@ -339,15 +336,12 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
         final document = DocumentsEntity(
           documentType: widget.document.documentType,
           documentOption: _selectedDocumentOption!,
-          url: file.path,
+          url: widget.document.url, // Mantém URL original (será atualizada após upload)
           status: 1,
           address: address,
         );
-        widget.onSave(document);
+        widget.onSave(document, file.path);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Documento enviado com sucesso!')),
-        );
       }
     }
   }
@@ -544,7 +538,7 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
 // Modal de Currículo
 class _CurriculumDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity) onSave;
+  final Function(DocumentsEntity, String?) onSave;
 
   const _CurriculumDocumentModal({
     required this.document,
@@ -715,7 +709,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
 // Modal de Antecedentes
 class _AntecedentsDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity) onSave;
+  final Function(DocumentsEntity, String?) onSave;
 
   const _AntecedentsDocumentModal({
     required this.document,

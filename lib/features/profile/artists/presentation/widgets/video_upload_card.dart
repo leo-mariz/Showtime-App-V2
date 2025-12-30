@@ -202,12 +202,11 @@ class _VideoUploadCardState extends State<VideoUploadCard> {
   }
 
   Future<ImageSource?> _showVideoSourceDialog() async {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return SelectionModal.show<ImageSource>(
       context: context,
       title: 'Selecionar vídeo',
-      backgroundColor: colorScheme.surface.withOpacity(0.8),
+      showCancelButton: false,
       options: [
         SelectionModalOption<ImageSource>(
           icon: Icons.photo_library,

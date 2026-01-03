@@ -2,7 +2,6 @@ import 'package:app/core/domain/artist/availability_calendar_entitys/availabilit
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Adicionar nova disponibilidade
@@ -14,24 +13,16 @@ import 'package:dartz/dartz.dart';
 /// - Retornar ID da disponibilidade criada
 class AddAvailabilityUseCase {
   final IAvailabilityRepository availabilityRepository;
-  final GetUserUidUseCase getUserUidUseCase;
 
   AddAvailabilityUseCase({
     required this.availabilityRepository,
-    required this.getUserUidUseCase,
   });
 
-  Future<Either<Failure, String>> call(AvailabilityEntity availability) async {
+  Future<Either<Failure, String>> call(String uid, AvailabilityEntity availability) async {
     try {
-      // Obter UID do usuário
-      final uidResult = await getUserUidUseCase.call();
-      final uid = uidResult.fold(
-        (failure) => null,
-        (uid) => uid,
-      );
-
-      if (uid == null || uid.isEmpty) {
-        return const Left(ServerFailure('Usuário não encontrado'));
+      // Validar UID
+      if (uid.isEmpty) {
+        return const Left(ValidationFailure('UID do artista não pode ser vazio'));
       }
 
       // Validar dados básicos da disponibilidade

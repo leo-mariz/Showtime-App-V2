@@ -3,6 +3,14 @@ import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/artist_availability/data/datasources/availability_local_datasource.dart';
+import 'package:app/features/artist_availability/data/datasources/availability_remote_datasource.dart';
+import 'package:app/features/artist_availability/data/repositories/availability_repository_impl.dart';
+import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
+import 'package:app/features/artist_availability/domain/usecases/add_availability_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/close_availability_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
+import 'package:app/features/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/artist_documents/data/datasources/documents_local_datasource.dart';
 import 'package:app/features/artist_documents/data/datasources/documents_remote_datasource.dart';
 import 'package:app/features/artist_documents/data/repositories/documents_repository_impl.dart';
@@ -411,6 +419,7 @@ DocumentsBloc _createDocumentsBloc(
   );
 }
 
+/// Factory function para criar o GroupsBloc com todas as dependências
 GroupsBloc _createGroupsBloc(
   IGroupsRepository groupsRepository,
   GetUserUidUseCase getUserUidUseCase,
@@ -432,6 +441,26 @@ GroupsBloc _createGroupsBloc(
     getUserUidUseCase: getUserUidUseCase,
   );
 }
+
+/// Factory function para criar o AvailabilityBloc com todas as dependências
+AvailabilityBloc _createAvailabilityBloc(
+  IAvailabilityRepository availabilityRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final getAvailabilityUseCase = GetAvailabilitiesUseCase(availabilityRepository: availabilityRepository);
+  final addAvailabilityUseCase = AddAvailabilityUseCase(availabilityRepository: availabilityRepository);
+  final closeAvailabilityUseCase = CloseAvailabilityUseCase(availabilityRepository: availabilityRepository);
+
+  // Criar e retornar AvailabilityBloc
+  return AvailabilityBloc(
+    getAvailabilitiesUseCase: getAvailabilityUseCase,
+    addAvailabilityUseCase: addAvailabilityUseCase,
+    closeAvailabilityUseCase: closeAvailabilityUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
 
 Future <void> main() async {
 
@@ -509,6 +538,11 @@ Future <void> main() async {
   final groupsRemoteDataSource = GroupsRemoteDataSourceImpl(firestore: firestore);
   final groupsRepository = GroupsRepositoryImpl(localDataSource: groupsLocalDataSource, remoteDataSource: groupsRemoteDataSource);
 
+  // Availability
+  final availabilityLocalDataSource = AvailabilityLocalDataSourceImpl(autoCacheService: localCacheService);
+  final availabilityRemoteDataSource = AvailabilityRemoteDataSourceImpl(firestore: firestore);
+  final availabilityRepository = AvailabilityRepositoryImpl(localDataSource: availabilityLocalDataSource, remoteDataSource: availabilityRemoteDataSource);
+
 
   runApp(MultiBlocProvider(
         providers: [
@@ -561,6 +595,12 @@ Future <void> main() async {
           BlocProvider(
             create: (context) => _createGroupsBloc(
               groupsRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createAvailabilityBloc(
+              availabilityRepository,
               getUserUidUseCase,
             ),
           ),

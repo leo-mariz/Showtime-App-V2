@@ -2,7 +2,6 @@ import 'package:app/core/domain/artist/availability_calendar_entitys/availabilit
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:dartz/dartz.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -15,24 +14,16 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 /// - Salvar novas disponibilidades atualizadas
 class CloseAvailabilityUseCase {
   final IAvailabilityRepository availabilityRepository;
-  final GetUserUidUseCase getUserUidUseCase;
 
   CloseAvailabilityUseCase({
     required this.availabilityRepository,
-    required this.getUserUidUseCase,
   });
 
-  Future<Either<Failure, List<AvailabilityEntity>>> call(Appointment closeAppointment) async {
+  Future<Either<Failure, List<AvailabilityEntity>>> call(String uid, Appointment closeAppointment) async {
     try {
-      // Obter UID do usuário
-      final uidResult = await getUserUidUseCase.call();
-      final uid = uidResult.fold(
-        (failure) => null,
-        (uid) => uid,
-      );
-
-      if (uid == null) {
-        return const Left(ServerFailure('Usuário não encontrado'));
+      // Validar UID
+      if (uid.isEmpty) {
+        return const Left(ValidationFailure('UID do artista não pode ser vazio'));
       }
 
       final allDaysOfWeek = AvailabilityEntityOptions.daysOfWeekList();

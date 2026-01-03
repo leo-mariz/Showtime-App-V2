@@ -3,21 +3,34 @@ import 'package:app/features/artist_availability/domain/usecases/close_availabil
 import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
 import 'package:app/features/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artist_availability/presentation/bloc/states/availability_states.dart';
+import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   final GetAvailabilitiesUseCase getAvailabilitiesUseCase;
   final AddAvailabilityUseCase addAvailabilityUseCase;
   final CloseAvailabilityUseCase closeAvailabilityUseCase;
+  final GetUserUidUseCase getUserUidUseCase;
 
   AvailabilityBloc({
     required this.getAvailabilitiesUseCase,
     required this.addAvailabilityUseCase,
     required this.closeAvailabilityUseCase,
+    required this.getUserUidUseCase,
   }) : super(AvailabilityInitial()) {
     on<GetAvailabilitiesEvent>(_onGetAvailabilitiesEvent);
     on<AddAvailabilityEvent>(_onAddAvailabilityEvent);
     on<CloseAvailabilityEvent>(_onCloseAvailabilityEvent);
+  }
+
+  // ==================== HELPERS ====================
+
+  Future<String?> _getCurrentUserId() async {
+    final result = await getUserUidUseCase.call();
+    return result.fold(
+      (_) => null,
+      (uid) => uid,
+    );
   }
 
   // ==================== GET AVAILABILITIES ====================
@@ -28,7 +41,9 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   ) async {
     emit(GetAvailabilitiesLoading());
 
-    final result = await getAvailabilitiesUseCase.call();
+    final uid = await _getCurrentUserId();
+
+    final result = await getAvailabilitiesUseCase.call(uid!);
 
     result.fold(
       (failure) {
@@ -49,7 +64,9 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   ) async {
     emit(AddAvailabilityLoading());
 
-    final result = await addAvailabilityUseCase.call(event.availability);
+    final uid = await _getCurrentUserId();
+
+    final result = await addAvailabilityUseCase.call(uid!, event.availability);
 
     result.fold(
       (failure) {
@@ -71,7 +88,9 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   ) async {
     emit(CloseAvailabilityLoading());
 
-    final result = await closeAvailabilityUseCase.call(event.closeAppointment);
+    final uid = await _getCurrentUserId();
+
+    final result = await closeAvailabilityUseCase.call(uid!, event.closeAppointment);
 
     result.fold(
       (failure) {

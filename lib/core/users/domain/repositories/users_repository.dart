@@ -20,6 +20,9 @@ abstract class IUsersRepository {
   /// Retorna o UID do usuário em cache ou null
   Future<Either<Failure, String?>> getUserUid();
 
+  /// Retorna o UID do usuário via email
+  Future<Either<Failure, String?>> getOtherUserUidViaEmail(String email);
+
   /// Busca dados do usuário no Firestore e salva no cache
   Future<Either<Failure, UserEntity>> getUserData(String uid);
 

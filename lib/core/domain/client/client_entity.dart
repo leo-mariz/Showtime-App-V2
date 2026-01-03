@@ -21,6 +21,7 @@ class ClientEntity with ClientEntityMappable {
 
   factory ClientEntity.defaultClientEntity() {
     return ClientEntity(
+      agreedToClientTermsOfUse: true,
       dateRegistered: DateTime.now(),
     );
   }

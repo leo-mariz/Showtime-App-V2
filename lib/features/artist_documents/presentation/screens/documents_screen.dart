@@ -6,8 +6,8 @@ import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/features/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/artist_documents/presentation/bloc/events/documents_events.dart';
 import 'package:app/features/artist_documents/presentation/bloc/states/documents_states.dart';
-import 'package:app/features/profile/artists/presentation/widgets/documents/document_card.dart';
-import 'package:app/features/profile/artists/presentation/widgets/documents/document_modals.dart';
+import 'package:app/features/artist_documents/presentation/widgets/document_card.dart';
+import 'package:app/features/artist_documents/presentation/widgets/document_modals.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,24 +28,25 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   void initState() {
     super.initState();
     // Buscar documentos ao inicializar
-    _getDocuments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getDocuments();
+    });
   }
 
   _getDocuments() {
     final documentsBloc = context.read<DocumentsBloc>();
-    if (documentsBloc.state is! GetDocumentsSuccess) {
-      documentsBloc.add(GetDocumentsEvent());
-    }
+    documentsBloc.add(GetDocumentsEvent());
   }
 
   DocumentsEntity _getDocumentByType(DocumentTypeEnum type) {
-    return _documentsMap[type] ??
+    final document = _documentsMap[type] ??
         DocumentsEntity(
           documentType: type.name,
           documentOption: '',
           url: '',
           status: 0,
         );
+    return document;
   }
 
   void _handleSaveDocument(DocumentsEntity document, String? localFilePath) {

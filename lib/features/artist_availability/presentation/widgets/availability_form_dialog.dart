@@ -6,7 +6,7 @@ import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
-import 'package:app/features/profile/artists/presentation/widgets/availability/radius_map_widget.dart';
+import 'package:app/features/artist_availability/presentation/widgets/radius_map_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';

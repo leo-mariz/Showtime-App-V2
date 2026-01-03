@@ -98,6 +98,19 @@ class _NavigationPageState extends State<NavigationPage> {
   }
 
   @override
+  void didUpdateWidget(NavigationPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isArtist != widget.isArtist) {
+      setState(() {
+        isArtist = widget.isArtist;
+        // Resetar para a primeira página quando mudar o tipo de usuário
+        _currentIndex = 0;
+        _pageController.jumpToPage(0);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();

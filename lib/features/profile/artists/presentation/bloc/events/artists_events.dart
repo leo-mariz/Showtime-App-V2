@@ -14,16 +14,7 @@ class GetArtistEvent extends ArtistsEvent {}
 
 // ==================== ADD ARTIST EVENTS ====================
 
-class AddArtistEvent extends ArtistsEvent {
-  final ArtistEntity artist;
-
-  AddArtistEvent({
-    required this.artist,
-  });
-
-  @override
-  List<Object?> get props => [artist];
-}
+class AddArtistEvent extends ArtistsEvent {}
 
 // ==================== UPDATE ARTIST EVENTS ====================
 

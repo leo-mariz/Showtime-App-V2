@@ -22,4 +22,7 @@ abstract class IAuthRepository {
   
   /// Limpa todo o cache local
   Future<Either<Failure, void>> clearCache();
+
+  /// Imprime todo o cache local
+  Future<Either<Failure, void>> printCache(String key);
 }

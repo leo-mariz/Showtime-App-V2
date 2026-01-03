@@ -1,12 +1,18 @@
+import 'package:app/core/design_system/padding/ds_padding.dart';
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
-import 'package:app/features/profile/artists/presentation/widgets/availability/availability_card.dart';
-import 'package:app/features/profile/artists/presentation/widgets/availability/availability_form_dialog.dart';
-import 'package:app/features/profile/artists/presentation/widgets/availability/day_events_list.dart';
+import 'package:app/features/artist_availability/presentation/bloc/availability_bloc.dart';
+import 'package:app/features/artist_availability/presentation/bloc/events/availability_events.dart';
+import 'package:app/features/artist_availability/presentation/bloc/states/availability_states.dart';
+import 'package:app/features/artist_availability/presentation/widgets/availability_card.dart';
+import 'package:app/features/artist_availability/presentation/widgets/availability_form_dialog.dart';
+import 'package:app/features/artist_availability/presentation/widgets/day_events_list.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 /// Tela principal de gerenciamento de disponibilidade do artista
@@ -24,7 +30,6 @@ class AvailabilityScreen extends StatefulWidget {
 class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // TODO: Substituir por dados reais do Bloc/Repository
   List<AvailabilityEntity> _availabilities = [];
   
   // Mock de shows confirmados
@@ -45,8 +50,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadAvailabilities();
     _selectedDate = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleGetAvailabilities();
+    });
   }
 
   @override
@@ -55,43 +62,16 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
     super.dispose();
   }
 
-  void _loadAvailabilities() {
-    // TODO: Carregar disponibilidades do artista
-    setState(() {
-      // Mock data - exemplo para 19/12
-      _availabilities = [
-        AvailabilityEntity(
-          id: 'avail1',
-          dataInicio: DateTime(2024, 12, 19),
-          dataFim: DateTime(2024, 12, 19),
-          horarioInicio: '18:00',
-          horarioFim: '23:00',
-          diasDaSemana: [],
-          valorShow: 200.0,
-          endereco: _getMockAddress(),
-          raioAtuacao: 10.0,
-          repetir: false,
-        ),
-      ];
-    });
+  void _handleGetAvailabilities({bool forceRefresh = false}) {
+    if (!mounted) return;
+    final availabilityBloc = context.read<AvailabilityBloc>();
+    // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
+    if (forceRefresh || availabilityBloc.state is! GetAvailabilitiesSuccess) {
+      availabilityBloc.add(GetAvailabilitiesEvent());
+    }
   }
 
-  AddressInfoEntity _getMockAddress() {
-    return AddressInfoEntity(
-      title: 'Casa',
-      zipCode: '01310-100',
-      street: 'Avenida Paulista',
-      number: '1578',
-      district: 'Bela Vista',
-      city: 'São Paulo',
-      state: 'SP',
-      latitude: -23.5505,
-      longitude: -46.6333,
-      isPrimary: true,
-    );
-  }
-
-  CalendarDataSource _getCalendarDataSource() {
+  CalendarDataSource _getCalendarDataSource(ColorScheme colorScheme) {
     final List<Appointment> appointments = [];
     
     // Agrupa disponibilidades e shows por data
@@ -133,7 +113,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
         endTime: endDateTime,
         subject: 'Show: ${show['hostName']}',
         notes: show['location'] as String,
-        color: Colors.orange, // Cor diferente para shows
+        color: colorScheme.tertiary, // Cor diferente para shows
       );
       
       appointments.add(appointment);
@@ -142,8 +122,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
     return _AvailabilityDataSource(appointments);
   }
 
-  List<Appointment> _getAppointmentsForDate(DateTime date) {
-    final appointments = _getCalendarDataSource().appointments as List<Appointment>;
+  List<Appointment> _getAppointmentsForDate(DateTime date, ColorScheme colorScheme) {
+    final appointments = _getCalendarDataSource(colorScheme).appointments as List<Appointment>;
     return appointments.where((appointment) {
       final appointmentDate = DateTime(
         appointment.startTime.year,
@@ -204,9 +184,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       context: context,
       initialDate: selectedDate,
       onSave: (availability) {
-        setState(() {
-          _availabilities.add(availability);
-        });
+        if (!mounted) return;
+        final availabilityBloc = context.read<AvailabilityBloc>();
+        availabilityBloc.add(AddAvailabilityEvent(availability: availability));
         Navigator.of(context).pop();
       },
     );
@@ -217,14 +197,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       context: context,
       availability: availability,
       onSave: (updatedAvailability) {
-        setState(() {
-          final index = _availabilities.indexWhere(
-            (av) => av.id == availability.id,
-          );
-          if (index != -1) {
-            _availabilities[index] = updatedAvailability;
-          }
-        });
+        if (!mounted) return;
+        final availabilityBloc = context.read<AvailabilityBloc>();
+        availabilityBloc.add(AddAvailabilityEvent(availability: updatedAvailability));
         Navigator.of(context).pop();
       },
     );
@@ -260,66 +235,88 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return BasePage(
-      showAppBar: true,
-      appBarTitle: 'Disponibilidade',
-      showAppBarBackButton: true,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showNewAvailabilityDialog(DateTime.now()),
-        backgroundColor: colorScheme.onPrimaryContainer,
-        foregroundColor: colorScheme.primaryContainer,
-        child: const Icon(Icons.add),
-      ),
-      child: Column(
-        children: [
-          // Tabs
-          TabBar(
-            controller: _tabController,
-            labelColor: colorScheme.onPrimaryContainer,
-            labelStyle: textTheme.bodyMedium,
-            unselectedLabelColor: colorScheme.onSurfaceVariant,
-            indicatorColor: colorScheme.onPrimaryContainer,
-            tabs: const [
-              Tab(text: 'Disponibilidades', icon: Icon(Icons.list)),
-              Tab(text: 'Agenda', icon: Icon(Icons.calendar_month)),
-            ],
-          ),
-          
-          // Conteúdo das tabs
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
+    return BlocListener<AvailabilityBloc, AvailabilityState>(
+      listener: (context, state) {
+        if (state is GetAvailabilitiesSuccess) {
+          setState(() {
+            _availabilities = state.availabilities;
+          });
+        } else if (state is GetAvailabilitiesFailure) {
+          context.showError(state.error);
+        } else if (state is AddAvailabilitySuccess) {
+          context.showSuccess('Disponibilidade salva com sucesso!');
+          _handleGetAvailabilities(forceRefresh: true);
+        } else if (state is AddAvailabilityFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BlocBuilder<AvailabilityBloc, AvailabilityState>(
+        builder: (context, state) {
+          final isLoading = state is GetAvailabilitiesLoading || state is AvailabilityInitial;
+
+          return BasePage(
+            showAppBar: true,
+            appBarTitle: 'Disponibilidade',
+            showAppBarBackButton: true,
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => _showNewAvailabilityDialog(DateTime.now()),
+              backgroundColor: colorScheme.onPrimaryContainer,
+              foregroundColor: colorScheme.primaryContainer,
+              child: const Icon(Icons.add),
+            ),
+            child: Column(
               children: [
-                // Tab 2: Lista
-                _buildListTab(colorScheme, textTheme),
-                // Tab 1: Calendário
-                _buildCalendarTab(colorScheme, textTheme),
+                // Tabs
+                TabBar(
+                  controller: _tabController,
+                  labelColor: colorScheme.onPrimaryContainer,
+                  labelStyle: textTheme.bodyMedium,
+                  unselectedLabelColor: colorScheme.onSurfaceVariant,
+                  indicatorColor: colorScheme.onPrimaryContainer,
+                  tabs: const [
+                    Tab(text: 'Disponibilidades', icon: Icon(Icons.list)),
+                    Tab(text: 'Agenda', icon: Icon(Icons.calendar_month)),
+                  ],
+                ),
                 
+                // Conteúdo das tabs
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 2: Lista
+                      _buildListTab(colorScheme, textTheme, isLoading),
+                      // Tab 1: Calendário
+                      _buildCalendarTab(colorScheme, textTheme, isLoading),
+                      
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildCalendarTab(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildCalendarTab(ColorScheme colorScheme, TextTheme textTheme, bool isLoading) {
     return Column(
       children: [
         // Calendário
         Expanded(
           flex: 3,
           child: Container(
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(DSPadding.horizontal(16)),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(DSSize.width(16)),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SfCalendar(
+              borderRadius: BorderRadius.circular(DSSize.width(16)),
+                child: SfCalendar(
                 view: CalendarView.month,
-                dataSource: _getCalendarDataSource(),
+                dataSource: _getCalendarDataSource(colorScheme),
                 onTap: _onCalendarTap,
                 onSelectionChanged: (CalendarSelectionDetails details) {
                   if (details.date != null) {
@@ -344,7 +341,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                   color: colorScheme.onPrimaryContainer.withOpacity(0.3),
                   border: Border.all(
                     color: colorScheme.onPrimaryContainer,
-                    width: 2,
+                    width: DSSize.width(2),
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -380,26 +377,26 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                         ),
                         // Marcadores visuais
                         Positioned(
-                          bottom: 2,
+                          bottom: DSSize.height(2),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (hasAvailability)
                                 Container(
-                                  width: 6,
-                                  height: 6,
+                                  width: DSSize.width(6),
+                                  height: DSSize.height(6),
                                   decoration: BoxDecoration(
-                                    color: Colors.green,
+                                    color: colorScheme.primary,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
                               if (hasAvailability && hasShow)
-                                const SizedBox(width: 2),
+                                DSSizedBoxSpacing.horizontal(2),
                               if (hasShow)
                                 Icon(
                                   Icons.star,
-                                  size: 8,
-                                  color: Colors.orange,
+                                  size: DSSize.width(8),
+                                  color: colorScheme.tertiary,
                                 ),
                             ],
                           ),
@@ -419,7 +416,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
           child: _selectedDate != null
               ? DayEventsList(
                   date: _selectedDate!,
-                  appointments: _getAppointmentsForDate(_selectedDate!),
+                  appointments: _getAppointmentsForDate(_selectedDate!, colorScheme),
                   availabilities: _availabilities.where((av) {
                     final availDate = DateTime(
                       av.dataInicio.year,
@@ -457,12 +454,15 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
     );
   }
 
-  Widget _buildListTab(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildListTab(ColorScheme colorScheme, TextTheme textTheme, bool isLoading) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: DSPadding.horizontal(16),
+            vertical: DSPadding.vertical(8),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -511,12 +511,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(16)),
                   itemCount: _availabilities.length,
                   itemBuilder: (context, index) {
                     final availability = _availabilities[index];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(bottom: DSPadding.vertical(12)),
                       child: AvailabilityCard(
                         availability: availability,
                         onTap: () => _showEditAvailabilityDialog(availability),

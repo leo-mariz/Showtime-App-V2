@@ -35,9 +35,8 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
         emit(GetAvailabilitiesFailure(error: failure.message));
         emit(AvailabilityInitial());
       },
-      (_) {
-        emit(GetAvailabilitiesSuccess());
-        emit(AvailabilityInitial());
+      (availabilities) {
+        emit(GetAvailabilitiesSuccess(availabilities: availabilities));
       },
     );
   }

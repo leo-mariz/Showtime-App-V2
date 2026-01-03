@@ -1,6 +1,6 @@
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
 import 'package:app/core/domain/artist/artist_groups/group_member_entity.dart';
-import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
+// import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 part 'group_incomplete_sections_entity.mapper.dart';
@@ -61,24 +61,24 @@ class GroupIncompleteSectionsEntity with GroupIncompleteSectionsEntityMappable{
     return presentationMedias == null || presentationMedias.isEmpty;
   }
 
-  static bool _verifyBankAccount(BankAccountEntity? bankAccount) {
-    if (bankAccount == null) return true;
-    if (bankAccount.fullName != null && bankAccount.cpfOrCnpj != null) {
-      if (bankAccount.pixType != null &&
-          bankAccount.pixKey != null &&
-          bankAccount.pixType!.isNotEmpty &&
-          bankAccount.pixKey!.isNotEmpty) {
-        return false;
-      }
-      if (bankAccount.bankName != null &&
-          bankAccount.agency != null &&
-          bankAccount.accountNumber != null &&
-          bankAccount.accountType != null) {
-        return false;
-      }
-    }
-    return true;
-  }
+  // static bool _verifyBankAccount(BankAccountEntity? bankAccount) {
+  //   if (bankAccount == null) return true;
+  //   if (bankAccount.fullName != null && bankAccount.cpfOrCnpj != null) {
+  //     if (bankAccount.pixType != null &&
+  //         bankAccount.pixKey != null &&
+  //         bankAccount.pixType!.isNotEmpty &&
+  //         bankAccount.pixKey!.isNotEmpty) {
+  //       return false;
+  //     }
+  //     if (bankAccount.bankName != null &&
+  //         bankAccount.agency != null &&
+  //         bankAccount.accountNumber != null &&
+  //         bankAccount.accountType != null) {
+  //       return false;
+  //     }
+  //   }
+  //   return true;
+  // }
 
   static bool _verifyMembersApproval(List<GroupMemberEntity>? members) {
     if (members == null || members.isEmpty) return true;

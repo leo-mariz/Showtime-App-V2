@@ -1,3 +1,4 @@
+// import 'package:app/core/domain/artist/artist_individual/documents/documents_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
@@ -31,7 +32,9 @@ class LogoutUseCase {
       final clearResult = await authRepository.clearCache();
       clearResult.fold(
         (failure) => throw failure,
-        (_) => null,
+        (_) async{
+          // await authRepository.printCache(DocumentsEntityReference.cachedKey());
+        },
       );
 
       // 3. Desabilitar biometria se solicitado

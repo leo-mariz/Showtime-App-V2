@@ -4,6 +4,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/profile/shared/presentation/widgets/icon_menu_button.dart';
 import 'package:app/features/profile/shared/presentation/widgets/logout_button.dart';
@@ -14,6 +15,9 @@ import 'package:app/features/profile/shared/presentation/widgets/profile_picture
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
+import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
 import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
 import 'package:app/features/profile/clients/presentation/bloc/events/clients_events.dart';
 import 'package:app/features/profile/clients/presentation/bloc/states/clients_states.dart';
@@ -22,6 +26,8 @@ import 'package:app/core/users/presentation/bloc/events/users_events.dart';
 import 'package:app/core/users/presentation/bloc/states/users_states.dart';
 import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -46,6 +52,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
   }
 
   void _handleGetClient({bool forceRefresh = false}) {
+    if (!mounted) return;
     final clientsBloc = context.read<ClientsBloc>();
     // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
     if (forceRefresh || clientsBloc.state is! GetClientSuccess) {
@@ -54,6 +61,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
   }
 
   void _handleGetUserData({bool forceRefresh = false}) {
+    if (!mounted) return;
     final usersBloc = context.read<UsersBloc>();
     // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
     if (forceRefresh || usersBloc.state is! GetUserDataSuccess) {
@@ -162,15 +170,49 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
         BlocProvider.value(
           value: context.read<UsersBloc>(),
         ),
+        BlocProvider.value(
+          value: context.read<ArtistsBloc>(),
+        ),
       ],
       child: MultiBlocListener(
         listeners: [
           BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
+              debugPrint('🔵 [ClientProfileScreen] AuthBloc state: ${state.runtimeType}');
               if (state is AuthLoggedOut) {
                 router.replaceAll([InitialRoute()]);
               } else if (state is AuthFailure) {
                 context.showError(state.error);
+              } else if (state is SwitchUserTypeSuccess) {
+                debugPrint('🟢 [ClientProfileScreen] SwitchUserTypeSuccess - Navegando para artista (isArtist: ${state.isArtist})');
+                // Perfil já existe, navegar diretamente
+                router.replaceAll([NavigationRoute(isArtist: true)]);
+                debugPrint('✅ [ClientProfileScreen] Navegação executada');
+              } else if (state is SwitchUserTypeNeedsCreation) {
+                debugPrint('🟡 [ClientProfileScreen] SwitchUserTypeNeedsCreation - Mostrando modal de termos');
+                // Perfil não existe, mostrar modal de termos
+                _showArtistTermsModal();
+              } else if (state is SwitchUserTypeFailure) {
+                debugPrint('🔴 [ClientProfileScreen] SwitchUserTypeFailure: ${state.error}');
+                context.showError(state.error);
+              } else if (state is SwitchUserTypeLoading) {
+                debugPrint('⏳ [ClientProfileScreen] SwitchUserTypeLoading');
+              }
+            },
+          ),
+          BlocListener<ArtistsBloc, ArtistsState>(
+            listener: (context, state) {
+              debugPrint('🔵 [ClientProfileScreen] ArtistsBloc state: ${state.runtimeType}');
+              if (state is AddArtistSuccess) {
+                debugPrint('🟢 [ClientProfileScreen] AddArtistSuccess - Navegando para artista');
+                context.showSuccess('Perfil de artista criado com sucesso!');
+                router.replaceAll([NavigationRoute(isArtist: true)]);
+                debugPrint('✅ [ClientProfileScreen] Navegação executada após criar artista');
+              } else if (state is AddArtistFailure) {
+                debugPrint('🔴 [ClientProfileScreen] AddArtistFailure: ${state.error}');
+                context.showError(state.error);
+              } else if (state is AddArtistLoading) {
+                debugPrint('⏳ [ClientProfileScreen] AddArtistLoading');
               }
             },
           ),
@@ -195,142 +237,165 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
             },
           ),
         ],
-        child: BlocBuilder<UsersBloc, UsersState>(
-          builder: (context, usersState) {
-            return BlocBuilder<ClientsBloc, ClientsState>(
-              builder: (context, clientsState) {
-                final user = usersState is GetUserDataSuccess
-                    ? usersState.user
-                    : null;
-                
-                final client = clientsState is GetClientSuccess
-                    ? clientsState.client
-                    : null;
-                
-                final isLoadingProfilePicture = clientsState is UpdateClientProfilePictureLoading;
-                final userName = _getUserName(user);
-                final isLoadingData = _isLoadingData(usersState, clientsState);
-                final isDataReady = _isDataReady(usersState, clientsState);
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            return BlocBuilder<UsersBloc, UsersState>(
+              builder: (context, usersState) {
+                return BlocBuilder<ClientsBloc, ClientsState>(
+                  builder: (context, clientsState) {
+                    return BlocBuilder<ArtistsBloc, ArtistsState>(
+                      builder: (context, artistsState) {
+                        final user = usersState is GetUserDataSuccess
+                            ? usersState.user
+                            : null;
+                        
+                        final client = clientsState is GetClientSuccess
+                            ? clientsState.client
+                            : null;
+                        
+                        final isLoadingProfilePicture = clientsState is UpdateClientProfilePictureLoading;
+                        final userName = _getUserName(user);
+                        final isLoadingData = _isLoadingData(usersState, clientsState);
+                        final isDataReady = _isDataReady(usersState, clientsState);
+                        
+                        // Verificar se está em processo de alternância de conta
+                        final isSwitchingAccount = authState is SwitchUserTypeLoading ||
+                            artistsState is AddArtistLoading;
 
-                return BasePage(
-                  showAppBar: true,
-                  appBarTitle: 'Perfil',
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header com dados do cliente
-                        if (isLoadingData)
-                          // Mostrar skeleton enquanto carrega
-                          _buildHeaderSkeleton()
-                        else if (isDataReady)
-                          // Mostrar header real quando dados estiverem prontos
-                          ProfileHeader(
-                            name: userName ?? 'Cliente',
-                            isArtist: false,
-                            imageUrl: client?.profilePicture,
-                            onProfilePictureTap: () => _handleProfilePictureTap(),
-                            isLoadingProfilePicture: isLoadingProfilePicture,
-                            onSwitchUserType: () {
-                              // TODO: Implementar troca de tipo de usuário
-                            },
-                          )
-                        else
-                          // Fallback: mostrar skeleton se dados não estiverem prontos
-                          _buildHeaderSkeleton(),
-                    
-                        DSSizedBoxSpacing.vertical(24),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        return Stack(
                           children: [
-                            IconMenuButton(
-                              icon: Icons.star,
-                              label: 'Preferências',
-                              onPressed: () {},
-                              showWarning: false,
-                            ),
-                            IconMenuButton(
-                              icon: Icons.location_on,
-                              label: 'Endereços',
-                              onPressed: () => router.push(const AddressesListRoute()),
-                              showWarning: false,
-                            ),
-                            IconMenuButton(
-                              icon: Icons.history,
-                              label: 'Histórico',
-                              onPressed: () {},
-                              showWarning: false,
-                            ),
-                          ],
-                        ),
+                            BasePage(
+                              showAppBar: true,
+                              appBarTitle: 'Perfil',
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Header com dados do cliente
+                                    if (isLoadingData)
+                                      // Mostrar skeleton enquanto carrega
+                                      _buildHeaderSkeleton()
+                                    else if (isDataReady)
+                                      // Mostrar header real quando dados estiverem prontos
+                                      ProfileHeader(
+                                        name: userName ?? 'Cliente',
+                                        isArtist: false,
+                                        imageUrl: client?.profilePicture,
+                                        onProfilePictureTap: () => _handleProfilePictureTap(),
+                                        isLoadingProfilePicture: isLoadingProfilePicture,
+                                        onSwitchUserType: () => _showSwitchAccountConfirmation(),
+                                      )
+                                    else
+                                      // Fallback: mostrar skeleton se dados não estiverem prontos
+                                      _buildHeaderSkeleton(),
+                                
+                                    DSSizedBoxSpacing.vertical(24),
 
-                        DSSizedBoxSpacing.vertical(24),
-                        
-                        // Opções do perfil
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            color: primaryContainerWithOpacity,
-                            child: Column(
-                              children: [
-                                ProfileOptionTile(
-                                  icon: Icons.person,
-                                  title: 'Informações pessoais',
-                                  showDivider: true,
-                                  isFirst: true,
-                                  onTap: () {
-                                    router.push(const PersonalInfoRoute());
-                                  },
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      children: [
+                                        IconMenuButton(
+                                          icon: Icons.star,
+                                          label: 'Preferências',
+                                          onPressed: () {},
+                                          showWarning: false,
+                                        ),
+                                        IconMenuButton(
+                                          icon: Icons.location_on,
+                                          label: 'Endereços',
+                                          onPressed: () => router.push(const AddressesListRoute()),
+                                          showWarning: false,
+                                        ),
+                                        IconMenuButton(
+                                          icon: Icons.history,
+                                          label: 'Histórico',
+                                          onPressed: () {},
+                                          showWarning: false,
+                                        ),
+                                      ],
+                                    ),
+
+                                    DSSizedBoxSpacing.vertical(24),
+                                    
+                                    // Opções do perfil
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Container(
+                                        color: primaryContainerWithOpacity,
+                                        child: Column(
+                                          children: [
+                                            ProfileOptionTile(
+                                              icon: Icons.person,
+                                              title: 'Informações pessoais',
+                                              showDivider: true,
+                                              isFirst: true,
+                                              onTap: () {
+                                                router.push(const PersonalInfoRoute());
+                                              },
+                                            ),
+                                            ProfileOptionTile(
+                                              icon: Icons.security,
+                                              title: 'Login e Segurança',
+                                              showDivider: true,
+                                              onTap: () {
+                                                router.push(const LoginSecurityRoute());
+                                              },
+                                            ),
+                                            ProfileOptionTile(
+                                              icon: Icons.support_agent,
+                                              title: 'Atendimento',
+                                              showDivider: true,
+                                              onTap: () {
+                                                router.push(const SupportRoute());
+                                              },
+                                            ),
+                                            ProfileOptionTile(
+                                              icon: Icons.description,
+                                              title: 'Termos de uso',
+                                              showDivider: true,
+                                              onTap: () {
+                                                router.push(const ClientTermsOfUseRoute());
+                                              },
+                                            ),
+                                            ProfileOptionTile(
+                                              icon: Icons.privacy_tip,
+                                              title: 'Política de privacidade',
+                                              showDivider: false,
+                                              isLast: true,
+                                              onTap: () {
+                                                router.push(const TermsOfPrivacyRoute());
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                    ),
+                                  ),
+                                  
+                                    DSSizedBoxSpacing.vertical(40),
+                                    
+                                    // Botão de logout
+                                    LogoutButton(
+                                      onLogout: () => _handleLogout(context),
+                                    ),
+                                    DSSizedBoxSpacing.vertical(16),
+                                  ],
                                 ),
-                                ProfileOptionTile(
-                                  icon: Icons.security,
-                                  title: 'Login e Segurança',
-                                  showDivider: true,
-                                  onTap: () {
-                                    router.push(const LoginSecurityRoute());
-                                  },
-                                ),
-                                ProfileOptionTile(
-                                  icon: Icons.support_agent,
-                                  title: 'Atendimento',
-                                  showDivider: true,
-                                  onTap: () {
-                                    router.push(const SupportRoute());
-                                  },
-                                ),
-                                ProfileOptionTile(
-                                  icon: Icons.description,
-                                  title: 'Termos de uso',
-                                  showDivider: true,
-                                  onTap: () {
-                                    router.push(const ClientTermsOfUseRoute());
-                                  },
-                                ),
-                                ProfileOptionTile(
-                                  icon: Icons.privacy_tip,
-                                  title: 'Política de privacidade',
-                                  showDivider: false,
-                                  isLast: true,
-                                  onTap: () {
-                                    router.push(const TermsOfPrivacyRoute());
-                                  },
-                                ),
-                              ],
+                              ),
                             ),
-                        ),
-                      ),
-                      
-                        DSSizedBoxSpacing.vertical(40),
-                        
-                        // Botão de logout
-                        LogoutButton(
-                          onLogout: () => _handleLogout(context),
-                        ),
-                        DSSizedBoxSpacing.vertical(16),
-                      ],
-                    ),
-                  ),
+                            if (isSwitchingAccount)
+                              Container(
+                                color: Colors.black.withOpacity(0.5),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 );
               },
             );
@@ -486,4 +551,240 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
     context.read<AuthBloc>().add(UserLogoutEvent());
   }
 
+  /// Mostra modal de confirmação para alternar tipo de conta
+  Future<void> _showSwitchAccountConfirmation() async {
+    debugPrint('🔵 [ClientProfileScreen] _showSwitchAccountConfirmation chamado');
+    if (!mounted) return;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      builder: (context) => _SwitchAccountConfirmationModal(
+        title: 'Alternar para Artista',
+        message: 'Deseja realmente alternar para a área de Artista?',
+        onConfirm: () {
+          debugPrint('🟢 [ClientProfileScreen] Modal confirmado - Disparando SwitchUserTypeEvent');
+          context.read<AuthBloc>().add(
+            SwitchUserTypeEvent(switchToArtist: true),
+          );
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+    debugPrint('🔵 [ClientProfileScreen] Modal fechado com resultado: $confirmed');
+  }
+
+  /// Mostra modal de termos de uso para artistas
+  Future<void> _showArtistTermsModal() async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      builder: (context) => _ArtistTermsModal(),
+    );
+
+    if (confirmed == true && mounted) {
+      
+      context.read<ArtistsBloc>().add(
+        AddArtistEvent(),
+      );
+    }
+  }
+}
+
+/// Modal de confirmação para alternar tipo de conta
+class _SwitchAccountConfirmationModal extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onConfirm;
+
+  const _SwitchAccountConfirmationModal({
+    required this.title,
+    required this.message,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        left: DSSize.width(16),
+        right: DSSize.width(16),
+        top: DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              margin: EdgeInsets.only(bottom: DSSize.height(16)),
+              decoration: BoxDecoration(
+                color: colorScheme.onPrimary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
+              ),
+            ),
+          ),
+          Text(
+            title,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          Text(
+            message,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              DSSizedBoxSpacing.horizontal(16),
+              Expanded(
+                child: CustomButton(
+                  label: 'Confirmar',
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  textColor: colorScheme.primaryContainer,
+                  onPressed: onConfirm,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Modal para aceitar termos de uso de artista
+class _ArtistTermsModal extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final router = AutoRouter.of(context);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        left: DSSize.width(16),
+        right: DSSize.width(16),
+        top: DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              margin: EdgeInsets.only(bottom: DSSize.height(16)),
+              decoration: BoxDecoration(
+                color: colorScheme.onPrimary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
+              ),
+            ),
+          ),
+          Text(
+            'Termos de Uso para Artistas',
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          RichText(
+            text: TextSpan(
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onPrimary,
+              ),
+              children: [
+                const TextSpan(text: 'Para criar um perfil de artista, é necessário aceitar os '),
+                TextSpan(
+                  text: 'Termos de Uso para Artistas',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    decoration: TextDecoration.underline,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      router.push(const ArtistsTermsOfUseRoute());
+                    },
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'Cancelar',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              DSSizedBoxSpacing.horizontal(16),
+              Expanded(
+                child: CustomButton(
+                  label: 'Aceitar',
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  textColor: colorScheme.primaryContainer,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

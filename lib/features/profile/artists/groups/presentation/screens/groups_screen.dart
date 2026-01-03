@@ -1,12 +1,18 @@
+import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
 import 'package:app/core/domain/artist/artist_groups/group_member_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
-import 'package:app/features/profile/artists/presentation/widgets/groups/create_group_modal.dart';
-import 'package:app/features/profile/artists/presentation/widgets/groups/group_card.dart';
-import 'package:app/features/profile/artists/presentation/widgets/groups/group_invite_card.dart';
+import 'package:app/features/profile/artists/groups/presentation/bloc/events/groups_events.dart';
+import 'package:app/features/profile/artists/groups/presentation/bloc/groups_bloc.dart';
+import 'package:app/features/profile/artists/groups/presentation/bloc/states/groups_states.dart';
+import 'package:app/features/profile/artists/groups/presentation/widgets/create_group_modal.dart';
+import 'package:app/features/profile/artists/groups/presentation/widgets/group_card.dart';
+import 'package:app/features/profile/artists/groups/presentation/widgets/group_invite_card.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage(deferredLoading: true)
 class GroupsScreen extends StatefulWidget {
@@ -19,7 +25,6 @@ class GroupsScreen extends StatefulWidget {
 class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // TODO: Substituir por dados reais do artista (Bloc/Repository)
   String? _currentArtistUid; // UID do artista atual
   List<GroupEntity> _myGroups = [];
   List<GroupEntity> _pendingInvites = []; // Grupos com convites pendentes
@@ -30,7 +35,10 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
-    _loadGroups();
+    // Buscar grupos ao carregar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleGetGroups();
+    });
     _loadPendingInvites();
   }
 
@@ -44,47 +52,13 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-  void _loadGroups() {
-    // TODO: Carregar grupos do artista
-    setState(() {
-      _myGroups = [
-        GroupEntity(
-          uid: 'group1',
-          groupName: 'Banda Rock',
-          profilePicture: null,
-          dateRegistered: DateTime.now().subtract(const Duration(days: 30)),
-          members: [
-            // Mock: artista atual é admin deste grupo
-            GroupMemberEntity(
-              artistUid: _currentArtistUid,
-              isAdmin: true,
-              isApproved: true,
-            ),
-          ],
-          isActive: true,
-        ),
-        GroupEntity(
-          uid: 'group2',
-          groupName: 'Trio Acústico',
-          profilePicture: null,
-          dateRegistered: DateTime.now().subtract(const Duration(days: 15)),
-          members: [
-            // Mock: artista atual NÃO é admin deste grupo
-            GroupMemberEntity(
-              artistUid: 'other_artist_uid',
-              isAdmin: true,
-              isApproved: true,
-            ),
-            GroupMemberEntity(
-              artistUid: _currentArtistUid,
-              isAdmin: false,
-              isApproved: true,
-            ),
-          ],
-          isActive: true,
-        ),
-      ];
-    });
+  void _handleGetGroups({bool forceRefresh = false}) {
+    if (!mounted) return;
+    final groupsBloc = context.read<GroupsBloc>();
+    // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
+    if (forceRefresh || groupsBloc.state is! GetGroupsSuccess) {
+      groupsBloc.add(GetGroupsEvent());
+    }
   }
 
   void _loadPendingInvites() {
@@ -115,10 +89,11 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
   void _showCreateGroupModal() {
     CreateGroupModal.show(
       context: context,
-      onCreate: (group) {
-        setState(() {
-          _myGroups.add(group);
-        });
+      onCreate: (group, imageFile, emails) {
+        if (!mounted) return;
+        final groupsBloc = context.read<GroupsBloc>();
+        // Disparar evento para adicionar grupo
+        groupsBloc.add(AddGroupEvent(group: group));
       },
     );
   }
@@ -159,18 +134,8 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
   }
 
   void _onGroupTap(GroupEntity group) {
-    final isAdmin = _isCurrentArtistAdmin(group);
-    // TODO: Navegar para detalhes do grupo
-    // Se for admin, permitir edição; se não, apenas visualização
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isAdmin
-              ? 'Detalhes de ${group.groupName} (modo edição - você é admin)'
-              : 'Detalhes de ${group.groupName} (somente visualização)',
-        ),
-      ),
-    );
+    final router = AutoRouter.of(context);
+    router.push(GroupAreaRoute(group: group));
   }
 
   @override
@@ -178,7 +143,25 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return BasePage(
+    return BlocListener<GroupsBloc, GroupsState>(
+      listener: (context, state) {
+        if (state is GetGroupsSuccess) {
+          setState(() {
+            _myGroups = state.groups;
+          });
+        } else if (state is GetGroupsFailure) {
+          context.showError(state.error);
+        } else if (state is AddGroupSuccess) {
+          // Recarregar grupos após adicionar
+          _handleGetGroups(forceRefresh: true);
+          context.showSuccess('Grupo criado com sucesso!');
+        } else if (state is AddGroupFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BlocBuilder<GroupsBloc, GroupsState>(
+        builder: (context, state) {
+          return BasePage(
       showAppBar: true,
       appBarTitle: 'Conjuntos',
       showAppBarBackButton: true,
@@ -219,6 +202,9 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
             ),
           ),
         ],
+      ),
+          );
+        },
       ),
     );
   }

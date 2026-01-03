@@ -49,6 +49,7 @@ class ArtistEntity with ArtistEntityMappable {
   // Método de fábrica para criar uma entidade padrão
   factory ArtistEntity.defaultEntity() {
     return ArtistEntity(
+      agreedToArtistTermsOfUse: true,
       dateRegistered: DateTime.now(),
       approved: false,
       isActive: false,

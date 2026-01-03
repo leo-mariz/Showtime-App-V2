@@ -1,9 +1,9 @@
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/profile/artists/data/datasources/groups_local_datasource.dart';
-import 'package:app/features/profile/artists/data/datasources/groups_remote_datasource.dart';
-import 'package:app/features/profile/artists/domain/repositories/groups_repository.dart';
+import 'package:app/features/profile/artists/groups/data/datasources/groups_local_datasource.dart';
+import 'package:app/features/profile/artists/groups/data/datasources/groups_remote_datasource.dart';
+import 'package:app/features/profile/artists/groups/domain/repositories/groups_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// Implementação do Repository de Groups
@@ -97,6 +97,18 @@ class GroupsRepositoryImpl implements IGroupsRepository {
       await remoteDataSource.deleteGroup(uid);
       await localDataSource.clearGroupCache(uid);
       return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  // ==================== VERIFICATION OPERATIONS ====================
+
+  @override
+  Future<Either<Failure, bool>> groupNameExists(String groupName) async {
+    try {
+      final exists = await remoteDataSource.groupNameExists(groupName);
+      return Right(exists);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

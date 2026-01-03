@@ -11,6 +11,10 @@ abstract class IAuthLocalDataSource {
   /// Limpa todo o cache
   /// Lança [CacheException] em caso de erro
   Future<void> clearCache();
+
+  /// Imprime todo o cache
+  /// Lança [CacheException] em caso de erro
+  Future<void> printCache(String key);
 }
 
 /// Implementação do DataSource local usando ILocalCacheService
@@ -49,6 +53,20 @@ class AuthLocalDataSourceImpl implements IAuthLocalDataSource {
     } catch (e, stackTrace) {
       throw CacheException(
         'Erro ao limpar cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> printCache(String key) async {
+    try {
+      final cache = await autoCacheService.getCachedDataString(key);
+      print('cache: $cache');
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao imprimir cache',
         originalError: e,
         stackTrace: stackTrace,
       );

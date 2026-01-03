@@ -1,3 +1,4 @@
+import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AvailabilityState extends Equatable {
@@ -12,7 +13,14 @@ class AvailabilityInitial extends AvailabilityState {}
 
 class GetAvailabilitiesLoading extends AvailabilityState {}
 
-class GetAvailabilitiesSuccess extends AvailabilityState {}
+class GetAvailabilitiesSuccess extends AvailabilityState {
+  final List<AvailabilityEntity> availabilities;
+
+  GetAvailabilitiesSuccess({required this.availabilities});
+
+  @override
+  List<Object?> get props => [availabilities];
+}
 
 class GetAvailabilitiesFailure extends AvailabilityState {
   final String error;

@@ -61,6 +61,12 @@ class DocumentCard extends StatelessWidget {
     }
   }
 
+  /// Verifica se o documento pode ser editado/enviado
+  /// Apenas status 0 (não enviado) ou 3 (rejeitado) permitem envio
+  bool get _canEdit {
+    return document.status == 0 || document.status == 3;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -71,7 +77,7 @@ class DocumentCard extends StatelessWidget {
     final statusIcon = _getStatusIcon(document.status);
 
     return CustomCard(
-      onTap: onTap,
+      onTap: _canEdit ? onTap : null,
       child: Row(
         children: [
           // Ícone do documento
@@ -83,8 +89,8 @@ class DocumentCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(DSSize.width(12)),
             ),
             child: Icon(
-              hasDocument ? Icons.description : Icons.upload_outlined,
-              color: colorScheme.onPrimaryContainer,
+              statusIcon,
+              color: statusColor,
               size: DSSize.width(24),
             ),
           ),
@@ -102,23 +108,18 @@ class DocumentCard extends StatelessWidget {
                   ),
                 ),
                 DSSizedBoxSpacing.vertical(4),
-                if (document.documentOption != null && document.documentOption!.isNotEmpty) ...[
-                  Text(
-                    document.documentOption!,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  DSSizedBoxSpacing.vertical(4),
-                ],
+                
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      statusIcon,
-                      size: DSSize.width(16),
-                      color: statusColor,
-                    ),
-                    DSSizedBoxSpacing.horizontal(4),
+                  if (document.documentOption != null && document.documentOption!.isNotEmpty) ...[
+                      Text(
+                        document.documentOption!,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     Text(
                       statusText,
                       style: textTheme.bodySmall?.copyWith(
@@ -131,12 +132,13 @@ class DocumentCard extends StatelessWidget {
               ],
             ),
           ),
-          // Seta
-          Icon(
-            Icons.arrow_forward_ios,
-            size: DSSize.width(16),
-            color: colorScheme.onSurfaceVariant,
-          ),
+          // Seta (apenas se pode editar)
+          if (_canEdit)
+            Icon(
+              Icons.arrow_forward_ios,
+              size: DSSize.width(16),
+              color: colorScheme.onSurfaceVariant,
+            ),
         ],
       ),
     );

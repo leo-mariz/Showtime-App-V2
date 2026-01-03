@@ -43,4 +43,14 @@ class AuthRepositoryImpl implements IAuthRepository {
       return Left(ErrorHandler.handle(e));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> printCache(String key) async {
+    try {
+      await localDataSource.printCache(key);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }

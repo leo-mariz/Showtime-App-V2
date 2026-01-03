@@ -21,6 +21,16 @@ import 'package:app/features/profile/artists/data/datasources/artists_remote_dat
 import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
 import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
 import 'package:app/features/profile/artists/domain/usecases/add_artist_usecase.dart';
+import 'package:app/features/profile/artists/groups/data/datasources/groups_local_datasource.dart';
+import 'package:app/features/profile/artists/groups/data/datasources/groups_remote_datasource.dart';
+import 'package:app/features/profile/artists/groups/data/repositories/groups_repository_impl.dart';
+import 'package:app/features/profile/artists/groups/domain/repositories/groups_repository.dart';
+import 'package:app/features/profile/artists/groups/domain/usecases/add_group_usecase.dart';
+import 'package:app/features/profile/artists/groups/domain/usecases/delete_group_usecase.dart';
+import 'package:app/features/profile/artists/groups/domain/usecases/get_group_usecase.dart';
+import 'package:app/features/profile/artists/groups/domain/usecases/get_groups_usecase.dart';
+import 'package:app/features/profile/artists/groups/domain/usecases/update_group_usecase.dart';
+import 'package:app/features/profile/artists/groups/presentation/bloc/groups_bloc.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
 import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
@@ -98,8 +108,8 @@ import 'package:app/features/profile/artists/domain/usecases/check_artist_name_e
 // Users imports
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/core/users/domain/usecases/get_user_data_usecase.dart';
-
 import 'package:app/core/services/storage_service.dart';
+
 
 /// Factory function para criar o AuthBloc com todas as dependências
 AuthBloc _createAuthBloc(IAuthServices authServices, 
@@ -401,6 +411,28 @@ DocumentsBloc _createDocumentsBloc(
   );
 }
 
+GroupsBloc _createGroupsBloc(
+  IGroupsRepository groupsRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final getGroupsUseCase = GetGroupsUseCase(repository: groupsRepository);
+  final getGroupUseCase = GetGroupUseCase(repository: groupsRepository);
+  final addGroupUseCase = AddGroupUseCase(repository: groupsRepository);
+  final updateGroupUseCase = UpdateGroupUseCase(repository: groupsRepository);
+  final deleteGroupUseCase = DeleteGroupUseCase(repository: groupsRepository);
+
+  // Criar e retornar GroupsBloc
+  return GroupsBloc(
+    getGroupsUseCase: getGroupsUseCase,
+    getGroupUseCase: getGroupUseCase,
+    addGroupUseCase: addGroupUseCase,
+    updateGroupUseCase: updateGroupUseCase,
+    deleteGroupUseCase: deleteGroupUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
 Future <void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized(); 
@@ -423,7 +455,18 @@ Future <void> main() async {
      appleProvider: AppleProvider.debug, // Use debug para obter token de debug no Xcode
   );
   
-  await AutoCacheInitializer.initialize();
+  await AutoCacheInitializer.initialize(
+    configuration: CacheConfiguration(
+      sizeOptions: CacheSizeOptions(
+        
+      ),
+      // cryptographyOptions: CacheCryptographyOptions(),
+      dataCacheOptions: DataCacheOptions(
+
+      )
+    ),
+
+  );
   setupLocator();
   
   //Services
@@ -460,6 +503,12 @@ Future <void> main() async {
   final documentsLocalDataSource = DocumentsLocalDataSourceImpl(autoCacheService: localCacheService);
   final documentsRemoteDataSource = DocumentsRemoteDataSourceImpl(firestore: firestore);
   final documentsRepository = DocumentsRepositoryImpl(localDataSource: documentsLocalDataSource, remoteDataSource: documentsRemoteDataSource);
+
+  // Groups
+  final groupsLocalDataSource = GroupsLocalDataSourceImpl(autoCacheService: localCacheService);
+  final groupsRemoteDataSource = GroupsRemoteDataSourceImpl(firestore: firestore);
+  final groupsRepository = GroupsRepositoryImpl(localDataSource: groupsLocalDataSource, remoteDataSource: groupsRemoteDataSource);
+
 
   runApp(MultiBlocProvider(
         providers: [
@@ -507,6 +556,12 @@ Future <void> main() async {
               documentsRepository,
               getUserUidUseCase,
               storageService,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createGroupsBloc(
+              groupsRepository,
+              getUserUidUseCase,
             ),
           ),
         ],

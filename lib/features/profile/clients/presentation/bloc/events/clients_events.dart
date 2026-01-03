@@ -12,16 +12,7 @@ class GetClientEvent extends ClientsEvent {}
 
 // ==================== ADD CLIENT EVENTS ====================
 
-class AddClientEvent extends ClientsEvent {
-  final ClientEntity client;
-
-  AddClientEvent({
-    required this.client,
-  });
-
-  @override
-  List<Object?> get props => [client];
-}
+class AddClientEvent extends ClientsEvent {}
 
 // ==================== UPDATE CLIENT EVENTS ====================
 

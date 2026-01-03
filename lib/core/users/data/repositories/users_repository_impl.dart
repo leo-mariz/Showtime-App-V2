@@ -49,6 +49,16 @@ class UsersRepositoryImpl implements IUsersRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String?>> getOtherUserUidViaEmail(String email) async {
+    try {
+      final uid = await remoteDataSource.getOtherUserUidViaEmail(email);
+      return Right(uid);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
   // ==================== SET OPERATIONS ====================
 
   @override

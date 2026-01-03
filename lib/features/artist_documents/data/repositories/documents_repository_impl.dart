@@ -41,7 +41,6 @@ class DocumentsRepositoryImpl implements IDocumentsRepository {
 
       // Se não encontrou no cache, busca do remoto
       final documents = await remoteDataSource.getDocuments(artistId);
-      
       // Salva no cache após buscar do remoto
       if (documents.isNotEmpty) {
         await localDataSource.cacheDocuments(artistId, documents);

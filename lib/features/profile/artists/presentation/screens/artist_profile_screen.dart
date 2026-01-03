@@ -5,6 +5,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/profile/shared/presentation/widgets/icon_menu_button.dart';
 import 'package:app/features/profile/shared/presentation/widgets/logout_button.dart';
@@ -19,7 +20,12 @@ import 'package:app/features/authentication/presentation/bloc/states/auth_states
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
+import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
+import 'package:app/features/profile/clients/presentation/bloc/events/clients_events.dart';
+import 'package:app/features/profile/clients/presentation/bloc/states/clients_states.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -44,6 +50,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
   }
 
   void _handleGetArtist({bool forceRefresh = false}) {
+    if (!mounted) return;
     final artistsBloc = context.read<ArtistsBloc>();
     // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
     if (forceRefresh || artistsBloc.state is! GetArtistSuccess) {
@@ -131,15 +138,51 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
         BlocProvider.value(
           value: context.read<ArtistsBloc>(),
         ),
+        BlocProvider.value(
+          value: context.read<ClientsBloc>(),
+        ),
       ],
       child: MultiBlocListener(
         listeners: [
           BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
+              debugPrint('🔵 [ArtistProfileScreen] AuthBloc state: ${state.runtimeType}');
               if (state is AuthLoggedOut) {
                 router.replaceAll([InitialRoute()]);
               } else if (state is AuthFailure) {
                 context.showError(state.error);
+              } else if (state is SwitchUserTypeSuccess) {
+                debugPrint('🟢 [ArtistProfileScreen] SwitchUserTypeSuccess - Navegando para cliente (isArtist: ${state.isArtist})');
+                // Perfil já existe, navegar diretamente
+                router.replaceAll([NavigationRoute(isArtist: false)]);
+                debugPrint('✅ [ArtistProfileScreen] Navegação executada');
+              } else if (state is SwitchUserTypeNeedsCreation) {
+                debugPrint('🟡 [ArtistProfileScreen] SwitchUserTypeNeedsCreation - Mostrando modal de termos');
+                // Perfil não existe, mostrar modal de termos
+                _showClientTermsModal();
+              } else if (state is SwitchUserTypeFailure) {
+                debugPrint('🔴 [ArtistProfileScreen] SwitchUserTypeFailure: ${state.error}');
+                context.showError(state.error);
+              } else if (state is SwitchUserTypeLoading) {
+                debugPrint('⏳ [ArtistProfileScreen] SwitchUserTypeLoading');
+              }
+            },
+          ),
+          BlocListener<ClientsBloc, ClientsState>(
+            listener: (context, state) {
+              debugPrint('🔵 [ArtistProfileScreen] ClientsBloc state: ${state.runtimeType}');
+              final router = AutoRouter.of(context);
+              if (state is AddClientSuccess) {
+                debugPrint('🟢 [ArtistProfileScreen] AddClientSuccess - Navegando para cliente');
+                context.showSuccess('Perfil de cliente criado com sucesso!');
+                // Usar WidgetsBinding para garantir que a navegação aconteça após o frame atual
+                router.replaceAll([NavigationRoute(isArtist: false)]);
+                debugPrint('✅ [ArtistProfileScreen] Navegação executada após criar cliente');
+              } else if (state is AddClientFailure) {
+                debugPrint('🔴 [ArtistProfileScreen] AddClientFailure: ${state.error}');
+                context.showError(state.error);
+              } else if (state is AddClientLoading) {
+                debugPrint('⏳ [ArtistProfileScreen] AddClientLoading');
               }
             },
           ),
@@ -163,18 +206,28 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
             },
           ),
         ],
-        child: BlocBuilder<ArtistsBloc, ArtistsState>(
-          builder: (context, artistsState) {
-            final artist = artistsState is GetArtistSuccess
-                ? artistsState.artist
-                : null;
-            
-            final isLoadingProfilePicture = artistsState is UpdateArtistProfilePictureLoading;
-            final artistName = _getArtistName(artist);
-            final isLoadingData = _isLoadingData(artistsState);
-            final isDataReady = _isDataReady(artistsState);
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            return BlocBuilder<ClientsBloc, ClientsState>(
+              builder: (context, clientsState) {
+                return BlocBuilder<ArtistsBloc, ArtistsState>(
+                  builder: (context, artistsState) {
+                    final artist = artistsState is GetArtistSuccess
+                        ? artistsState.artist
+                        : null;
+                    
+                    final isLoadingProfilePicture = artistsState is UpdateArtistProfilePictureLoading;
+                    final artistName = _getArtistName(artist);
+                    final isLoadingData = _isLoadingData(artistsState);
+                    final isDataReady = _isDataReady(artistsState);
+                    
+                    // Verificar se está em processo de alternância de conta
+                    final isSwitchingAccount = authState is SwitchUserTypeLoading ||
+                        clientsState is AddClientLoading;
 
-            return BasePage(
+                    return Stack(
+                      children: [
+                        BasePage(
               showAppBar: true,
               appBarTitle: 'Perfil',
               child: SingleChildScrollView(
@@ -193,9 +246,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                             imageUrl: artist?.profilePicture,
                             onProfilePictureTap: () => _handleProfilePictureTap(),
                             isLoadingProfilePicture: isLoadingProfilePicture,
-                            onSwitchUserType: () {
-                              // TODO: Implementar troca de tipo de usuário
-                            },
+                            onSwitchUserType: () => _showSwitchAccountConfirmation(),
                             onEditName: () => _handleEditName(artist?.artistName),
                           )
                         else
@@ -206,9 +257,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                             imageUrl: artist?.profilePicture,
                             onProfilePictureTap: () => _handleProfilePictureTap(),
                             isLoadingProfilePicture: isLoadingProfilePicture,
-                            onSwitchUserType: () {
-                              // TODO: Implementar troca de tipo de usuário
-                            },
+                            onSwitchUserType: () => _showSwitchAccountConfirmation(),
                             onEditName: () => _handleEditName(artist?.artistName),
                           ),
                     
@@ -307,8 +356,23 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                   ],
                 ),
               ),
+            ),
+                        if (isSwitchingAccount)
+                          Container(
+                            color: Colors.black.withOpacity(0.5),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
             );
-          },  
+          },
         ),
       ),
     );
@@ -486,4 +550,240 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
     context.read<AuthBloc>().add(UserLogoutEvent());
   }
 
+  /// Mostra modal de confirmação para alternar tipo de conta
+  Future<void> _showSwitchAccountConfirmation() async {
+    debugPrint('🔵 [ArtistProfileScreen] _showSwitchAccountConfirmation chamado');
+    if (!mounted) return;
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      builder: (context) => _SwitchAccountConfirmationModal(
+        title: 'Alternar para Anfitrião',
+        message: 'Deseja realmente alternar para a área de Anfitrião?',
+        onConfirm: () {
+          debugPrint('🟢 [ArtistProfileScreen] Modal confirmado - Disparando SwitchUserTypeEvent');
+          context.read<AuthBloc>().add(
+            SwitchUserTypeEvent(switchToArtist: false),
+          );
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+    debugPrint('🔵 [ArtistProfileScreen] Modal fechado com resultado: $confirmed');
+  }
+
+  /// Mostra modal de termos de uso para clientes
+  Future<void> _showClientTermsModal() async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      builder: (context) => _ClientTermsModal(),
+    );
+
+    if (confirmed == true && mounted) {
+      
+      context.read<ClientsBloc>().add(
+        AddClientEvent(),
+      );
+    }
+  }
+}
+
+/// Modal de confirmação para alternar tipo de conta
+class _SwitchAccountConfirmationModal extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback onConfirm;
+
+  const _SwitchAccountConfirmationModal({
+    required this.title,
+    required this.message,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        left: DSSize.width(16),
+        right: DSSize.width(16),
+        top: DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              margin: EdgeInsets.only(bottom: DSSize.height(16)),
+              decoration: BoxDecoration(
+                color: colorScheme.onPrimary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
+              ),
+            ),
+          ),
+          Text(
+            title,
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          Text(
+            message,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              DSSizedBoxSpacing.horizontal(16),
+              Expanded(
+                child: CustomButton(
+                  label: 'Confirmar',
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  textColor: colorScheme.primaryContainer,
+                  onPressed: onConfirm,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Modal para aceitar termos de uso de cliente
+class _ClientTermsModal extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final router = AutoRouter.of(context);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        left: DSSize.width(16),
+        right: DSSize.width(16),
+        top: DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              margin: EdgeInsets.only(bottom: DSSize.height(16)),
+              decoration: BoxDecoration(
+                color: colorScheme.onPrimary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
+              ),
+            ),
+          ),
+          Text(
+            'Termos de Uso para Anfitriões',
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onPrimary,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          RichText(
+            text: TextSpan(
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onPrimary,
+              ),
+              children: [
+                const TextSpan(text: 'Para criar um perfil de anfitrião, é necessário aceitar os '),
+                TextSpan(
+                  text: 'Termos de Uso para Anfitriões',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    decoration: TextDecoration.underline,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      router.push(const ClientTermsOfUseRoute());
+                    },
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'Cancelar',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+              DSSizedBoxSpacing.horizontal(16),
+              Expanded(
+                child: CustomButton(
+                  label: 'Aceitar e Criar',
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  textColor: colorScheme.primaryContainer,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

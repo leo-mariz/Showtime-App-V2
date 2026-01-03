@@ -1,5 +1,4 @@
 import 'package:app/core/domain/artist/artist_groups/group_member_entity.dart';
-import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 // import 'package:app/core/domain/entities/artist/social_media_links_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

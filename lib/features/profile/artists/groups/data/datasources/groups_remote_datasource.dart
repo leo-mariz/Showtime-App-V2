@@ -35,6 +35,10 @@ abstract class IGroupsRemoteDataSource {
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o grupo não existir
   Future<void> deleteGroup(String uid);
+
+  /// Verifica se o nome do grupo já está existe
+  /// Lança [ServerException] em caso de erro
+  Future<bool> groupNameExists(String groupName);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -213,6 +217,32 @@ class GroupsRemoteDataSourceImpl implements IGroupsRemoteDataSource {
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao deletar grupo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> groupNameExists(String groupName) async {
+    try {
+      final groupsColRef = GroupEntityReference.firebaseCollectionReference(
+        firestore,
+      );  
+      final querySnapshot = await groupsColRef
+          .where('groupName', isEqualTo: groupName)
+          .get();
+      return querySnapshot.docs.isNotEmpty;
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao verificar se nome do grupo existe: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao verificar nome do grupo',
         originalError: e,
         stackTrace: stackTrace,
       );

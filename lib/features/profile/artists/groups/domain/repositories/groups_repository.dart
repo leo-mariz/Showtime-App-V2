@@ -35,5 +35,10 @@ abstract class IGroupsRepository {
   
   /// Deleta um grupo
   Future<Either<Failure, void>> deleteGroup(String uid);
+
+  // ==================== VERIFICATION OPERATIONS ====================
+
+  /// Verifica se o nome do grupo já está existe
+  Future<Either<Failure, bool>> groupNameExists(String groupName);
 }
 

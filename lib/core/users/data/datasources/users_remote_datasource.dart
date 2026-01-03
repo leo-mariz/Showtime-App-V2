@@ -42,6 +42,10 @@ abstract class IUsersRemoteDataSource {
   /// Verifica se email já existe no banco
   /// Lança [ServerException] em caso de erro
   Future<bool> emailExists(String email);
+
+  /// Retorna o UID do usuário via email
+  /// Lança [ServerException] em caso de erro
+  Future<String?> getOtherUserUidViaEmail(String email);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -269,6 +273,34 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
     }
   }
 
+  @override
+  Future<String?> getOtherUserUidViaEmail(String email) async {
+    try {
+      final usersColRef = UserEntityReference.firebaseCollectionReference(
+        firestore,
+      );
+      final querySnapshot = await usersColRef
+          .where('email', isEqualTo: email)
+          .where('isDeleted', isEqualTo: false)
+          .where('isDeletedByAdmin', isEqualTo: false)
+          .get();
+      
+      return querySnapshot.docs.isNotEmpty ? querySnapshot.docs.first.id : null;
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar UID do usuário via email: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao buscar UID do usuário via email',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 }
 
 

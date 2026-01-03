@@ -100,11 +100,6 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
       return;
     }
 
-    // Se artistName não foi fornecido, buscar dados do usuário para preencher
-    var artist = event.artist;
-    if (artist.artistName == null || artist.artistName!.isEmpty) {
-    }
-
     final result = await addArtistUseCase.call(uid);
 
     result.fold(

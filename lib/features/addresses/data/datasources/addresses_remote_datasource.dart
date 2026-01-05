@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
 /// Interface do DataSource remoto (Firestore) para Addresses
 /// Responsável APENAS por operações CRUD no Firestore
@@ -41,6 +44,10 @@ abstract class IAddressesRemoteDataSource {
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o endereço não existir
   Future<void> setPrimaryAddress(String userUid, String addressId);
+
+  /// Busca geolocalização de um endereço
+  /// Lança [ServerException] em caso de erro
+  Future<GeoPoint> getGeolocation(String address);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -345,4 +352,77 @@ class AddressesRemoteDataSourceImpl implements IAddressesRemoteDataSource {
     }
   }
 
+  @override
+  Future<GeoPoint> getGeolocation(String address) async {
+    try {
+      if (address.isEmpty) {
+        throw const ValidationException('Endereço não pode ser vazio');
+      }
+
+      // Codifica o endereço para URL
+      final encodedAddress = Uri.encodeComponent(address);
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=$encodedAddress&format=json&limit=1',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'ShowtimeApp/1.0', // Nominatim requer User-Agent
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw ServerException(
+          'Erro ao buscar geolocalização do endereço',
+          statusCode: response.statusCode,
+          originalError: response.body,
+        );
+      }
+
+      // Faz o parsing do JSON (a API retorna um array)
+      final List<dynamic> jsonResponse = jsonDecode(response.body);
+
+      if (jsonResponse.isEmpty) {
+        throw NotFoundException('Endereço não encontrado: $address');
+      }
+
+      // Pega o primeiro resultado
+      final firstResult = jsonResponse[0] as Map<String, dynamic>;
+      
+      final latStr = firstResult['lat'] as String?;
+      final lonStr = firstResult['lon'] as String?;
+
+      if (latStr == null || lonStr == null) {
+        throw ServerException(
+          'Resposta da API inválida: campos lat/lon não encontrados',
+          originalError: jsonResponse,
+        );
+      }
+
+      final latitude = double.tryParse(latStr);
+      final longitude = double.tryParse(lonStr);
+
+      if (latitude == null || longitude == null) {
+        throw ServerException(
+          'Erro ao converter coordenadas para número',
+          originalError: 'lat: $latStr, lon: $lonStr',
+        );
+      }
+
+      return GeoPoint(latitude, longitude);
+    } on ValidationException {
+      rethrow;
+    } on NotFoundException {
+      rethrow;
+    } on ServerException {
+      rethrow;
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao buscar geolocalização do endereço',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  } 
 }

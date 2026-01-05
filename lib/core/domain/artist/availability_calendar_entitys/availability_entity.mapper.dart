@@ -15,6 +15,7 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = AvailabilityEntityMapper._());
       AddressInfoEntityMapper.ensureInitialized();
+      BlockedTimeSlotMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -73,6 +74,15 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
     'repetir',
     _$repetir,
   );
+  static List<BlockedTimeSlot> _$blockedSlots(AvailabilityEntity v) =>
+      v.blockedSlots;
+  static const Field<AvailabilityEntity, List<BlockedTimeSlot>>
+  _f$blockedSlots = Field(
+    'blockedSlots',
+    _$blockedSlots,
+    opt: true,
+    def: const [],
+  );
 
   @override
   final MappableFields<AvailabilityEntity> fields = const {
@@ -86,6 +96,7 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
     #endereco: _f$endereco,
     #raioAtuacao: _f$raioAtuacao,
     #repetir: _f$repetir,
+    #blockedSlots: _f$blockedSlots,
   };
 
   static AvailabilityEntity _instantiate(DecodingData data) {
@@ -100,6 +111,7 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
       endereco: data.dec(_f$endereco),
       raioAtuacao: data.dec(_f$raioAtuacao),
       repetir: data.dec(_f$repetir),
+      blockedSlots: data.dec(_f$blockedSlots),
     );
   }
 
@@ -177,6 +189,12 @@ abstract class AvailabilityEntityCopyWith<
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get diasDaSemana;
   AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
   get endereco;
+  ListCopyWith<
+    $R,
+    BlockedTimeSlot,
+    BlockedTimeSlotCopyWith<$R, BlockedTimeSlot, BlockedTimeSlot>
+  >
+  get blockedSlots;
   $R call({
     String? id,
     DateTime? dataInicio,
@@ -188,6 +206,7 @@ abstract class AvailabilityEntityCopyWith<
     AddressInfoEntity? endereco,
     double? raioAtuacao,
     bool? repetir,
+    List<BlockedTimeSlot>? blockedSlots,
   });
   AvailabilityEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -213,6 +232,17 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
   AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
   get endereco => $value.endereco.copyWith.$chain((v) => call(endereco: v));
   @override
+  ListCopyWith<
+    $R,
+    BlockedTimeSlot,
+    BlockedTimeSlotCopyWith<$R, BlockedTimeSlot, BlockedTimeSlot>
+  >
+  get blockedSlots => ListCopyWith(
+    $value.blockedSlots,
+    (v, t) => v.copyWith.$chain(t),
+    (v) => call(blockedSlots: v),
+  );
+  @override
   $R call({
     Object? id = $none,
     DateTime? dataInicio,
@@ -224,6 +254,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
     AddressInfoEntity? endereco,
     double? raioAtuacao,
     bool? repetir,
+    List<BlockedTimeSlot>? blockedSlots,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
@@ -236,6 +267,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
       if (endereco != null) #endereco: endereco,
       if (raioAtuacao != null) #raioAtuacao: raioAtuacao,
       if (repetir != null) #repetir: repetir,
+      if (blockedSlots != null) #blockedSlots: blockedSlots,
     }),
   );
   @override
@@ -250,6 +282,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
     endereco: data.get(#endereco, or: $value.endereco),
     raioAtuacao: data.get(#raioAtuacao, or: $value.raioAtuacao),
     repetir: data.get(#repetir, or: $value.repetir),
+    blockedSlots: data.get(#blockedSlots, or: $value.blockedSlots),
   );
 
   @override

@@ -1,6 +1,7 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/artist/availability_calendar_entitys/blocked_time_slot.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +21,7 @@ class AvailabilityEntity with AvailabilityEntityMappable {
   final AddressInfoEntity endereco;
   final double raioAtuacao;
   final bool repetir;
+  final List<BlockedTimeSlot> blockedSlots;
 
   AvailabilityEntity({
     this.id,
@@ -32,6 +34,7 @@ class AvailabilityEntity with AvailabilityEntityMappable {
     required this.endereco,
     required this.raioAtuacao,
     required this.repetir,
+    this.blockedSlots = const [],
   });
 
   // Factory para criar uma AvailabilityEntity a partir de um Appointment
@@ -62,9 +65,6 @@ class AvailabilityEntity with AvailabilityEntityMappable {
       isPrimary: false,
       latitude: double.tryParse(addressMap['latitude'] ?? '0') ?? 0.0,
       longitude: double.tryParse(addressMap['longitude'] ?? '0') ?? 0.0,
-      coverageRadius: addressMap['coverageRadius'] != 'null'
-          ? double.tryParse(addressMap['coverageRadius'] ?? '')
-          : null,
       complement: addressMap['complement'] ?? '',
     );
     // Prioriza o valor do subject, mas usa notes como fallback para compatibilidade
@@ -98,6 +98,7 @@ class AvailabilityEntity with AvailabilityEntityMappable {
       endereco: endereco,
       raioAtuacao: raioAtuacao,
       repetir: repetir,
+      blockedSlots: const [],
     );
   }
 

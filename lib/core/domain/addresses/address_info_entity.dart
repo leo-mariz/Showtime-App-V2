@@ -21,7 +21,6 @@ class AddressInfoEntity with AddressInfoEntityMappable {
   bool isPrimary;
   double? latitude;
   double? longitude;
-  double? coverageRadius;
   String? complement;
 
 
@@ -37,7 +36,6 @@ class AddressInfoEntity with AddressInfoEntityMappable {
     this.isPrimary = false,
     this.latitude,
     this.longitude,
-    this.coverageRadius,
     this.complement,
   });
 }

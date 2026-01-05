@@ -9,7 +9,9 @@ import 'package:app/features/artist_availability/data/repositories/availability_
 import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
 import 'package:app/features/artist_availability/domain/usecases/add_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/close_availability_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/delete_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/update_availability_usecase.dart';
 import 'package:app/features/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/artist_documents/data/datasources/documents_local_datasource.dart';
 import 'package:app/features/artist_documents/data/datasources/documents_remote_datasource.dart';
@@ -450,12 +452,16 @@ AvailabilityBloc _createAvailabilityBloc(
   // Criar UseCases
   final getAvailabilityUseCase = GetAvailabilitiesUseCase(availabilityRepository: availabilityRepository);
   final addAvailabilityUseCase = AddAvailabilityUseCase(availabilityRepository: availabilityRepository);
+  final updateAvailabilityUseCase = UpdateAvailabilityUseCase(availabilityRepository);
+  final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(availabilityRepository);
   final closeAvailabilityUseCase = CloseAvailabilityUseCase(availabilityRepository: availabilityRepository);
 
   // Criar e retornar AvailabilityBloc
   return AvailabilityBloc(
     getAvailabilitiesUseCase: getAvailabilityUseCase,
     addAvailabilityUseCase: addAvailabilityUseCase,
+    updateAvailabilityUseCase: updateAvailabilityUseCase,
+    deleteAvailabilityUseCase: deleteAvailabilityUseCase,
     closeAvailabilityUseCase: closeAvailabilityUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );

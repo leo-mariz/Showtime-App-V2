@@ -93,12 +93,6 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
     _$longitude,
     opt: true,
   );
-  static double? _$coverageRadius(AddressInfoEntity v) => v.coverageRadius;
-  static const Field<AddressInfoEntity, double> _f$coverageRadius = Field(
-    'coverageRadius',
-    _$coverageRadius,
-    opt: true,
-  );
   static String? _$complement(AddressInfoEntity v) => v.complement;
   static const Field<AddressInfoEntity, String> _f$complement = Field(
     'complement',
@@ -119,7 +113,6 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
     #isPrimary: _f$isPrimary,
     #latitude: _f$latitude,
     #longitude: _f$longitude,
-    #coverageRadius: _f$coverageRadius,
     #complement: _f$complement,
   };
 
@@ -136,7 +129,6 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
       isPrimary: data.dec(_f$isPrimary),
       latitude: data.dec(_f$latitude),
       longitude: data.dec(_f$longitude),
-      coverageRadius: data.dec(_f$coverageRadius),
       complement: data.dec(_f$complement),
     );
   }
@@ -224,7 +216,6 @@ abstract class AddressInfoEntityCopyWith<
     bool? isPrimary,
     double? latitude,
     double? longitude,
-    double? coverageRadius,
     String? complement,
   });
   AddressInfoEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -253,7 +244,6 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
     bool? isPrimary,
     Object? latitude = $none,
     Object? longitude = $none,
-    Object? coverageRadius = $none,
     Object? complement = $none,
   }) => $apply(
     FieldCopyWithData({
@@ -268,7 +258,6 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
       if (isPrimary != null) #isPrimary: isPrimary,
       if (latitude != $none) #latitude: latitude,
       if (longitude != $none) #longitude: longitude,
-      if (coverageRadius != $none) #coverageRadius: coverageRadius,
       if (complement != $none) #complement: complement,
     }),
   );
@@ -285,7 +274,6 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
     isPrimary: data.get(#isPrimary, or: $value.isPrimary),
     latitude: data.get(#latitude, or: $value.latitude),
     longitude: data.get(#longitude, or: $value.longitude),
-    coverageRadius: data.get(#coverageRadius, or: $value.coverageRadius),
     complement: data.get(#complement, or: $value.complement),
   );
 

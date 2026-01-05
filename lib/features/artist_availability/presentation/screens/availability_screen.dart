@@ -8,7 +8,7 @@ import 'package:app/features/artist_availability/presentation/bloc/availability_
 import 'package:app/features/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artist_availability/presentation/bloc/states/availability_states.dart';
 import 'package:app/features/artist_availability/presentation/widgets/availability_card.dart';
-import 'package:app/features/artist_availability/presentation/widgets/availability_form_dialog.dart';
+import 'package:app/features/artist_availability/presentation/widgets/availability_form_modal.dart';
 import 'package:app/features/artist_availability/presentation/widgets/day_events_list.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -63,34 +63,154 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   }
 
   void _handleGetAvailabilities({bool forceRefresh = false}) {
-    if (!mounted) return;
-    final availabilityBloc = context.read<AvailabilityBloc>();
-    // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
-    if (forceRefresh || availabilityBloc.state is! GetAvailabilitiesSuccess) {
-      availabilityBloc.add(GetAvailabilitiesEvent());
+    context.read<AvailabilityBloc>().add(GetAvailabilitiesEvent());
+  }
+
+  /// Fragmenta uma disponibilidade em múltiplos appointments baseado nos blockedSlots
+  List<Appointment> _getFragmentedAppointments(AvailabilityEntity availability, DateTime date, ColorScheme colorScheme) {
+    final List<Appointment> appointments = [];
+    
+    // Parse horários
+    final startParts = availability.horarioInicio.split(':');
+    final endParts = availability.horarioFim.split(':');
+    final startHour = int.parse(startParts[0]);
+    final startMinute = int.parse(startParts[1]);
+    final endHour = int.parse(endParts[0]);
+    final endMinute = int.parse(endParts[1]);
+    
+    final dateStart = DateTime(date.year, date.month, date.day, startHour, startMinute);
+    final dateEnd = DateTime(date.year, date.month, date.day, endHour, endMinute);
+    
+    // Buscar blockedSlots para esta data específica
+    final blockedSlotsForDate = availability.blockedSlots.where((blocked) {
+      final blockedDate = DateTime(
+        blocked.date.year,
+        blocked.date.month,
+        blocked.date.day,
+      );
+      final targetDate = DateTime(date.year, date.month, date.day);
+      return blockedDate.isAtSameMomentAs(targetDate);
+    }).toList();
+    
+    if (blockedSlotsForDate.isEmpty) {
+      // Sem bloqueios, cria um appointment completo
+      final appointment = Appointment(
+        startTime: dateStart,
+        endTime: dateEnd,
+        subject: 'Disponível para Shows - ${availability.endereco.title} - Raio: ${availability.raioAtuacao}km - R\$ ${availability.valorShow}/hora',
+        notes: 'Valor: R\$${availability.valorShow}/h - Endereço: ${availability.endereco.toString()}',
+        color: Colors.green,
+      );
+      appointments.add(appointment);
+    } else {
+      // Ordenar bloqueios por horário de início
+      blockedSlotsForDate.sort((a, b) {
+        final aStart = _timeStringToMinutes(a.startTime);
+        final bStart = _timeStringToMinutes(b.startTime);
+        return aStart.compareTo(bStart);
+      });
+      
+      // Criar appointments fragmentados
+      int currentTime = startHour * 60 + startMinute;
+      final endTimeMinutes = endHour * 60 + endMinute;
+      
+      for (final blocked in blockedSlotsForDate) {
+        final blockedStartMinutes = _timeStringToMinutes(blocked.startTime);
+        final blockedEndMinutes = _timeStringToMinutes(blocked.endTime);
+        
+        // Se há espaço antes do bloqueio, cria appointment
+        if (blockedStartMinutes > currentTime) {
+          final fragStart = DateTime(date.year, date.month, date.day, currentTime ~/ 60, currentTime % 60);
+          final fragEnd = DateTime(date.year, date.month, date.day, blockedStartMinutes ~/ 60, blockedStartMinutes % 60);
+          
+          appointments.add(Appointment(
+            startTime: fragStart,
+            endTime: fragEnd,
+            subject: 'Disponível para Shows - ${availability.endereco.title} - Raio: ${availability.raioAtuacao}km - R\$ ${availability.valorShow}/hora',
+            notes: 'Valor: R\$${availability.valorShow}/h - Endereço: ${availability.endereco.toString()}',
+            color: Colors.green,
+          ));
+        }
+        
+        currentTime = blockedEndMinutes;
+      }
+      
+      // Adiciona appointment após o último bloqueio (se houver espaço)
+      if (currentTime < endTimeMinutes) {
+        final fragStart = DateTime(date.year, date.month, date.day, currentTime ~/ 60, currentTime % 60);
+        
+        appointments.add(Appointment(
+          startTime: fragStart,
+          endTime: dateEnd,
+          subject: 'Disponível para Shows - ${availability.endereco.title} - Raio: ${availability.raioAtuacao}km - R\$ ${availability.valorShow}/hora',
+          notes: 'Valor: R\$${availability.valorShow}/h - Endereço: ${availability.endereco.toString()}',
+          color: Colors.green,
+        ));
+      }
     }
+    
+    return appointments;
+  }
+  
+  int _timeStringToMinutes(String time) {
+    final parts = time.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+  
+  /// Obtém todas as datas dentro do período de uma disponibilidade
+  List<DateTime> _getDatesInAvailability(AvailabilityEntity availability) {
+    final List<DateTime> dates = [];
+    
+    final startDate = DateTime(
+      availability.dataInicio.year,
+      availability.dataInicio.month,
+      availability.dataInicio.day,
+    );
+    final endDate = DateTime(
+      availability.dataFim.year,
+      availability.dataFim.month,
+      availability.dataFim.day,
+    );
+    
+    if (!availability.repetir) {
+      // Sem recorrência, apenas a data inicial
+      dates.add(startDate);
+    } else {
+      // Com recorrência, gerar todas as datas dentro do período
+      final weekdayMap = {
+        'MO': DateTime.monday,
+        'TU': DateTime.tuesday,
+        'WE': DateTime.wednesday,
+        'TH': DateTime.thursday,
+        'FR': DateTime.friday,
+        'SA': DateTime.saturday,
+        'SU': DateTime.sunday,
+      };
+      
+      final validWeekdays = availability.diasDaSemana.map((day) => weekdayMap[day]!).toSet();
+      
+      DateTime currentDate = startDate;
+      while (!currentDate.isAfter(endDate)) {
+        if (validWeekdays.contains(currentDate.weekday)) {
+          dates.add(DateTime(currentDate.year, currentDate.month, currentDate.day));
+        }
+        currentDate = currentDate.add(const Duration(days: 1));
+      }
+    }
+    
+    return dates;
   }
 
   CalendarDataSource _getCalendarDataSource(ColorScheme colorScheme) {
     final List<Appointment> appointments = [];
     
-    // Agrupa disponibilidades e shows por data
-    final Map<DateTime, List<Appointment>> appointmentsByDate = {};
-    
-    // Adiciona disponibilidades
+    // Adiciona disponibilidades fragmentadas
     for (final availability in _availabilities) {
-      final appointment = availability.toAppointment();
-      final date = DateTime(
-        appointment.startTime.year,
-        appointment.startTime.month,
-        appointment.startTime.day,
-      );
-      
-      if (!appointmentsByDate.containsKey(date)) {
-        appointmentsByDate[date] = [];
+      final dates = _getDatesInAvailability(availability);
+      for (final date in dates) {
+        final fragmented = _getFragmentedAppointments(availability, date, colorScheme);
+        appointments.addAll(fragmented);
       }
-      appointmentsByDate[date]!.add(appointment);
-      appointments.add(appointment);
     }
     
     // Adiciona shows confirmados
@@ -134,17 +254,114 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       return appointmentDate.isAtSameMomentAs(targetDate);
     }).toList();
   }
-
-  bool _hasAvailabilityOnDate(DateTime date) {
-    return _availabilities.any((availability) {
-      final availDate = DateTime(
+  
+  /// Verifica se uma data específica tem disponibilidade real (considerando bloqueios)
+  bool _hasRealAvailabilityOnDate(DateTime date) {
+    final targetDate = DateTime(date.year, date.month, date.day);
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    
+    // Se for data passada, não tem disponibilidade
+    if (targetDate.isBefore(todayDate)) {
+      return false;
+    }
+    
+    // Verifica cada disponibilidade
+    for (final availability in _availabilities) {
+      final startDate = DateTime(
         availability.dataInicio.year,
         availability.dataInicio.month,
         availability.dataInicio.day,
       );
-      final targetDate = DateTime(date.year, date.month, date.day);
-      return availDate.isAtSameMomentAs(targetDate);
-    });
+      final endDate = DateTime(
+        availability.dataFim.year,
+        availability.dataFim.month,
+        availability.dataFim.day,
+      );
+      
+      // Verifica se a data está dentro do período
+      if (targetDate.isBefore(startDate) || targetDate.isAfter(endDate)) {
+        continue;
+      }
+      
+      // Se não repete, verifica se é exatamente a data inicial
+      if (!availability.repetir) {
+        if (!targetDate.isAtSameMomentAs(startDate)) {
+          continue;
+        }
+      } else {
+        // Se repete, verifica se o dia da semana está na lista
+        final weekdayMap = {
+          'MO': DateTime.monday,
+          'TU': DateTime.tuesday,
+          'WE': DateTime.wednesday,
+          'TH': DateTime.thursday,
+          'FR': DateTime.friday,
+          'SA': DateTime.saturday,
+          'SU': DateTime.sunday,
+        };
+        
+        final dateWeekday = date.weekday;
+        final hasValidWeekday = availability.diasDaSemana.any((day) => weekdayMap[day] == dateWeekday);
+        
+        if (!hasValidWeekday) {
+          continue;
+        }
+      }
+      
+      // Verifica se há bloqueios que ocupam todo o período disponível neste dia
+      final blockedSlotsForDate = availability.blockedSlots.where((blocked) {
+        final blockedDate = DateTime(
+          blocked.date.year,
+          blocked.date.month,
+          blocked.date.day,
+        );
+        return blockedDate.isAtSameMomentAs(targetDate);
+      }).toList();
+      
+      // Se não há bloqueios, tem disponibilidade
+      if (blockedSlotsForDate.isEmpty) {
+        return true;
+      }
+      
+      // Verifica se ainda sobra algum horário disponível após considerar os bloqueios
+      final startParts = availability.horarioInicio.split(':');
+      final endParts = availability.horarioFim.split(':');
+      final availStartMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+      final availEndMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+      
+      // Ordenar bloqueios por horário
+      blockedSlotsForDate.sort((a, b) {
+        final aStart = _timeStringToMinutes(a.startTime);
+        final bStart = _timeStringToMinutes(b.startTime);
+        return aStart.compareTo(bStart);
+      });
+      
+      int currentTime = availStartMinutes;
+      for (final blocked in blockedSlotsForDate) {
+        final blockedStart = _timeStringToMinutes(blocked.startTime);
+        final blockedEnd = _timeStringToMinutes(blocked.endTime);
+        
+        // Se há espaço antes do bloqueio, tem disponibilidade
+        if (blockedStart > currentTime) {
+          return true;
+        }
+        
+        currentTime = blockedEnd;
+      }
+      
+      // Verifica se há espaço após o último bloqueio
+      if (currentTime < availEndMinutes) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  bool _hasAvailabilityOnDate(DateTime date) {
+    // Usa a função que considera bloqueios
+    return _hasRealAvailabilityOnDate(date);
   }
 
   bool _hasShowOnDate(DateTime date) {
@@ -156,31 +373,16 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   }
 
   void _onCalendarTap(CalendarTapDetails details) {
+    // Apenas atualiza a data selecionada, sem abrir modal
     if (details.date != null) {
       setState(() {
         _selectedDate = details.date;
       });
     }
-    
-    if (details.appointments != null && details.appointments!.isNotEmpty) {
-      final appointment = details.appointments!.first;
-      // Verifica se é uma disponibilidade (não é show confirmado)
-      final availability = _availabilities.firstWhere(
-        (av) => av.toAppointment().subject == appointment.subject,
-        orElse: () => _availabilities.first,
-      );
-      
-      if (_availabilities.contains(availability)) {
-        _showEditAvailabilityDialog(availability);
-      }
-    } else if (details.date != null) {
-      // Data vazia clicada - criar nova disponibilidade
-      _showNewAvailabilityDialog(details.date!);
-    }
   }
 
   void _showNewAvailabilityDialog(DateTime selectedDate) {
-    AvailabilityFormDialog.show(
+    AvailabilityFormModal.show(
       context: context,
       initialDate: selectedDate,
       onSave: (availability) {
@@ -193,13 +395,19 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   }
 
   void _showEditAvailabilityDialog(AvailabilityEntity availability) {
-    AvailabilityFormDialog.show(
+    AvailabilityFormModal.show(
       context: context,
       availability: availability,
       onSave: (updatedAvailability) {
         if (!mounted) return;
         final availabilityBloc = context.read<AvailabilityBloc>();
-        availabilityBloc.add(AddAvailabilityEvent(availability: updatedAvailability));
+        // Dispara evento de update com os campos editáveis (raio, valor e blockedSlots)
+        availabilityBloc.add(UpdateAvailabilityEvent(
+          availabilityId: updatedAvailability.id!,
+          raioAtuacao: updatedAvailability.raioAtuacao,
+          valorShow: updatedAvailability.valorShow,
+          blockedSlots: updatedAvailability.blockedSlots,
+        ));
         Navigator.of(context).pop();
       },
     );
@@ -218,9 +426,11 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _availabilities.remove(availability);
-              });
+              if (!mounted) return;
+              final availabilityBloc = context.read<AvailabilityBloc>();
+              availabilityBloc.add(DeleteAvailabilityEvent(
+                availabilityId: availability.id!,
+              ));
               Navigator.of(context).pop();
             },
             child: const Text('Excluir'),
@@ -247,6 +457,21 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
           context.showSuccess('Disponibilidade salva com sucesso!');
           _handleGetAvailabilities(forceRefresh: true);
         } else if (state is AddAvailabilityFailure) {
+          context.showError(state.error);
+        } else if (state is UpdateAvailabilitySuccess) {
+          context.showSuccess('Disponibilidade atualizada com sucesso!');
+          _handleGetAvailabilities(forceRefresh: true);
+        } else if (state is UpdateAvailabilityFailure) {
+          context.showError(state.error);
+        } else if (state is DeleteAvailabilitySuccess) {
+          context.showSuccess('Disponibilidade excluída com sucesso!');
+          _handleGetAvailabilities(forceRefresh: true);
+        } else if (state is DeleteAvailabilityFailure) {
+          context.showError(state.error);
+        } else if (state is CloseAvailabilitySuccess) {
+          context.showSuccess('Disponibilidade fechada com sucesso!');
+          _handleGetAvailabilities(forceRefresh: true);
+        } else if (state is CloseAvailabilityFailure) {
           context.showError(state.error);
         }
       },
@@ -307,7 +532,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
         Expanded(
           flex: 3,
           child: Container(
-            margin: EdgeInsets.all(DSPadding.horizontal(16)),
+            margin: EdgeInsets.only(top: DSPadding.vertical(16)),
+            padding: EdgeInsets.all(DSPadding.horizontal(4)),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(DSSize.width(16)),
@@ -316,7 +542,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
               borderRadius: BorderRadius.circular(DSSize.width(16)),
                 child: SfCalendar(
                 view: CalendarView.month,
-                dataSource: _getCalendarDataSource(colorScheme),
                 onTap: _onCalendarTap,
                 onSelectionChanged: (CalendarSelectionDetails details) {
                   if (details.date != null) {
@@ -335,16 +560,16 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                     color: colorScheme.onPrimary,
                   ),
                 ),
-                todayHighlightColor: colorScheme.onPrimaryContainer,
-                cellBorderColor: colorScheme.outline.withOpacity(0.2),
                 selectionDecoration: BoxDecoration(
-                  color: colorScheme.onPrimaryContainer.withOpacity(0.3),
+                  color: colorScheme.onPrimaryContainer.withOpacity(0.2),
                   border: Border.all(
                     color: colorScheme.onPrimaryContainer,
-                    width: DSSize.width(2),
+                    width: DSSize.width(1),
                   ),
                   shape: BoxShape.circle,
                 ),
+                todayHighlightColor: colorScheme.onPrimaryContainer,
+                cellBorderColor: colorScheme.outline.withOpacity(0.2),
                 monthCellBuilder: (context, details) {
                   final date = details.date;
                   final hasAvailability = _hasAvailabilityOnDate(date);
@@ -355,53 +580,68 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                   final isToday = DateTime(date.year, date.month, date.day).isAtSameMomentAs(
                       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
                   
-                  return Container(
-                    decoration: isSelected
-                        ? BoxDecoration(
-                            color: colorScheme.onPrimaryContainer.withOpacity(0.3),
+                  // Verifica se é um dia passado (anterior ao dia atual)
+                  final today = DateTime.now();
+                  final todayDate = DateTime(today.year, today.month, today.day);
+                  final currentDate = DateTime(date.year, date.month, date.day);
+                  final isPastDate = currentDate.isBefore(todayDate);
+                  
+                  return Opacity(
+                    opacity: isPastDate ? 0.3 : 1.0,
+                    child: Container(
+                      margin: EdgeInsets.all(DSSize.width(1)),
+                      decoration: isSelected
+                          ? BoxDecoration(
                             shape: BoxShape.circle,
-                          )
-                        : null,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Data
-                        Text(
-                          '${date.day}',
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: isToday
-                                ? colorScheme.onPrimaryContainer
-                                : colorScheme.onPrimary,
-                            fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                            color: colorScheme.onPrimaryContainer.withOpacity(0.2),
+                            )
+                          : null,
+                      child: Stack(
+                        alignment: Alignment.topCenter,
+                        children: [
+                          // Data
+                          Text(
+                            '${date.day}',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: isSelected
+                                  ? colorScheme.onPrimaryContainer
+                                  : isToday
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onPrimary,
+                              fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+                            ),
                           ),
-                        ),
-                        // Marcadores visuais
-                        Positioned(
-                          bottom: DSSize.height(2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (hasAvailability)
-                                Container(
-                                  width: DSSize.width(6),
-                                  height: DSSize.height(6),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary,
-                                    shape: BoxShape.circle,
+                          // Marcadores visuais
+                          Positioned(
+                            bottom: DSSize.height(5),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Marcador de disponibilidade ou falta dela (somente para datas futuras/hoje)
+                                if (!isPastDate && !hasShow)
+                                  Container(
+                                    width: DSSize.width(6),
+                                    height: DSSize.height(6),
+                                    decoration: BoxDecoration(
+                                      color: hasAvailability
+                                          ? Colors.green
+                                          : colorScheme.error,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                ),
-                              if (hasAvailability && hasShow)
-                                DSSizedBoxSpacing.horizontal(2),
-                              if (hasShow)
-                                Icon(
-                                  Icons.star,
-                                  size: DSSize.width(8),
-                                  color: colorScheme.tertiary,
-                                ),
-                            ],
+                                if (hasAvailability && hasShow)
+                                  DSSizedBoxSpacing.horizontal(2),
+                                if (hasShow)
+                                  Icon(
+                                    Icons.star,
+                                    size: DSSize.width(8),
+                                    color: colorScheme.tertiary,
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -409,6 +649,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
             ),
           ),
         ),
+
+        DSSizedBoxSpacing.vertical(16),
         
         // Lista de eventos do dia selecionado
         Expanded(
@@ -417,29 +659,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
               ? DayEventsList(
                   date: _selectedDate!,
                   appointments: _getAppointmentsForDate(_selectedDate!, colorScheme),
-                  availabilities: _availabilities.where((av) {
-                    final availDate = DateTime(
-                      av.dataInicio.year,
-                      av.dataInicio.month,
-                      av.dataInicio.day,
-                    );
-                    final selected = DateTime(
-                      _selectedDate!.year,
-                      _selectedDate!.month,
-                      _selectedDate!.day,
-                    );
-                    return availDate.isAtSameMomentAs(selected);
-                  }).toList(),
-                  confirmedShows: _confirmedShows.where((show) {
-                    final showDate = show['date'] as DateTime;
-                    final selected = DateTime(
-                      _selectedDate!.year,
-                      _selectedDate!.month,
-                      _selectedDate!.day,
-                    );
-                    return DateTime(showDate.year, showDate.month, showDate.day)
-                        .isAtSameMomentAs(selected);
-                  }).toList(),
                 )
               : Center(
                   child: Text(
@@ -460,8 +679,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       children: [
         Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: DSPadding.horizontal(16),
-            vertical: DSPadding.vertical(8),
+            horizontal: DSPadding.horizontal(0),
+            vertical: DSPadding.vertical(0),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -490,7 +709,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                     children: [
                       Icon(
                         Icons.calendar_today_outlined,
-                        size: 64,
+                        size: DSSize.width(64),
                         color: colorScheme.onSurfaceVariant.withOpacity(0.5),
                       ),
                       DSSizedBoxSpacing.vertical(16),
@@ -511,7 +730,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                   ),
                 )
               : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(16)),
+                  // padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(16)),
                   itemCount: _availabilities.length,
                   itemBuilder: (context, index) {
                     final availability = _availabilities[index];
@@ -520,6 +739,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
                       child: AvailabilityCard(
                         availability: availability,
                         onTap: () => _showEditAvailabilityDialog(availability),
+                        onEdit: () => _showEditAvailabilityDialog(availability),
                         onDelete: () => _onDeleteAvailability(availability),
                       ),
                     );

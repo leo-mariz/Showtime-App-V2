@@ -1,4 +1,6 @@
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
+import 'package:app/core/design_system/padding/ds_padding.dart';
+import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,167 +10,116 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 class DayEventsList extends StatelessWidget {
   final DateTime date;
   final List<Appointment> appointments;
-  final List<AvailabilityEntity> availabilities;
-  final List<Map<String, dynamic>> confirmedShows;
 
   const DayEventsList({
     super.key,
     required this.date,
     required this.appointments,
-    required this.availabilities,
-    required this.confirmedShows,
   });
 
-  List<TimeSlot> _buildTimeSlots() {
-    final List<TimeSlot> slots = [];
+  String _formatTime(DateTime dateTime) {
+    return DateFormat('HH:mm').format(dateTime);
+  }
+
+  bool _isShowAppointment(Appointment appointment) {
+    // Shows têm subject começando com "Show:"
+    return appointment.subject.startsWith('Show:');
+  }
+
+  /// Agrupa appointments por disponibilidade (mesmo subject)
+  List<GroupedAppointment> _groupAppointments(List<Appointment> appointments) {
+    final Map<String, List<Appointment>> grouped = {};
     
-    if (availabilities.isEmpty) {
-      // Se não há disponibilidade, só mostra os shows
-      for (final show in confirmedShows) {
-        final startTimeStr = show['startTime'] as String;
-        final duration = show['duration'] as Duration;
-        final parts = startTimeStr.split(':');
-        final start = TimeOfDay(
-          hour: int.parse(parts[0]),
-          minute: int.parse(parts[1]),
-        );
-        final startMinutes = start.hour * 60 + start.minute;
-        final endMinutes = startMinutes + duration.inMinutes;
-        final end = TimeOfDay(
-          hour: endMinutes ~/ 60,
-          minute: endMinutes % 60,
-        );
-        
-        slots.add(TimeSlot(
-          start: start,
-          end: end,
-          type: 'show',
-          data: show,
-        ));
-      }
-      return slots;
-    }
-    
-    // Para cada disponibilidade, calcula os slots considerando shows
-    for (final availability in availabilities) {
-      final availStartParts = availability.horarioInicio.split(':');
-      final availEndParts = availability.horarioFim.split(':');
-      final availStart = TimeOfDay(
-        hour: int.parse(availStartParts[0]),
-        minute: int.parse(availStartParts[1]),
-      );
-      final availEnd = TimeOfDay(
-        hour: int.parse(availEndParts[0]),
-        minute: int.parse(availEndParts[1]),
-      );
-      final availStartMinutes = _timeOfDayToMinutes(availStart);
-      final availEndMinutes = _timeOfDayToMinutes(availEnd);
-      
-      // Busca shows que estão dentro do período de disponibilidade
-      final List<Map<String, dynamic>> showsInPeriod = [];
-      for (final show in confirmedShows) {
-        final startTimeStr = show['startTime'] as String;
-        final duration = show['duration'] as Duration;
-        final parts = startTimeStr.split(':');
-        final showStart = TimeOfDay(
-          hour: int.parse(parts[0]),
-          minute: int.parse(parts[1]),
-        );
-        final showStartMinutes = _timeOfDayToMinutes(showStart);
-        final showEndMinutes = showStartMinutes + duration.inMinutes;
-        final showEnd = TimeOfDay(
-          hour: showEndMinutes ~/ 60,
-          minute: showEndMinutes % 60,
-        );
-        
-        // Verifica se o show está dentro do período de disponibilidade
-        if (showStartMinutes >= availStartMinutes && showEndMinutes <= availEndMinutes) {
-          showsInPeriod.add({
-            'start': showStart,
-            'end': showEnd,
-            'startMinutes': showStartMinutes,
-            'endMinutes': showEndMinutes,
-            'data': show,
-          });
+    for (final appointment in appointments) {
+      // Para shows, não agrupa (cada show é único)
+      if (_isShowAppointment(appointment)) {
+        grouped[appointment.subject] = [appointment];
+      } else {
+        // Para disponibilidades, agrupa por subject (mesma disponibilidade fragmentada)
+        if (!grouped.containsKey(appointment.subject)) {
+          grouped[appointment.subject] = [];
         }
-      }
-      
-      // Ordena shows por horário
-      showsInPeriod.sort((a, b) => a['startMinutes'].compareTo(b['startMinutes']));
-      
-      // Cria slots: disponível -> show -> disponível -> show -> ...
-      int currentTime = availStartMinutes;
-      
-      for (final show in showsInPeriod) {
-        final showStart = show['startMinutes'] as int;
-        final showEnd = show['endMinutes'] as int;
-        
-        // Se há espaço antes do show, adiciona slot disponível
-        if (showStart > currentTime) {
-          slots.add(TimeSlot(
-            start: _minutesToTimeOfDay(currentTime),
-            end: _minutesToTimeOfDay(showStart),
-            type: 'available',
-            data: availability,
-          ));
-        }
-        
-        // Adiciona o show
-        slots.add(TimeSlot(
-          start: show['start'] as TimeOfDay,
-          end: show['end'] as TimeOfDay,
-          type: 'show',
-          data: show['data'],
-        ));
-        
-        currentTime = showEnd;
-      }
-      
-      // Adiciona slot disponível após o último show (se houver)
-      if (currentTime < availEndMinutes) {
-        slots.add(TimeSlot(
-          start: _minutesToTimeOfDay(currentTime),
-          end: availEnd,
-          type: 'available',
-          data: availability,
-        ));
+        grouped[appointment.subject]!.add(appointment);
       }
     }
     
-    // Ordena todos os slots por horário
-    slots.sort((a, b) => _timeOfDayToMinutes(a.start).compareTo(_timeOfDayToMinutes(b.start)));
+    return grouped.entries.map((entry) {
+      final appointmentsList = entry.value
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      return GroupedAppointment(
+        subject: entry.key,
+        appointments: appointmentsList,
+        notes: appointmentsList.first.notes,
+      );
+    }).toList()
+      ..sort((a, b) => a.appointments.first.startTime.compareTo(b.appointments.first.startTime));
+  }
+
+  /// Extrai informações do subject
+  Map<String, String?> _extractSubjectInfo(String subject) {
+    // Subject formato: "Disponível para Shows - {titulo} - Raio: {raio}km - R$ {valor}/hora"
+    final parts = subject.split(' - ');
+    String? addressTitle;
+    String? radius;
+    String? value;
     
-    return slots;
+    if (parts.length >= 2) {
+      addressTitle = parts[1];
+    }
+    if (parts.length >= 3) {
+      // Extrai raio: "Raio: 0.1km"
+      final radiusPart = parts[2];
+      if (radiusPart.contains('Raio: ')) {
+        final radiusStr = radiusPart.replaceAll('Raio: ', '').replaceAll('km', '').trim();
+        // Formata para 1 casa decimal
+        final radiusValue = double.tryParse(radiusStr);
+        if (radiusValue != null) {
+          radius = '${radiusValue.toStringAsFixed(1)}km';
+        } else {
+          radius = radiusPart.replaceAll('Raio: ', '');
+        }
+      }
+    }
+    if (parts.length >= 4) {
+      // Extrai valor: "R$ 2.0/hora"
+      final valuePart = parts[3];
+      if (valuePart.contains('R\$ ')) {
+        value = valuePart.replaceAll('R\$ ', '').replaceAll('/hora', '');
+      }
+    }
+    
+    return {
+      'addressTitle': addressTitle,
+      'radius': radius,
+      'value': value,
+    };
   }
 
-  TimeOfDay _minutesToTimeOfDay(int minutes) {
-    return TimeOfDay(
-      hour: minutes ~/ 60,
-      minute: minutes % 60,
-    );
-  }
-
-  int _timeOfDayToMinutes(TimeOfDay time) {
-    return time.hour * 60 + time.minute;
-  }
-
-  String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  /// Formata múltiplos horários como "09:00-13:00 / 15:00-18:00"
+  String _formatTimeRanges(List<Appointment> appointments) {
+    return appointments
+        .map((apt) => '${_formatTime(apt.startTime)}-${_formatTime(apt.endTime)}')
+        .join(' / ');
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final slots = _buildTimeSlots();
     final dateFormat = DateFormat('dd/MM/yyyy');
     final dayFormat = DateFormat('EEEE', 'pt_BR');
+
+    // Agrupa appointments por disponibilidade
+    final groupedAppointments = _groupAppointments(appointments);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            // horizontal: DSPadding.horizontal(16),
+            // vertical: DSPadding.vertical(8),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -188,8 +139,9 @@ class DayEventsList extends StatelessWidget {
             ],
           ),
         ),
+        DSSizedBoxSpacing.vertical(8),
         Expanded(
-          child: slots.isEmpty
+          child: groupedAppointments.isEmpty
               ? Center(
                   child: Text(
                     'Nenhum evento neste dia',
@@ -199,13 +151,17 @@ class DayEventsList extends StatelessWidget {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: slots.length,
+                  itemCount: groupedAppointments.length,
                   itemBuilder: (context, index) {
-                    final slot = slots[index];
+                    final grouped = groupedAppointments[index];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildSlotCard(context, slot, colorScheme, textTheme),
+                      padding: EdgeInsets.only(bottom: DSPadding.vertical(12)),
+                      child: _buildGroupedAppointmentCard(
+                        context,
+                        grouped,
+                        colorScheme,
+                        textTheme,
+                      ),
                     );
                   },
                 ),
@@ -214,155 +170,207 @@ class DayEventsList extends StatelessWidget {
     );
   }
 
-  Widget _buildSlotCard(
+  Widget _buildGroupedAppointmentCard(
     BuildContext context,
-    TimeSlot slot,
+    GroupedAppointment grouped,
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
-    if (slot.type == 'available') {
-      return CustomCard(
+    final firstAppointment = grouped.appointments.first;
+    final isShow = _isShowAppointment(firstAppointment);
+    final cardColor = isShow ? colorScheme.tertiary : Colors.green;
+    
+    // Extrai informações do subject para disponibilidades
+    Map<String, String?>? subjectInfo;
+    String displaySubject = grouped.subject;
+    
+    if (!isShow) {
+      // Para disponibilidades, simplifica o título
+      displaySubject = 'Disponível para Shows';
+      
+      // Extrai informações detalhadas do subject original
+      subjectInfo = _extractSubjectInfo(grouped.subject);
+    }
+
+    return CustomCard(
+      // padding: EdgeInsets.all(DSPadding.horizontal(16)),
+      child: IntrinsicHeight(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Barra lateral colorida
             Container(
-              width: 4,
-              height: 40,
+              width: DSSize.width(4),
               decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(2),
+                color: cardColor,
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
               ),
             ),
-            const SizedBox(width: 12),
+            DSSizedBoxSpacing.horizontal(12),
+            
+            // Ícone
+            Container(
+              padding: EdgeInsets.all(DSPadding.horizontal(8)),
+              decoration: BoxDecoration(
+                color: cardColor.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isShow ? Icons.star : Icons.check_circle,
+                color: cardColor,
+                size: DSSize.width(20),
+              ),
+            ),
+            DSSizedBoxSpacing.horizontal(12),
+            
+            // Conteúdo
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Subject (título principal)
                   Text(
-                    'Disponível',
+                    displaySubject,
                     style: textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onPrimary,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    '${_formatTime(slot.start)} - ${_formatTime(slot.end)}',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    } else if (slot.type == 'show') {
-      final show = slot.data as Map<String, dynamic>;
-      return CustomCard(
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  DSSizedBoxSpacing.vertical(4),
+                  
+                  // Horários (pode ser múltiplos)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.star,
-                        size: 16,
-                        color: Colors.orange,
+                        Icons.access_time,
+                        size: DSSize.width(14),
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(width: 4),
+                      DSSizedBoxSpacing.horizontal(4),
                       Expanded(
                         child: Text(
-                          'Show: ${show['hostName']}',
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onPrimary,
+                          _formatTimeRanges(grouped.appointments),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  Text(
-                    '${_formatTime(slot.start)} - ${_formatTime(slot.end)}',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                  
+                // Informações adicionais para disponibilidades
+                if (!isShow && subjectInfo != null) ...[
+                  DSSizedBoxSpacing.vertical(4),
+                  _buildAvailabilityInfo(
+                    subjectInfo,
+                    textTheme,
+                    colorScheme,
                   ),
+                ],
+                
+                // Notes para shows
+                if (isShow && grouped.notes != null && grouped.notes!.isNotEmpty) ...[
+                  DSSizedBoxSpacing.vertical(4),
                   Text(
-                    show['location'] as String,
+                    grouped.notes!,
                     style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.8),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ],
                 ],
               ),
             ),
           ],
         ),
-      );
-    } else {
-      // Disponibilidade completa (não cortada por show)
-      return CustomCard(
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Disponível',
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                  Text(
-                    '${_formatTime(slot.start)} - ${_formatTime(slot.end)}',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildAvailabilityInfo(
+    Map<String, String?> subjectInfo,
+    TextTheme textTheme,
+    ColorScheme colorScheme,
+  ) {
+    final addressTitle = subjectInfo['addressTitle'];
+    final radius = subjectInfo['radius'];
+    final value = subjectInfo['value'];
+    
+    if (addressTitle == null && radius == null && value == null) {
+      return const SizedBox.shrink();
     }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Endereço e Raio na mesma linha
+        if (addressTitle != null || radius != null)
+          Row(
+            children: [
+              if (addressTitle != null && addressTitle.isNotEmpty) ...[
+                Icon(
+                  Icons.place,
+                  size: DSSize.width(14),
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                ),
+                DSSizedBoxSpacing.horizontal(4),
+                Text(
+                    addressTitle,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (radius != null && radius.isNotEmpty) ...[
+                  DSSizedBoxSpacing.horizontal(24),
+                  Text(
+                    '$radius',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ] else if (radius != null && radius.isNotEmpty)
+                Text(
+                  '$radius',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  ),
+                ),
+            ],
+          ),
+        
+        // Valor em linha separada
+        if (value != null && value.isNotEmpty) ...[
+          if (addressTitle != null || radius != null) DSSizedBoxSpacing.vertical(4),
+          Text(
+            'R\$ $value/h',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
-class TimeSlot {
-  final TimeOfDay start;
-  final TimeOfDay end;
-  final String type; // 'available', 'show', 'availability'
-  final dynamic data;
+/// Classe para agrupar appointments da mesma disponibilidade
+class GroupedAppointment {
+  final String subject;
+  final List<Appointment> appointments;
+  final String? notes;
 
-  TimeSlot({
-    required this.start,
-    required this.end,
-    required this.type,
-    this.data,
+  GroupedAppointment({
+    required this.subject,
+    required this.appointments,
+    this.notes,
   });
 }
 

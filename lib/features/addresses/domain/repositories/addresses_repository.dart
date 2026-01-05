@@ -1,5 +1,6 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 
 /// Interface do Repository de Addresses
@@ -44,5 +45,10 @@ abstract class IAddressesRepository {
   
   /// Define um endereço como primário (e remove primário dos outros)
   Future<Either<Failure, void>> setPrimaryAddress(String userUid, String addressId);
+
+  // ==================== GET GEOLOCATION OPERATIONS ====================
+  
+  /// Busca geolocalização de um endereço
+  Future<Either<Failure, GeoPoint>> getGeolocation(AddressInfoEntity address);
 }
 

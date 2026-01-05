@@ -21,20 +21,42 @@ class AddAddressUseCase {
   Future<Either<Failure, String>> call(String uid, AddressInfoEntity address) async {
     try {
       // Validar UID
-      print('uid: $uid');
       if (uid.isEmpty) {
         return const Left(ValidationFailure('UID do usuário não pode ser vazio'));
       }
-      print('address: $address');
+
       // Validar dados do endereço
       if (address.zipCode.isEmpty) {
         return const Left(ValidationFailure('CEP não pode ser vazio'));
       }
-      print('repository: $repository');
-      // Adicionar endereço
-      final result = await repository.addAddress(uid, address);
 
-      return result.fold(
+      // Buscar geolocalização do endereço
+      final geolocationResult = await repository.getGeolocation(address);
+      
+      // Se falhou na geolocalização, retorna o erro
+      if (geolocationResult.isLeft()) {
+        return geolocationResult.fold(
+          (failure) => Left(failure),
+          (_) => throw Exception('Unexpected state'),
+        );
+      }
+
+      // Extrai o GeoPoint do resultado
+      final geopoint = geolocationResult.fold(
+        (_) => throw Exception('Unexpected state'),
+        (geopoint) => geopoint,
+      );
+
+      // Cria endereço com geolocalização
+      final addressWithGeolocation = address.copyWith(
+        latitude: geopoint.latitude,
+        longitude: geopoint.longitude,
+      );
+
+      // Adiciona endereço no repositório
+      final addAddressResult = await repository.addAddress(uid, addressWithGeolocation);
+
+      return addAddressResult.fold(
         (failure) => Left(failure),
         (addressId) => Right(addressId),
       );

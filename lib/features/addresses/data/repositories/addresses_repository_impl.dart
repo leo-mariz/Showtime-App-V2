@@ -4,6 +4,7 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/features/addresses/data/datasources/addresses_local_datasource.dart';
 import 'package:app/features/addresses/data/datasources/addresses_remote_datasource.dart';
 import 'package:app/features/addresses/domain/repositories/addresses_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 
 /// Implementação do Repository de Addresses
@@ -144,6 +145,19 @@ class AddressesRepositoryImpl implements IAddressesRepository {
       await localDataSource.cacheAddresses(updatedAddresses);
       
       return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  // ==================== GET GEOLOCATION OPERATIONS ====================
+
+  @override
+  Future<Either<Failure, GeoPoint>> getGeolocation(AddressInfoEntity address) async {
+    try {
+      final addressString = '${address.street}, ${address.number}, ${address.district}, ${address.city}, ${address.state}';
+      final geolocation = await remoteDataSource.getGeolocation(addressString);
+      return Right(geolocation);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

@@ -20,6 +20,10 @@ import 'package:app/features/addresses/presentation/screens/addresses_list_page.
     deferred as _i2;
 import 'package:app/features/app_navigation/presentation/pages/navigation_page.dart'
     deferred as _i24;
+import 'package:app/features/artist_availability/presentation/screens/availability_screen.dart'
+    deferred as _i8;
+import 'package:app/features/artist_documents/presentation/screens/documents_screen.dart'
+    deferred as _i14;
 import 'package:app/features/authentication/presentation/screens/check_email_verification_page.dart'
     deferred as _i15;
 import 'package:app/features/authentication/presentation/screens/forgot_password_screen.dart'
@@ -42,14 +46,12 @@ import 'package:app/features/contracts/presentation/screens/clients/event_reques
     deferred as _i31;
 import 'package:app/features/explore/presentation/screens/artist_profile_screen.dart'
     deferred as _i5;
-import 'package:app/features/profile/artists/presentation/screens/artist_area/artist_area_page.dart'
-    deferred as _i3;
-import 'package:app/features/artist_availability/presentation/screens/availability_screen.dart'
-    deferred as _i8;
 import 'package:app/features/profile/artists/groups/presentation/screens/group_area_screen.dart'
     deferred as _i18;
 import 'package:app/features/profile/artists/groups/presentation/screens/groups_screen.dart'
     deferred as _i19;
+import 'package:app/features/profile/artists/presentation/screens/artist_area/artist_area_page.dart'
+    deferred as _i3;
 import 'package:app/features/profile/artists/presentation/screens/artist_area/page_view/artist_profile_view_screen.dart'
     deferred as _i6;
 import 'package:app/features/profile/artists/presentation/screens/artist_area/presentations/presentations_screen.dart'
@@ -58,8 +60,6 @@ import 'package:app/features/profile/artists/presentation/screens/artist_area/pr
     deferred as _i28;
 import 'package:app/features/profile/artists/presentation/screens/register_data/bank_account/bank_account_screen.dart'
     deferred as _i9;
-import 'package:app/features/artist_documents/presentation/screens/documents_screen.dart'
-    deferred as _i14;
 import 'package:app/features/profile/artists/presentation/screens/register_data/register_data_area_screen.dart'
     deferred as _i29;
 import 'package:app/features/profile/shared/presentation/screens/login_security/delete_account/delete_account_page.dart'

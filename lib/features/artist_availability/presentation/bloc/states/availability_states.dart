@@ -46,6 +46,36 @@ class AddAvailabilityFailure extends AvailabilityState {
   List<Object?> get props => [error];
 }
 
+// ==================== UPDATE AVAILABILITY STATES ====================
+
+class UpdateAvailabilityLoading extends AvailabilityState {}
+
+class UpdateAvailabilitySuccess extends AvailabilityState {}
+
+class UpdateAvailabilityFailure extends AvailabilityState {
+  final String error;
+
+  UpdateAvailabilityFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== DELETE AVAILABILITY STATES ====================
+
+class DeleteAvailabilityLoading extends AvailabilityState {}
+
+class DeleteAvailabilitySuccess extends AvailabilityState {}
+
+class DeleteAvailabilityFailure extends AvailabilityState {
+  final String error;
+
+  DeleteAvailabilityFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== CLOSE AVAILABILITY STATES ====================
 
 class CloseAvailabilityLoading extends AvailabilityState {}

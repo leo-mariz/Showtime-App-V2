@@ -91,3 +91,42 @@ class CloseAvailabilityFailure extends AvailabilityState {
   List<Object?> get props => [error];
 }
 
+// ==================== CHECK AVAILABILITY OVERLAP STATES ====================
+
+class CheckAvailabilityOverlapLoading extends AvailabilityState {}
+
+class CheckAvailabilityOverlapSuccess extends AvailabilityState {
+  final bool hasOverlap;
+  final String priorityReason;
+
+  CheckAvailabilityOverlapSuccess({
+    required this.hasOverlap,
+    required this.priorityReason,
+  });
+
+  @override
+  List<Object?> get props => [hasOverlap, priorityReason];
+}
+
+class CheckAvailabilityOverlapWarning extends AvailabilityState {
+  final String priorityReason;
+  final String overlappingAddressTitle;
+
+  CheckAvailabilityOverlapWarning({
+    required this.priorityReason,
+    required this.overlappingAddressTitle,
+  });
+
+  @override
+  List<Object?> get props => [priorityReason, overlappingAddressTitle];
+}
+
+class CheckAvailabilityOverlapFailure extends AvailabilityState {
+  final String error;
+
+  CheckAvailabilityOverlapFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+

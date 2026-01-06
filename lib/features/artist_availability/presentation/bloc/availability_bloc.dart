@@ -1,4 +1,5 @@
 import 'package:app/features/artist_availability/domain/usecases/add_availability_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/close_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/delete_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
@@ -14,6 +15,7 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   final UpdateAvailabilityUseCase updateAvailabilityUseCase;
   final DeleteAvailabilityUseCase deleteAvailabilityUseCase;
   final CloseAvailabilityUseCase closeAvailabilityUseCase;
+  final CheckAvailabilityOverlapUseCase checkAvailabilityOverlapUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
   AvailabilityBloc({
@@ -22,6 +24,7 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
     required this.updateAvailabilityUseCase,
     required this.deleteAvailabilityUseCase,
     required this.closeAvailabilityUseCase,
+    required this.checkAvailabilityOverlapUseCase,
     required this.getUserUidUseCase,
   }) : super(AvailabilityInitial()) {
     on<GetAvailabilitiesEvent>(_onGetAvailabilitiesEvent);
@@ -29,6 +32,7 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
     on<UpdateAvailabilityEvent>(_onUpdateAvailabilityEvent);
     on<DeleteAvailabilityEvent>(_onDeleteAvailabilityEvent);
     on<CloseAvailabilityEvent>(_onCloseAvailabilityEvent);
+    on<CheckAvailabilityOverlapEvent>(_onCheckAvailabilityOverlapEvent);
   }
 
   // ==================== HELPERS ====================
@@ -100,10 +104,7 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
 
     final result = await updateAvailabilityUseCase.call(
       artistId: uid!,
-      availabilityId: event.availabilityId,
-      raioAtuacao: event.raioAtuacao,
-      valorShow: event.valorShow,
-      blockedSlots: event.blockedSlots,
+      updatedAvailability: event.availability,
     );
 
     result.fold(
@@ -165,6 +166,46 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       (_) {
         emit(CloseAvailabilitySuccess());
         emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== CHECK AVAILABILITY OVERLAP ====================
+
+  Future<void> _onCheckAvailabilityOverlapEvent(
+    CheckAvailabilityOverlapEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(CheckAvailabilityOverlapLoading());
+
+    final uid = await _getCurrentUserId();
+
+    final result = await checkAvailabilityOverlapUseCase.call(
+      uid!,
+      event.availability,
+      excludeAvailabilityId: event.excludeAvailabilityId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(CheckAvailabilityOverlapFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (overlapResult) {
+        if (overlapResult.hasOverlap) {
+          // Há sobreposição - emitir aviso
+          final overlappingAddressTitle = overlapResult.overlappingAvailability?.endereco.title ?? 'desconhecido';
+          emit(CheckAvailabilityOverlapWarning(
+            priorityReason: overlapResult.priorityReason,
+            overlappingAddressTitle: overlappingAddressTitle,
+          ));
+        } else {
+          // Sem sobreposição - sucesso
+          emit(CheckAvailabilityOverlapSuccess(
+            hasOverlap: false,
+            priorityReason: '',
+          ));
+        }
       },
     );
   }

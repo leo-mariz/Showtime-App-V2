@@ -8,6 +8,7 @@ import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/dialog_button.dart';
+import 'package:app/core/shared/widgets/informative_banner.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
@@ -584,36 +585,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                       ),
                     ] else ...[
                       DSSizedBoxSpacing.vertical(8),
-                      Container(
-                        padding: EdgeInsets.all(DSPadding.horizontal(12)),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(DSSize.width(8)),
-                          border: Border.all(
-                            color: colorScheme.primary.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: DSSize.width(18),
-                              color: colorScheme.onPrimary,
-                            ),
-                            DSSizedBoxSpacing.horizontal(8),
-                            Expanded(
-                              child: Text(
-                                'Com a recorrência desativada, ficarão disponíveis todos os dias entre a data de início e a data de fim selecionadas.',
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurface.withOpacity(0.8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      InformativeBanner(
+                        message: 'Com a recorrência desativada, ficarão disponíveis todos os dias entre a data de início e a data de fim selecionadas.',
                       ),
                     ],
                     Divider(height: DSSize.height(32)),

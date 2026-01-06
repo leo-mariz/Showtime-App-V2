@@ -4,6 +4,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/features/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artist_availability/presentation/bloc/states/availability_states.dart';
@@ -45,6 +46,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
   ];
   
   DateTime? _selectedDate;
+  
+  // Armazena a disponibilidade pendente para adicionar/atualizar após verificação
+  AvailabilityEntity? _pendingAvailability;
+  
+  // Flag para distinguir se a verificação é para add ou update
+  bool _isPendingUpdate = false;
 
   @override
   void initState() {
@@ -173,8 +180,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
     );
     
     if (!availability.repetir) {
-      // Sem recorrência, apenas a data inicial
-      dates.add(startDate);
+      // Sem recorrência, todos os dias entre data início e data fim
+      DateTime currentDate = startDate;
+      while (!currentDate.isAfter(endDate)) {
+        dates.add(DateTime(currentDate.year, currentDate.month, currentDate.day));
+        currentDate = currentDate.add(const Duration(days: 1));
+      }
     } else {
       // Com recorrência, gerar todas as datas dentro do período
       final weekdayMap = {
@@ -284,11 +295,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
         continue;
       }
       
-      // Se não repete, verifica se é exatamente a data inicial
+      // Se não repete, todos os dias entre início e fim são válidos
       if (!availability.repetir) {
-        if (!targetDate.isAtSameMomentAs(startDate)) {
-          continue;
-        }
+        // Já está dentro do período (verificado acima), então é válido
+        // Não precisa de verificação adicional
       } else {
         // Se repete, verifica se o dia da semana está na lista
         final weekdayMap = {
@@ -387,11 +397,78 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       initialDate: selectedDate,
       onSave: (availability) {
         if (!mounted) return;
-        final availabilityBloc = context.read<AvailabilityBloc>();
-        availabilityBloc.add(AddAvailabilityEvent(availability: availability));
+        // Armazena a disponibilidade pendente e marca como add
+        setState(() {
+          _pendingAvailability = availability;
+          _isPendingUpdate = false;
+        });
+        // Fecha o modal
         Navigator.of(context).pop();
+        // Verifica sobreposição antes de adicionar
+        final availabilityBloc = context.read<AvailabilityBloc>();
+        availabilityBloc.add(CheckAvailabilityOverlapEvent(availability: availability));
       },
     );
+  }
+  
+  void _addAvailabilityAfterCheck() {
+    if (_pendingAvailability == null) return;
+    
+    final availabilityBloc = context.read<AvailabilityBloc>();
+    availabilityBloc.add(AddAvailabilityEvent(availability: _pendingAvailability!));
+    
+    // Limpa a disponibilidade pendente
+    setState(() {
+      _pendingAvailability = null;
+      _isPendingUpdate = false;
+    });
+  }
+  
+  void _updateAvailabilityAfterCheck() {
+    if (_pendingAvailability == null) return;
+    
+    final availabilityBloc = context.read<AvailabilityBloc>();
+    // Dispara evento de update com a disponibilidade completa
+    availabilityBloc.add(UpdateAvailabilityEvent(
+      availability: _pendingAvailability!,
+    ));
+    
+    // Limpa a disponibilidade pendente
+    setState(() {
+      _pendingAvailability = null;
+      _isPendingUpdate = false;
+    });
+  }
+  
+  Future<void> _showOverlapConfirmationDialog(String priorityReason, String overlappingAddressTitle) async {
+    if (!mounted) return;
+    
+    final actionText = _isPendingUpdate ? 'atualizar' : 'adicionar';
+    final confirmText = _isPendingUpdate ? 'Atualizar' : 'Adicionar';
+    
+    final confirmed = await ConfirmationDialog.show(
+      context: context,
+      title: 'Sobreposição de Disponibilidade',
+      message: 'A disponibilidade definida está sobrepondo outras disponibilidades.\n\n'
+          '$priorityReason\n\n'
+          'Deseja $actionText mesmo assim?',
+      confirmText: confirmText,
+      cancelText: 'Cancelar',
+    );
+    
+    if (confirmed == true && mounted) {
+      if (_isPendingUpdate) {
+        _updateAvailabilityAfterCheck();
+      } else {
+        _addAvailabilityAfterCheck();
+      }
+    } else if (mounted) {
+      // Limpa a disponibilidade pendente se cancelou
+      setState(() {
+        _pendingAvailability = null;
+        _isPendingUpdate = false;
+      });
+    }
   }
 
   void _showEditAvailabilityDialog(AvailabilityEntity availability) {
@@ -400,15 +477,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
       availability: availability,
       onSave: (updatedAvailability) {
         if (!mounted) return;
-        final availabilityBloc = context.read<AvailabilityBloc>();
-        // Dispara evento de update com os campos editáveis (raio, valor e blockedSlots)
-        availabilityBloc.add(UpdateAvailabilityEvent(
-          availabilityId: updatedAvailability.id!,
-          raioAtuacao: updatedAvailability.raioAtuacao,
-          valorShow: updatedAvailability.valorShow,
-          blockedSlots: updatedAvailability.blockedSlots,
-        ));
+        // Armazena a disponibilidade pendente e marca como update
+        setState(() {
+          _pendingAvailability = updatedAvailability;
+          _isPendingUpdate = true;
+        });
+        // Fecha o modal
         Navigator.of(context).pop();
+        // Verifica sobreposição antes de atualizar
+        // IMPORTANTE: Para update, precisamos verificar sobreposição excluindo a própria disponibilidade
+        final availabilityBloc = context.read<AvailabilityBloc>();
+        availabilityBloc.add(CheckAvailabilityOverlapEvent(
+          availability: updatedAvailability,
+          excludeAvailabilityId: updatedAvailability.id, // Exclui a própria disponibilidade da verificação
+        ));
       },
     );
   }
@@ -473,6 +555,26 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> with SingleTick
           _handleGetAvailabilities(forceRefresh: true);
         } else if (state is CloseAvailabilityFailure) {
           context.showError(state.error);
+        } else if (state is CheckAvailabilityOverlapSuccess) {
+          // Sem sobreposição - adiciona ou atualiza diretamente
+          if (_isPendingUpdate) {
+            _updateAvailabilityAfterCheck();
+          } else {
+            _addAvailabilityAfterCheck();
+          }
+        } else if (state is CheckAvailabilityOverlapWarning) {
+          // Há sobreposição - mostra dialog de confirmação
+          _showOverlapConfirmationDialog(
+            state.priorityReason,
+            state.overlappingAddressTitle,
+          );
+        } else if (state is CheckAvailabilityOverlapFailure) {
+          context.showError(state.error);
+          // Limpa a disponibilidade pendente em caso de erro
+          setState(() {
+            _pendingAvailability = null;
+            _isPendingUpdate = false;
+          });
         }
       },
       child: BlocBuilder<AvailabilityBloc, AvailabilityState>(

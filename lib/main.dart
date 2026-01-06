@@ -8,6 +8,7 @@ import 'package:app/features/artist_availability/data/datasources/availability_r
 import 'package:app/features/artist_availability/data/repositories/availability_repository_impl.dart';
 import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
 import 'package:app/features/artist_availability/domain/usecases/add_availability_usecase.dart';
+import 'package:app/features/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/close_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/delete_availability_usecase.dart';
 import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
@@ -455,6 +456,7 @@ AvailabilityBloc _createAvailabilityBloc(
   final updateAvailabilityUseCase = UpdateAvailabilityUseCase(availabilityRepository);
   final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(availabilityRepository);
   final closeAvailabilityUseCase = CloseAvailabilityUseCase(availabilityRepository: availabilityRepository);
+  final checkAvailabilityOverlapUseCase = CheckAvailabilityOverlapUseCase(availabilityRepository: availabilityRepository);
 
   // Criar e retornar AvailabilityBloc
   return AvailabilityBloc(
@@ -463,6 +465,7 @@ AvailabilityBloc _createAvailabilityBloc(
     updateAvailabilityUseCase: updateAvailabilityUseCase,
     deleteAvailabilityUseCase: deleteAvailabilityUseCase,
     closeAvailabilityUseCase: closeAvailabilityUseCase,
+    checkAvailabilityOverlapUseCase: checkAvailabilityOverlapUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }

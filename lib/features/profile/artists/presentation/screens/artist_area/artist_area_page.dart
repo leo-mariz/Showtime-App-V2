@@ -1,8 +1,10 @@
 
 import 'package:app/core/config/auto_router_config.gr.dart';
+// import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/features/profile/artists/presentation/widgets/artist_area_option_card.dart';
+// import 'package:app/features/profile/artists/presentation/widgets/profile_visibility_card.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +27,11 @@ class ArtistAreaScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Controle de Visibilidade do Perfil
+            
+            
+            DSSizedBoxSpacing.vertical(16),
+            
             // Opção: Dados Profissionais
             ArtistAreaOptionCard(
               title: 'Dados Profissionais',
@@ -76,6 +83,17 @@ class ArtistAreaScreen extends StatelessWidget {
               iconColor: onPrimaryContainer,
               onTap: () => router.push(ArtistProfileViewRoute()),
             ),
+
+            DSSizedBoxSpacing.vertical(8),
+
+            // ProfileVisibilityCard(
+            //   isActive: false, // TODO: Buscar do estado/bloc
+            //   isEnabled: false, // TODO: Verificar se todos os campos obrigatórios estão preenchidos
+            //   blockingReason: 'Complete seu perfil para ativar a visibilidade. Preencha todas as informações obrigatórias em "Dados Profissionais".',
+            //   onChanged: (value) {
+            //     // TODO: Implementar lógica para ativar/desativar perfil
+            //   },
+            // ),
           ],
         ),
       ),

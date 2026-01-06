@@ -89,9 +89,11 @@ class _AddressesModalState extends State<AddressesModal> {
 
   void _onAddressSelected(AddressInfoEntity address) {
     if (address.uid != null) {
-      context.read<AddressesBloc>().add(
-        SetPrimaryAddressEvent(addressId: address.uid!),
-      );
+      if (!address.isPrimary) {
+        context.read<AddressesBloc>().add(
+          SetPrimaryAddressEvent(addressId: address.uid!),
+        );
+      }
       widget.onAddressSelected?.call(address);
     }
   }

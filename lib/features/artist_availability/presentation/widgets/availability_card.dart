@@ -43,7 +43,7 @@ class AvailabilityCard extends StatelessWidget {
 
   String _formatRecurrence() {
     if (!availability.repetir) {
-      return 'Apenas este dia';
+      return 'Todos os dias';
     }
     
     if (availability.diasDaSemana.isEmpty) {

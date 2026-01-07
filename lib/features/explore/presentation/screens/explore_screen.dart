@@ -31,10 +31,15 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   
   // TODO: Substituir por dados reais do Bloc
   AddressInfoEntity? _selectedAddress;
   DateTime _selectedDate = DateTime.now();
+  int _nextIndex = 0;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 10;
 
   String get _currentAddressDisplay {
     if (_selectedAddress == null) {
@@ -59,6 +64,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
       } else {
         print('🔵 [EXPLORE_SCREEN] initState - Endereços já carregados, obtendo primário');
         _getPrimaryAddressFromState(addressesState);
+      }
+    });
+
+    // Scroll listener para carregar mais ao chegar no fim
+    _scrollController.addListener(() {
+      if (_hasMore &&
+          !_isLoadingMore &&
+          _scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200) {
+        _loadMore();
       }
     });
   }
@@ -107,7 +122,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       return;
     }
 
-    final forceRefresh = true; // Mudado para false para usar cache
+    final forceRefresh = false; // Mudado para false para usar cache
     final currentState = context.read<ExploreBloc>().state;
     
     print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Iniciando busca');
@@ -122,6 +137,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         selectedDate: _selectedDate,
         userAddress: _selectedAddress,
         forceRefresh: forceRefresh,
+        startIndex: 0,
+        pageSize: _pageSize,
+        append: false,
       ),
     );
     print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Evento disparado');
@@ -130,6 +148,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -195,6 +214,25 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     if (state is GetAddressesSuccess && _selectedAddress == null) {
                       print('🔵 [EXPLORE_SCREEN] BlocListener AddressesBloc - Endereços carregados');
                       _getPrimaryAddressFromState(state);
+                    }
+                  },
+                ),
+                // Escutar ExploreBloc para atualizar paginação
+                BlocListener<ExploreBloc, ExploreState>(
+                  listener: (context, state) {
+                    if (state is GetArtistsWithAvailabilitiesSuccess) {
+                      _nextIndex = state.nextIndex;
+                      _hasMore = state.hasMore;
+                      if (state.append) {
+                        _isLoadingMore = false;
+                      } else {
+                        // Reset de scroll em nova busca
+                        _scrollController.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOut,
+                        );
+                      }
                     }
                   },
                 ),
@@ -295,10 +333,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget _buildArtistsList(
     List<ArtistWithAvailabilitiesEntity> artistsWithAvailabilities,
   ) {
-    // TODO: Implementar paginação/lazy loading
     return ListView.builder(
-      itemCount: artistsWithAvailabilities.length,
+      controller: _scrollController,
+      itemCount: _hasMore
+          ? artistsWithAvailabilities.length + 1
+          : artistsWithAvailabilities.length,
       itemBuilder: (context, index) {
+        // Footer loader
+        if (index >= artistsWithAvailabilities.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         final artistWithAvailabilities = artistsWithAvailabilities[index];
         final artist = artistWithAvailabilities.artist;
         final availabilities = artistWithAvailabilities.availabilities;
@@ -431,6 +478,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
       artist: artist,
       isFavorite: false, // TODO: Implementar verificação de favoritos
     ));
+  }
+
+  void _loadMore() {
+    if (!_hasMore || _isLoadingMore) return;
+    print('🔵 [EXPLORE_SCREEN] _loadMore - Carregando mais. nextIndex=$_nextIndex');
+    _isLoadingMore = true;
+    context.read<ExploreBloc>().add(
+      GetArtistsWithAvailabilitiesFilteredEvent(
+        selectedDate: _selectedDate,
+        userAddress: _selectedAddress,
+        startIndex: _nextIndex,
+        pageSize: _pageSize,
+        append: true,
+      ),
+    );
   }
 }
 

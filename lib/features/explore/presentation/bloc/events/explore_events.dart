@@ -31,14 +31,27 @@ class GetArtistsWithAvailabilitiesFilteredEvent extends ExploreEvent {
   final DateTime? selectedDate;
   final AddressInfoEntity? userAddress;
   final bool forceRefresh;
+  final int startIndex;
+  final int pageSize;
+  final bool append;
 
   GetArtistsWithAvailabilitiesFilteredEvent({
     this.selectedDate,
     this.userAddress,
     this.forceRefresh = false,
+    this.startIndex = 0,
+    this.pageSize = 10,
+    this.append = false,
   });
 
   @override
-  List<Object?> get props => [selectedDate, userAddress, forceRefresh];
+  List<Object?> get props => [
+        selectedDate,
+        userAddress,
+        forceRefresh,
+        startIndex,
+        pageSize,
+        append,
+      ];
 }
 

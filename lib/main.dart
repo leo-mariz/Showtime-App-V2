@@ -525,7 +525,7 @@ ExploreBloc _createExploreBloc(
   
   final getArtistsWithAvailabilitiesFilteredUseCase =
       GetArtistsWithAvailabilitiesFilteredUseCase(
-    repository: exploreRepository,
+    getArtistsWithAvailabilitiesUseCase: getArtistsWithAvailabilitiesUseCase,
     calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
     isAvailabilityValidForDateUseCase: isAvailabilityValidForDateUseCase,
   );

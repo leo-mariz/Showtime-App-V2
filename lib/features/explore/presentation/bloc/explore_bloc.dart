@@ -1,3 +1,4 @@
+import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
@@ -57,12 +58,17 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
     GetArtistsWithAvailabilitiesFilteredEvent event,
     Emitter<ExploreState> emit,
   ) async {
-    emit(GetArtistsWithAvailabilitiesLoading());
+    // Mostrar loading apenas se não for append; em append mantemos lista atual
+    if (!event.append) {
+      emit(GetArtistsWithAvailabilitiesLoading());
+    }
 
     final result = await getArtistsWithAvailabilitiesFilteredUseCase.call(
       selectedDate: event.selectedDate,
       userAddress: event.userAddress,
       forceRefresh: event.forceRefresh,
+      startIndex: event.startIndex,
+      pageSize: event.pageSize,
     );
 
     result.fold(
@@ -70,9 +76,21 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
         emit(GetArtistsWithAvailabilitiesFailure(error: failure.message));
         emit(ExploreInitial());
       },
-      (artistsWithAvailabilities) {
+      (paged) {
+        final previous = state is GetArtistsWithAvailabilitiesSuccess
+            ? (state as GetArtistsWithAvailabilitiesSuccess)
+                .artistsWithAvailabilities
+            : <ArtistWithAvailabilitiesEntity>[];
+
+        final merged = event.append
+            ? [...previous, ...paged.items]
+            : paged.items;
+
         emit(GetArtistsWithAvailabilitiesSuccess(
-          artistsWithAvailabilities: artistsWithAvailabilities,
+          artistsWithAvailabilities: merged,
+          nextIndex: paged.nextIndex,
+          hasMore: paged.hasMore,
+          append: event.append,
         ));
       },
     );

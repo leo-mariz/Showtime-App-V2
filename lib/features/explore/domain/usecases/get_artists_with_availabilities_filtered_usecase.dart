@@ -3,50 +3,64 @@ import 'package:app/core/domain/artist/availability_calendar_entitys/availabilit
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/distance_helper.dart';
+import 'package:app/core/utils/geohash_helper.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
-import 'package:app/features/explore/domain/repositories/explore_repository.dart';
+import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
 import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Buscar artistas com disponibilidades filtradas por data e localização
 /// 
 /// RESPONSABILIDADES:
-/// - Buscar todos os artistas aprovados e ativos
-/// - Para cada artista, buscar disponibilidades filtradas por data e geohash no Firestore
-/// - Filtrar por distância Haversine no cliente (raio de atuação)
+/// - Buscar todos os artistas com todas as disponibilidades usando GetArtistsWithAvailabilitiesUseCase
+/// - Aplicar filtros em memória (geohash, data, distância)
 /// - Combinar artista + disponibilidades filtradas em ArtistWithAvailabilitiesEntity
 /// - Retornar apenas artistas que têm pelo menos uma disponibilidade válida
 /// 
-/// FILTROS APLICADOS:
-/// 1. Data: Busca no Firestore disponibilidades onde dataInicio <= selectedDate <= dataFim
-/// 2. Geohash: Busca no Firestore disponibilidades com geohash dentro do range do usuário
-/// 3. Distância: Filtra no cliente usando Haversine (distância <= raioAtuacao)
+/// FILTROS APLICADOS (todos em memória):
+/// 1. Geohash: Filtra disponibilidades com geohash dentro do range do usuário
+/// 2. Data: Valida range, dia da semana e horários bloqueados
+/// 3. Distância: Filtra usando Haversine (distância <= raioAtuacao)
 /// 
 /// OBSERVAÇÕES:
-/// - Usa cache agressivo (artistas: 2h, disponibilidades filtradas: 2h)
+/// - Usa GetArtistsWithAvailabilitiesUseCase como fonte de dados (cache de 2h)
+/// - Filtragem em memória = 0 reads do Firestore ao mudar filtros
 /// - Se artista não tiver disponibilidades válidas, não é incluído no resultado
-/// - Busca disponibilidades em paralelo para todos os artistas (otimização)
-/// - Continua processando mesmo se algum artista falhar
+/// - Muito mais eficiente: primeira busca = 100 reads, mudanças de filtro = 0 reads
 /// 
 /// [selectedDate]: Data selecionada para filtrar disponibilidades (opcional)
 /// [userAddress]: Endereço do usuário para filtro geográfico (opcional)
 /// [forceRefresh]: Se true, ignora o cache e busca tudo diretamente do Firestore (útil para testes)
+class PagedArtistsResult {
+  final List<ArtistWithAvailabilitiesEntity> items;
+  final int nextIndex;
+  final bool hasMore;
+
+  PagedArtistsResult({
+    required this.items,
+    required this.nextIndex,
+    required this.hasMore,
+  });
+}
+
 class GetArtistsWithAvailabilitiesFilteredUseCase {
-  final IExploreRepository repository;
+  final GetArtistsWithAvailabilitiesUseCase getArtistsWithAvailabilitiesUseCase;
   final CalculateAddressGeohashUseCase calculateAddressGeohashUseCase;
   final IsAvailabilityValidForDateUseCase isAvailabilityValidForDateUseCase;
 
   GetArtistsWithAvailabilitiesFilteredUseCase({
-    required this.repository,
+    required this.getArtistsWithAvailabilitiesUseCase,
     required this.calculateAddressGeohashUseCase,
     required this.isAvailabilityValidForDateUseCase,
   });
 
-  Future<Either<Failure, List<ArtistWithAvailabilitiesEntity>>> call({
+  Future<Either<Failure, PagedArtistsResult>> call({
     DateTime? selectedDate,
     AddressInfoEntity? userAddress,
     bool forceRefresh = false,
+    int startIndex = 0,
+    int pageSize = 10,
   }) async {
     print('🟣 [USECASE] GetArtistsWithAvailabilitiesFiltered - Iniciando busca');
     print('🟣 [USECASE] Parâmetros:');
@@ -54,128 +68,164 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     print('   - userAddress: ${userAddress?.title ?? "Nenhum"}');
     print('   - userAddress lat/lon: ${userAddress?.latitude}/${userAddress?.longitude}');
     print('   - forceRefresh: $forceRefresh');
+    print('   - startIndex: $startIndex');
+    print('   - pageSize: $pageSize');
     
     try {
-      // 1. Calcular geohash do endereço do usuário (se fornecido)
-      String? userGeohash;
+      // 1. Calcular range de geohash do endereço do usuário (se fornecido)
+      String? minGeohash;
+      String? maxGeohash;
+      
       if (userAddress != null &&
           userAddress.latitude != null &&
           userAddress.longitude != null) {
         print('🟣 [USECASE] Calculando geohash para endereço: ${userAddress.title}');
         final geohashResult = await calculateAddressGeohashUseCase.call(userAddress);
-        userGeohash = geohashResult.fold(
+        geohashResult.fold(
           (failure) {
             print('🔴 [USECASE] Erro ao calcular geohash: ${failure.message}');
-            return null;
           },
           (geohash) {
             print('🟣 [USECASE] Geohash calculado: $geohash');
-            return geohash;
+            // Calcular range de geohash para filtro
+            final range = GeohashHelper.getRange(geohash);
+            minGeohash = range['min'];
+            maxGeohash = range['max'];
+            print('🟣 [USECASE] Range de geohash: min=$minGeohash, max=$maxGeohash');
           },
         );
       } else {
         print('🟣 [USECASE] Sem endereço ou coordenadas, não calculando geohash');
       }
 
-      // 2. Buscar todos os artistas aprovados e ativos
-      print('🟣 [USECASE] Buscando artistas aprovados e ativos...');
-      final artistsResult = await repository.getArtistsForExplore(
+      // 2. Buscar todos os artistas com todas as disponibilidades (usa cache)
+      print('🟣 [USECASE] Buscando todos os artistas com disponibilidades...');
+      final allArtistsResult = await getArtistsWithAvailabilitiesUseCase.call(
         forceRefresh: forceRefresh,
       );
 
-      return await artistsResult.fold(
+      return allArtistsResult.fold(
         (failure) {
           print('🔴 [USECASE] Erro ao buscar artistas: ${failure.message}');
           return Left(failure);
         },
-        (artists) async {
-          print('🟣 [USECASE] Total de artistas encontrados: ${artists.length}');
+        (allArtistsWithAvailabilities) {
+          print('🟣 [USECASE] Total de artistas encontrados: ${allArtistsWithAvailabilities.length}');
           
-          // 3. Buscar disponibilidades filtradas para todos os artistas em paralelo
-          final artistsWithAvailabilities = <ArtistWithAvailabilitiesEntity>[];
-
-          // Criar lista de futures para buscar disponibilidades em paralelo
-          final availabilityFutures = <Future<void>>[];
+          // 3. Aplicar filtros em memória para cada artista
+          final filteredArtistsWithAvailabilities = <ArtistWithAvailabilitiesEntity>[];
           int artistsProcessed = 0;
           int artistsWithValidAvailabilities = 0;
 
-          for (final artist in artists) {
-            // Verificar se artista tem UID válido
-            if (artist.uid == null || artist.uid!.isEmpty) {
-              print('🟡 [USECASE] Artista sem UID, pulando: ${artist.artistName}');
-              continue; // Pular artista sem UID
+          // Garantir limites válidos
+          final safeStartIndex = startIndex.clamp(0, allArtistsWithAvailabilities.length);
+          final int maxToCollect = pageSize <= 0 ? 10 : pageSize;
+
+          // Paginação pós-filtro: varrer a partir do startIndex e coletar até pageSize
+          int i = safeStartIndex;
+          while (i < allArtistsWithAvailabilities.length &&
+                 filteredArtistsWithAvailabilities.length < maxToCollect) {
+            final artistWithAvailabilities = allArtistsWithAvailabilities[i];
+            artistsProcessed++;
+            final artist = artistWithAvailabilities.artist;
+            final allAvailabilities = artistWithAvailabilities.availabilities;
+            
+            print('🟣 [USECASE] Processando artista: ${artist.artistName} (ID: ${artist.uid}) [idx=$i]');
+            print('🟣 [USECASE] Artista ${artist.uid} - Total de disponibilidades: ${allAvailabilities.length}');
+            
+            // Aplicar filtros em memória
+            List<AvailabilityEntity> filtered = allAvailabilities;
+            
+            // Filtro 1: Por geohash (range)
+            if (minGeohash != null && maxGeohash != null) {
+              filtered = _filterByGeohash(filtered, minGeohash!, maxGeohash!);
+              print('🟣 [USECASE] Artista ${artist.uid} - Após filtro de geohash: ${filtered.length}');
             }
+            
+            // Filtro 2: Por data (range, dia da semana, horários bloqueados)
+            filtered = _filterByDateValidation(filtered, selectedDate);
+            print('🟣 [USECASE] Artista ${artist.uid} - Após filtro de data: ${filtered.length}');
 
-            final artistId = artist.uid!;
-            print('🟣 [USECASE] Processando artista: ${artist.artistName} (ID: $artistId)');
+            // Filtro 3: Por distância Haversine (raio de atuação)
+            filtered = _filterByDistance(filtered, userAddress);
+            print('🟣 [USECASE] Artista ${artist.uid} - Após filtro de distância: ${filtered.length}');
 
-            // Buscar disponibilidades filtradas do artista
-            final future = repository
-                .getArtistAvailabilitiesFilteredForExplore(
-              artistId,
-              selectedDate: selectedDate,
-              userGeohash: userGeohash,
-              forceRefresh: forceRefresh,
-            ).then((availabilitiesResult) {
-              availabilitiesResult.fold(
-                (failure) {
-                  print('🔴 [USECASE] Erro ao buscar disponibilidades do artista $artistId: ${failure.message}');
-                  // Se falhar, não adicionar artista (silenciosamente)
-                },
-                (availabilities) {
-                  artistsProcessed++;
-                  print('🟣 [USECASE] Artista $artistId - Disponibilidades do Firestore: ${availabilities.length}');
-                  
-                  // Filtrar disponibilidades por validações de data (range, dia da semana, horários bloqueados)
-                  final dateFilteredAvailabilities = _filterByDateValidation(
-                    availabilities,
-                    selectedDate,
-                  );
-                  print('🟣 [USECASE] Artista $artistId - Após filtro de data: ${dateFilteredAvailabilities.length}');
-
-                  // Filtrar por distância Haversine no cliente (se endereço fornecido)
-                  final filteredAvailabilities = _filterByDistance(
-                    dateFilteredAvailabilities,
-                    userAddress,
-                  );
-                  print('🟣 [USECASE] Artista $artistId - Após filtro de distância: ${filteredAvailabilities.length}');
-
-                  // Só adicionar artista se tiver pelo menos uma disponibilidade válida
-                  if (filteredAvailabilities.isNotEmpty) {
-                    artistsWithValidAvailabilities++;
-                    print('🟢 [USECASE] Artista $artistId - ADICIONADO com ${filteredAvailabilities.length} disponibilidades válidas');
-                    artistsWithAvailabilities.add(
-                      ArtistWithAvailabilitiesEntity(
-                        artist: artist,
-                        availabilities: filteredAvailabilities,
-                      ),
-                    );
-                  } else {
-                    print('🟡 [USECASE] Artista $artistId - REMOVIDO (sem disponibilidades válidas)');
-                  }
-                },
+            // Só adicionar artista se tiver pelo menos uma disponibilidade válida
+            if (filtered.isNotEmpty) {
+              artistsWithValidAvailabilities++;
+              print('🟢 [USECASE] Artista ${artist.uid} - ADICIONADO com ${filtered.length} disponibilidades válidas');
+              filteredArtistsWithAvailabilities.add(
+                ArtistWithAvailabilitiesEntity(
+                  artist: artist,
+                  availabilities: filtered,
+                ),
               );
-            });
-
-            availabilityFutures.add(future);
+            } else {
+              print('🟡 [USECASE] Artista ${artist.uid} - REMOVIDO (sem disponibilidades válidas)');
+            }
+            i++;
           }
 
-          // Aguardar todas as buscas em paralelo
-          print('🟣 [USECASE] Aguardando processamento de ${availabilityFutures.length} artistas em paralelo...');
-          await Future.wait(availabilityFutures);
+          final hasMore = i < allArtistsWithAvailabilities.length;
+          final nextIndex = i;
+          print('🟢 [USECASE] Paginação: retornados=${filteredArtistsWithAvailabilities.length}, nextIndex=$nextIndex, hasMore=$hasMore');
 
           print('🟢 [USECASE] Processamento concluído!');
           print('🟢 [USECASE] Estatísticas:');
           print('   - Artistas processados: $artistsProcessed');
           print('   - Artistas com disponibilidades válidas: $artistsWithValidAvailabilities');
-          print('   - Total retornado: ${artistsWithAvailabilities.length}');
+          print('   - Total retornado: ${filteredArtistsWithAvailabilities.length}');
+          print('   - ✅ Filtragem feita em memória (0 reads do Firestore)');
 
-          return Right(artistsWithAvailabilities);
+          return Right(PagedArtistsResult(
+            items: filteredArtistsWithAvailabilities,
+            nextIndex: nextIndex,
+            hasMore: hasMore,
+          ));
         },
       );
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
+  }
+
+  /// Filtra disponibilidades por geohash (range)
+  /// 
+  /// Aplica filtro de geohash apenas se minGeohash e maxGeohash forem fornecidos.
+  /// Retorna apenas disponibilidades onde geohash está dentro do range.
+  List<AvailabilityEntity> _filterByGeohash(
+    List<AvailabilityEntity> availabilities,
+    String minGeohash,
+    String maxGeohash,
+  ) {
+    if (minGeohash.isEmpty || maxGeohash.isEmpty) {
+      return availabilities;
+    }
+
+    print('🟣 [USECASE] _filterByGeohash - Filtrando ${availabilities.length} disponibilidades por geohash');
+    print('🟣 [USECASE] _filterByGeohash - Range: min=$minGeohash, max=$maxGeohash');
+
+    final filtered = availabilities.where((availability) {
+      final availabilityGeohash = availability.endereco.geohash;
+      
+      if (availabilityGeohash == null || availabilityGeohash.isEmpty) {
+        print('🟡 [USECASE] _filterByGeohash - Disponibilidade ${availability.id} sem geohash, REJEITADA');
+        return false;
+      }
+
+      final isInRange = availabilityGeohash.compareTo(minGeohash) >= 0 &&
+                        availabilityGeohash.compareTo(maxGeohash) <= 0;
+      
+      if (!isInRange) {
+        print('🟡 [USECASE] _filterByGeohash - Disponibilidade ${availability.id} FORA do range: geohash=$availabilityGeohash');
+      }
+
+      return isInRange;
+    }).toList();
+    
+    print('🟣 [USECASE] _filterByGeohash - Resultado: ${filtered.length} disponibilidades dentro do range de ${availabilities.length}');
+    
+    return filtered;
   }
 
   /// Filtra disponibilidades por validações de data (range, dia da semana, horários bloqueados)

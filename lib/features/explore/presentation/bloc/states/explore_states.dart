@@ -17,13 +17,33 @@ class GetArtistsWithAvailabilitiesLoading extends ExploreState {}
 /// Estado de sucesso ao buscar artistas com disponibilidades
 class GetArtistsWithAvailabilitiesSuccess extends ExploreState {
   final List<ArtistWithAvailabilitiesEntity> artistsWithAvailabilities;
+  final int nextIndex;
+  final bool hasMore;
+  final bool append;
 
   GetArtistsWithAvailabilitiesSuccess({
     required this.artistsWithAvailabilities,
+    this.nextIndex = 0,
+    this.hasMore = false,
+    this.append = false,
   });
 
   @override
-  List<Object?> get props => [artistsWithAvailabilities];
+  List<Object?> get props => [artistsWithAvailabilities, nextIndex, hasMore, append];
+
+  GetArtistsWithAvailabilitiesSuccess copyWith({
+    List<ArtistWithAvailabilitiesEntity>? artistsWithAvailabilities,
+    int? nextIndex,
+    bool? hasMore,
+    bool? append,
+  }) {
+    return GetArtistsWithAvailabilitiesSuccess(
+      artistsWithAvailabilities: artistsWithAvailabilities ?? this.artistsWithAvailabilities,
+      nextIndex: nextIndex ?? this.nextIndex,
+      hasMore: hasMore ?? this.hasMore,
+      append: append ?? this.append,
+    );
+  }
 }
 
 /// Estado de falha ao buscar artistas com disponibilidades

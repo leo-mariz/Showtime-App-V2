@@ -40,41 +40,35 @@ class GetArtistsWithAvailabilitiesUseCase {
           // 2. Para cada artista, buscar disponibilidades
           final artistsWithAvailabilities = <ArtistWithAvailabilitiesEntity>[];
 
-          for (final artist in artists) {
-            // Verificar se artista tem UID válido
-            if (artist.uid == null || artist.uid!.isEmpty) {
-              // Artista sem UID, criar com disponibilidades vazias
-              artistsWithAvailabilities.add(
-                ArtistWithAvailabilitiesEntity.empty(artist),
+          // Paralelização com concorrência limitada (batching)
+          const int concurrency = 12; // ajustar conforme necessário/observabilidade
+          for (int i = 0; i < artists.length; i += concurrency) {
+            final batch = artists.skip(i).take(concurrency).toList();
+
+            final futures = batch.map((artist) async {
+              // Verificar se artista tem UID válido
+              if (artist.uid == null || artist.uid!.isEmpty) {
+                return ArtistWithAvailabilitiesEntity.empty(artist);
+              }
+
+              // Buscar disponibilidades do artista
+              final availabilitiesResult = await repository
+                  .getArtistAvailabilitiesForExplore(
+                artist.uid!,
+                forceRefresh: forceRefresh,
               );
-              continue;
-            }
 
-            // Buscar disponibilidades do artista
-            final availabilitiesResult = await repository
-                .getArtistAvailabilitiesForExplore(
-              artist.uid!,
-              forceRefresh: forceRefresh,
-            );
+              return availabilitiesResult.fold(
+                (_) => ArtistWithAvailabilitiesEntity.empty(artist),
+                (availabilities) => ArtistWithAvailabilitiesEntity(
+                  artist: artist,
+                  availabilities: availabilities,
+                ),
+              );
+            }).toList();
 
-            availabilitiesResult.fold(
-              (failure) {
-                // Se falhar ao buscar disponibilidades, adicionar artista sem disponibilidades
-                // Não interrompe o processo para outros artistas
-                artistsWithAvailabilities.add(
-                  ArtistWithAvailabilitiesEntity.empty(artist),
-                );
-              },
-              (availabilities) {
-                // Sucesso ao buscar disponibilidades
-                artistsWithAvailabilities.add(
-                  ArtistWithAvailabilitiesEntity(
-                    artist: artist,
-                    availabilities: availabilities,
-                  ),
-                );
-              },
-            );
+            final batchResults = await Future.wait(futures);
+            artistsWithAvailabilities.addAll(batchResults);
           }
 
           return Right(artistsWithAvailabilities);

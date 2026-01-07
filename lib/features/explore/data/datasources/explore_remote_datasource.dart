@@ -115,22 +115,41 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
         );
       }
 
+      print('🔷 [REMOTE_DS] getArtistAvailabilities - Buscando disponibilidades para artista: $artistId');
+      
       final collectionReference = ArtistWithAvailabilitiesEntityReference
           .artistAvailabilitiesCollectionReference(firestore, artistId);
       
+      print('🔷 [REMOTE_DS] Path da coleção: ${collectionReference.path}');
+      
       final querySnapshot = await collectionReference.get();
       
+      print('🔷 [REMOTE_DS] Total de documentos encontrados: ${querySnapshot.docs.length}');
+      
       if (querySnapshot.docs.isEmpty) {
+        print('🔷 [REMOTE_DS] Nenhum documento encontrado na coleção ${collectionReference.path}');
         return [];
       }
 
-      return querySnapshot.docs
-          .map((doc) {
-            final availabilityMap = doc.data() as Map<String, dynamic>;
-            final availability = AvailabilityEntityMapper.fromMap(availabilityMap);
-            return availability.copyWith(id: doc.id);
-          })
-          .toList();
+      final availabilities = <AvailabilityEntity>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          print('🔷 [REMOTE_DS] Processando documento: ${doc.id}');
+          final availabilityMap = doc.data() as Map<String, dynamic>;
+          print('🔷 [REMOTE_DS] Dados do documento: ${availabilityMap.keys.toList()}');
+          
+          final availability = AvailabilityEntityMapper.fromMap(availabilityMap);
+          availabilities.add(availability.copyWith(id: doc.id));
+          print('🔷 [REMOTE_DS] ✅ Documento ${doc.id} convertido com sucesso');
+        } catch (e, stackTrace) {
+          print('🔴 [REMOTE_DS] Erro ao processar documento ${doc.id}: $e');
+          print('🔴 [REMOTE_DS] StackTrace: $stackTrace');
+          // Continuar processando outros documentos mesmo se um falhar
+        }
+      }
+      
+      print('🔷 [REMOTE_DS] Total de disponibilidades convertidas: ${availabilities.length}');
+      return availabilities;
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
         'Erro ao buscar disponibilidades no Firestore: ${e.message}',

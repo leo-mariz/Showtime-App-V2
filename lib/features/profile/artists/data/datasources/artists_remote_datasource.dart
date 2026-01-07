@@ -45,7 +45,8 @@ class ArtistsRemoteDataSourceImpl implements IArtistsRemoteDataSource {
         firestore,
         uid,
       );
-      final artistMap = data.toMap();
+      final artistWithUid = data.copyWith(uid: uid);
+      final artistMap = artistWithUid.toMap();
       await documentReference.set(artistMap);
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(

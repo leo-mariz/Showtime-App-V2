@@ -8,12 +8,13 @@ import 'package:dartz/dartz.dart';
 /// 
 /// RESPONSABILIDADES:
 /// - Validar que o endereço possui latitude e longitude
-/// - Calcular Geohash com precisão de 7 caracteres (~150m)
+/// - Calcular Geohash com precisão de 5 caracteres (~4.9km)
 /// - Retornar endereço atualizado (com geohash calculado)
 /// 
 /// OBSERVAÇÕES:
 /// - Geohash é calculado a partir das coordenadas (latitude, longitude)
-/// - Precisão de 7 caracteres = ~150 metros de precisão
+/// - Precisão de 5 caracteres = ~4.9km de precisão (ideal para armazenar)
+/// - Para buscar com raio de 40km, use precisão 4 no getRange
 /// - Se endereço não tiver coordenadas, retorna erro
 /// - O geohash será armazenado na AvailabilityEntity, não no AddressInfoEntity
 class CalculateAddressGeohashUseCase {
@@ -36,11 +37,11 @@ class CalculateAddressGeohashUseCase {
         );
       }
 
-      // Calcular Geohash com precisão de 7 caracteres (~150m)
+      // Calcular Geohash com precisão de 5 caracteres (~4.9km) para armazenar no banco
       final geohashValue = GeohashHelper.encode(
         address.latitude!,
         address.longitude!,
-        precision: 7,
+        precision: 5,
       );
 
       return Right(geohashValue);
@@ -61,7 +62,7 @@ class CalculateAddressGeohashUseCase {
     return GeohashHelper.encode(
       address.latitude!,
       address.longitude!,
-      precision: 7,
+      precision: 5,
     );
   }
 }

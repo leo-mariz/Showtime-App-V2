@@ -8,7 +8,8 @@ import 'package:dart_geohash/dart_geohash.dart';
 
 /// Script para popular o Firestore com dados mockados
 /// 
-/// Cria 100 artistas e 5 disponibilidades para cada um
+/// Cria 50 artistas e 3 disponibilidades para cada um
+/// Todas as disponibilidades são de hoje até 30/01
 /// 
 /// Executar com: dart run scripts/seed_firestore.dart
 /// 
@@ -68,7 +69,7 @@ Future<void> main() async {
   final random = Random();
   final geoHasher = GeoHasher();
 
-  // Lista de nomes de artistas mais realistas e diversos
+  // Lista de 50 nomes de artistas
   final artistNames = [
     'João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa', 'Carlos Souza',
     'Juliana Ferreira', 'Rafael Almeida', 'Fernanda Lima', 'Bruno Martins', 'Camila Rocha',
@@ -80,17 +81,6 @@ Future<void> main() async {
     'Banda Rock SP', 'DJ Eletrônica', 'Trio Sertanejo', 'Dupla MPB', 'Grupo Samba',
     'Orquestra Jazz', 'Banda Blues', 'Grupo Pagode', 'Banda Forró', 'Coral Gospel',
     'Solo Acústico', 'Dupla Romântica', 'Trio Instrumental', 'Quarteto Bossa', 'Quinteto Jazz',
-    'Banda Cover', 'DJ House', 'MC Rap', 'Cantor Sertanejo', 'Vocalista Pop',
-    'Guitarrista Solo', 'Pianista Clássico', 'Violonista MPB', 'Baterista Rock', 'Saxofonista Jazz',
-    'Cantora Gospel', 'Banda Indie', 'Grupo Reggae', 'Dupla Country', 'Trio Folk',
-    'Banda Metal', 'DJ Trap', 'MC Funk', 'Cantor Romântico', 'Vocalista Soul',
-    'Banda Alternativa', 'Grupo Acústico', 'Dupla Pop Rock', 'Trio Eletrônico', 'Quarteto Samba',
-    'Banda Festa', 'DJ Baile', 'Grupo Seresta', 'Dupla Serenata', 'Trio Seresta',
-    'Banda Casamento', 'DJ Eventos', 'Grupo Aniversário', 'Dupla Confraternização', 'Trio Corporativo',
-    'Banda Show', 'DJ Clube', 'Grupo Bar', 'Dupla Restaurante', 'Trio Hotel',
-    'Banda Teatro', 'DJ Festival', 'Grupo Praça', 'Dupla Parque', 'Trio Shopping',
-    'Banda Rua', 'DJ Rooftop', 'Grupo Terraço', 'Dupla Varanda', 'Trio Quintal',
-    'Banda Estúdio', 'DJ Estúdio', 'Grupo Gravação', 'Dupla Produção', 'Trio Mixagem',
   ];
   
   // Gêneros disponíveis
@@ -107,145 +97,83 @@ Future<void> main() async {
     'Orquestra', 'Coral', 'Quarteto', 'Quinteto'
   ];
 
-  // Lista de endereços reais de São Paulo (12 endereços reais)
+  // 5 endereços específicos: 2 no Rio (Leblon e Barra) e 3 em São Paulo (Itaim Bibi, Santo Amaro, Morumbi)
+  // IMPORTANTE: Usar as chaves corretas que o AddressInfoEntity mapper espera:
+  // - zipCode -> cep
+  // - street -> logradouro
+  // - district -> bairro
+  // - city -> localidade
+  // - state -> uf
   final realAddresses = [
+    // Rio de Janeiro - Leblon
     {
-      'title': 'Avenida Paulista',
-      'street': 'Avenida Paulista',
-      'number': '1578',
-      'district': 'Bela Vista',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01310-200',
-      'latitude': -23.5614,
-      'longitude': -46.6560,
+      'title': 'Leblon',
+      'logradouro': 'Rua Dias Ferreira',
+      'number': '256',
+      'bairro': 'Leblon',
+      'localidade': 'Rio de Janeiro',
+      'uf': 'RJ',
+      'cep': '22431-050',
+      'latitude': -22.9831,
+      'longitude': -43.2235,
     },
+    // Rio de Janeiro - Barra da Tijuca
     {
-      'title': 'Rua Augusta',
-      'street': 'Rua Augusta',
-      'number': '1234',
-      'district': 'Consolação',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01305-100',
-      'latitude': -23.5505,
-      'longitude': -46.6586,
+      'title': 'Barra da Tijuca',
+      'logradouro': 'Avenida das Américas',
+      'number': '3500',
+      'bairro': 'Barra da Tijuca',
+      'localidade': 'Rio de Janeiro',
+      'uf': 'RJ',
+      'cep': '22640-102',
+      'latitude': -23.0103,
+      'longitude': -43.3647,
     },
-    {
-      'title': 'Vila Madalena',
-      'street': 'Rua Harmonia',
-      'number': '567',
-      'district': 'Vila Madalena',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '05435-000',
-      'latitude': -23.5462,
-      'longitude': -46.6912,
-    },
-    {
-      'title': 'Pinheiros',
-      'street': 'Rua dos Pinheiros',
-      'number': '890',
-      'district': 'Pinheiros',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '05422-001',
-      'latitude': -23.5671,
-      'longitude': -46.6915,
-    },
+    // São Paulo - Itaim Bibi
     {
       'title': 'Itaim Bibi',
-      'street': 'Rua Bandeira Paulista',
+      'logradouro': 'Rua Bandeira Paulista',
       'number': '456',
-      'district': 'Itaim Bibi',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '04532-001',
+      'bairro': 'Itaim Bibi',
+      'localidade': 'São Paulo',
+      'uf': 'SP',
+      'cep': '04532-001',
       'latitude': -23.5925,
       'longitude': -46.6889,
     },
+    // São Paulo - Santo Amaro
     {
-      'title': 'Jardins',
-      'street': 'Alameda Santos',
-      'number': '2100',
-      'district': 'Jardim Paulista',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01418-000',
-      'latitude': -23.5705,
-      'longitude': -46.6608,
-    },
-    {
-      'title': 'Vila Olímpia',
-      'street': 'Rua Funchal',
-      'number': '340',
-      'district': 'Vila Olímpia',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '04551-060',
-      'latitude': -23.5922,
-      'longitude': -46.6881,
-    },
-    {
-      'title': 'Moema',
-      'street': 'Avenida Ibirapuera',
-      'number': '2900',
-      'district': 'Moema',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '04029-200',
-      'latitude': -23.6000,
-      'longitude': -46.6600,
-    },
-    {
-      'title': 'Brooklin',
-      'street': 'Avenida Santo Amaro',
+      'title': 'Santo Amaro',
+      'logradouro': 'Avenida Santo Amaro',
       'number': '3500',
-      'district': 'Brooklin',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '04556-001',
-      'latitude': -23.6150,
-      'longitude': -46.6800,
+      'bairro': 'Santo Amaro',
+      'localidade': 'São Paulo',
+      'uf': 'SP',
+      'cep': '04745-001',
+      'latitude': -23.6485,
+      'longitude': -46.7083,
     },
+    // São Paulo - Morumbi
     {
-      'title': 'Liberdade',
-      'street': 'Rua Galvão Bueno',
-      'number': '500',
-      'district': 'Liberdade',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01506-000',
-      'latitude': -23.5596,
-      'longitude': -46.6333,
-    },
-    {
-      'title': 'Bela Vista',
-      'street': 'Rua Augusta',
-      'number': '2000',
-      'district': 'Bela Vista',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01305-100',
-      'latitude': -23.5505,
-      'longitude': -46.6586,
-    },
-    {
-      'title': 'Consolação',
-      'street': 'Rua da Consolação',
-      'number': '1500',
-      'district': 'Consolação',
-      'city': 'São Paulo',
-      'state': 'SP',
-      'zipCode': '01302-000',
-      'latitude': -23.5450,
-      'longitude': -46.6500,
+      'title': 'Morumbi',
+      'logradouro': 'Avenida Morumbi',
+      'number': '8000',
+      'bairro': 'Morumbi',
+      'localidade': 'São Paulo',
+      'uf': 'SP',
+      'cep': '05652-000',
+      'latitude': -23.6208,
+      'longitude': -46.7216,
     },
   ];
 
-  print('📝 Criando ${artistNames.length} artistas com disponibilidades diversas...');
-  print('   - Usando ${realAddresses.length} endereços reais de São Paulo');
-  print('   - Cada artista terá entre 3 e 7 disponibilidades');
+  // Data de término: 30/01/2026
+  final dataFim = DateTime(2026, 1, 30);
+  final dataInicio = DateTime.now();
+  
+  print('📝 Criando ${artistNames.length} artistas com 3 disponibilidades cada...');
+  print('   - Usando ${realAddresses.length} endereços: 2 no Rio (Leblon, Barra) e 3 em SP (Itaim Bibi, Santo Amaro, Morumbi)');
+  print('   - Todas as disponibilidades de ${dataInicio.day}/${dataInicio.month}/${dataInicio.year} até 30/01/2026');
   print('   - ~35% das disponibilidades terão horários bloqueados');
 
   // Processar em batches para não sobrecarregar
@@ -280,6 +208,7 @@ Future<void> main() async {
 
       // Criar dados do artista (com professionalInfo aninhado)
       final artistData = {
+        'uid': artistId, // Adicionar uid ao documento
         'artistName': artistName,
         'approved': true,
         'isActive': true,
@@ -297,8 +226,8 @@ Future<void> main() async {
       await artistRef.set(artistData);
       artistsInBatch++;
 
-      // Criar entre 3 e 7 disponibilidades para cada artista (mais diversidade)
-      final numAvailabilities = 3 + random.nextInt(5); // 3 a 7 disponibilidades
+      // Criar exatamente 3 disponibilidades para cada artista
+      const numAvailabilities = 3;
       
       for (int j = 0; j < numAvailabilities; j++) {
         // Selecionar um endereço real aleatório (reutilizar)
@@ -307,19 +236,20 @@ Future<void> main() async {
         );
         final lat = selectedAddress['latitude'] as double;
         final lon = selectedAddress['longitude'] as double;
-        final geohash = geoHasher.encode(lat, lon, precision: 7);
+        // Usar precisão 5 (~4.9km) para armazenar no banco
+        // Para busca com raio de 40km, usar precisão 4 no getRange
+        final geohash = geoHasher.encode(lat, lon, precision: 5);
         
         // Adicionar geohash e isPrimary ao endereço
+        // IMPORTANTE: Manter as chaves corretas do mapper (cep, logradouro, bairro, localidade, uf)
         selectedAddress['geohash'] = geohash;
         selectedAddress['isPrimary'] = j == 0;
 
-        // Gerar datas mais diversas:
-        // 30% começam no passado (até 30 dias atrás), 70% começam hoje ou no futuro
-        final daysOffset = random.nextDouble() < 0.3 
-            ? -random.nextInt(30) // Passado
-            : random.nextInt(60); // Futuro (até 60 dias)
-        final dataInicio = DateTime.now().add(Duration(days: daysOffset));
-        final dataFim = dataInicio.add(Duration(days: random.nextInt(180) + 30));
+        // Todas as disponibilidades de hoje até 30/01/2026
+        // dataInicio: hoje (pode ser hoje ou alguns dias à frente, mas dentro do range)
+        // dataFim: 30/01/2026
+        final disponibilidadeDataInicio = dataInicio.add(Duration(days: random.nextInt(5))); // Hoje até 5 dias à frente
+        final disponibilidadeDataFim = dataFim; // Sempre 30/01/2026
 
         // Horários mais diversos: manhã (8-12h), tarde (14-18h), noite (19-23h)
         int horaInicio;
@@ -363,23 +293,33 @@ Future<void> main() async {
           final numBlocked = random.nextInt(3) + 1; // 1 a 3 bloqueios
           for (int k = 0; k < numBlocked; k++) {
             // Bloquear uma data aleatória dentro do período da disponibilidade
-            final blockedDate = dataInicio.add(Duration(days: random.nextInt(dataFim.difference(dataInicio).inDays)));
-            final blockedStartHour = horaInicio + random.nextInt(horaFim - horaInicio);
-            final blockedEndHour = blockedStartHour + random.nextInt(2) + 1; // 1-2h bloqueadas
-            
-            blockedSlots.add({
-              'date': blockedDate.toIso8601String().split('T')[0], // Apenas a data (YYYY-MM-DD)
-              'startTime': '${blockedStartHour.toString().padLeft(2, '0')}:00',
-              'endTime': '${blockedEndHour.toString().padLeft(2, '0')}:00',
-              'reason': random.nextDouble() < 0.5 ? 'Show agendado' : 'Indisponível',
-            });
+            final diasDisponiveis = disponibilidadeDataFim.difference(disponibilidadeDataInicio).inDays;
+            if (diasDisponiveis > 0) {
+              final blockedDate = disponibilidadeDataInicio.add(Duration(days: random.nextInt(diasDisponiveis)));
+              // Garantir que temos espaço para o bloqueio dentro do horário disponível
+              if (horaFim > horaInicio) {
+                final blockedStartHour = horaInicio + random.nextInt(horaFim - horaInicio);
+                // Garantir que o bloqueio não ultrapassa o horário fim nem a meia-noite
+                final maxBlockedEndHour = horaFim < 23 ? horaFim : 23;
+                final blockedEndHour = blockedStartHour + random.nextInt(maxBlockedEndHour - blockedStartHour) + 1;
+                if (blockedEndHour <= maxBlockedEndHour && blockedEndHour > blockedStartHour) {
+              
+                  blockedSlots.add({
+                    'date': blockedDate.toIso8601String().split('T')[0], // Apenas a data (YYYY-MM-DD)
+                    'startTime': '${blockedStartHour.toString().padLeft(2, '0')}:00',
+                    'endTime': '${blockedEndHour.toString().padLeft(2, '0')}:00',
+                    'reason': random.nextDouble() < 0.5 ? 'Show agendado' : 'Indisponível',
+                  });
+                }
+              }
+            }
           }
         }
 
         // Criar disponibilidade
         final availabilityData = {
-          'dataInicio': dataInicio.toIso8601String(),
-          'dataFim': dataFim.toIso8601String(),
+          'dataInicio': disponibilidadeDataInicio.toIso8601String(),
+          'dataFim': disponibilidadeDataFim.toIso8601String(),
           'horarioInicio': '${horaInicio.toString().padLeft(2, '0')}:${minutoInicio.toString().padLeft(2, '0')}',
           'horarioFim': '${horaFim.toString().padLeft(2, '0')}:${minutoFim.toString().padLeft(2, '0')}',
           'diasDaSemana': diasSelecionados,

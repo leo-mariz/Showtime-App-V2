@@ -226,12 +226,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       if (state.append) {
                         _isLoadingMore = false;
                       } else {
-                        // Reset de scroll em nova busca
-                        _scrollController.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
-                        );
+                        // Reset de scroll em nova busca (só se o controller estiver attached)
+                        if (_scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0,
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOut,
+                          );
+                        }
                       }
                     }
                   },

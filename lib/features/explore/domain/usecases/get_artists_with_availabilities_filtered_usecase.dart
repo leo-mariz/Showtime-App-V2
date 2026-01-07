@@ -213,8 +213,14 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
         return false;
       }
 
-      final isInRange = availabilityGeohash.compareTo(minGeohash) >= 0 &&
-                        availabilityGeohash.compareTo(maxGeohash) <= 0;
+      // Truncar ambos os geohashes para a mesma precisão para comparação correta
+      // O range é calculado com precisão 4, então truncamos ambos para precisão 4
+      final truncatedAvailabilityGeohash = GeohashHelper.truncate(availabilityGeohash, minGeohash.length);
+      final truncatedMinGeohash = GeohashHelper.truncate(minGeohash, minGeohash.length);
+      final truncatedMaxGeohash = GeohashHelper.truncate(maxGeohash, maxGeohash.length);
+      
+      final isInRange = truncatedAvailabilityGeohash.compareTo(truncatedMinGeohash) >= 0 &&
+                        truncatedAvailabilityGeohash.compareTo(truncatedMaxGeohash) <= 0;
       
       if (!isInRange) {
         print('🟡 [USECASE] _filterByGeohash - Disponibilidade ${availability.id} FORA do range: geohash=$availabilityGeohash');

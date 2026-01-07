@@ -16,7 +16,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       MapperContainer.globals.use(_instance = ArtistEntityMapper._());
       ProfessionalInfoEntityMapper.ensureInitialized();
       AddressInfoEntityMapper.ensureInitialized();
-      BankAccountEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -60,12 +59,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       v.residenceAddress;
   static const Field<ArtistEntity, AddressInfoEntity> _f$residenceAddress =
       Field('residenceAddress', _$residenceAddress, opt: true);
-  static BankAccountEntity? _$bankAccount(ArtistEntity v) => v.bankAccount;
-  static const Field<ArtistEntity, BankAccountEntity> _f$bankAccount = Field(
-    'bankAccount',
-    _$bankAccount,
-    opt: true,
-  );
   static bool? _$approved(ArtistEntity v) => v.approved;
   static const Field<ArtistEntity, bool> _f$approved = Field(
     'approved',
@@ -136,7 +129,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     #professionalInfo: _f$professionalInfo,
     #presentationMedias: _f$presentationMedias,
     #residenceAddress: _f$residenceAddress,
-    #bankAccount: _f$bankAccount,
     #approved: _f$approved,
     #isActive: _f$isActive,
     #hasIncompleteSections: _f$hasIncompleteSections,
@@ -157,7 +149,6 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       professionalInfo: data.dec(_f$professionalInfo),
       presentationMedias: data.dec(_f$presentationMedias),
       residenceAddress: data.dec(_f$residenceAddress),
-      bankAccount: data.dec(_f$bankAccount),
       approved: data.dec(_f$approved),
       isActive: data.dec(_f$isActive),
       hasIncompleteSections: data.dec(_f$hasIncompleteSections),
@@ -242,8 +233,6 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
   get presentationMedias;
   AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>?
   get residenceAddress;
-  BankAccountEntityCopyWith<$R, BankAccountEntity, BankAccountEntity>?
-  get bankAccount;
   MapCopyWith<
     $R,
     String,
@@ -261,7 +250,6 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     ProfessionalInfoEntity? professionalInfo,
     Map<String, String>? presentationMedias,
     AddressInfoEntity? residenceAddress,
-    BankAccountEntity? bankAccount,
     bool? approved,
     bool? isActive,
     bool? hasIncompleteSections,
@@ -307,10 +295,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     (v) => call(residenceAddress: v),
   );
   @override
-  BankAccountEntityCopyWith<$R, BankAccountEntity, BankAccountEntity>?
-  get bankAccount =>
-      $value.bankAccount?.copyWith.$chain((v) => call(bankAccount: v));
-  @override
   MapCopyWith<
     $R,
     String,
@@ -342,7 +326,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     Object? professionalInfo = $none,
     Object? presentationMedias = $none,
     Object? residenceAddress = $none,
-    Object? bankAccount = $none,
     Object? approved = $none,
     Object? isActive = $none,
     Object? hasIncompleteSections = $none,
@@ -361,7 +344,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       if (professionalInfo != $none) #professionalInfo: professionalInfo,
       if (presentationMedias != $none) #presentationMedias: presentationMedias,
       if (residenceAddress != $none) #residenceAddress: residenceAddress,
-      if (bankAccount != $none) #bankAccount: bankAccount,
       if (approved != $none) #approved: approved,
       if (isActive != $none) #isActive: isActive,
       if (hasIncompleteSections != $none)
@@ -387,7 +369,6 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       or: $value.presentationMedias,
     ),
     residenceAddress: data.get(#residenceAddress, or: $value.residenceAddress),
-    bankAccount: data.get(#bankAccount, or: $value.bankAccount),
     approved: data.get(#approved, or: $value.approved),
     isActive: data.get(#isActive, or: $value.isActive),
     hasIncompleteSections: data.get(

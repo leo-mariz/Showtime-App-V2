@@ -22,6 +22,7 @@ class AddressInfoEntity with AddressInfoEntityMappable {
   double? latitude;
   double? longitude;
   String? complement;
+  String? geohash;
 
 
   AddressInfoEntity({
@@ -37,6 +38,7 @@ class AddressInfoEntity with AddressInfoEntityMappable {
     this.latitude,
     this.longitude,
     this.complement,
+    this.geohash,
   });
 }
 

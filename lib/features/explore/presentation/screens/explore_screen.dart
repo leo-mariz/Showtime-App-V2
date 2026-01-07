@@ -1,11 +1,17 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
+import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
+import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
+import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
+import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
+import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
@@ -13,6 +19,8 @@ import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -35,6 +43,90 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return _selectedAddress!.title;
   }
   
+  @override
+  void initState() {
+    super.initState();
+    print('🔵 [EXPLORE_SCREEN] initState - Iniciando tela');
+    
+    // Buscar endereços se ainda não foram buscados
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final addressesState = context.read<AddressesBloc>().state;
+      print('🔵 [EXPLORE_SCREEN] initState - Estado atual do AddressesBloc: ${addressesState.runtimeType}');
+      
+      if (addressesState is! GetAddressesSuccess) {
+        print('🔵 [EXPLORE_SCREEN] initState - Disparando GetAddressesEvent');
+        context.read<AddressesBloc>().add(GetAddressesEvent());
+      } else {
+        print('🔵 [EXPLORE_SCREEN] initState - Endereços já carregados, obtendo primário');
+        _getPrimaryAddressFromState(addressesState);
+      }
+    });
+  }
+
+  /// Obtém endereço primário do estado do AddressesBloc
+  void _getPrimaryAddressFromState(GetAddressesSuccess state) {
+    print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Total de endereços: ${state.addresses.length}');
+    
+    if (state.addresses.isEmpty) {
+      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Nenhum endereço disponível');
+      // Sem endereço, buscar sem filtro geográfico
+      _onGetArtistsWithAvailabilitiesFiltered();
+      return;
+    }
+
+    AddressInfoEntity primaryAddress;
+    try {
+      primaryAddress = state.addresses.firstWhere(
+        (address) => address.isPrimary,
+      );
+      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Endereço primário encontrado: ${primaryAddress.title}');
+    } catch (e) {
+      // Se não encontrar primário, usar o primeiro endereço
+      primaryAddress = state.addresses.first;
+      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Usando primeiro endereço (sem primário): ${primaryAddress.title}');
+    }
+
+    if (_selectedAddress == null) {
+      setState(() {
+        _selectedAddress = primaryAddress;
+      });
+      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Endereço definido: ${primaryAddress.title}');
+      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Coordenadas: lat=${primaryAddress.latitude}, lon=${primaryAddress.longitude}');
+      // Buscar artistas filtrados com endereço primário e data atual
+      _onGetArtistsWithAvailabilitiesFiltered();
+    }
+  }
+
+  /// Busca artistas com filtros aplicados (data e endereço)
+  /// 
+  /// Usa o endereço selecionado (_selectedAddress) e a data selecionada (_selectedDate)
+  /// Se não houver endereço selecionado, busca sem filtro geográfico
+  void _onGetArtistsWithAvailabilitiesFiltered() {
+    if (!mounted) {
+      print('🔴 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Widget não está montado, abortando');
+      return;
+    }
+
+    final forceRefresh = true; // Mudado para false para usar cache
+    final currentState = context.read<ExploreBloc>().state;
+    
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Iniciando busca');
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Data selecionada: $_selectedDate');
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Endereço selecionado: ${_selectedAddress?.title ?? "Nenhum"}');
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Estado atual: ${currentState.runtimeType}');
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - forceRefresh: $forceRefresh');
+    
+    // Sempre disparar o evento (removida a verificação de estado de sucesso)
+    context.read<ExploreBloc>().add(
+      GetArtistsWithAvailabilitiesFilteredEvent(
+        selectedDate: _selectedDate,
+        userAddress: _selectedAddress,
+        forceRefresh: forceRefresh,
+      ),
+    );
+    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Evento disparado');
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -95,51 +187,177 @@ class _ExploreScreenState extends State<ExploreScreen> {
           
           // Lista de artistas
           Expanded(
-            child: _buildArtistsList(),
+            child: MultiBlocListener(
+              listeners: [
+                // Escutar mudanças no AddressesBloc para obter endereço primário
+                BlocListener<AddressesBloc, AddressesState>(
+                  listener: (context, state) {
+                    if (state is GetAddressesSuccess && _selectedAddress == null) {
+                      print('🔵 [EXPLORE_SCREEN] BlocListener AddressesBloc - Endereços carregados');
+                      _getPrimaryAddressFromState(state);
+                    }
+                  },
+                ),
+              ],
+              child: BlocBuilder<ExploreBloc, ExploreState>(
+                builder: (context, state) {
+                  print('🔵 [EXPLORE_SCREEN] BlocBuilder ExploreBloc - Estado: ${state.runtimeType}');
+                  
+                  if (state is GetArtistsWithAvailabilitiesLoading) {
+                    print('🔵 [EXPLORE_SCREEN] BlocBuilder - Mostrando loading');
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                if (state is GetArtistsWithAvailabilitiesFailure) {
+                  print('🔴 [EXPLORE_SCREEN] BlocBuilder - Erro: ${state.error}');
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: DSSize.width(48),
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        DSSizedBoxSpacing.vertical(16),
+                        Text(
+                          'Erro ao carregar artistas',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        DSSizedBoxSpacing.vertical(8),
+                        Text(
+                          state.error,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        DSSizedBoxSpacing.vertical(16),
+                        ElevatedButton(
+                          onPressed: () {
+                            _onGetArtistsWithAvailabilitiesFiltered();
+                          },
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (state is GetArtistsWithAvailabilitiesSuccess) {
+                  print('🟢 [EXPLORE_SCREEN] BlocBuilder - Sucesso! Total de artistas: ${state.artistsWithAvailabilities.length}');
+                  
+                  if (state.artistsWithAvailabilities.isEmpty) {
+                    print('🟡 [EXPLORE_SCREEN] BlocBuilder - Nenhum artista encontrado');
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: DSSize.width(48),
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          DSSizedBoxSpacing.vertical(16),
+                          Text(
+                            'Nenhum artista encontrado',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          DSSizedBoxSpacing.vertical(8),
+                          Text(
+                            'Não há artistas disponíveis no momento',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  print('🟢 [EXPLORE_SCREEN] BlocBuilder - Exibindo lista com ${state.artistsWithAvailabilities.length} artistas');
+                  return _buildArtistsList(state.artistsWithAvailabilities);
+                }
+
+                // Estado inicial - mostrar loading
+                print('🟡 [EXPLORE_SCREEN] BlocBuilder - Estado inicial, mostrando loading');
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              },
+            ),
+          ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildArtistsList() {
-    // TODO: Substituir por ListView.builder com dados reais do Bloc
+  Widget _buildArtistsList(
+    List<ArtistWithAvailabilitiesEntity> artistsWithAvailabilities,
+  ) {
     // TODO: Implementar paginação/lazy loading
     return ListView.builder(
-      itemCount: 5, // Mock
+      itemCount: artistsWithAvailabilities.length,
       itemBuilder: (context, index) {
+        final artistWithAvailabilities = artistsWithAvailabilities[index];
+        final artist = artistWithAvailabilities.artist;
+        final availabilities = artistWithAvailabilities.availabilities;
+
+        // Obter preço da primeira disponibilidade (ou usar hourlyRate do professionalInfo)
+        String? pricePerHour;
+        if (availabilities.isNotEmpty) {
+          final firstAvailability = availabilities.first;
+          pricePerHour = 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(firstAvailability.valorShow)}/hora';
+        } else if (artist.professionalInfo?.hourlyRate != null) {
+          pricePerHour = 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(artist.professionalInfo!.hourlyRate!)}/hora';
+        }
+
+        // Obter gêneros do professionalInfo
+        final genres = artist.professionalInfo?.genrePreferences?.join(', ') ?? 'Sem gêneros definidos';
+
+        // Obter descrição/bio
+        final description = artist.professionalInfo?.bio ?? 'Sem descrição disponível';
+
         return ArtistCard(
-          musicianName: 'Artista ${index + 1}',
-          genres: 'Rock, Pop, Jazz',
-          description: 'Músico profissional com experiência em eventos corporativos e festas particulares. Repertório variado e qualidade garantida.',
-          contracts: 42 + index,
-          rating: 4.5 + (index * 0.1),
-          pricePerHour: 'R\$ ${150 + (index * 50)}/hora',
-          imageUrl: null, // TODO: URL real da foto
-          isFavorite: index == 0, // Mock
-          artistId: 'artist_$index', // Mock ID
-          onFavoriteToggle: () => _onFavoriteTapped(index),
-          onHirePressed: () => _onRequestTapped(index),
-          onTap: () => _onArtistCardTapped(index),
+          musicianName: artist.artistName ?? 'Artista sem nome',
+          genres: genres,
+          description: description,
+          contracts: artist.finalizedContracts,
+          rating: artist.rating,
+          pricePerHour: pricePerHour,
+          imageUrl: artist.profilePicture,
+          isFavorite: false, // TODO: Implementar verificação de favoritos
+          artistId: artist.uid ?? '',
+          onFavoriteToggle: () => _onFavoriteTapped(artist.uid ?? ''),
+          onHirePressed: () => _onRequestTapped(artistWithAvailabilities),
+          onTap: () => _onArtistCardTapped(artistWithAvailabilities),
         );
       },
     );
   }
 
   void _onAddressSelected() async {
+    print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Abrindo modal de endereços');
     final selectedAddress = await AddressesModal.show(
       context: context,
       selectedAddress: _selectedAddress,
     );
 
-    if (selectedAddress != null) {
+    if (selectedAddress != null && selectedAddress != _selectedAddress) {
+      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Novo endereço selecionado: ${selectedAddress.title}');
+      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Coordenadas: lat=${selectedAddress.latitude}, lon=${selectedAddress.longitude}');
       setState(() {
         _selectedAddress = selectedAddress;
       });
+      // Buscar artistas filtrados com novo endereço
+      _onGetArtistsWithAvailabilitiesFiltered();
+    } else {
+      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Nenhum endereço selecionado ou mesmo endereço');
     }
   }
 
   void _onDateSelected() async {
+    print('🔵 [EXPLORE_SCREEN] _onDateSelected - Abrindo seletor de data');
     final DateTime? picked = await CustomDatePickerDialog.show(
       context: context,
       initialDate: _selectedDate,
@@ -148,10 +366,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
     
     if (picked != null && picked != _selectedDate) {
+      print('🔵 [EXPLORE_SCREEN] _onDateSelected - Nova data selecionada: $picked');
       setState(() {
         _selectedDate = picked;
       });
-      print('📅 Data selecionada: $picked');
+      // Buscar artistas filtrados com nova data
+      _onGetArtistsWithAvailabilitiesFiltered();
+    } else {
+      print('🔵 [EXPLORE_SCREEN] _onDateSelected - Nenhuma data selecionada ou mesma data');
     }
   }
 
@@ -170,54 +392,44 @@ class _ExploreScreenState extends State<ExploreScreen> {
     print('🎛️ Filtros clicados');
   }
 
-  void _onFavoriteTapped(int index) {
-    // TODO: Adicionar/remover favorito
-    print('❤️ Favorito $index clicado');
+  void _onFavoriteTapped(String artistId) {
+    // TODO: Implementar adicionar/remover favorito
+    print('❤️ Favorito $artistId clicado');
   }
 
-  void _onRequestTapped(int index) {
+  void _onRequestTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
     final router = AutoRouter.of(context);
+    final artist = artistWithAvailabilities.artist;
+    
+    // Obter preço da primeira disponibilidade ou do professionalInfo
+    double pricePerHour = 0.0;
+    if (artistWithAvailabilities.availabilities.isNotEmpty) {
+      pricePerHour = artistWithAvailabilities.availabilities.first.valorShow;
+    } else if (artist.professionalInfo?.hourlyRate != null) {
+      pricePerHour = artist.professionalInfo!.hourlyRate!;
+    }
+
+    // Obter duração mínima do professionalInfo
+    final minimumDuration = artist.professionalInfo?.minimumShowDuration != null
+        ? Duration(minutes: artist.professionalInfo!.minimumShowDuration!)
+        : const Duration(minutes: 30);
+
     router.push(RequestRoute(
       selectedDate: _selectedDate,
       selectedAddress: _currentAddressDisplay,
-      artist: ArtistEntity(
-        uid: 'artist_$index',
-        artistName: 'Artista ${index + 1}',
-        profilePicture: null, // TODO: URL real da foto
-        rating: 4.5 + (index * 0.1),
-        finalizedContracts: 42 + index,
-      ),
-      pricePerHour: 150.0 + (index * 50.0), // TODO: Usar valor real
-      minimumDuration: Duration(minutes: 30), // TODO: Usar duração mínima real
+      artist: artist,
+      pricePerHour: pricePerHour,
+      minimumDuration: minimumDuration,
     ));
   }
 
-  void _onArtistCardTapped(int index) {
+  void _onArtistCardTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
     final router = AutoRouter.of(context);
-    
-    // Criar ArtistEntity mock a partir dos dados do card
-    final artist = ArtistEntity(
-      uid: 'artist_$index',
-      artistName: 'Artista ${index + 1}',
-      profilePicture: null, // TODO: URL real da foto
-      rating: 4.5 + (index * 0.1),
-      finalizedContracts: 42 + index,
-      professionalInfo: ProfessionalInfoEntity(
-        bio: 'Músico profissional com experiência em eventos corporativos e festas particulares. Repertório variado e qualidade garantida.',
-        genrePreferences: ['Rock', 'Pop', 'Jazz'],
-        hourlyRate: 150.0 + (index * 50.0),
-        minimumShowDuration: 30,
-        specialty: ['Guitarra', 'Vocal'], // Mock
-      ),
-      presentationMedias: {
-        'Guitarra': 'https://example.com/video1.mp4', // Mock
-        'Vocal': 'https://example.com/video2.mp4', // Mock
-      },
-    );
+    final artist = artistWithAvailabilities.artist;
 
     router.push(ArtistProfileRoute(
       artist: artist,
-      isFavorite: index == 0,
+      isFavorite: false, // TODO: Implementar verificação de favoritos
     ));
   }
 }

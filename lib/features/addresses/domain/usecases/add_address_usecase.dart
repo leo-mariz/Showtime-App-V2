@@ -2,6 +2,7 @@ import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/addresses/domain/repositories/addresses_repository.dart';
+import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Adicionar novo endereço
@@ -13,9 +14,11 @@ import 'package:dartz/dartz.dart';
 /// - Retornar ID do endereço criado
 class AddAddressUseCase {
   final IAddressesRepository repository;
+  final CalculateAddressGeohashUseCase calculateAddressGeohashUseCase;
 
   AddAddressUseCase({
-    required this.repository,
+    required this.repository, 
+    required this.calculateAddressGeohashUseCase,
   });
 
   Future<Either<Failure, String>> call(String uid, AddressInfoEntity address) async {
@@ -53,8 +56,20 @@ class AddAddressUseCase {
         longitude: geopoint.longitude,
       );
 
+      // Calcula Geohash do endereço
+      final geohashResult = await calculateAddressGeohashUseCase.call(addressWithGeolocation);
+      
+      final geohash = geohashResult.fold(
+        (failure) => null, // Se falhar, continua sem geohash (não bloqueia criação)
+        (geohashValue) => geohashValue,
+      );
+      print('geohash: $geohash');
+
+      // Cria endereço com Geohash
+      final addressWithGeohash = addressWithGeolocation.copyWith(geohash: geohash);
+
       // Adiciona endereço no repositório
-      final addAddressResult = await repository.addAddress(uid, addressWithGeolocation);
+      final addAddressResult = await repository.addAddress(uid, addressWithGeohash);
 
       return addAddressResult.fold(
         (failure) => Left(failure),

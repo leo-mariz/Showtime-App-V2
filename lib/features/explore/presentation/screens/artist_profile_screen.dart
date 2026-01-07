@@ -89,6 +89,7 @@ class ArtistProfileScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final onPrimary = colorScheme.onPrimary;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
 
     return BasePage(
@@ -180,7 +181,7 @@ class ArtistProfileScreen extends StatelessWidget {
                       Text(
                         artist.artistName ?? 'Artista',
                         style: textTheme.headlineLarge?.copyWith(
-                          color: onPrimaryContainer,
+                          color: onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

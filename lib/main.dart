@@ -3,24 +3,41 @@ import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
-import 'package:app/features/artist_availability/data/datasources/availability_local_datasource.dart';
-import 'package:app/features/artist_availability/data/datasources/availability_remote_datasource.dart';
-import 'package:app/features/artist_availability/data/repositories/availability_repository_impl.dart';
-import 'package:app/features/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/artist_availability/domain/usecases/add_availability_usecase.dart';
-import 'package:app/features/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
-import 'package:app/features/artist_availability/domain/usecases/close_availability_usecase.dart';
-import 'package:app/features/artist_availability/domain/usecases/delete_availability_usecase.dart';
-import 'package:app/features/artist_availability/domain/usecases/get_availabilities_usecase.dart';
-import 'package:app/features/artist_availability/domain/usecases/update_availability_usecase.dart';
-import 'package:app/features/artist_availability/presentation/bloc/availability_bloc.dart';
-import 'package:app/features/artist_documents/data/datasources/documents_local_datasource.dart';
-import 'package:app/features/artist_documents/data/datasources/documents_remote_datasource.dart';
-import 'package:app/features/artist_documents/data/repositories/documents_repository_impl.dart';
-import 'package:app/features/artist_documents/domain/repositories/documents_repository.dart';
-import 'package:app/features/artist_documents/domain/usecases/get_documents_usecase.dart';
-import 'package:app/features/artist_documents/domain/usecases/set_document_usecase.dart';
-import 'package:app/features/artist_documents/presentation/bloc/documents_bloc.dart';
+import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
+import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
+import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
+import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
+import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
+import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
+import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
+import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
+import 'package:app/features/explore/domain/repositories/explore_repository.dart';
+import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
+import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
+import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
+import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/close_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/delete_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_availabilities_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/update_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
+import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
+import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
+import 'package:app/features/profile/artist_bank_account/data/repositories/bank_account_repository_impl.dart';
+import 'package:app/features/profile/artist_bank_account/domain/repositories/bank_account_repository.dart';
+import 'package:app/features/profile/artist_bank_account/domain/usecases/delete_bank_account_usecase.dart';
+import 'package:app/features/profile/artist_bank_account/domain/usecases/get_bank_account_usecase.dart';
+import 'package:app/features/profile/artist_bank_account/domain/usecases/save_bank_account_usecase.dart';
+import 'package:app/features/profile/artist_bank_account/presentation/bloc/bank_account_bloc.dart';
+import 'package:app/features/profile/artist_documents/data/datasources/documents_local_datasource.dart';
+import 'package:app/features/profile/artist_documents/data/datasources/documents_remote_datasource.dart';
+import 'package:app/features/profile/artist_documents/data/repositories/documents_repository_impl.dart';
+import 'package:app/features/profile/artist_documents/domain/repositories/documents_repository.dart';
+import 'package:app/features/profile/artist_documents/domain/usecases/get_documents_usecase.dart';
+import 'package:app/features/profile/artist_documents/domain/usecases/set_document_usecase.dart';
+import 'package:app/features/profile/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
@@ -113,7 +130,6 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_name_
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_bank_account_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 
 // Users imports
@@ -252,7 +268,12 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
 }
 
 /// Factory function para criar o AddressesBloc com todas as dependências
-AddressesBloc _createAddressesBloc(ILocalCacheService localCacheService, FirebaseFirestore firestore, GetUserUidUseCase getUserUidUseCase) {
+AddressesBloc _createAddressesBloc(
+  ILocalCacheService localCacheService,
+  FirebaseFirestore firestore,
+  GetUserUidUseCase getUserUidUseCase,
+  CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
+) {
   // 1. Criar DataSources
   final remoteDataSource = AddressesRemoteDataSourceImpl(firestore: firestore);
   final localDataSource = AddressesLocalDataSourceImpl(autoCacheService: localCacheService);
@@ -264,10 +285,11 @@ AddressesBloc _createAddressesBloc(ILocalCacheService localCacheService, Firebas
   );
 
   // 3. Criar UseCases
+  // Nota: calculateAddressGeohashUseCase é criado no escopo principal e passado como parâmetro
   final getAddressesUseCase = GetAddressesUseCase(repository: repository);
   final getAddressUseCase = GetAddressUseCase(repository: repository);
-  final addAddressUseCase = AddAddressUseCase(repository: repository);
-  final updateAddressUseCase = UpdateAddressUseCase(repository: repository);
+  final addAddressUseCase = AddAddressUseCase(repository: repository, calculateAddressGeohashUseCase: calculateAddressGeohashUseCase);
+  final updateAddressUseCase = UpdateAddressUseCase(repository: repository, calculateAddressGeohashUseCase: calculateAddressGeohashUseCase);
   final deleteAddressUseCase = DeleteAddressUseCase(repository: repository);
   final setPrimaryAddressUseCase = SetPrimaryAddressUseCase(repository: repository);
 
@@ -373,11 +395,6 @@ ArtistsBloc _createArtistsBloc(
     updateArtistUseCase: updateArtistUseCase,
     storageService: storageService,
   );
-  final updateArtistBankAccountUseCase = UpdateArtistBankAccountUseCase(
-    getArtistUseCase: getArtistUseCase,
-    updateArtistUseCase: updateArtistUseCase,
-    getUserUidUseCase: getUserUidUseCase,
-  );
   final addArtistUseCase = AddArtistUseCase(repository: artistsRepository); 
 
   // Criar e retornar ArtistsBloc
@@ -390,7 +407,6 @@ ArtistsBloc _createArtistsBloc(
     updateArtistProfessionalInfoUseCase: updateArtistProfessionalInfoUseCase,
     updateArtistAgreementUseCase: updateArtistAgreementUseCase,
     updateArtistPresentationMediasUseCase: updateArtistPresentationMediasUseCase,
-    updateArtistBankAccountUseCase: updateArtistBankAccountUseCase,
     checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
@@ -450,10 +466,16 @@ AvailabilityBloc _createAvailabilityBloc(
   IAvailabilityRepository availabilityRepository,
   GetUserUidUseCase getUserUidUseCase,
 ) {
+  // Criar UseCase para calcular Geohash
+  
   // Criar UseCases
   final getAvailabilityUseCase = GetAvailabilitiesUseCase(availabilityRepository: availabilityRepository);
-  final addAvailabilityUseCase = AddAvailabilityUseCase(availabilityRepository: availabilityRepository);
-  final updateAvailabilityUseCase = UpdateAvailabilityUseCase(availabilityRepository);
+  final addAvailabilityUseCase = AddAvailabilityUseCase(
+    availabilityRepository: availabilityRepository,
+  );
+  final updateAvailabilityUseCase = UpdateAvailabilityUseCase(
+    repository: availabilityRepository,
+  );
   final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(availabilityRepository);
   final closeAvailabilityUseCase = CloseAvailabilityUseCase(availabilityRepository: availabilityRepository);
   final checkAvailabilityOverlapUseCase = CheckAvailabilityOverlapUseCase(availabilityRepository: availabilityRepository);
@@ -467,6 +489,52 @@ AvailabilityBloc _createAvailabilityBloc(
     closeAvailabilityUseCase: closeAvailabilityUseCase,
     checkAvailabilityOverlapUseCase: checkAvailabilityOverlapUseCase,
     getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+/// Factory function para criar o BankAccountBloc com todas as dependências
+BankAccountBloc _createBankAccountBloc(
+  IBankAccountRepository bankAccountRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final getBankAccountUseCase = GetBankAccountUseCase(repository: bankAccountRepository);
+  final saveBankAccountUseCase = SaveBankAccountUseCase(repository: bankAccountRepository);
+  final deleteBankAccountUseCase = DeleteBankAccountUseCase(repository: bankAccountRepository);
+  
+  return BankAccountBloc(
+    getBankAccountUseCase: getBankAccountUseCase,
+    saveBankAccountUseCase: saveBankAccountUseCase,
+    deleteBankAccountUseCase: deleteBankAccountUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+/// Factory function para criar o ExploreBloc com todas as dependências
+ExploreBloc _createExploreBloc(
+  IExploreRepository exploreRepository,
+  CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
+) {
+  // Criar UseCase orquestrador de validações (usa helpers internamente)
+  final isAvailabilityValidForDateUseCase = IsAvailabilityValidForDateUseCase();
+  
+  // Criar UseCases principais
+  final getArtistsWithAvailabilitiesUseCase = GetArtistsWithAvailabilitiesUseCase(
+    repository: exploreRepository,
+  );
+  
+  final getArtistsWithAvailabilitiesFilteredUseCase =
+      GetArtistsWithAvailabilitiesFilteredUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+    isAvailabilityValidForDateUseCase: isAvailabilityValidForDateUseCase,
+  );
+
+  // Criar e retornar ExploreBloc
+  return ExploreBloc(
+    getArtistsWithAvailabilitiesUseCase: getArtistsWithAvailabilitiesUseCase,
+    getArtistsWithAvailabilitiesFilteredUseCase:
+        getArtistsWithAvailabilitiesFilteredUseCase,
   );
 }
 
@@ -552,6 +620,21 @@ Future <void> main() async {
   final availabilityRemoteDataSource = AvailabilityRemoteDataSourceImpl(firestore: firestore);
   final availabilityRepository = AvailabilityRepositoryImpl(localDataSource: availabilityLocalDataSource, remoteDataSource: availabilityRemoteDataSource);
 
+  // BankAccount
+  final bankAccountLocalDataSource = BankAccountLocalDataSourceImpl(autoCacheService: localCacheService);
+  final bankAccountRemoteDataSource = BankAccountRemoteDataSourceImpl(firestore: firestore);
+  final bankAccountRepository = BankAccountRepositoryImpl(localDataSource: bankAccountLocalDataSource, remoteDataSource: bankAccountRemoteDataSource);
+
+  // Explore
+  final exploreLocalDataSource = ExploreLocalDataSourceImpl(autoCacheService: localCacheService);
+  final exploreRemoteDataSource = ExploreRemoteDataSourceImpl(firestore: firestore);
+  final exploreRepository = ExploreRepositoryImpl(
+    exploreRemoteDataSource: exploreRemoteDataSource,
+    exploreLocalDataSource: exploreLocalDataSource,
+  );
+
+  // CalculateAddressGeohashUseCase (compartilhado entre Addresses e Explore)
+  final calculateAddressGeohashUseCase = CalculateAddressGeohashUseCase();
 
   runApp(MultiBlocProvider(
         providers: [
@@ -571,7 +654,8 @@ Future <void> main() async {
             create: (context) => _createAddressesBloc(
               localCacheService, 
               firestore, 
-              getUserUidUseCase
+              getUserUidUseCase,
+              calculateAddressGeohashUseCase,
             ),
           ),
           BlocProvider(
@@ -611,6 +695,18 @@ Future <void> main() async {
             create: (context) => _createAvailabilityBloc(
               availabilityRepository,
               getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createBankAccountBloc(
+              bankAccountRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createExploreBloc(
+              exploreRepository,
+              calculateAddressGeohashUseCase,
             ),
           ),
         ],

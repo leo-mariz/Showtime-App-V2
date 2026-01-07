@@ -22,6 +22,7 @@ class AvailabilityEntity with AvailabilityEntityMappable {
   final double raioAtuacao;
   final bool repetir;
   final List<BlockedTimeSlot> blockedSlots;
+  final String? geohash;
 
   AvailabilityEntity({
     this.id,
@@ -35,6 +36,7 @@ class AvailabilityEntity with AvailabilityEntityMappable {
     required this.raioAtuacao,
     required this.repetir,
     this.blockedSlots = const [],
+    this.geohash,
   });
 
   // Factory para criar uma AvailabilityEntity a partir de um Appointment

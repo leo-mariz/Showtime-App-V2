@@ -21,6 +21,7 @@ class InitialScreen extends StatefulWidget {
 class _InitialScreenState extends State<InitialScreen> {
   bool _isLoading = false;
   bool _shouldHandleBiometricsCheck = false; // Flag para controlar se deve processar o resultado
+  bool _isNavigatingAfterLogin = false; // Flag para controlar se estamos navegando após login bem-sucedido
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _InitialScreenState extends State<InitialScreen> {
     // Marcar que devemos processar o resultado da verificação
     setState(() {
       _shouldHandleBiometricsCheck = true;
+      _isLoading = true; // Iniciar loading imediatamente
     });
     // Verificar se biometria está habilitada
     context.read<AuthBloc>().add(CheckBiometricsEnabledEvent());
@@ -48,11 +50,20 @@ class _InitialScreenState extends State<InitialScreen> {
           setState(() {
             _isLoading = true;
           });
-        } else if (state is AuthInitial) {
+        } else if (state is LoginLoading) {
           setState(() {
-            _isLoading = false;
+            _isLoading = true;
           });
+        } else if (state is AuthInitial) {
+          // Só resetar loading se não estivermos esperando navegação
+          // Não resetar aqui para manter loading durante navegação após login bem-sucedido
+          if (!_isNavigatingAfterLogin) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         }
+        
         if (state is CheckBiometricsEnabledSuccess) {
           // Só processar se foi disparado a partir do botão de login desta tela
           if (_shouldHandleBiometricsCheck) {
@@ -64,14 +75,39 @@ class _InitialScreenState extends State<InitialScreen> {
               context.read<AuthBloc>().add(LoginWithBiometricsEvent());
             } else {
               // Biometria não habilitada, ir para tela de login
+              setState(() {
+                _isLoading = false;
+              });
               router.push(const LoginRoute());
             }
           }
         } else if (state is LoginWithBiometricsSuccess) {
+          // Marcar que estamos navegando para manter loading
+          setState(() {
+            _isNavigatingAfterLogin = true;
+            _isLoading = true; // Garantir que loading está ativo
+          });
+          
           // Login com biometria bem-sucedido - APENAS neste caso navegar
+          // Manter loading durante navegação
           router.replaceAll([NavigationRoute(isArtist: state.isArtist)]);
+          
+          // Aguardar alguns frames antes de resetar loading (para garantir que a nova tela está sendo construída)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _isNavigatingAfterLogin = false;
+                });
+              }
+            });
+          });
         } else if (state is BiometricFailure) {
           // Biometria falhou (erro, cancelado ou incorreta), ir para tela de login
+          setState(() {
+            _isLoading = false;
+          });
           router.push(const LoginRoute());
         } else if (state is AuthFailure) {
           // Verificar se é um erro relacionado a biometria
@@ -80,7 +116,14 @@ class _InitialScreenState extends State<InitialScreen> {
                                    state.error.contains('cancelada');
           
           if (isBiometricError) {
+            setState(() {
+              _isLoading = false;
+            });
             router.push(const LoginRoute());
+          } else {
+            setState(() {
+              _isLoading = false;
+            });
           }
         }
       },

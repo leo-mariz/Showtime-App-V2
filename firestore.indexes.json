@@ -1,0 +1,28 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "Availability",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "dataFim",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dataInicio",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endereco.geohash",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
+

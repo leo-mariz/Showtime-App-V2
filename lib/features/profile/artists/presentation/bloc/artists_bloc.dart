@@ -7,7 +7,6 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_name_
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_bank_account_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
@@ -22,7 +21,6 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
   final UpdateArtistProfessionalInfoUseCase updateArtistProfessionalInfoUseCase;
   final UpdateArtistAgreementUseCase updateArtistAgreementUseCase;
   final UpdateArtistPresentationMediasUseCase updateArtistPresentationMediasUseCase;
-  final UpdateArtistBankAccountUseCase updateArtistBankAccountUseCase;
   final CheckArtistNameExistsUseCase checkArtistNameExistsUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
@@ -35,7 +33,6 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     required this.updateArtistProfessionalInfoUseCase,
     required this.updateArtistAgreementUseCase,
     required this.updateArtistPresentationMediasUseCase,
-    required this.updateArtistBankAccountUseCase,
     required this.checkArtistNameExistsUseCase,
     required this.getUserUidUseCase,
   }) : super(ArtistsInitial()) {
@@ -46,7 +43,6 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     on<UpdateArtistProfessionalInfoEvent>(_onUpdateArtistProfessionalInfoEvent);
     on<UpdateArtistAgreementEvent>(_onUpdateArtistAgreementEvent);
     on<UpdateArtistPresentationMediasEvent>(_onUpdateArtistPresentationMediasEvent);
-    on<UpdateArtistBankAccountEvent>(_onUpdateArtistBankAccountEvent);
     on<CheckArtistNameExistsEvent>(_onCheckArtistNameExistsEvent);
     on<AddArtistEvent>(_onAddArtistEvent);
   }
@@ -273,27 +269,6 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     );
   }
 
-  // ==================== UPDATE ARTIST BANK ACCOUNT ====================
-
-  Future<void> _onUpdateArtistBankAccountEvent(
-    UpdateArtistBankAccountEvent event,
-    Emitter<ArtistsState> emit,
-  ) async {
-    emit(UpdateArtistBankAccountLoading());
-
-    final result = await updateArtistBankAccountUseCase.call(event.bankAccount);
-
-    result.fold(
-      (failure) {
-        emit(UpdateArtistBankAccountFailure(error: failure.message));
-        emit(ArtistsInitial());
-      },
-      (_) {
-        emit(UpdateArtistBankAccountSuccess());
-        emit(ArtistsInitial());
-      },
-    );
-  }
 
   // ==================== CHECK ARTIST NAME EXISTS ====================
 

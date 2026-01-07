@@ -1,5 +1,5 @@
 import 'package:app/features/app_navigation/presentation/widgets/bottom_navigation_bar.dart';
-import 'package:app/features/artist_dashboard/presentation/screens/artist_dashboard_screen.dart';
+import 'package:app/features/profile/artist_dashboard/presentation/screens/artist_dashboard_screen.dart';
 import 'package:app/features/contracts/presentation/screens/artists/artist_contract_screen.dart';
 import 'package:app/features/explore/presentation/screens/explore_screen.dart';
 import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';

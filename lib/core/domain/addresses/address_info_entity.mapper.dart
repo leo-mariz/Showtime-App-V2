@@ -99,6 +99,12 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
     _$complement,
     opt: true,
   );
+  static String? _$geohash(AddressInfoEntity v) => v.geohash;
+  static const Field<AddressInfoEntity, String> _f$geohash = Field(
+    'geohash',
+    _$geohash,
+    opt: true,
+  );
 
   @override
   final MappableFields<AddressInfoEntity> fields = const {
@@ -114,6 +120,7 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
     #latitude: _f$latitude,
     #longitude: _f$longitude,
     #complement: _f$complement,
+    #geohash: _f$geohash,
   };
 
   static AddressInfoEntity _instantiate(DecodingData data) {
@@ -130,6 +137,7 @@ class AddressInfoEntityMapper extends ClassMapperBase<AddressInfoEntity> {
       latitude: data.dec(_f$latitude),
       longitude: data.dec(_f$longitude),
       complement: data.dec(_f$complement),
+      geohash: data.dec(_f$geohash),
     );
   }
 
@@ -217,6 +225,7 @@ abstract class AddressInfoEntityCopyWith<
     double? latitude,
     double? longitude,
     String? complement,
+    String? geohash,
   });
   AddressInfoEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -245,6 +254,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
     Object? latitude = $none,
     Object? longitude = $none,
     Object? complement = $none,
+    Object? geohash = $none,
   }) => $apply(
     FieldCopyWithData({
       if (uid != $none) #uid: uid,
@@ -259,6 +269,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
       if (latitude != $none) #latitude: latitude,
       if (longitude != $none) #longitude: longitude,
       if (complement != $none) #complement: complement,
+      if (geohash != $none) #geohash: geohash,
     }),
   );
   @override
@@ -275,6 +286,7 @@ class _AddressInfoEntityCopyWithImpl<$R, $Out>
     latitude: data.get(#latitude, or: $value.latitude),
     longitude: data.get(#longitude, or: $value.longitude),
     complement: data.get(#complement, or: $value.complement),
+    geohash: data.get(#geohash, or: $value.geohash),
   );
 
   @override

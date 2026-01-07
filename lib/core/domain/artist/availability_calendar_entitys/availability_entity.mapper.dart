@@ -83,6 +83,12 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
     opt: true,
     def: const [],
   );
+  static String? _$geohash(AvailabilityEntity v) => v.geohash;
+  static const Field<AvailabilityEntity, String> _f$geohash = Field(
+    'geohash',
+    _$geohash,
+    opt: true,
+  );
 
   @override
   final MappableFields<AvailabilityEntity> fields = const {
@@ -97,6 +103,7 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
     #raioAtuacao: _f$raioAtuacao,
     #repetir: _f$repetir,
     #blockedSlots: _f$blockedSlots,
+    #geohash: _f$geohash,
   };
 
   static AvailabilityEntity _instantiate(DecodingData data) {
@@ -112,6 +119,7 @@ class AvailabilityEntityMapper extends ClassMapperBase<AvailabilityEntity> {
       raioAtuacao: data.dec(_f$raioAtuacao),
       repetir: data.dec(_f$repetir),
       blockedSlots: data.dec(_f$blockedSlots),
+      geohash: data.dec(_f$geohash),
     );
   }
 
@@ -207,6 +215,7 @@ abstract class AvailabilityEntityCopyWith<
     double? raioAtuacao,
     bool? repetir,
     List<BlockedTimeSlot>? blockedSlots,
+    String? geohash,
   });
   AvailabilityEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -255,6 +264,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
     double? raioAtuacao,
     bool? repetir,
     List<BlockedTimeSlot>? blockedSlots,
+    Object? geohash = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
@@ -268,6 +278,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
       if (raioAtuacao != null) #raioAtuacao: raioAtuacao,
       if (repetir != null) #repetir: repetir,
       if (blockedSlots != null) #blockedSlots: blockedSlots,
+      if (geohash != $none) #geohash: geohash,
     }),
   );
   @override
@@ -283,6 +294,7 @@ class _AvailabilityEntityCopyWithImpl<$R, $Out>
     raioAtuacao: data.get(#raioAtuacao, or: $value.raioAtuacao),
     repetir: data.get(#repetir, or: $value.repetir),
     blockedSlots: data.get(#blockedSlots, or: $value.blockedSlots),
+    geohash: data.get(#geohash, or: $value.geohash),
   );
 
   @override

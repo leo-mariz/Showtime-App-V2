@@ -1,5 +1,4 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -16,7 +15,6 @@ class ArtistEntity with ArtistEntityMappable {
   final AddressInfoEntity? residenceAddress;
   List<String>? groupsInUids;
   Map<String, List<String>>? incompleteSections;
-  BankAccountEntity? bankAccount;
   bool? approved;
   bool? isActive;
   bool? hasIncompleteSections;
@@ -34,7 +32,6 @@ class ArtistEntity with ArtistEntityMappable {
     this.professionalInfo,
     this.presentationMedias,
     this.residenceAddress,
-    this.bankAccount,
     this.approved,
     this.isActive,
     this.hasIncompleteSections,

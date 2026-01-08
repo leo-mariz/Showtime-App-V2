@@ -1,52 +1,72 @@
 import 'package:app/core/design_system/size/ds_size.dart';
-import 'package:app/core/enums/event_status_enum.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:flutter/material.dart';
 
 class ContractStatusBadge extends StatelessWidget {
-  final EventStatusEnum status;
+  final ContractStatusEnum status;
 
   const ContractStatusBadge({
     super.key,
     required this.status,
   });
 
-  Color _getStatusColor(EventStatusEnum status, BuildContext context) {
+  Color _getStatusColor(ContractStatusEnum status, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     
     switch (status) {
-      case EventStatusEnum.pending:
+      case ContractStatusEnum.pending:
         return Colors.orange;
-      case EventStatusEnum.accepted:
+      case ContractStatusEnum.accepted:
         return Colors.green;
-      case EventStatusEnum.rejected:
+      case ContractStatusEnum.rejected:
         return Colors.red;
-      case EventStatusEnum.finished:
+      case ContractStatusEnum.paymentPending:
+        return Colors.orange;
+      case ContractStatusEnum.paymentExpired:
+        return Colors.red;
+      case ContractStatusEnum.paymentRefused:
+        return Colors.red;
+      case ContractStatusEnum.paymentFailed:
+        return Colors.red;
+      case ContractStatusEnum.paid:
+        return Colors.green;
+      case ContractStatusEnum.confirmed:
+        return Colors.blue;
+      case ContractStatusEnum.completed:
         return colorScheme.primary;
-      case EventStatusEnum.canceled:
+      case ContractStatusEnum.rated:
+        return Colors.purple;
+      case ContractStatusEnum.canceled:
         return Colors.red;
-      case EventStatusEnum.paid:
-        return Colors.green;
-      case EventStatusEnum.pendingPayment:
-        return Colors.orange;
     }
   }
 
-  String _getStatusLabel(EventStatusEnum status) {
+  String _getStatusLabel(ContractStatusEnum status) {
     switch (status) {
-      case EventStatusEnum.pending:
+      case ContractStatusEnum.pending:
         return 'Solicitada';
-      case EventStatusEnum.accepted:
+      case ContractStatusEnum.accepted:
         return 'Aceita';
-      case EventStatusEnum.rejected:
+      case ContractStatusEnum.rejected:
         return 'Recusada';
-      case EventStatusEnum.finished:
-        return 'Finalizada';
-      case EventStatusEnum.canceled:
-        return 'Cancelada';
-      case EventStatusEnum.paid:
+      case ContractStatusEnum.paymentPending:
+        return 'Aguardando Pagamento';
+      case ContractStatusEnum.paymentExpired:
+        return 'Pagamento Expirado';
+      case ContractStatusEnum.paymentRefused:
+        return 'Pagamento Recusado';
+      case ContractStatusEnum.paymentFailed:
+        return 'Pagamento Falhou';
+      case ContractStatusEnum.paid:
         return 'Pago';
-      case EventStatusEnum.pendingPayment:
-        return 'Pendente de Pagamento';
+      case ContractStatusEnum.confirmed:
+        return 'Confirmado';
+      case ContractStatusEnum.completed:
+        return 'Finalizado';
+      case ContractStatusEnum.rated:
+        return 'Avaliado';
+      case ContractStatusEnum.canceled:
+        return 'Cancelado';
     }
   }
 

@@ -67,7 +67,7 @@ class TabsSection extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
           child: Text(
-            'Adicione seus estilos musicais',
+            'O artista não possui estilos musicais cadastrados',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant.withOpacity(0.6),
               fontStyle: FontStyle.italic,
@@ -99,7 +99,7 @@ class TabsSection extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
           child: Text(
-            'Adicione vídeos de suas apresentações',
+            'O artista não possui vídeos de apresentações',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant.withOpacity(0.6),
               fontStyle: FontStyle.italic,

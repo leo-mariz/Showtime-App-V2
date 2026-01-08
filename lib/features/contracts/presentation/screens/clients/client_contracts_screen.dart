@@ -2,13 +2,18 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/event/event_entity.dart';
-import 'package:app/core/domain/event/event_type/event_type_entity.dart';
-import 'package:app/core/enums/event_status_enum.dart';
+import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
+import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_card.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ClientContractsScreen extends StatefulWidget {
   const ClientContractsScreen({super.key});
@@ -21,69 +26,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTabIndex = 0;
-
-  // TODO: Substituir por dados reais do Bloc
-  final List<EventEntity> _allRequests = [
-    // Solicitações Pendentes
-    EventEntity(
-      date: DateTime.now().add(const Duration(days: 5)),
-      time: '18:00',
-      duration: 120,
-      address: null, // TODO: Adicionar endereço real
-      status: EventStatusEnum.pending.name,
-      nameArtist: 'João Silva',
-      eventType: EventTypeEntity(
-        uid: '1',
-        name: 'Festa de Aniversário',
-        active: 'true',
-      ),
-      value: 450.0,
-    ),
-    EventEntity(
-      date: DateTime.now().add(const Duration(days: 10)),
-      time: '20:00',
-      duration: 90,
-      address: null,
-      status: EventStatusEnum.pending.name,
-      nameArtist: 'Maria Santos',
-      eventType: EventTypeEntity(
-        uid: '2',
-        name: 'Casamento',
-        active: 'true',
-      ),
-      value: 380.0,
-    ),
-    // Solicitações Aceitas
-    EventEntity(
-      date: DateTime.now().add(const Duration(days: 3)),
-      time: '19:30',
-      duration: 150,
-      address: null,
-      status: EventStatusEnum.accepted.name,
-      nameArtist: 'Pedro Oliveira',
-      eventType: EventTypeEntity(
-        uid: '3',
-        name: 'Evento Corporativo',
-        active: 'true',
-      ),
-      value: 600.0,
-    ),
-    // Solicitações Recusadas
-    EventEntity(
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      time: '17:00',
-      duration: 120,
-      address: null,
-      status: EventStatusEnum.rejected.name,
-      nameArtist: 'Ana Costa',
-      eventType: EventTypeEntity(
-        uid: '4',
-        name: 'Show Musical',
-        active: 'true',
-      ),
-      value: 400.0,
-    ),
-  ];
+  List<ContractEntity> _allContracts = [];
 
   @override
   void initState() {
@@ -94,6 +37,27 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
         _selectedTabIndex = _tabController.index;
       });
     });
+    
+    // Buscar contratos ao inicializar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadContracts();
+    });
+  }
+
+  Future<void> _loadContracts() async {
+    // Obter UID do cliente
+    final usersBloc = context.read<UsersBloc>();
+    final uidResult = await usersBloc.getUserUidUseCase.call();
+    final clientUid = uidResult.fold(
+      (failure) => null,
+      (uid) => uid,
+    );
+
+    if (clientUid != null && clientUid.isNotEmpty) {
+      context.read<ContractsBloc>().add(
+        GetContractsByClientEvent(clientUid: clientUid),
+      );
+    }
   }
 
   @override
@@ -102,20 +66,28 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     super.dispose();
   }
 
-  List<EventEntity> get _filteredRequests {
+  List<ContractEntity> get _filteredContracts {
     switch (_selectedTabIndex) {
-      case 0: // Solicitadas
-        return _allRequests
-            .where((req) => req.status.toUpperCase() == EventStatusEnum.pending.name)
-            .toList();
-      case 1: // Aceitas
-        return _allRequests
-            .where((req) => req.status.toUpperCase() == EventStatusEnum.accepted.name)
-            .toList();
-      case 2: // Recusadas
-        return _allRequests
-            .where((req) => req.status.toUpperCase() == EventStatusEnum.rejected.name)
-            .toList();
+      case 0: // Abertas
+        return _allContracts.where((contract) {
+          return contract.status == ContractStatusEnum.pending ||
+              contract.status == ContractStatusEnum.accepted ||
+              contract.status == ContractStatusEnum.paymentPending ||
+              contract.status == ContractStatusEnum.paymentExpired ||
+              contract.status == ContractStatusEnum.paymentRefused;
+        }).toList();
+      case 1: // Confirmadas
+        return _allContracts.where((contract) {
+          return contract.status == ContractStatusEnum.paid ||
+              contract.status == ContractStatusEnum.confirmed;
+        }).toList();
+      case 2: // Finalizadas
+        return _allContracts.where((contract) {
+          return contract.status == ContractStatusEnum.rejected ||
+              contract.status == ContractStatusEnum.completed ||
+              contract.status == ContractStatusEnum.rated ||
+              contract.status == ContractStatusEnum.canceled;
+        }).toList();
       default:
         return [];
     }
@@ -127,61 +99,84 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     final textTheme = Theme.of(context).textTheme;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
 
-    return BasePage(
-      showAppBar: true,
-      appBarTitle: 'Solicitações',
-      child: Column(
-        children: [
-          // Tabs
-          Container(
-            height: DSSize.height(36),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(DSSize.width(12)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: colorScheme.onPrimaryContainer,
-                borderRadius: BorderRadius.circular(DSSize.width(12)),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: colorScheme.primaryContainer,
-              unselectedLabelColor: onSurfaceVariant,
-              labelStyle: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onPrimary,
-              ),
-              unselectedLabelStyle: textTheme.bodyMedium,
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Solicitadas'),
-                Tab(text: 'Aceitas'),
-                Tab(text: 'Recusadas'),
-              ],
-            ),
-          ),
+    return BlocProvider.value(
+      value: context.read<ContractsBloc>(),
+      child: BlocListener<ContractsBloc, ContractsState>(
+        listener: (context, state) {
+          if (state is GetContractsByClientSuccess) {
+            setState(() {
+              _allContracts = state.contracts;
+            });
+          } else if (state is GetContractsByClientFailure) {
+            context.showError(state.error);
+          }
+        },
+        child: BlocBuilder<ContractsBloc, ContractsState>(
+          builder: (context, state) {
+            final isLoading = state is GetContractsByClientLoading;
+            final filteredContracts = _filteredContracts;
 
-          DSSizedBoxSpacing.vertical(24),
-
-          // Lista de solicitações
-          Expanded(
-            child: _filteredRequests.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    itemCount: _filteredRequests.length,
-                    itemBuilder: (context, index) {
-                      final request = _filteredRequests[index];
-                      return ContractCard(
-                        event: request,
-                        onTap: () => _onRequestTapped(request),
-                        onCancel: () => _onCancelRequest(request),
-                        onViewDetails: () => _onRequestTapped(request),
-                      );
-                    },
+            return BasePage(
+              showAppBar: true,
+              appBarTitle: 'Solicitações',
+              child: Column(
+                children: [
+                  // Tabs
+                  Container(
+                    height: DSSize.height(36),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(DSSize.width(12)),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: colorScheme.onPrimaryContainer,
+                        borderRadius: BorderRadius.circular(DSSize.width(12)),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: colorScheme.primaryContainer,
+                      unselectedLabelColor: onSurfaceVariant,
+                      labelStyle: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onPrimary,
+                      ),
+                      unselectedLabelStyle: textTheme.bodyMedium,
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(text: 'Abertas'),
+                        Tab(text: 'Confirmadas'),
+                        Tab(text: 'Finalizadas'),
+                      ],
+                    ),
                   ),
-          ),
-        ],
+
+                  DSSizedBoxSpacing.vertical(24),
+
+                  // Lista de contratos
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : filteredContracts.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                itemCount: filteredContracts.length,
+                                itemBuilder: (context, index) {
+                                  final contract = filteredContracts[index];
+                                  return ContractCard(
+                                    contract: contract,
+                                    onTap: () => _onRequestTapped(contract),
+                                    onCancel: () => _onCancelRequest(contract),
+                                    onViewDetails: () => _onRequestTapped(contract),
+                                  );
+                                },
+                              ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -195,17 +190,17 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     String message;
 
     switch (_selectedTabIndex) {
-      case 0:
+      case 0: // Abertas
         icon = Icons.inbox_outlined;
-        message = 'Nenhuma solicitação pendente.\nSuas solicitações aparecerão aqui.';
+        message = 'Nenhuma solicitação aberta.\nSuas solicitações em andamento aparecerão aqui.';
         break;
-      case 1:
+      case 1: // Confirmadas
         icon = Icons.check_circle_outline;
-        message = 'Nenhuma solicitação aceita.\nAs solicitações aceitas aparecerão aqui.';
+        message = 'Nenhuma solicitação confirmada.\nAs solicitações pagas e confirmadas aparecerão aqui.';
         break;
-      case 2:
-        icon = Icons.cancel_outlined;
-        message = 'Nenhuma solicitação recusada.\nAs solicitações recusadas aparecerão aqui.';
+      case 2: // Finalizadas
+        icon = Icons.event_note_outlined;
+        message = 'Nenhuma solicitação finalizada.\nAs solicitações concluídas, recusadas ou canceladas aparecerão aqui.';
         break;
       default:
         icon = Icons.inbox_outlined;
@@ -237,11 +232,11 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     );
   }
 
-  void _onRequestTapped(EventEntity request) {
-    context.router.push(ClientEventDetailRoute(event: request));
+  void _onRequestTapped(ContractEntity request) {
+    context.router.push(ClientEventDetailRoute(contract: request));
   }
 
-  void _onCancelRequest(EventEntity request) {
+  void _onCancelRequest(ContractEntity request) {
     // TODO: Implementar lógica de cancelamento
     debugPrint('Cancelar solicitação: ${request.uid}');
     // TODO: Mostrar confirmação e atualizar status

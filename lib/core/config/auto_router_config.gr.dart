@@ -10,10 +10,12 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:app/core/domain/addresses/address_info_entity.dart' as _i36;
-import 'package:app/core/domain/artist/artist_groups/group_entity.dart' as _i40;
+import 'package:app/core/domain/artist/artist_groups/group_entity.dart' as _i41;
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart'
     as _i38;
-import 'package:app/core/domain/event/event_entity.dart' as _i37;
+import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart'
+    as _i39;
+import 'package:app/core/domain/contract/contract_entity.dart' as _i37;
 import 'package:app/features/addresses/presentation/screens/address_form_page.dart'
     deferred as _i1;
 import 'package:app/features/addresses/presentation/screens/addresses_list_page.dart'
@@ -81,7 +83,7 @@ import 'package:app/features/profile/shared/presentation/screens/terms/client/cl
 import 'package:app/features/profile/shared/presentation/screens/terms/terms_of_privacy_page.dart'
     deferred as _i33;
 import 'package:auto_route/auto_route.dart' as _i34;
-import 'package:collection/collection.dart' as _i39;
+import 'package:collection/collection.dart' as _i40;
 import 'package:flutter/material.dart' as _i35;
 
 /// generated route for
@@ -180,11 +182,11 @@ class ArtistEventDetailRoute
     extends _i34.PageRouteInfo<ArtistEventDetailRouteArgs> {
   ArtistEventDetailRoute({
     _i35.Key? key,
-    required _i37.EventEntity event,
+    required _i37.ContractEntity contract,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          ArtistEventDetailRoute.name,
-         args: ArtistEventDetailRouteArgs(key: key, event: event),
+         args: ArtistEventDetailRouteArgs(key: key, contract: contract),
          initialChildren: children,
        );
 
@@ -196,33 +198,34 @@ class ArtistEventDetailRoute
       final args = data.argsAs<ArtistEventDetailRouteArgs>();
       return _i34.DeferredWidget(
         _i4.loadLibrary,
-        () => _i4.ArtistEventDetailScreen(key: args.key, event: args.event),
+        () =>
+            _i4.ArtistEventDetailScreen(key: args.key, contract: args.contract),
       );
     },
   );
 }
 
 class ArtistEventDetailRouteArgs {
-  const ArtistEventDetailRouteArgs({this.key, required this.event});
+  const ArtistEventDetailRouteArgs({this.key, required this.contract});
 
   final _i35.Key? key;
 
-  final _i37.EventEntity event;
+  final _i37.ContractEntity contract;
 
   @override
   String toString() {
-    return 'ArtistEventDetailRouteArgs{key: $key, event: $event}';
+    return 'ArtistEventDetailRouteArgs{key: $key, contract: $contract}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ArtistEventDetailRouteArgs) return false;
-    return key == other.key && event == other.event;
+    return key == other.key && contract == other.contract;
   }
 
   @override
-  int get hashCode => key.hashCode ^ event.hashCode;
+  int get hashCode => key.hashCode ^ contract.hashCode;
 }
 
 /// generated route for
@@ -233,6 +236,9 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
     required _i38.ArtistEntity artist,
     bool isFavorite = false,
     bool viewOnly = false,
+    DateTime? selectedDate,
+    _i36.AddressInfoEntity? selectedAddress,
+    _i39.AvailabilityEntity? availability,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          ArtistProfileRoute.name,
@@ -241,6 +247,9 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
            artist: artist,
            isFavorite: isFavorite,
            viewOnly: viewOnly,
+           selectedDate: selectedDate,
+           selectedAddress: selectedAddress,
+           availability: availability,
          ),
          initialChildren: children,
        );
@@ -258,6 +267,9 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
           artist: args.artist,
           isFavorite: args.isFavorite,
           viewOnly: args.viewOnly,
+          selectedDate: args.selectedDate,
+          selectedAddress: args.selectedAddress,
+          availability: args.availability,
         ),
       );
     },
@@ -270,6 +282,9 @@ class ArtistProfileRouteArgs {
     required this.artist,
     this.isFavorite = false,
     this.viewOnly = false,
+    this.selectedDate,
+    this.selectedAddress,
+    this.availability,
   });
 
   final _i35.Key? key;
@@ -280,9 +295,15 @@ class ArtistProfileRouteArgs {
 
   final bool viewOnly;
 
+  final DateTime? selectedDate;
+
+  final _i36.AddressInfoEntity? selectedAddress;
+
+  final _i39.AvailabilityEntity? availability;
+
   @override
   String toString() {
-    return 'ArtistProfileRouteArgs{key: $key, artist: $artist, isFavorite: $isFavorite, viewOnly: $viewOnly}';
+    return 'ArtistProfileRouteArgs{key: $key, artist: $artist, isFavorite: $isFavorite, viewOnly: $viewOnly, selectedDate: $selectedDate, selectedAddress: $selectedAddress, availability: $availability}';
   }
 
   @override
@@ -292,12 +313,21 @@ class ArtistProfileRouteArgs {
     return key == other.key &&
         artist == other.artist &&
         isFavorite == other.isFavorite &&
-        viewOnly == other.viewOnly;
+        viewOnly == other.viewOnly &&
+        selectedDate == other.selectedDate &&
+        selectedAddress == other.selectedAddress &&
+        availability == other.availability;
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ artist.hashCode ^ isFavorite.hashCode ^ viewOnly.hashCode;
+      key.hashCode ^
+      artist.hashCode ^
+      isFavorite.hashCode ^
+      viewOnly.hashCode ^
+      selectedDate.hashCode ^
+      selectedAddress.hashCode ^
+      availability.hashCode;
 }
 
 /// generated route for
@@ -401,11 +431,11 @@ class ClientEventDetailRoute
     extends _i34.PageRouteInfo<ClientEventDetailRouteArgs> {
   ClientEventDetailRoute({
     _i35.Key? key,
-    required _i37.EventEntity event,
+    required _i37.ContractEntity contract,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          ClientEventDetailRoute.name,
-         args: ClientEventDetailRouteArgs(key: key, event: event),
+         args: ClientEventDetailRouteArgs(key: key, contract: contract),
          initialChildren: children,
        );
 
@@ -417,33 +447,36 @@ class ClientEventDetailRoute
       final args = data.argsAs<ClientEventDetailRouteArgs>();
       return _i34.DeferredWidget(
         _i11.loadLibrary,
-        () => _i11.ClientEventDetailScreen(key: args.key, event: args.event),
+        () => _i11.ClientEventDetailScreen(
+          key: args.key,
+          contract: args.contract,
+        ),
       );
     },
   );
 }
 
 class ClientEventDetailRouteArgs {
-  const ClientEventDetailRouteArgs({this.key, required this.event});
+  const ClientEventDetailRouteArgs({this.key, required this.contract});
 
   final _i35.Key? key;
 
-  final _i37.EventEntity event;
+  final _i37.ContractEntity contract;
 
   @override
   String toString() {
-    return 'ClientEventDetailRouteArgs{key: $key, event: $event}';
+    return 'ClientEventDetailRouteArgs{key: $key, contract: $contract}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! ClientEventDetailRouteArgs) return false;
-    return key == other.key && event == other.event;
+    return key == other.key && contract == other.contract;
   }
 
   @override
-  int get hashCode => key.hashCode ^ event.hashCode;
+  int get hashCode => key.hashCode ^ contract.hashCode;
 }
 
 /// generated route for
@@ -637,7 +670,7 @@ class EventTypeSelectionRouteArgs {
     if (identical(this, other)) return true;
     if (other is! EventTypeSelectionRouteArgs) return false;
     return key == other.key &&
-        const _i39.ListEquality<String>().equals(
+        const _i40.ListEquality<String>().equals(
           eventTypes,
           other.eventTypes,
         ) &&
@@ -648,7 +681,7 @@ class EventTypeSelectionRouteArgs {
   @override
   int get hashCode =>
       key.hashCode ^
-      const _i39.ListEquality<String>().hash(eventTypes) ^
+      const _i40.ListEquality<String>().hash(eventTypes) ^
       selectedEventType.hashCode ^
       onEventTypeSelected.hashCode;
 }
@@ -677,7 +710,7 @@ class ForgotPasswordRoute extends _i34.PageRouteInfo<void> {
 class GroupAreaRoute extends _i34.PageRouteInfo<GroupAreaRouteArgs> {
   GroupAreaRoute({
     _i35.Key? key,
-    required _i40.GroupEntity group,
+    required _i41.GroupEntity group,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          GroupAreaRoute.name,
@@ -704,7 +737,7 @@ class GroupAreaRouteArgs {
 
   final _i35.Key? key;
 
-  final _i40.GroupEntity group;
+  final _i41.GroupEntity group;
 
   @override
   String toString() {
@@ -973,12 +1006,12 @@ class PresentationsRouteArgs {
     if (identical(this, other)) return true;
     if (other is! PresentationsRouteArgs) return false;
     return key == other.key &&
-        const _i39.ListEquality<String>().equals(talents, other.talents);
+        const _i40.ListEquality<String>().equals(talents, other.talents);
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ const _i39.ListEquality<String>().hash(talents);
+      key.hashCode ^ const _i40.ListEquality<String>().hash(talents);
 }
 
 /// generated route for
@@ -1041,10 +1074,11 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
   RequestRoute({
     _i35.Key? key,
     required DateTime selectedDate,
-    required String selectedAddress,
+    required _i36.AddressInfoEntity selectedAddress,
     required _i38.ArtistEntity artist,
     required double pricePerHour,
     required Duration minimumDuration,
+    _i39.AvailabilityEntity? availability,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          RequestRoute.name,
@@ -1055,6 +1089,7 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
            artist: artist,
            pricePerHour: pricePerHour,
            minimumDuration: minimumDuration,
+           availability: availability,
          ),
          initialChildren: children,
        );
@@ -1074,6 +1109,7 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
           artist: args.artist,
           pricePerHour: args.pricePerHour,
           minimumDuration: args.minimumDuration,
+          availability: args.availability,
         ),
       );
     },
@@ -1088,13 +1124,14 @@ class RequestRouteArgs {
     required this.artist,
     required this.pricePerHour,
     required this.minimumDuration,
+    this.availability,
   });
 
   final _i35.Key? key;
 
   final DateTime selectedDate;
 
-  final String selectedAddress;
+  final _i36.AddressInfoEntity selectedAddress;
 
   final _i38.ArtistEntity artist;
 
@@ -1102,9 +1139,11 @@ class RequestRouteArgs {
 
   final Duration minimumDuration;
 
+  final _i39.AvailabilityEntity? availability;
+
   @override
   String toString() {
-    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, pricePerHour: $pricePerHour, minimumDuration: $minimumDuration}';
+    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, pricePerHour: $pricePerHour, minimumDuration: $minimumDuration, availability: $availability}';
   }
 
   @override
@@ -1116,7 +1155,8 @@ class RequestRouteArgs {
         selectedAddress == other.selectedAddress &&
         artist == other.artist &&
         pricePerHour == other.pricePerHour &&
-        minimumDuration == other.minimumDuration;
+        minimumDuration == other.minimumDuration &&
+        availability == other.availability;
   }
 
   @override
@@ -1126,7 +1166,8 @@ class RequestRouteArgs {
       selectedAddress.hashCode ^
       artist.hashCode ^
       pricePerHour.hashCode ^
-      minimumDuration.hashCode;
+      minimumDuration.hashCode ^
+      availability.hashCode;
 }
 
 /// generated route for

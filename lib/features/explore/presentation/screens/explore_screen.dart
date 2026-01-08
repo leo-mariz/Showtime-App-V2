@@ -2,6 +2,8 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
@@ -450,10 +452,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final router = AutoRouter.of(context);
     final artist = artistWithAvailabilities.artist;
     
-    // Obter preço da primeira disponibilidade ou do professionalInfo
+    // Encontrar a disponibilidade correspondente ao endereço e data selecionados
+    // Como as disponibilidades já foram filtradas, todas são válidas
+    // Vamos usar a primeira que corresponde ao endereço selecionado (geohash ou lat/lon)
+    
+    final matchedAvailability = _findAvailability(artistWithAvailabilities);
+
+    // Obter preço da disponibilidade correspondente ou do professionalInfo
     double pricePerHour = 0.0;
-    if (artistWithAvailabilities.availabilities.isNotEmpty) {
-      pricePerHour = artistWithAvailabilities.availabilities.first.valorShow;
+    if (matchedAvailability != null) {
+      pricePerHour = matchedAvailability.valorShow;
     } else if (artist.professionalInfo?.hourlyRate != null) {
       pricePerHour = artist.professionalInfo!.hourlyRate!;
     }
@@ -463,12 +471,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ? Duration(minutes: artist.professionalInfo!.minimumShowDuration!)
         : const Duration(minutes: 30);
 
+    if (_selectedAddress == null) {
+      context.showError('Selecione um endereço antes de solicitar');
+      return;
+    }
+
     router.push(RequestRoute(
       selectedDate: _selectedDate,
-      selectedAddress: _currentAddressDisplay,
+      selectedAddress: _selectedAddress!,
       artist: artist,
       pricePerHour: pricePerHour,
       minimumDuration: minimumDuration,
+      availability: matchedAvailability, // Passar disponibilidade correspondente
     ));
   }
 
@@ -476,9 +490,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final router = AutoRouter.of(context);
     final artist = artistWithAvailabilities.artist;
 
+    // Encontrar a disponibilidade correspondente ao endereço e data selecionados
+    final matchedAvailability = _findAvailability(artistWithAvailabilities);
+
     router.push(ArtistProfileRoute(
       artist: artist,
-      isFavorite: false, // TODO: Implementar verificação de favoritos
+      isFavorite: false, 
+      selectedDate: _selectedDate,
+      selectedAddress: _selectedAddress,
+      availability: matchedAvailability,
     ));
   }
 
@@ -496,5 +516,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
     );
   }
+
+  AvailabilityEntity? _findAvailability(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
+   AvailabilityEntity? matchedAvailability;
+    if (_selectedAddress != null && artistWithAvailabilities.availabilities.isNotEmpty) {
+      // Tentar encontrar disponibilidade com mesmo geohash ou lat/lon
+      matchedAvailability = artistWithAvailabilities.availabilities.firstWhere(
+        (availability) {
+          if (_selectedAddress!.geohash != null && availability.endereco.geohash != null) {
+            return _selectedAddress!.geohash == availability.endereco.geohash;
+          }
+          // Fallback: comparar por latitude/longitude (com tolerância)
+          if (_selectedAddress!.latitude != null && 
+              _selectedAddress!.longitude != null &&
+              availability.endereco.latitude != null &&
+              availability.endereco.longitude != null) {
+            const tolerance = 0.0001; // ~11 metros
+            return (_selectedAddress!.latitude! - availability.endereco.latitude!).abs() < tolerance &&
+                   (_selectedAddress!.longitude! - availability.endereco.longitude!).abs() < tolerance;
+          }
+          return false;
+        },
+        orElse: () => artistWithAvailabilities.availabilities.first, // Usar primeira se não encontrar
+      );
+    } else if (artistWithAvailabilities.availabilities.isNotEmpty) {
+      matchedAvailability = artistWithAvailabilities.availabilities.first;
+    }
+    return matchedAvailability;
+  }
 }
+
 

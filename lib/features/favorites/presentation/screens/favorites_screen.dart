@@ -1,5 +1,6 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
@@ -98,7 +99,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     router.push(
       RequestRoute(
         selectedDate: DateTime.now(),
-        selectedAddress: 'Endereço padrão', // TODO: Usar endereço real
+        selectedAddress: AddressInfoEntity(
+          title: 'Endereço padrão',
+          zipCode: '00000000',
+          street: 'Rua padrão',
+          number: '000',
+          district: 'Bairro padrão',
+          city: 'Cidade padrão',
+          state: 'SP',
+          isPrimary: true,
+        ),
         artist: ArtistEntity(
           uid: 'favorite_artist_$index',
           artistName: 'Artista Favorito ${index + 1}',

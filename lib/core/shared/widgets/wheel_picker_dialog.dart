@@ -10,6 +10,7 @@ enum WheelPickerType {
 
 class WheelPickerDialog extends StatefulWidget {
   final String title;
+  final String? subtitle; // Subtítulo para mostrar informações adicionais (ex: intervalos disponíveis)
   final int initialHours;
   final int initialMinutes;
   final WheelPickerType type;
@@ -18,6 +19,7 @@ class WheelPickerDialog extends StatefulWidget {
   const WheelPickerDialog({
     super.key,
     required this.title,
+    this.subtitle,
     required this.initialHours,
     required this.initialMinutes,
     required this.type,
@@ -89,7 +91,21 @@ class _WheelPickerDialogState extends State<WheelPickerDialog> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      title: Text(widget.title),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(widget.title),
+          if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
+            DSSizedBoxSpacing.vertical(8),
+            Text(
+              widget.subtitle!,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
       content: SizedBox(
         height: DSSize.height(200),
         child: Row(

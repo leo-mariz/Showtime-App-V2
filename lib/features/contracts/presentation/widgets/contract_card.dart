@@ -1,7 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/event/event_entity.dart';
-import 'package:app/core/enums/event_status_enum.dart';
+import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
@@ -9,19 +9,31 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ContractCard extends StatelessWidget {
-  final EventEntity event;
+  final ContractEntity contract;
   final VoidCallback onTap;
   final VoidCallback? onCancel;
   final VoidCallback? onViewDetails;
   final bool isArtist;
+  
+  // Callbacks para ações específicas
+  final VoidCallback? onAccept; // Artista: aceitar solicitação
+  final VoidCallback? onReject; // Artista: recusar solicitação
+  final VoidCallback? onMakePayment; // Cliente: realizar pagamento
+  final VoidCallback? onGeneratePayment; // Cliente: gerar pagamento
+  final VoidCallback? onRetryPayment; // Cliente: tentar novamente pagamento
 
   const ContractCard({
     super.key,
-    required this.event,
+    required this.contract,
     required this.onTap,
     this.onCancel,
     this.onViewDetails,
     this.isArtist = false,
+    this.onAccept,
+    this.onReject,
+    this.onMakePayment,
+    this.onGeneratePayment,
+    this.onRetryPayment,
   });
 
   String _formatDuration(int durationInMinutes) {
@@ -41,12 +53,90 @@ class ContractCard extends StatelessWidget {
     return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
   }
 
-  EventStatusEnum get _status {
-    final statusUpper = event.status.toUpperCase();
-    return EventStatusEnum.values.firstWhere(
-      (e) => e.name == statusUpper,
-      orElse: () => EventStatusEnum.pending,
-    );
+  ContractStatusEnum get _status => contract.status;
+
+  // Retorna os botões a serem exibidos baseado no status e tipo de usuário
+  List<Widget> _buildActionButtons(BuildContext context) {
+    final buttons = <Widget>[];
+
+    if (isArtist) {
+      // Lógica para Artista
+      if (_status == ContractStatusEnum.pending) {
+        // PENDING → Aceitar e Recusar
+        buttons.addAll([
+          Expanded(
+            child: CustomButton(
+              label: 'Recusar',
+              onPressed: onReject,
+              icon: Icons.close_rounded,
+              iconOnLeft: true,
+              buttonType: CustomButtonType.cancel,
+              height: DSSize.height(40),
+            ),
+          ),
+          DSSizedBoxSpacing.horizontal(12),
+          Expanded(
+            child: CustomButton(
+              label: 'Aceitar',
+              onPressed: onAccept,
+              icon: Icons.check_rounded,
+              iconOnLeft: true,
+              height: DSSize.height(40),
+            ),
+          ),
+        ]);
+      }
+      // Removido: botão de cancelar para outros status não finalizados
+    } else {
+      // Lógica para Cliente
+      if (_status == ContractStatusEnum.accepted) {
+        // Accepted → Realizar Pagamento
+        buttons.add(
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              label: 'Realizar Pagamento',
+              onPressed: onMakePayment,
+              icon: Icons.payment_rounded,
+              iconOnLeft: true,
+              height: DSSize.height(40),
+            ),
+          ),
+        );
+      } else if (_status == ContractStatusEnum.paymentExpired) {
+        // paymentExpired → Gerar Pagamento
+        buttons.add(
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              label: 'Gerar Pagamento',
+              onPressed: onGeneratePayment,
+              icon: Icons.refresh_rounded,
+              iconOnLeft: true,
+              height: DSSize.height(40),
+            ),
+          ),
+        );
+      } else if (_status == ContractStatusEnum.paymentRefused ||
+          _status == ContractStatusEnum.paymentFailed) {
+        // paymentRefused ou paymentFailed → Tentar Novamente
+        buttons.add(
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              label: 'Tentar Novamente',
+              onPressed: onRetryPayment,
+              icon: Icons.refresh_rounded,
+              iconOnLeft: true,
+              height: DSSize.height(40),
+            ),
+          ),
+        );
+      }
+      // Removido: botão de cancelar para outros status
+    }
+
+    return buttons;
   }
 
   @override
@@ -57,9 +147,9 @@ class ContractCard extends StatelessWidget {
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
     final onPrimary = colorScheme.onPrimary;
 
-    final date = event.date ?? DateTime.now();
+    final date = contract.date;
     final dateFormatted = DateFormat('dd/MM/yyyy').format(date);
-    final timeFormatted = event.time;
+    final timeFormatted = contract.time;
 
     return CustomCard(
       margin: EdgeInsets.only(bottom: DSSize.height(16)),
@@ -86,7 +176,7 @@ class ContractCard extends StatelessWidget {
               
               // Tipo de Evento
               Text(
-                event.eventType?.name ?? 'Evento',
+                contract.eventType?.name ?? 'Evento',
                 style: textTheme.titleMedium?.copyWith(
                   color: onPrimary,
                   // fontWeight: FontWeight.w600,
@@ -103,8 +193,8 @@ class ContractCard extends StatelessWidget {
                     backgroundColor: colorScheme.surfaceContainerHighest,
                     child: Text(
                       (isArtist 
-                        ? (event.nameContractor ?? 'A')
-                        : (event.nameArtist ?? 'A'))[0].toUpperCase(),
+                        ? (contract.nameClient ?? 'A')
+                        : (contract.contractorName ?? 'A'))[0].toUpperCase(),
                       style: textTheme.bodyMedium?.copyWith(
                         color: onPrimary,
                         // fontWeight: FontWeight.w600,
@@ -118,8 +208,8 @@ class ContractCard extends StatelessWidget {
                       children: [
                         Text(
                           isArtist 
-                            ? (event.nameContractor ?? 'Anfitrião')
-                            : (event.nameArtist ?? 'Artista'),
+                            ? (contract.nameClient ?? 'Anfitrião')
+                            : (contract.contractorName ?? 'Artista'),
                           style: textTheme.bodyLarge?.copyWith(
                             color: onPrimary,
                             fontWeight: FontWeight.w600,
@@ -146,7 +236,7 @@ class ContractCard extends StatelessWidget {
                       ),
                       DSSizedBoxSpacing.horizontal(6),
                       Text(
-                        '$timeFormatted • ${_formatDuration(event.duration)}',
+                        '$timeFormatted • ${_formatDuration(contract.duration)}',
                         style: textTheme.bodyMedium?.copyWith(
                           color: onPrimary,
                         ),
@@ -170,7 +260,7 @@ class ContractCard extends StatelessWidget {
                   DSSizedBoxSpacing.horizontal(6),
                   Expanded(
                     child: Text(
-                      event.address?.title ?? 'Endereço não informado',
+                      contract.address.title,
                       style: textTheme.bodyMedium?.copyWith(
                         color: onPrimary,
                       ),
@@ -200,7 +290,7 @@ class ContractCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      _formatCurrency(event.value),
+                      _formatCurrency(contract.value),
                       style: textTheme.titleMedium?.copyWith(
                         color: onPrimaryContainer,
                         // fontWeight: FontWeight.w700,
@@ -210,27 +300,12 @@ class ContractCard extends StatelessWidget {
                 ),
               ),
               
-              // Ações baseadas no status
-              // if (_status == EventStatusEnum.pending) ...[
-              //   DSSizedBoxSpacing.vertical(16),
-              //   CustomButton(
-              //     label: 'Cancelar Solicitação',
-              //     onPressed: onCancel,
-              //     filled: true,
-              //     backgroundColor: colorScheme.onError,
-              //     textColor: colorScheme.onPrimary,
-              //   ),
-              // ],
-              
-              if (_status == EventStatusEnum.accepted || _status == EventStatusEnum.pending) ...[
+              // Ações baseadas no status e tipo de usuário
+              if (_buildActionButtons(context).isNotEmpty) ...[
                 DSSizedBoxSpacing.vertical(16),
-                CustomButton(
-                  label: 'Ver Detalhes',
-                  onPressed: onViewDetails ?? onTap,
-                  icon: Icons.arrow_forward_rounded,
-                  iconOnRight: true,
-                  height: DSSize.height(40),
-                  buttonType: CustomButtonType.cancel,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _buildActionButtons(context),
                 ),
               ],
             ],

@@ -143,21 +143,148 @@ class AvailabilityValidator {
       return true;
     }
 
-    // Verificar se algum bloqueio cobre completamente o horário disponível
+    // Ordenar bloqueios por horário de início
+    blockedSlotsForDate.sort((a, b) {
+      final aStart = timeToMinutes(a.startTime);
+      final bStart = timeToMinutes(b.startTime);
+      return aStart.compareTo(bStart);
+    });
+
+    // Verificar se os bloqueios cobrem completamente o período disponível
+    // Percorrer os bloqueios e verificar se há espaço entre eles ou antes/depois deles
+    int currentTime = availabilityStartMinutes;
+    
     for (final blockedSlot in blockedSlotsForDate) {
       final blockedStartMinutes = timeToMinutes(blockedSlot.startTime);
       final blockedEndMinutes = timeToMinutes(blockedSlot.endTime);
 
-      // Se o bloqueio cobre completamente o horário disponível, a disponibilidade não é válida
-      if (blockedStartMinutes <= availabilityStartMinutes &&
-          blockedEndMinutes >= availabilityEndMinutes) {
-        return false;
+      // Se há espaço antes deste bloqueio, ainda há disponibilidade
+      if (blockedStartMinutes > currentTime) {
+        return true;
       }
+
+      // Atualizar tempo atual para após o bloqueio (usando o máximo para cobrir sobreposições)
+      currentTime = blockedEndMinutes > currentTime ? blockedEndMinutes : currentTime;
     }
 
-    // Se chegou aqui, há bloqueios mas não cobrem completamente o horário disponível
-    // Portanto, ainda há horário disponível (parcial)
+    // Verificar se há espaço após o último bloqueio
+    // Se o tempo atual chegou ou ultrapassou o fim da disponibilidade, não há espaço
+    if (currentTime < availabilityEndMinutes) {
+      return true;
+    }
+
+    // Se chegou aqui, todos os bloqueios juntos cobrem completamente o horário disponível
+    return false;
+  }
+
+  /// Verifica se uma data é válida para uma disponibilidade
+  /// 
+  /// Considera: dataInicio, dataFim, diasDaSemana (se repetir=true) e blockedSlots
+  /// 
+  /// Retorna true se a data é válida para a disponibilidade, false caso contrário
+  static bool isDateValidForAvailability(
+    DateTime dataInicio,
+    DateTime dataFim,
+    List<String> diasDaSemana,
+    bool repetir,
+    List<BlockedTimeSlot> blockedSlots,
+    String horarioInicio,
+    String horarioFim,
+    DateTime selectedDate,
+  ) {
+    // 1. Verificar se a data está dentro do range
+    if (!isDateWithinRange(dataInicio, dataFim, selectedDate)) {
+      return false;
+    }
+
+    // 2. Verificar se o dia da semana é válido (se repetir=true)
+    if (!isDayOfWeekValid(diasDaSemana, repetir, selectedDate)) {
+      return false;
+    }
+
+    // 3. Verificar se há horário disponível na data (considerando blockedSlots)
+    if (!hasAvailableTime(horarioInicio, horarioFim, blockedSlots, selectedDate)) {
+      return false;
+    }
+
     return true;
+  }
+
+  /// Calcula os intervalos de horários disponíveis para uma data específica
+  /// 
+  /// Considera a disponibilidade base e os blockedSlots para a data selecionada
+  /// Retorna uma lista de strings formatadas com os intervalos (ex: ["11 até 13", "15 até 20"])
+  static List<String> getAvailableTimeIntervals(
+    String horarioInicio,
+    String horarioFim,
+    List<BlockedTimeSlot> blockedSlots,
+    DateTime selectedDate,
+  ) {
+    final availabilityStartMinutes = timeToMinutes(horarioInicio);
+    final availabilityEndMinutes = timeToMinutes(horarioFim);
+    
+    // Normalizar data selecionada para comparar apenas dia/mês/ano
+    final normalizedSelectedDate = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    );
+
+    // Buscar bloqueios para esta data
+    final blockedSlotsForDate = blockedSlots.where((blockedSlot) {
+      final blockedDate = DateTime(
+        blockedSlot.date.year,
+        blockedSlot.date.month,
+        blockedSlot.date.day,
+      );
+      return blockedDate == normalizedSelectedDate;
+    }).toList();
+
+    // Se não há bloqueios, retornar intervalo completo
+    if (blockedSlotsForDate.isEmpty) {
+      return ['$horarioInicio até $horarioFim'];
+    }
+
+    // Ordenar bloqueios por horário de início
+    blockedSlotsForDate.sort((a, b) {
+      final aStart = timeToMinutes(a.startTime);
+      final bStart = timeToMinutes(b.startTime);
+      return aStart.compareTo(bStart);
+    });
+
+    final intervals = <String>[];
+    int currentTime = availabilityStartMinutes;
+
+    // Percorrer bloqueios e criar intervalos disponíveis
+    for (final blockedSlot in blockedSlotsForDate) {
+      final blockedStartMinutes = timeToMinutes(blockedSlot.startTime);
+      final blockedEndMinutes = timeToMinutes(blockedSlot.endTime);
+
+      // Se há espaço antes do bloqueio, adicionar intervalo
+      if (blockedStartMinutes > currentTime) {
+        final startTime = _minutesToTimeString(currentTime);
+        final endTime = _minutesToTimeString(blockedStartMinutes);
+        intervals.add('$startTime até $endTime');
+      }
+
+      // Atualizar tempo atual para após o bloqueio
+      currentTime = blockedEndMinutes > currentTime ? blockedEndMinutes : currentTime;
+    }
+
+    // Adicionar intervalo após o último bloqueio (se houver)
+    if (currentTime < availabilityEndMinutes) {
+      final startTime = _minutesToTimeString(currentTime);
+      intervals.add('$startTime até $horarioFim');
+    }
+
+    return intervals;
+  }
+
+  /// Converte minutos desde meia-noite para string de horário (HH:mm)
+  static String _minutesToTimeString(int minutes) {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    return '${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}';
   }
 }
 

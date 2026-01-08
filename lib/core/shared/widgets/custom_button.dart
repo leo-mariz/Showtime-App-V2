@@ -45,7 +45,7 @@ class CustomButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final double buttonWidth = width > 0 ? DSSize.width(width) : double.infinity;
+    final double? buttonWidth = width > 0 ? DSSize.width(width) : null;
     final double buttonHeight = height > 0 ? DSSize.height(height) : DSSize.height(48);
     
     // Aplica estilos baseado no tipo de botão

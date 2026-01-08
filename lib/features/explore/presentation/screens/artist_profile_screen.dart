@@ -2,7 +2,9 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
@@ -18,12 +20,18 @@ class ArtistProfileScreen extends StatelessWidget {
   final ArtistEntity artist;
   final bool isFavorite;
   final bool viewOnly;
+  final DateTime? selectedDate;
+  final AddressInfoEntity? selectedAddress;
+  final AvailabilityEntity? availability;
 
   const ArtistProfileScreen({
     super.key,
     required this.artist,
     this.isFavorite = false,
     this.viewOnly = false,
+    this.selectedDate,
+    this.selectedAddress,
+    this.availability,
   });
 
   void _onVideoTap(BuildContext context, String videoUrl) {
@@ -66,20 +74,32 @@ class ArtistProfileScreen extends StatelessWidget {
 
   void _onRequestPressed(BuildContext context) {
     final router = context.router;
-    final address = artist.residenceAddress;
-    final addressString = address != null
-        ? '${address.street ?? ''}, ${address.number ?? ''} - ${address.district ?? ''}, ${address.city ?? ''}'
-        : 'Endereço não disponível';
     
+    // Calcular preço e duração mínima
+    double pricePerHour = 0.0;
+    if (availability != null) {
+      pricePerHour = availability!.valorShow;
+    } else if (artist.professionalInfo?.hourlyRate != null) {
+      pricePerHour = artist.professionalInfo!.hourlyRate!;
+    }
+
+    final minimumDuration = artist.professionalInfo?.minimumShowDuration != null
+        ? Duration(minutes: artist.professionalInfo!.minimumShowDuration!)
+        : const Duration(minutes: 30);
+    
+    if (selectedAddress == null) {
+      // TODO: Mostrar erro ou selecionar endereço
+      return;
+    }
+
     router.push(
       RequestRoute(
-        selectedDate: DateTime.now(),
-        selectedAddress: addressString,
+        selectedDate: selectedDate ?? DateTime.now(),
+        selectedAddress: selectedAddress!,
         artist: artist,
-        pricePerHour: artist.professionalInfo?.hourlyRate ?? 0.0,
-        minimumDuration: Duration(
-          minutes: artist.professionalInfo?.minimumShowDuration ?? 30,
-        ),
+        pricePerHour: pricePerHour,
+        minimumDuration: minimumDuration,
+        availability: availability,
       ),
     );
   }
@@ -191,7 +211,7 @@ class ArtistProfileScreen extends StatelessWidget {
                       // Badges de avaliação, contratos e favorito
                       Row(
                         children: [
-                          CustomBadge(value: artist.rating.toString(), icon: Icons.star, color: onPrimaryContainer),
+                          CustomBadge(value: artist.rating.toStringAsFixed(2), icon: Icons.star, color: onPrimaryContainer),
                           DSSizedBoxSpacing.horizontal(8),
                           CustomBadge(title: 'Contratos', value: artist.finalizedContracts.toString(), color: onPrimaryContainer),
                           const Spacer(),

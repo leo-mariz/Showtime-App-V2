@@ -11,6 +11,7 @@ class CustomDatePickerDialog {
   /// [initialDate] - Data inicial selecionada (padrão: hoje)
   /// [firstDate] - Primeira data disponível para seleção (padrão: hoje)
   /// [lastDate] - Última data disponível para seleção (padrão: 1 ano a partir de hoje)
+  /// [selectableDayPredicate] - Função opcional para determinar quais dias podem ser selecionados
   /// 
   /// Retorna a data selecionada ou null se o usuário cancelar
   static Future<DateTime?> show({
@@ -18,6 +19,7 @@ class CustomDatePickerDialog {
     DateTime? initialDate,
     DateTime? firstDate,
     DateTime? lastDate,
+    bool Function(DateTime)? selectableDayPredicate,
   }) async {
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
@@ -27,6 +29,7 @@ class CustomDatePickerDialog {
       initialDate: initialDate ?? now,
       firstDate: firstDate ?? now,
       lastDate: lastDate ?? now.add(const Duration(days: 365)),
+      selectableDayPredicate: selectableDayPredicate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(

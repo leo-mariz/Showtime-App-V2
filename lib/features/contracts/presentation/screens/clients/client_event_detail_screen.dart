@@ -1,7 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/event/event_entity.dart';
-import 'package:app/core/enums/event_status_enum.dart';
+import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
@@ -11,11 +11,11 @@ import 'package:intl/intl.dart';
 
 @RoutePage(deferredLoading: true)
 class ClientEventDetailScreen extends StatelessWidget {
-  final EventEntity event;
+  final ContractEntity contract;
 
   const ClientEventDetailScreen({
     super.key,
-    required this.event,
+    required this.contract,
   });
 
   String _formatDuration(int durationInMinutes) {
@@ -44,13 +44,7 @@ class ClientEventDetailScreen extends StatelessWidget {
     return time;
   }
 
-  EventStatusEnum get _status {
-    final statusUpper = event.status.toUpperCase();
-    return EventStatusEnum.values.firstWhere(
-      (e) => e.name == statusUpper,
-      orElse: () => EventStatusEnum.pending,
-    );
-  }
+  ContractStatusEnum get _status => contract.status;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +73,7 @@ class ClientEventDetailScreen extends StatelessWidget {
 
             // Tipo de Evento
             Text(
-              event.eventType?.name ?? 'Evento',
+              contract.eventType?.name ?? 'Evento',
               style: textTheme.headlineSmall?.copyWith(
                 color: onPrimary,
                 fontWeight: FontWeight.w700,
@@ -101,7 +95,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.calendar_today_rounded,
               label: 'Data',
-              value: _formatDate(event.date),
+              value: _formatDate(contract.date),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -110,7 +104,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.access_time_rounded,
               label: 'Horário de Início',
-              value: _formatTime(event.time),
+              value: _formatTime(contract.time),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -119,7 +113,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.timer_rounded,
               label: 'Duração',
-              value: _formatDuration(event.duration),
+              value: _formatDuration(contract.duration),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -133,50 +127,48 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.location_on_rounded,
               label: 'Endereço',
-              value: event.address?.title ?? 'Endereço não informado',
+              value: contract.address.title,
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
             ),
-            if (event.address != null) ...[
-              DSSizedBoxSpacing.vertical(8),
-              Padding(
-                padding: EdgeInsets.only(left: DSSize.width(40)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (event.address!.street != null && event.address!.street!.isNotEmpty)
-                      Text(
-                        '${event.address!.street}${event.address!.number != null ? ", ${event.address!.number}" : ""}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onSurfaceVariant,
-                        ),
+            DSSizedBoxSpacing.vertical(8),
+            Padding(
+              padding: EdgeInsets.only(left: DSSize.width(40)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (contract.address.street != null && contract.address.street!.isNotEmpty)
+                    Text(
+                      '${contract.address.street}${contract.address.number != null ? ", ${contract.address.number}" : ""}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: onSurfaceVariant,
                       ),
-                    if (event.address!.district != null && event.address!.district!.isNotEmpty)
-                      Text(
-                        event.address!.district!,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onSurfaceVariant,
-                        ),
+                    ),
+                  if (contract.address.district != null && contract.address.district!.isNotEmpty)
+                    Text(
+                      contract.address.district!,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: onSurfaceVariant,
                       ),
-                    if (event.address!.city != null && event.address!.state != null)
-                      Text(
-                        '${event.address!.city} - ${event.address!.state}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onSurfaceVariant,
-                        ),
+                    ),
+                  if (contract.address.city != null && contract.address.state != null)
+                    Text(
+                      '${contract.address.city} - ${contract.address.state}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: onSurfaceVariant,
                       ),
-                    if (event.address!.zipCode.isNotEmpty)
-                      Text(
-                        'CEP: ${event.address!.zipCode}',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onSurfaceVariant,
-                        ),
+                    ),
+                  if (contract.address.zipCode.isNotEmpty)
+                    Text(
+                      'CEP: ${contract.address.zipCode}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: onSurfaceVariant,
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
-            ],
+            ),
 
             DSSizedBoxSpacing.vertical(24),
 
@@ -194,23 +186,21 @@ class ClientEventDetailScreen extends StatelessWidget {
                   _buildInfoRow(
                     icon: Icons.attach_money_rounded,
                     label: 'Valor Total',
-                    value: _formatCurrency(event.value),
+                    value: _formatCurrency(contract.value),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
                     isHighlighted: true,
                   ),
-                  if (event.statusPayment.isNotEmpty) ...[
-                    DSSizedBoxSpacing.vertical(12),
-                    _buildInfoRow(
-                      icon: Icons.payment_rounded,
-                      label: 'Status do Pagamento',
-                      value: _getPaymentStatusLabel(event.statusPayment),
-                      textTheme: textTheme,
-                      onSurfaceVariant: onSurfaceVariant,
-                      onPrimary: onPrimary,
-                    ),
-                  ],
+                  DSSizedBoxSpacing.vertical(12),
+                  _buildInfoRow(
+                    icon: Icons.payment_rounded,
+                    label: 'Status do Pagamento',
+                    value: _getPaymentStatusLabel(contract.status),
+                    textTheme: textTheme,
+                    onSurfaceVariant: onSurfaceVariant,
+                    onPrimary: onPrimary,
+                  ),
                 ],
               ),
             ),
@@ -218,25 +208,31 @@ class ClientEventDetailScreen extends StatelessWidget {
             DSSizedBoxSpacing.vertical(32),
 
             // Botões de Ação
-            if (_status != EventStatusEnum.finished && _status != EventStatusEnum.rejected) ...[
-              CustomButton(
-                label: 'Cancelar Solicitação',
-                onPressed: () => _handleCancelRequest(context),
-                filled: true,
-                backgroundColor: colorScheme.error,
-                textColor: colorScheme.onError,
-                height: DSSize.height(48),
+            if (_status != ContractStatusEnum.completed && _status != ContractStatusEnum.rejected) ...[
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  label: 'Cancelar Solicitação',
+                  onPressed: () => _handleCancelRequest(context),
+                  filled: true,
+                  backgroundColor: colorScheme.error,
+                  textColor: colorScheme.onError,
+                  height: DSSize.height(48),
+                ),
               ),
               DSSizedBoxSpacing.vertical(16),
             ],
 
-            if (_status == EventStatusEnum.accepted && event.statusPayment.toUpperCase() == 'PENDING') ...[
-              CustomButton(
-                label: 'Realizar Pagamento',
-                onPressed: () => _handlePayment(context),
-                icon: Icons.payment_rounded,
-                iconOnRight: true,
-                height: DSSize.height(48),
+            if (_status == ContractStatusEnum.accepted && contract.status == ContractStatusEnum.paymentPending) ...[
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  label: 'Realizar Pagamento',
+                  onPressed: () => _handlePayment(context),
+                  icon: Icons.payment_rounded,
+                  iconOnRight: true,
+                  height: DSSize.height(48),
+                ),
               ),
               DSSizedBoxSpacing.vertical(16),
             ],
@@ -276,7 +272,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             radius: DSSize.width(24),
             backgroundColor: colorScheme.surfaceContainerHighest,
             child: Text(
-              (event.nameArtist ?? 'A')[0].toUpperCase(),
+              (contract.contractorName ?? 'A')[0].toUpperCase(),
               style: textTheme.titleMedium?.copyWith(
                 color: onPrimary,
                 fontWeight: FontWeight.w600,
@@ -289,7 +285,7 @@ class ClientEventDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  event.nameArtist ?? 'Artista',
+                  contract.contractorName ?? 'Artista',
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,
@@ -353,20 +349,8 @@ class ClientEventDetailScreen extends StatelessWidget {
     );
   }
 
-  String _getPaymentStatusLabel(String status) {
-    final statusUpper = status.toUpperCase();
-    switch (statusUpper) {
-      case 'PENDING':
-        return 'Pendente';
-      case 'PAID':
-        return 'Pago';
-      case 'CANCELLED':
-        return 'Cancelado';
-      case 'REFUNDED':
-        return 'Reembolsado';
-      default:
-        return status;
-    }
+  String _getPaymentStatusLabel(ContractStatusEnum status) {
+    return status.name;
   }
 
   void _handleCancelRequest(BuildContext context) {
@@ -408,9 +392,9 @@ class ClientEventDetailScreen extends StatelessWidget {
 
   void _handlePayment(BuildContext context) {
     // TODO: Implementar lógica de pagamento
-    if (event.linkPayment.isNotEmpty) {
+    if (contract.linkPayment != null && contract.linkPayment!.isNotEmpty) {
       // Abrir link de pagamento
-      debugPrint('Abrir link de pagamento: ${event.linkPayment}');
+      debugPrint('Abrir link de pagamento: ${contract.linkPayment}');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

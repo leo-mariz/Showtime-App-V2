@@ -16,6 +16,18 @@ import 'package:app/features/explore/domain/usecases/get_artists_with_availabili
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
 import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
+import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
+import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
+import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
+import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/close_availability_usecase.dart';
@@ -538,6 +550,31 @@ ExploreBloc _createExploreBloc(
   );
 }
 
+/// Factory function para criar o ContractsBloc com todas as dependências
+ContractsBloc _createContractsBloc(
+  IContractRepository contractRepository,
+) {
+  // Criar UseCases
+  final getContractUseCase = GetContractUseCase(repository: contractRepository);
+  final getContractsByClientUseCase = GetContractsByClientUseCase(repository: contractRepository);
+  final getContractsByArtistUseCase = GetContractsByArtistUseCase(repository: contractRepository);
+  final getContractsByGroupUseCase = GetContractsByGroupUseCase(repository: contractRepository);
+  final addContractUseCase = AddContractUseCase(repository: contractRepository);
+  final updateContractUseCase = UpdateContractUseCase(repository: contractRepository);
+  final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
+
+  // Criar e retornar ContractsBloc
+  return ContractsBloc(
+    getContractUseCase: getContractUseCase,
+    getContractsByClientUseCase: getContractsByClientUseCase,
+    getContractsByArtistUseCase: getContractsByArtistUseCase,
+    getContractsByGroupUseCase: getContractsByGroupUseCase,
+    addContractUseCase: addContractUseCase,
+    updateContractUseCase: updateContractUseCase,
+    deleteContractUseCase: deleteContractUseCase,
+  );
+}
+
 
 Future <void> main() async {
 
@@ -636,6 +673,14 @@ Future <void> main() async {
   // CalculateAddressGeohashUseCase (compartilhado entre Addresses e Explore)
   final calculateAddressGeohashUseCase = CalculateAddressGeohashUseCase();
 
+  // Contracts
+  final contractLocalDataSource = ContractLocalDataSourceImpl(autoCacheService: localCacheService);
+  final contractRemoteDataSource = ContractRemoteDataSourceImpl(firestore: firestore);
+  final contractRepository = ContractRepositoryImpl(
+    localDataSource: contractLocalDataSource,
+    remoteDataSource: contractRemoteDataSource,
+  );
+
   runApp(MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -709,6 +754,11 @@ Future <void> main() async {
               calculateAddressGeohashUseCase,
             ),
           ),
+          BlocProvider(
+            create: (context) => _createContractsBloc(
+              contractRepository,
+            ),
+          ),
         ],
         child: MyApp(appRouter: appRouter),
       ),
@@ -743,11 +793,6 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      // builder: (context, child) {
-      //   return NotificationOverlay(
-      //     child: child ?? const SizedBox.shrink(),
-      //   );
-      // },
     );
   }
 }

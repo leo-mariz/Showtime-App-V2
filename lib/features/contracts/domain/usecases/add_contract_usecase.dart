@@ -1,0 +1,67 @@
+import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contractor_type_enum.dart';
+import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/errors/failure.dart';
+import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:dartz/dartz.dart';
+
+/// UseCase: Adicionar novo contrato
+/// 
+/// RESPONSABILIDADES:
+/// - Validar dados do contrato
+/// - Validar referências (cliente, artista/grupo)
+/// - Adicionar contrato no repositório
+/// - Retornar UID do contrato criado
+class AddContractUseCase {
+  final IContractRepository repository;
+
+  AddContractUseCase({
+    required this.repository,
+  });
+
+  Future<Either<Failure, String>> call(ContractEntity contract) async {
+    try {
+      // Validar referência do cliente
+      if (contract.refClient == null || contract.refClient!.isEmpty) {
+        return const Left(ValidationFailure('Referência do cliente não pode ser vazia'));
+      }
+
+      // Validar referência do contratado (artista ou grupo)
+      if (contract.contractorType == ContractorTypeEnum.artist) {
+        if (contract.refArtist == null || contract.refArtist!.isEmpty) {
+          return const Left(ValidationFailure('Referência do artista não pode ser vazia'));
+        }
+      } else if (contract.contractorType == ContractorTypeEnum.group) {
+        if (contract.refGroup == null || contract.refGroup!.isEmpty) {
+          return const Left(ValidationFailure('Referência do grupo não pode ser vazia'));
+        }
+      }
+
+      // Validar data do evento
+      if (contract.date.isBefore(DateTime.now())) {
+        return const Left(ValidationFailure('Data do evento não pode ser no passado'));
+      }
+
+      // Validar duração
+      if (contract.duration <= 0) {
+        return const Left(ValidationFailure('Duração deve ser maior que zero'));
+      }
+
+      // Validar valor
+      if (contract.value < 0) {
+        return const Left(ValidationFailure('Valor não pode ser negativo'));
+      }
+
+      // Adicionar contrato
+      final result = await repository.addContract(contract);
+
+      return result.fold(
+        (failure) => Left(failure),
+        (contractUid) => Right(contractUid),
+      );
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+}
+

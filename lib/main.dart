@@ -149,6 +149,17 @@ import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/core/users/domain/usecases/get_user_data_usecase.dart';
 import 'package:app/core/services/storage_service.dart';
 
+// AppLists imports
+import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
+import 'package:app/features/app_lists/data/datasources/app_lists_local_datasource.dart';
+import 'package:app/features/app_lists/data/datasources/app_lists_remote_datasource.dart';
+import 'package:app/features/app_lists/data/repositories/app_lists_repository_impl.dart';
+import 'package:app/features/app_lists/domain/repositories/app_lists_repository.dart';
+import 'package:app/features/app_lists/domain/usecases/get_specialties_usecase.dart';
+import 'package:app/features/app_lists/domain/usecases/get_talents_usecase.dart';
+import 'package:app/features/app_lists/domain/usecases/get_event_types_usecase.dart';
+import 'package:app/features/app_lists/domain/usecases/get_support_subjects_usecase.dart';
+
 
 /// Factory function para criar o AuthBloc com todas as dependências
 AuthBloc _createAuthBloc(IAuthServices authServices, 
@@ -575,6 +586,24 @@ ContractsBloc _createContractsBloc(
   );
 }
 
+AppListsBloc _createAppListsBloc(
+  IAppListsRepository appListsRepository,
+) {
+  // Criar UseCases
+  final getSpecialtiesUseCase = GetSpecialtiesUseCase(repository: appListsRepository);
+  final getTalentsUseCase = GetTalentsUseCase(repository: appListsRepository);
+  final getEventTypesUseCase = GetEventTypesUseCase(repository: appListsRepository);
+  final getSupportSubjectsUseCase = GetSupportSubjectsUseCase(repository: appListsRepository);
+
+  // Criar e retornar AppListsBloc
+  return AppListsBloc(
+    getSpecialtiesUseCase: getSpecialtiesUseCase,
+    getTalentsUseCase: getTalentsUseCase,
+    getEventTypesUseCase: getEventTypesUseCase,
+    getSupportSubjectsUseCase: getSupportSubjectsUseCase,
+  );
+}
+
 
 Future <void> main() async {
 
@@ -681,6 +710,14 @@ Future <void> main() async {
     remoteDataSource: contractRemoteDataSource,
   );
 
+  // AppLists
+  final appListsLocalDataSource = AppListsLocalDataSourceImpl(autoCacheService: localCacheService);
+  final appListsRemoteDataSource = AppListsRemoteDataSourceImpl(firestore: firestore);
+  final appListsRepository = AppListsRepositoryImpl(
+    localDataSource: appListsLocalDataSource,
+    remoteDataSource: appListsRemoteDataSource,
+  );
+
   runApp(MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -757,6 +794,11 @@ Future <void> main() async {
           BlocProvider(
             create: (context) => _createContractsBloc(
               contractRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createAppListsBloc(
+              appListsRepository,
             ),
           ),
         ],

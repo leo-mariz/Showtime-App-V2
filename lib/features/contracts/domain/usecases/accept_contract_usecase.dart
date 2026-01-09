@@ -1,7 +1,7 @@
-import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:dartz/dartz.dart';
 
@@ -16,9 +16,11 @@ import 'package:dartz/dartz.dart';
 /// - Atualizar contrato no repositório
 class AcceptContractUseCase {
   final IContractRepository repository;
+  final IFirebaseFunctionsService firebaseFunctionsService;
 
   AcceptContractUseCase({
     required this.repository,
+    required this.firebaseFunctionsService,
   });
 
   Future<Either<Failure, void>> call({
@@ -50,10 +52,17 @@ class AcceptContractUseCase {
         ));
       }
 
+      // Criar pagamento no Mercado Pago
+      final paymentLink = await firebaseFunctionsService.createMercadoPagoPayment(
+        contract.uid!,
+        true,
+      );
+
       // Criar cópia do contrato com status aceito
       final updatedContract = contract.copyWith(
         status: ContractStatusEnum.accepted,
         acceptedAt: DateTime.now(),
+        linkPayment: paymentLink,
       );
 
       // Atualizar contrato

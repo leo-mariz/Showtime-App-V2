@@ -173,3 +173,33 @@ class DeleteContractFailure extends ContractsState {
   List<Object?> get props => [error];
 }
 
+// ==================== ACCEPT CONTRACT STATES ====================
+
+class AcceptContractLoading extends ContractsState {}
+
+class AcceptContractSuccess extends ContractsState {}
+
+class AcceptContractFailure extends ContractsState {
+  final String error;
+
+  AcceptContractFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== REJECT CONTRACT STATES ====================
+
+class RejectContractLoading extends ContractsState {}
+
+class RejectContractSuccess extends ContractsState {}
+
+class RejectContractFailure extends ContractsState {
+  final String error;
+
+  RejectContractFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+

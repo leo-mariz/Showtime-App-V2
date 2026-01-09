@@ -1,9 +1,12 @@
+import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/contracts/domain/usecases/accept_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -17,6 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// - Emitir estados de loading, success e failure
 /// - Orquestrar chamadas aos UseCases
 class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
+  final GetUserUidUseCase getUserUidUseCase;
   final GetContractUseCase getContractUseCase;
   final GetContractsByClientUseCase getContractsByClientUseCase;
   final GetContractsByArtistUseCase getContractsByArtistUseCase;
@@ -24,8 +28,11 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final AddContractUseCase addContractUseCase;
   final UpdateContractUseCase updateContractUseCase;
   final DeleteContractUseCase deleteContractUseCase;
+  final AcceptContractUseCase acceptContractUseCase;
+  final RejectContractUseCase rejectContractUseCase;
 
   ContractsBloc({
+    required this.getUserUidUseCase,
     required this.getContractUseCase,
     required this.getContractsByClientUseCase,
     required this.getContractsByArtistUseCase,
@@ -33,6 +40,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.addContractUseCase,
     required this.updateContractUseCase,
     required this.deleteContractUseCase,
+    required this.acceptContractUseCase,
+    required this.rejectContractUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
     on<GetContractsByClientEvent>(_onGetContractsByClientEvent);
@@ -41,6 +50,18 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<AddContractEvent>(_onAddContractEvent);
     on<UpdateContractEvent>(_onUpdateContractEvent);
     on<DeleteContractEvent>(_onDeleteContractEvent);
+    on<AcceptContractEvent>(_onAcceptContractEvent);
+    on<RejectContractEvent>(_onRejectContractEvent);
+  }
+
+  // ==================== HELPERS ====================
+
+  Future<String?> _getCurrentUserId() async {
+    final result = await getUserUidUseCase.call();
+    return result.fold(
+      (_) => null,
+      (uid) => uid,
+    );
   }
 
   // ==================== GET CONTRACT ====================
@@ -73,7 +94,9 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   ) async {
     emit(GetContractsByClientLoading());
 
-    final result = await getContractsByClientUseCase.call(event.clientUid);
+    final uid = await _getCurrentUserId();
+
+    final result = await getContractsByClientUseCase.call(uid!);
 
     result.fold(
       (failure) {
@@ -95,7 +118,9 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   ) async {
     emit(GetContractsByArtistLoading());
 
-    final result = await getContractsByArtistUseCase.call(event.artistUid);
+    final uid = await _getCurrentUserId();
+
+    final result = await getContractsByArtistUseCase.call(uid!);
 
     result.fold(
       (failure) {
@@ -195,6 +220,50 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(DeleteContractSuccess(contractUid: event.contractUid));
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== ACCEPT CONTRACT ====================
+
+  Future<void> _onAcceptContractEvent(
+    AcceptContractEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(AcceptContractLoading());
+
+    final result = await acceptContractUseCase.call(contractUid: event.contractUid);
+
+    result.fold(
+      (failure) {
+        emit(AcceptContractFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(AcceptContractSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== REJECT CONTRACT ====================
+
+  Future<void> _onRejectContractEvent(
+    RejectContractEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(RejectContractLoading());
+
+    final result = await rejectContractUseCase.call(contractUid: event.contractUid);
+
+    result.fold(
+      (failure) {
+        emit(RejectContractFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(RejectContractSuccess());
         emit(ContractsInitial());
       },
     );

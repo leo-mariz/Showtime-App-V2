@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
@@ -20,12 +21,14 @@ import 'package:app/features/contracts/data/datasources/contract_local_datasourc
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
 import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/accept_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
@@ -564,6 +567,8 @@ ExploreBloc _createExploreBloc(
 /// Factory function para criar o ContractsBloc com todas as dependências
 ContractsBloc _createContractsBloc(
   IContractRepository contractRepository,
+  GetUserUidUseCase getUserUidUseCase,
+  IFirebaseFunctionsService firebaseFunctionsService,
 ) {
   // Criar UseCases
   final getContractUseCase = GetContractUseCase(repository: contractRepository);
@@ -573,6 +578,8 @@ ContractsBloc _createContractsBloc(
   final addContractUseCase = AddContractUseCase(repository: contractRepository);
   final updateContractUseCase = UpdateContractUseCase(repository: contractRepository);
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
+  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService);
+  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository);
 
   // Criar e retornar ContractsBloc
   return ContractsBloc(
@@ -583,6 +590,9 @@ ContractsBloc _createContractsBloc(
     addContractUseCase: addContractUseCase,
     updateContractUseCase: updateContractUseCase,
     deleteContractUseCase: deleteContractUseCase,
+    acceptContractUseCase: acceptContractUseCase,
+    rejectContractUseCase: rejectContractUseCase,
+    getUserUidUseCase: getUserUidUseCase,
   );
 }
 
@@ -647,6 +657,7 @@ Future <void> main() async {
   final localCacheService = getIt<ILocalCacheService>();
   final biometricService = getIt<IBiometricAuthService>();
   final storageService = getIt<IStorageService>();
+  final firebaseFunctionsService = getIt<IFirebaseFunctionsService>();
 
   final appRouter = AppRouter();
 
@@ -794,6 +805,8 @@ Future <void> main() async {
           BlocProvider(
             create: (context) => _createContractsBloc(
               contractRepository,
+              getUserUidUseCase,
+              firebaseFunctionsService,
             ),
           ),
           BlocProvider(

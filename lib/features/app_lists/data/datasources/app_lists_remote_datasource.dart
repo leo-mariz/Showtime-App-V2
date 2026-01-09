@@ -29,10 +29,8 @@ class AppListsRemoteDataSourceImpl implements IAppListsRemoteDataSource {
         listType,
       );
 
-      final querySnapshot = await collectionRef
-          .orderBy('order', descending: false)
-          .orderBy('name', descending: false)
-          .get();
+      // Buscar todos os documentos (sem orderBy duplo para evitar necessidade de índice composto)
+      final querySnapshot = await collectionRef.get();
 
       if (querySnapshot.docs.isEmpty) {
         return [];
@@ -44,16 +42,41 @@ class AppListsRemoteDataSourceImpl implements IAppListsRemoteDataSource {
         return entity.copyWith(id: doc.id);
       }).toList();
 
+      // Ordenar em memória: primeiro por order (null vai para o final), depois por name
+      items.sort((a, b) {
+        // Primeiro ordena por order (se ambos tiverem order)
+        final orderA = a.order ?? 999999;
+        final orderB = b.order ?? 999999;
+        
+        if (orderA != orderB) {
+          return orderA.compareTo(orderB);
+        }
+        
+        // Se order for igual, ordena por nome
+        return a.name.compareTo(b.name);
+      });
+
       return items;
     } on FirebaseException catch (e, stackTrace) {
+      // Log mais detalhado do erro do Firestore
+      print('❌ [AppLists] Erro do Firestore ao buscar ${listType.name}:');
+      print('   Código: ${e.code}');
+      print('   Mensagem: ${e.message}');
+      print('   StackTrace: $stackTrace');
+      
       throw ServerException(
-        'Erro ao buscar lista do Firestore',
+        'Erro ao buscar lista ${listType.name} do Firestore: ${e.message ?? e.code}',
         originalError: e,
         stackTrace: stackTrace,
       );
     } catch (e, stackTrace) {
+      // Log de erros inesperados
+      print('❌ [AppLists] Erro inesperado ao buscar ${listType.name}:');
+      print('   Erro: $e');
+      print('   StackTrace: $stackTrace');
+      
       throw ServerException(
-        'Erro inesperado ao buscar lista',
+        'Erro inesperado ao buscar lista ${listType.name}: $e',
         originalError: e,
         stackTrace: stackTrace,
       );

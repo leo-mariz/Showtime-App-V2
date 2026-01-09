@@ -6,7 +6,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
-import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/core/shared/widgets/card_action_button.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -27,6 +27,7 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
   late TabController _tabController;
   int _selectedTabIndex = 0;
   List<ContractEntity> _allContracts = [];
+  String? _processingContractUid; // UID do contrato sendo processado (aceitar/rejeitar)
 
   @override
   void initState() {
@@ -45,19 +46,9 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
   }
 
   Future<void> _loadContracts() async {
-    // Obter UID do artista
-    final usersBloc = context.read<UsersBloc>();
-    final uidResult = await usersBloc.getUserUidUseCase.call();
-    final artistUid = uidResult.fold(
-      (failure) => null,
-      (uid) => uid,
-    );
-
-    if (artistUid != null && artistUid.isNotEmpty) {
       context.read<ContractsBloc>().add(
-        GetContractsByArtistEvent(artistUid: artistUid),
+        GetContractsByArtistEvent(),
       );
-    }
   }
 
   @override
@@ -101,24 +92,55 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
 
     return BlocProvider.value(
       value: context.read<ContractsBloc>(),
-      child: BlocListener<ContractsBloc, ContractsState>(
+        child: BlocListener<ContractsBloc, ContractsState>(
         listener: (context, state) {
           if (state is GetContractsByArtistSuccess) {
             setState(() {
               _allContracts = state.contracts;
+              _processingContractUid = null; // Reset ao recarregar
             });
           } else if (state is GetContractsByArtistFailure) {
+            context.showError(state.error);
+          } else if (state is AcceptContractLoading) {
+            // Não precisa fazer nada, o BlocBuilder vai atualizar
+          } else if (state is AcceptContractSuccess) {
+            setState(() {
+              _processingContractUid = null; // Reset após sucesso
+            });
+            context.showSuccess('Solicitação aceita com sucesso!');
+            // Recarregar contratos após sucesso
+            _loadContracts();
+          } else if (state is AcceptContractFailure) {
+            setState(() {
+              _processingContractUid = null; // Reset após falha
+            });
+            context.showError(state.error);
+          } else if (state is RejectContractLoading) {
+            // Não precisa fazer nada, o BlocBuilder vai atualizar
+          } else if (state is RejectContractSuccess) {
+            setState(() {
+              _processingContractUid = null; // Reset após sucesso
+            });
+            context.showSuccess('Solicitação rejeitada com sucesso!');
+            // Recarregar contratos após sucesso
+            _loadContracts();
+          } else if (state is RejectContractFailure) {
+            setState(() {
+              _processingContractUid = null; // Reset após falha
+            });
             context.showError(state.error);
           }
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(
           builder: (context, state) {
             final isLoading = state is GetContractsByArtistLoading;
+            final isAccepting = state is AcceptContractLoading;
+            final isRejecting = state is RejectContractLoading;
             final filteredContracts = _filteredContracts;
 
             return BasePage(
               showAppBar: true,
-              appBarTitle: 'Solicitações',
+              appBarTitle: 'Apresentações',
               child: Column(
                 children: [
                   // Tabs
@@ -166,9 +188,13 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
                                   return ContractCard(
                                     contract: contract,
                                     onTap: () => _onRequestTapped(contract),
-                                    onCancel: () => _onCancelRequest(contract),
-                                    onViewDetails: () => _onRequestTapped(contract),
                                     isArtist: true,
+                                    actionButtons: _buildActionButtons(
+                                      contract,
+                                      isAccepting: isAccepting && _processingContractUid == contract.uid,
+                                      isRejecting: isRejecting && _processingContractUid == contract.uid,
+                                      isAnyLoading: (isAccepting || isRejecting) && _processingContractUid == contract.uid,
+                                    ),
                                   );
                                 },
                               ),
@@ -233,14 +259,78 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
     );
   }
 
-  void _onRequestTapped(ContractEntity request) {
-    context.router.push(ArtistEventDetailRoute(contract: request));
+  Future<void> _onRequestTapped(ContractEntity request) async {
+    final result = await context.router.push<bool>(
+      ArtistEventDetailRoute(contract: request),
+    );
+    
+    // Se voltou da tela de detalhes com indicação de que precisa recarregar
+    if (result == true && mounted) {
+      _loadContracts();
+    }
   }
 
-  void _onCancelRequest(ContractEntity request) {
-    // TODO: Implementar lógica de cancelamento
-    debugPrint('Cancelar solicitação: ${request.uid}');
-    // TODO: Mostrar confirmação e atualizar status
+  // Constrói os botões de ação baseado no status do contrato (Artista)
+  List<Widget> _buildActionButtons(
+    ContractEntity contract, {
+    required bool isAccepting,
+    required bool isRejecting,
+    required bool isAnyLoading,
+  }) {
+    final buttons = <Widget>[];
+
+    if (contract.status == ContractStatusEnum.pending) {
+      // PENDING → Aceitar e Recusar
+      buttons.addAll([
+        CardActionButton(
+          label: 'Recusar',
+          onPressed: isAnyLoading ? null : () => _onReject(contract),
+          icon: Icons.close_rounded,
+          buttonType: CardActionButtonType.cancel,
+          height: DSSize.height(40),
+          isLoading: isRejecting,
+        ),
+        CardActionButton(
+          label: 'Aceitar',
+          onPressed: isAnyLoading ? null : () => _onAccept(contract),
+          icon: Icons.check_rounded,
+          height: DSSize.height(40),
+          isLoading: isAccepting,
+        ),
+      ]);
+    }
+
+    return buttons;
+  }
+
+  void _onAccept(ContractEntity contract) {
+    if (contract.uid == null || contract.uid!.isEmpty) {
+      context.showError('Erro: Contrato sem identificador');
+      return;
+    }
+    
+    setState(() {
+      _processingContractUid = contract.uid;
+    });
+    
+    context.read<ContractsBloc>().add(
+      AcceptContractEvent(contractUid: contract.uid!),
+    );
+  }
+
+  void _onReject(ContractEntity contract) {
+    if (contract.uid == null || contract.uid!.isEmpty) {
+      context.showError('Erro: Contrato sem identificador');
+      return;
+    }
+    
+    setState(() {
+      _processingContractUid = contract.uid;
+    });
+    
+    context.read<ContractsBloc>().add(
+      RejectContractEvent(contractUid: contract.uid!),
+    );
   }
 }
 

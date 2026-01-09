@@ -19,6 +19,26 @@ class AddContractUseCase {
     required this.repository,
   });
 
+  /// Combina data (DateTime) e horário (String "HH:mm") em um DateTime completo
+  DateTime _combineDateAndTime(DateTime date, String time) {
+    final timeParts = time.split(':');
+    if (timeParts.length != 2) {
+      // Se formato inválido, retorna a data original
+      return date;
+    }
+    
+    final hour = int.tryParse(timeParts[0]) ?? 0;
+    final minute = int.tryParse(timeParts[1]) ?? 0;
+    
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      hour,
+      minute,
+    );
+  }
+
   Future<Either<Failure, String>> call(ContractEntity contract) async {
     try {
       // Validar referência do cliente
@@ -37,9 +57,11 @@ class AddContractUseCase {
         }
       }
 
-      // Validar data do evento
-      if (contract.date.isBefore(DateTime.now())) {
-        return const Left(ValidationFailure('Data do evento não pode ser no passado'));
+      // Validar data e horário do evento (deve ser no futuro)
+      // Combinar data + horário para validação correta
+      final eventDateTime = _combineDateAndTime(contract.date, contract.time);
+      if (eventDateTime.isBefore(DateTime.now())) {
+        return const Left(ValidationFailure('Data e horário do evento não podem ser no passado'));
       }
 
       // Validar duração

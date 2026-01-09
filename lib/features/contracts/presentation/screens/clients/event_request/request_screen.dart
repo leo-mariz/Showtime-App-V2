@@ -15,6 +15,9 @@ import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/core/utils/availability_validator.dart';
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
+import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
+import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -55,6 +58,10 @@ class _RequestScreenState extends State<RequestScreen> {
   TimeOfDay? _selectedTime;
   Duration? _selectedDuration;
   bool _hasAttemptedSubmit = false;
+  
+  // Lista de tipos de evento obtidos do AppListsBloc
+  List<String> _eventTypes = [];
+  bool _isLoadingEventTypes = false;
 
   @override
   void initState() {
@@ -62,6 +69,18 @@ class _RequestScreenState extends State<RequestScreen> {
     _selectedDate = widget.selectedDate;
     _selectedDuration = widget.minimumDuration;
     _durationController.text = _formatDuration(widget.minimumDuration);
+    
+    // Buscar tipos de evento do AppListsBloc após o primeiro frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadEventTypes();
+      }
+    });
+  }
+  
+  void _loadEventTypes() {
+    final appListsBloc = context.read<AppListsBloc>();
+    appListsBloc.add(GetEventTypesEvent());
   }
 
   @override
@@ -82,6 +101,29 @@ class _RequestScreenState extends State<RequestScreen> {
     } else {
       return '${minutes}min';
     }
+  }
+
+  String _formatAddress(AddressInfoEntity address) {
+    final parts = <String>[];
+    
+    // Rua e número
+    if (address.street != null && address.street!.isNotEmpty) {
+      final streetPart = address.street!;
+      final numberPart = address.number != null ? ', ${address.number}' : '';
+      parts.add('$streetPart$numberPart');
+    }
+    
+    // Bairro
+    if (address.district != null && address.district!.isNotEmpty && address.city != null && address.state != null) {
+      parts.add('${address.district!}, ${address.city} - ${address.state}');
+    }
+    
+    // CEP
+    if (address.zipCode.isNotEmpty) {
+      parts.add('CEP: ${address.zipCode}');
+    }
+    
+    return parts.join('\n');
   }
 
   String _formatDate(DateTime date) {
@@ -109,17 +151,22 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   Future<void> _selectEventType() async {
+    // Se ainda está carregando, mostrar mensagem
+    if (_isLoadingEventTypes) {
+      context.showError('Carregando tipos de evento...');
+      return;
+    }
+    
+    // Se não há tipos de evento disponíveis, mostrar erro
+    if (_eventTypes.isEmpty) {
+      context.showError('Nenhum tipo de evento disponível');
+      return;
+    }
+    
     final router = AutoRouter.of(context);
     final result = await router.push<String>(
       EventTypeSelectionRoute(
-        eventTypes: [
-          'Aniversário',
-          'Casamento',
-          'Evento Corporativo',
-          'Festa',
-          'Show',
-          'Outro',
-        ],
+        eventTypes: _eventTypes,
         selectedEventType: _eventTypeController.text.isEmpty
             ? null
             : _eventTypeController.text,
@@ -231,9 +278,10 @@ class _RequestScreenState extends State<RequestScreen> {
           '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}'
         );
         final availabilityStartMinutes = AvailabilityValidator.timeToMinutes(availability.horarioInicio);
-        final availabilityEndMinutes = AvailabilityValidator.timeToMinutes(availability.horarioFim);
+        final availabilityEndMinutes = AvailabilityValidator.timeToMinutes(availability.horarioFim, isEndTime: true);
         
         // Verificar se o horário está dentro do intervalo disponível
+        // Quando horarioFim é 00:00, foi tratado como 1440 minutos (24:00)
         // Permite selecionar até o último horário (<= availabilityEndMinutes)
         if (selectedTimeMinutes < availabilityStartMinutes || selectedTimeMinutes > availabilityEndMinutes) {
           final intervals = AvailabilityValidator.getAvailableTimeIntervals(
@@ -395,18 +443,45 @@ class _RequestScreenState extends State<RequestScreen> {
     final onPrimary = colorScheme.onPrimary;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
 
-    return BlocProvider.value(
-      value: context.read<ContractsBloc>(),
-      child: BlocListener<ContractsBloc, ContractsState>(
-        listener: (context, state) {
-          if (state is AddContractSuccess) {
-            context.showSuccess('Solicitação enviada com sucesso!');
-            AutoRouter.of(context).pop();
-          } else if (state is AddContractFailure) {
-            context.showError(state.error);
-          }
-        },
-        child: BasePage(
+    return MultiBlocListener(
+      listeners: [
+        // Listener para ContractsBloc
+        BlocListener<ContractsBloc, ContractsState>(
+          listener: (context, state) {
+            if (state is AddContractSuccess) {
+              context.showSuccess('Solicitação enviada com sucesso!');
+              AutoRouter.of(context).pop();
+            } else if (state is AddContractFailure) {
+              context.showError(state.error);
+            }
+          },
+        ),
+        // Listener para AppListsBloc - tipos de evento
+        BlocListener<AppListsBloc, AppListsState>(
+          listener: (context, state) {
+            if (state is GetEventTypesLoading) {
+              setState(() {
+                _isLoadingEventTypes = true;
+              });
+            } else if (state is GetEventTypesSuccess) {
+              setState(() {
+                _isLoadingEventTypes = false;
+                // Converter AppListItemEntity para List<String> (apenas nomes ativos)
+                _eventTypes = state.eventTypes
+                    .where((item) => item.isActive)
+                    .map((item) => item.name)
+                    .toList();
+              });
+            } else if (state is GetEventTypesFailure) {
+              setState(() {
+                _isLoadingEventTypes = false;
+              });
+              context.showError('Erro ao carregar tipos de evento: ${state.error}');
+            }
+          },
+        ),
+      ],
+      child: BasePage(
           showAppBar: true,
           appBarTitle: 'Nova Solicitação',
           showAppBarBackButton: true,
@@ -427,10 +502,30 @@ class _RequestScreenState extends State<RequestScreen> {
             
             DSSizedBoxSpacing.vertical(24),
             
-            // Endereço (fixo)
-            InfoRow(
-              label: 'Endereço',
-              value: widget.selectedAddress.title,
+            // Endereço completo (fixo) - usando Column para melhor visualização multilinha
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Endereço',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    _formatAddress(widget.selectedAddress),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: onPrimary,
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
             ),
             
             DSSizedBoxSpacing.vertical(24),
@@ -528,7 +623,6 @@ class _RequestScreenState extends State<RequestScreen> {
           ],
         ),
       ),
-        ),
       ),
     );
   }

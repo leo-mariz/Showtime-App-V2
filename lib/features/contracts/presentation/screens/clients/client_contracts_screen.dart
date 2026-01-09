@@ -6,7 +6,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
-import 'package:app/core/users/presentation/bloc/users_bloc.dart';
+import 'package:app/core/shared/widgets/card_action_button.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -27,6 +27,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   late TabController _tabController;
   int _selectedTabIndex = 0;
   List<ContractEntity> _allContracts = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -45,19 +46,9 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   }
 
   Future<void> _loadContracts() async {
-    // Obter UID do cliente
-    final usersBloc = context.read<UsersBloc>();
-    final uidResult = await usersBloc.getUserUidUseCase.call();
-    final clientUid = uidResult.fold(
-      (failure) => null,
-      (uid) => uid,
-    );
-
-    if (clientUid != null && clientUid.isNotEmpty) {
       context.read<ContractsBloc>().add(
-        GetContractsByClientEvent(clientUid: clientUid),
+        GetContractsByClientEvent(),
       );
-    }
   }
 
   @override
@@ -103,17 +94,26 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
       value: context.read<ContractsBloc>(),
       child: BlocListener<ContractsBloc, ContractsState>(
         listener: (context, state) {
+          if (state is GetContractsByClientLoading) {
+            setState(() {
+              _isLoading = true;
+            });
+          }
           if (state is GetContractsByClientSuccess) {
             setState(() {
               _allContracts = state.contracts;
+              
+              _isLoading = false;
             });
           } else if (state is GetContractsByClientFailure) {
             context.showError(state.error);
+            setState(() {
+              _isLoading = false;
+            });
           }
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(
           builder: (context, state) {
-            final isLoading = state is GetContractsByClientLoading;
             final filteredContracts = _filteredContracts;
 
             return BasePage(
@@ -155,7 +155,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
 
                   // Lista de contratos
                   Expanded(
-                    child: isLoading
+                    child: _isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : filteredContracts.isEmpty
                             ? _buildEmptyState()
@@ -166,8 +166,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                   return ContractCard(
                                     contract: contract,
                                     onTap: () => _onRequestTapped(contract),
-                                    onCancel: () => _onCancelRequest(contract),
-                                    onViewDetails: () => _onRequestTapped(contract),
+                                    actionButtons: _buildActionButtons(contract),
                                   );
                                 },
                               ),
@@ -236,10 +235,68 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     context.router.push(ClientEventDetailRoute(contract: request));
   }
 
-  void _onCancelRequest(ContractEntity request) {
-    // TODO: Implementar lógica de cancelamento
-    debugPrint('Cancelar solicitação: ${request.uid}');
-    // TODO: Mostrar confirmação e atualizar status
+  // Constrói os botões de ação baseado no status do contrato (Cliente)
+  List<Widget> _buildActionButtons(ContractEntity contract) {
+    final buttons = <Widget>[];
+
+    if (contract.status == ContractStatusEnum.accepted) {
+      // Accepted → Realizar Pagamento
+      buttons.add(
+        SizedBox(
+          width: double.infinity,
+          child: CardActionButton(
+            label: 'Realizar Pagamento',
+            onPressed: () => _onMakePayment(contract),
+            icon: Icons.payment_rounded,
+            height: 40,
+          ),
+        ),
+      );
+    } else if (contract.status == ContractStatusEnum.paymentExpired) {
+      // paymentExpired → Gerar Pagamento
+      buttons.add(
+        SizedBox(
+          width: double.infinity,
+          child: CardActionButton(
+            label: 'Gerar Pagamento',
+            onPressed: () => _onGeneratePayment(contract),
+            icon: Icons.refresh_rounded,
+            height: 40,
+          ),
+        ),
+      );
+    } else if (contract.status == ContractStatusEnum.paymentRefused ||
+        contract.status == ContractStatusEnum.paymentFailed) {
+      // paymentRefused ou paymentFailed → Tentar Novamente
+      buttons.add(
+        SizedBox(
+          width: double.infinity,
+          child: CardActionButton(
+            label: 'Tentar Novamente',
+            onPressed: () => _onRetryPayment(contract),
+            icon: Icons.refresh_rounded,
+            height: 40,
+          ),
+        ),
+      );
+    }
+
+    return buttons;
+  }
+
+  void _onMakePayment(ContractEntity contract) {
+    // TODO: Implementar lógica de pagamento
+    debugPrint('Realizar pagamento: ${contract.uid}');
+  }
+
+  void _onGeneratePayment(ContractEntity contract) {
+    // TODO: Implementar lógica de gerar pagamento
+    debugPrint('Gerar pagamento: ${contract.uid}');
+  }
+
+  void _onRetryPayment(ContractEntity contract) {
+    // TODO: Implementar lógica de tentar novamente pagamento
+    debugPrint('Tentar novamente pagamento: ${contract.uid}');
   }
 }
 

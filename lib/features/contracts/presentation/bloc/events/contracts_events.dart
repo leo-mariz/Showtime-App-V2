@@ -19,25 +19,11 @@ class GetContractEvent extends ContractsEvent {
 
 // ==================== GET CONTRACTS BY CLIENT EVENTS ====================
 
-class GetContractsByClientEvent extends ContractsEvent {
-  final String clientUid;
-
-  GetContractsByClientEvent({required this.clientUid});
-
-  @override
-  List<Object?> get props => [clientUid];
-}
+class GetContractsByClientEvent extends ContractsEvent {}
 
 // ==================== GET CONTRACTS BY ARTIST EVENTS ====================
 
-class GetContractsByArtistEvent extends ContractsEvent {
-  final String artistUid;
-
-  GetContractsByArtistEvent({required this.artistUid});
-
-  @override
-  List<Object?> get props => [artistUid];
-}
+class GetContractsByArtistEvent extends ContractsEvent {}
 
 // ==================== GET CONTRACTS BY GROUP EVENTS ====================
 
@@ -82,6 +68,32 @@ class DeleteContractEvent extends ContractsEvent {
   final String contractUid;
 
   DeleteContractEvent({
+    required this.contractUid,
+  });
+
+  @override
+  List<Object?> get props => [contractUid];
+}
+
+// ==================== ACCEPT CONTRACT EVENTS ====================
+
+class AcceptContractEvent extends ContractsEvent {
+  final String contractUid;
+
+  AcceptContractEvent({
+    required this.contractUid,
+  });
+
+  @override
+  List<Object?> get props => [contractUid];
+}
+
+// ==================== REJECT CONTRACT EVENTS ====================
+
+class RejectContractEvent extends ContractsEvent {
+  final String contractUid;
+
+  RejectContractEvent({
     required this.contractUid,
   });
 

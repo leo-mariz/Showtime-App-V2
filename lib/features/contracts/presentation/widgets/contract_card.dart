@@ -1,8 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
-import 'package:app/core/enums/contract_status_enum.dart';
-import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:flutter/material.dart';
@@ -11,29 +9,21 @@ import 'package:intl/intl.dart';
 class ContractCard extends StatelessWidget {
   final ContractEntity contract;
   final VoidCallback onTap;
-  final VoidCallback? onCancel;
   final VoidCallback? onViewDetails;
   final bool isArtist;
   
-  // Callbacks para ações específicas
-  final VoidCallback? onAccept; // Artista: aceitar solicitação
-  final VoidCallback? onReject; // Artista: recusar solicitação
-  final VoidCallback? onMakePayment; // Cliente: realizar pagamento
-  final VoidCallback? onGeneratePayment; // Cliente: gerar pagamento
-  final VoidCallback? onRetryPayment; // Cliente: tentar novamente pagamento
+  // Botões de ação a serem exibidos (opcional)
+  // Se 1 botão: ocupa toda a linha
+  // Se 2+ botões: divide em linhas, 2 por linha
+  final List<Widget>? actionButtons;
 
   const ContractCard({
     super.key,
     required this.contract,
     required this.onTap,
-    this.onCancel,
     this.onViewDetails,
     this.isArtist = false,
-    this.onAccept,
-    this.onReject,
-    this.onMakePayment,
-    this.onGeneratePayment,
-    this.onRetryPayment,
+    this.actionButtons,
   });
 
   String _formatDuration(int durationInMinutes) {
@@ -53,90 +43,45 @@ class ContractCard extends StatelessWidget {
     return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
   }
 
-  ContractStatusEnum get _status => contract.status;
-
-  // Retorna os botões a serem exibidos baseado no status e tipo de usuário
-  List<Widget> _buildActionButtons(BuildContext context) {
-    final buttons = <Widget>[];
-
-    if (isArtist) {
-      // Lógica para Artista
-      if (_status == ContractStatusEnum.pending) {
-        // PENDING → Aceitar e Recusar
-        buttons.addAll([
-          Expanded(
-            child: CustomButton(
-              label: 'Recusar',
-              onPressed: onReject,
-              icon: Icons.close_rounded,
-              iconOnLeft: true,
-              buttonType: CustomButtonType.cancel,
-              height: DSSize.height(40),
-            ),
-          ),
-          DSSizedBoxSpacing.horizontal(12),
-          Expanded(
-            child: CustomButton(
-              label: 'Aceitar',
-              onPressed: onAccept,
-              icon: Icons.check_rounded,
-              iconOnLeft: true,
-              height: DSSize.height(40),
-            ),
-          ),
-        ]);
-      }
-      // Removido: botão de cancelar para outros status não finalizados
-    } else {
-      // Lógica para Cliente
-      if (_status == ContractStatusEnum.accepted) {
-        // Accepted → Realizar Pagamento
-        buttons.add(
-          SizedBox(
-            width: double.infinity,
-            child: CustomButton(
-              label: 'Realizar Pagamento',
-              onPressed: onMakePayment,
-              icon: Icons.payment_rounded,
-              iconOnLeft: true,
-              height: DSSize.height(40),
-            ),
-          ),
-        );
-      } else if (_status == ContractStatusEnum.paymentExpired) {
-        // paymentExpired → Gerar Pagamento
-        buttons.add(
-          SizedBox(
-            width: double.infinity,
-            child: CustomButton(
-              label: 'Gerar Pagamento',
-              onPressed: onGeneratePayment,
-              icon: Icons.refresh_rounded,
-              iconOnLeft: true,
-              height: DSSize.height(40),
-            ),
-          ),
-        );
-      } else if (_status == ContractStatusEnum.paymentRefused ||
-          _status == ContractStatusEnum.paymentFailed) {
-        // paymentRefused ou paymentFailed → Tentar Novamente
-        buttons.add(
-          SizedBox(
-            width: double.infinity,
-            child: CustomButton(
-              label: 'Tentar Novamente',
-              onPressed: onRetryPayment,
-              icon: Icons.refresh_rounded,
-              iconOnLeft: true,
-              height: DSSize.height(40),
-            ),
-          ),
-        );
-      }
-      // Removido: botão de cancelar para outros status
+  // Organiza os botões de ação
+  // Se 1 botão: ocupa toda a linha
+  // Se 2+ botões: divide em linhas, 2 por linha
+  Widget? _buildActionButtonsSection() {
+    if (actionButtons == null || actionButtons!.isEmpty) {
+      return null;
     }
 
-    return buttons;
+    if (actionButtons!.length == 1) {
+      // Um botão: ocupa toda a linha
+      return actionButtons!.first;
+    }
+
+    // Múltiplos botões: divide em linhas de 2
+    final rows = <Widget>[];
+    for (int i = 0; i < actionButtons!.length; i += 2) {
+      if (i + 1 < actionButtons!.length) {
+        // Dois botões na mesma linha
+        rows.add(
+          Row(
+            children: [
+              Expanded(child: actionButtons![i]),
+          DSSizedBoxSpacing.horizontal(12),
+              Expanded(child: actionButtons![i + 1]),
+            ],
+          ),
+        );
+        if (i + 2 < actionButtons!.length) {
+          rows.add(DSSizedBoxSpacing.vertical(12));
+        }
+      } else {
+        // Um botão sozinho na última linha
+        rows.add(actionButtons![i]);
+      }
+    }
+
+    return Column(
+      children: rows,
+    );
   }
 
   @override
@@ -161,7 +106,7 @@ class ContractCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ContractStatusBadge(status: _status),
+                  ContractStatusBadge(status: contract.status),
                   Text(
                     dateFormatted,
                     style: textTheme.bodyLarge?.copyWith(
@@ -300,13 +245,10 @@ class ContractCard extends StatelessWidget {
                 ),
               ),
               
-              // Ações baseadas no status e tipo de usuário
-              if (_buildActionButtons(context).isNotEmpty) ...[
+              // Botões de ação (se fornecidos)
+              if (_buildActionButtonsSection() != null) ...[
                 DSSizedBoxSpacing.vertical(16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: _buildActionButtons(context),
-                ),
+                _buildActionButtonsSection()!,
               ],
             ],
           ),

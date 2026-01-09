@@ -86,15 +86,28 @@ class AvailabilityValidator {
 
   /// Converte string de horário (HH:mm) para minutos desde meia-noite
   /// 
-  /// Exemplo: "17:30" -> 1050 minutos (17 * 60 + 30)
-  static int timeToMinutes(String timeString) {
+  /// [isEndTime]: Se true e o horário for "00:00", trata como 24:00 (1440 minutos)
+  ///              Isso permite intervalos que cruzam a meia-noite (ex: 18:00 até 00:00)
+  /// 
+  /// Exemplo: 
+  /// - "17:30" -> 1050 minutos (17 * 60 + 30)
+  /// - "00:00" com isEndTime=true -> 1440 minutos (24:00)
+  /// - "00:00" com isEndTime=false -> 0 minutos
+  static int timeToMinutes(String timeString, {bool isEndTime = false}) {
     final parts = timeString.split(':');
     if (parts.length != 2) return 0;
     
     final hours = int.tryParse(parts[0]) ?? 0;
     final minutes = int.tryParse(parts[1]) ?? 0;
     
-    return hours * 60 + minutes;
+    final totalMinutes = hours * 60 + minutes;
+    
+    // Se é horário fim e é 00:00, tratar como 24:00 (meia-noite do dia seguinte)
+    if (isEndTime && totalMinutes == 0) {
+      return 24 * 60; // 1440 minutos
+    }
+    
+    return totalMinutes;
   }
 
   /// Verifica se há horários bloqueados que impedem completamente a disponibilidade
@@ -126,7 +139,7 @@ class AvailabilityValidator {
 
     // Converter horários da disponibilidade para minutos
     final availabilityStartMinutes = timeToMinutes(horarioInicio);
-    final availabilityEndMinutes = timeToMinutes(horarioFim);
+    final availabilityEndMinutes = timeToMinutes(horarioFim, isEndTime: true);
 
     // Verificar se há algum bloqueio na data selecionada
     final blockedSlotsForDate = blockedSlots.where((blockedSlot) {
@@ -221,7 +234,7 @@ class AvailabilityValidator {
     DateTime selectedDate,
   ) {
     final availabilityStartMinutes = timeToMinutes(horarioInicio);
-    final availabilityEndMinutes = timeToMinutes(horarioFim);
+    final availabilityEndMinutes = timeToMinutes(horarioFim, isEndTime: true);
     
     // Normalizar data selecionada para comparar apenas dia/mês/ano
     final normalizedSelectedDate = DateTime(
@@ -281,7 +294,14 @@ class AvailabilityValidator {
   }
 
   /// Converte minutos desde meia-noite para string de horário (HH:mm)
+  /// 
+  /// Se minutes >= 1440, trata como 00:00 (meia-noite do dia seguinte)
   static String _minutesToTimeString(int minutes) {
+    // Se for 1440 minutos (24:00), retornar 00:00
+    if (minutes >= 24 * 60) {
+      return '00:00';
+    }
+    
     final hours = minutes ~/ 60;
     final mins = minutes % 60;
     return '${hours.toString().padLeft(2, '0')}:${mins.toString().padLeft(2, '0')}';

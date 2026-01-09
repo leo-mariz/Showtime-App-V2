@@ -152,6 +152,7 @@ class CustomButton extends StatelessWidget {
                 ),
               ),
             // Conteúdo central (texto + loading)
+            
             Center(
               child: isLoading
                   ? Row(

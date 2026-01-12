@@ -31,7 +31,7 @@ class ContractStatusBadge extends StatelessWidget {
       case ContractStatusEnum.paid:
         return Colors.green;
       case ContractStatusEnum.completed:
-        return colorScheme.primary;
+        return Colors.blue;
       case ContractStatusEnum.rated:
         return Colors.blue;
       case ContractStatusEnum.canceled:
@@ -56,7 +56,7 @@ class ContractStatusBadge extends StatelessWidget {
       case ContractStatusEnum.paid:
         return 'Pago';
       case ContractStatusEnum.completed:
-        return 'Finalizado';
+        return 'Realizado';
       case ContractStatusEnum.rated:
         return 'Avaliado';
       case ContractStatusEnum.canceled:

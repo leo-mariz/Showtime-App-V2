@@ -97,6 +97,14 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           }
         } else if (state is CancelContractFailure) {
           context.showError(state.error);
+        } else if (state is ConfirmShowSuccess) {
+          context.showSuccess('Show confirmado com sucesso!');
+          // Voltar para a tela anterior e sinalizar que precisa recarregar
+          if (mounted) {
+            context.router.pop(true);
+          }
+        } else if (state is ConfirmShowFailure) {
+          context.showError(state.error);
         }
       },
       child: BlocBuilder<ContractsBloc, ContractsState>(
@@ -636,19 +644,15 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
   }
 
   void _handleConfirmShow(BuildContext context) async {
-    final code = await ConfirmShowModal.show(
-      context: context,
-      isLoading: false,
-    );
-
-    // TODO: Implementar lógica de confirmação do show com o código
-    // Por enquanto apenas mostra o código no console
-    if (code != null && code.isNotEmpty) {
-      // Aqui será implementado o evento do BLoC para confirmar o show
-      // context.read<ContractsBloc>().add(
-      //   ConfirmShowEvent(contractUid: contract.uid!, confirmationCode: code),
-      // );
+    if (contract.uid == null || contract.uid!.isEmpty) {
+      context.showError('Erro: Contrato sem identificador');
+      return;
     }
+
+    await ConfirmShowModal.show(
+      context: context,
+      contractUid: contract.uid!,
+    );
   }
 
 }

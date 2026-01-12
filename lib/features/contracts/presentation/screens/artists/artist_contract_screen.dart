@@ -11,6 +11,7 @@ import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_card.dart';
+import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -98,6 +99,11 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
               _processingContractUid = null; // Reset ao recarregar
             });
           } else if (state is GetContractsByArtistFailure) {
+            context.showError(state.error);
+          } else if (state is ConfirmShowSuccess) {
+            context.showSuccess('Show confirmado com sucesso!');
+            _loadContracts();
+          } else if (state is ConfirmShowFailure) {
             context.showError(state.error);
           } else if (state is AcceptContractLoading) {
             // Não precisa fazer nada, o BlocBuilder vai atualizar
@@ -305,9 +311,31 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
           isLoading: isAccepting,
         ),
       ]);
+    } else if (contract.status == ContractStatusEnum.paid) {
+      // PAID → Botão para confirmar show
+      buttons.add(
+        CardActionButton(
+          label: 'Confirmar Show',
+          onPressed: isAnyLoading ? null : () => _onConfirmShow(contract),
+          icon: Icons.check_circle_rounded,
+          height: DSSize.height(40),
+        ),
+      );
     }
 
     return buttons;
+  }
+
+  void _onConfirmShow(ContractEntity contract) async {
+    if (contract.uid == null || contract.uid!.isEmpty) {
+      context.showError('Erro: Contrato sem identificador');
+      return;
+    }
+
+    await ConfirmShowModal.show(
+      context: context,
+      contractUid: contract.uid!,
+    );
   }
 
   void _onAccept(ContractEntity contract) {

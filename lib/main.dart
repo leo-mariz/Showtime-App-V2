@@ -5,6 +5,7 @@ import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
@@ -588,6 +589,7 @@ ContractsBloc _createContractsBloc(
   final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository);
   final cancelContractUseCase = CancelContractUseCase(repository: contractRepository);
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
+  final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, contractRepository: contractRepository);
 
   // Criar e retornar ContractsBloc
   return ContractsBloc(
@@ -603,6 +605,7 @@ ContractsBloc _createContractsBloc(
     makePaymentUseCase: makePaymentUseCase,
     cancelContractUseCase: cancelContractUseCase,
     verifyPaymentUseCase: verifyPaymentUseCase,
+    confirmShowUseCase: confirmShowUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }

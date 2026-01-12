@@ -2,6 +2,7 @@ import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/contracts/domain/usecases/accept_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
@@ -36,6 +37,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final MakePaymentUseCase makePaymentUseCase;
   final CancelContractUseCase cancelContractUseCase;
   final VerifyPaymentUseCase verifyPaymentUseCase;
+  final ConfirmShowUseCase confirmShowUseCase;
 
   ContractsBloc({
     required this.getUserUidUseCase,
@@ -51,6 +53,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.makePaymentUseCase,
     required this.cancelContractUseCase,
     required this.verifyPaymentUseCase,
+    required this.confirmShowUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
     on<GetContractsByClientEvent>(_onGetContractsByClientEvent);
@@ -64,6 +67,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<MakePaymentEvent>(_onMakePaymentEvent);
     on<CancelContractEvent>(_onCancelContractEvent);
     on<VerifyPaymentEvent>(_onVerifyPaymentEvent);
+    on<ConfirmShowEvent>(_onConfirmShowEvent);
   }
 
   // ==================== HELPERS ====================
@@ -346,6 +350,31 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(VerifyPaymentSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== CONFIRM SHOW ====================
+
+  Future<void> _onConfirmShowEvent(
+    ConfirmShowEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(ConfirmShowLoading());
+
+    final result = await confirmShowUseCase.call(
+      contractUid: event.contractUid,
+      confirmationCode: event.confirmationCode,
+    );
+
+    result.fold(
+      (failure) {
+        emit(ConfirmShowFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(ConfirmShowSuccess());
         emit(ContractsInitial());
       },
     );

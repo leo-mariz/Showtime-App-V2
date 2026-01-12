@@ -159,3 +159,18 @@ class VerifyPaymentEvent extends ContractsEvent {
   List<Object?> get props => [contractUid];
 }
 
+// ==================== CONFIRM SHOW EVENTS ====================
+
+class ConfirmShowEvent extends ContractsEvent {
+  final String contractUid;
+  final String confirmationCode;
+
+  ConfirmShowEvent({
+    required this.contractUid,
+    required this.confirmationCode,
+  });
+
+  @override
+  List<Object?> get props => [contractUid, confirmationCode];
+}
+

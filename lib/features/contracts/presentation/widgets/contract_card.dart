@@ -106,7 +106,7 @@ class ContractCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ContractStatusBadge(status: contract.status),
+                  ContractStatusBadge(status: contract.status, isArtist: isArtist),
                   Text(
                     dateFormatted,
                     style: textTheme.bodyLarge?.copyWith(

@@ -1,4 +1,5 @@
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
@@ -29,7 +30,19 @@ class GetContractsByClientUseCase {
 
       return result.fold(
         (failure) => Left(failure),
-        (contracts) => Right(contracts),
+        (contracts) async {
+          final contractsWithKeyCode = <ContractEntity>[];
+          for (var contract in contracts) {
+            if (contract.status == ContractStatusEnum.paid) {
+              final keyCodeResult = await repository.getKeyCode(contract.uid!);
+              if (keyCodeResult.isRight()) {
+                contract = contract.copyWith(keyCode: keyCodeResult.fold((failure) => null, (keyCode) => keyCode));
+              }
+            }
+            contractsWithKeyCode.add(contract);
+          }
+          return Right(contractsWithKeyCode);
+        },
       );
     } catch (e) {
       return Left(ErrorHandler.handle(e));

@@ -210,6 +210,53 @@ class ContractRepositoryImpl implements IContractRepository {
     }
   }
 
+  // ==================== KEY CODE OPERATIONS ====================
+
+  @override
+  Future<Either<Failure, String?>> getKeyCode(String contractUid, {bool forceRefresh = false}) async {
+    try {
+      // Primeiro tenta buscar do cache
+      if (!forceRefresh) {
+        try {
+          final cachedKeyCode = await localDataSource.getCachedKeyCode(contractUid);
+          if (cachedKeyCode != null) {
+            return Right(cachedKeyCode);
+          }
+        } catch (e) {
+          // Se cache falhar, continua para buscar do remoto
+          // Não retorna erro aqui, apenas loga se necessário
+        }
+      }
+
+      // Se não encontrou no cache, busca do remoto
+      final keyCode = await remoteDataSource.getKeyCode(contractUid);
+      
+      // Salva no cache após buscar do remoto (se encontrou)
+      if (keyCode != null) {
+        await localDataSource.cacheKeyCode(contractUid, keyCode);
+      }
+      
+      return Right(keyCode);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setKeyCode(String contractUid, String keyCode) async {
+    try {
+      // Salva no remoto
+      await remoteDataSource.setKeyCode(contractUid, keyCode);
+      
+      // Salva no cache após salvar no remoto
+      await localDataSource.cacheKeyCode(contractUid, keyCode);
+      
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
   // ==================== DELETE OPERATIONS ====================
 
   @override

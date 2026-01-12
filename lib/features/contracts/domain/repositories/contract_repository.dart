@@ -42,5 +42,13 @@ abstract class IContractRepository {
   
   /// Remove um contrato
   Future<Either<Failure, void>> deleteContract(String contractUid);
+
+  // ==================== KEY CODE OPERATIONS ====================
+  
+  /// Busca o código de confirmação (keyCode) de um contrato
+  Future<Either<Failure, String?>> getKeyCode(String contractUid, {bool forceRefresh = false});
+  
+  /// Salva/atualiza o código de confirmação (keyCode) de um contrato
+  Future<Either<Failure, void>> setKeyCode(String contractUid, String keyCode);
 }
 

@@ -29,7 +29,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   List<ContractEntity> _allContracts = [];
   bool _isLoading = false;
   bool _isVerifyingPayment = false;
-  bool _isTryingToPay = false;
+  // bool _isTryingToPay = false;
 
   @override
   void initState() {
@@ -64,15 +64,13 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
       case 0: // Abertas
         return _allContracts.where((contract) {
           return contract.status == ContractStatusEnum.pending ||
-              contract.status == ContractStatusEnum.accepted ||
               contract.status == ContractStatusEnum.paymentPending ||
               contract.status == ContractStatusEnum.paymentExpired ||
               contract.status == ContractStatusEnum.paymentRefused;
         }).toList();
       case 1: // Confirmadas
         return _allContracts.where((contract) {
-          return contract.status == ContractStatusEnum.paid ||
-              contract.status == ContractStatusEnum.confirmed;
+          return contract.status == ContractStatusEnum.paid;
         }).toList();
       case 2: // Finalizadas
         return _allContracts.where((contract) {

@@ -1,4 +1,5 @@
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/domain/contract/key_code_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -47,6 +48,15 @@ abstract class IContractRemoteDataSource {
   /// Lança [ServerException] em caso de erro
   /// Lança [NotFoundException] se o contrato não existir
   Future<void> deleteContract(String contractUid);
+  
+  /// Busca o código de confirmação (keyCode) de um contrato
+  /// Retorna null se não existir
+  /// Lança [ServerException] em caso de erro
+  Future<String?> getKeyCode(String contractUid);
+  
+  /// Salva/atualiza o código de confirmação (keyCode) de um contrato
+  /// Lança [ServerException] em caso de erro
+  Future<void> setKeyCode(String contractUid, String keyCode);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -439,6 +449,92 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       
       throw ServerException(
         'Erro inesperado ao deletar contrato',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<String?> getKeyCode(String contractUid) async {
+    try {
+      if (contractUid.isEmpty) {
+        throw const ValidationException(
+          'UID do contrato não pode ser vazio',
+        );
+      }
+
+      final documentReference = ConfirmationEntityReference.firebaseReference(
+        firestore,
+        contractUid,
+      );
+
+      final snapshot = await documentReference.get();
+      
+      if (!snapshot.exists) {
+        return null;
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>?;
+      return data?['keyCode'] as String?;
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar código de confirmação no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      
+      throw ServerException(
+        'Erro inesperado ao buscar código de confirmação',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> setKeyCode(String contractUid, String keyCode) async {
+    try {
+      if (contractUid.isEmpty) {
+        throw const ValidationException(
+          'UID do contrato não pode ser vazio',
+        );
+      }
+
+      if (keyCode.isEmpty) {
+        throw const ValidationException(
+          'Código de confirmação não pode ser vazio',
+        );
+      }
+
+      final documentReference = ConfirmationEntityReference.firebaseReference(
+        firestore,
+        contractUid,
+      );
+
+      final confirmationEntity = ConfirmationEntity(
+        keyCode: keyCode,
+        createdAt: DateTime.now(),
+      );
+
+      final data = confirmationEntity.toMap();
+      
+      await documentReference.set(data, SetOptions(merge: true));
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao salvar código de confirmação no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      
+      throw ServerException(
+        'Erro inesperado ao salvar código de confirmação',
         originalError: e,
         stackTrace: stackTrace,
       );

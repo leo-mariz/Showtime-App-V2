@@ -62,15 +62,13 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
       case 0: // Abertas
         return _allContracts.where((contract) {
           return contract.status == ContractStatusEnum.pending ||
-              contract.status == ContractStatusEnum.accepted ||
               contract.status == ContractStatusEnum.paymentPending ||
               contract.status == ContractStatusEnum.paymentExpired ||
               contract.status == ContractStatusEnum.paymentRefused;
         }).toList();
       case 1: // Confirmadas
         return _allContracts.where((contract) {
-          return contract.status == ContractStatusEnum.paid ||
-              contract.status == ContractStatusEnum.confirmed;
+          return contract.status == ContractStatusEnum.paid;
         }).toList();
       case 2: // Finalizadas
         return _allContracts.where((contract) {

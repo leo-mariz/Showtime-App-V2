@@ -70,13 +70,6 @@ class CancelContractDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Tem certeza que deseja cancelar este contrato?',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface,
-            ),
-          ),
-          DSSizedBoxSpacing.vertical(8),
           Container(
             padding: EdgeInsets.all(DSSize.width(8)),
             decoration: BoxDecoration(
@@ -123,6 +116,10 @@ class CancelContractDialog extends StatelessWidget {
               fontStyle: FontStyle.italic,
             ),
           ),
+
+          DSSizedBoxSpacing.vertical(8),
+          
+          
         ],
       ),
       actions: [
@@ -144,16 +141,16 @@ class CancelContractDialog extends StatelessWidget {
         vertical: DSSize.height(8),
       ),
       contentPadding: EdgeInsets.fromLTRB(
-        DSSize.width(24),
+        DSSize.width(16),
         DSSize.height(20),
-        DSSize.width(24),
+        DSSize.width(16),
         DSSize.height(8),
       ),
       titlePadding: EdgeInsets.fromLTRB(
-        DSSize.width(24),
-        DSSize.height(24),
-        DSSize.width(24),
-        DSSize.height(8),
+        DSSize.width(16),
+        DSSize.height(16),
+        DSSize.width(16),
+        DSSize.height(0),
       ),
     );
   }

@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 class ContractStatusBadge extends StatelessWidget {
   final ContractStatusEnum status;
+  final bool isArtist;
 
   const ContractStatusBadge({
     super.key,
     required this.status,
+    required this.isArtist,
   });
 
   Color _getStatusColor(ContractStatusEnum status, BuildContext context) {
@@ -16,51 +18,43 @@ class ContractStatusBadge extends StatelessWidget {
     switch (status) {
       case ContractStatusEnum.pending:
         return Colors.orange;
-      case ContractStatusEnum.accepted:
-        return Colors.green;
       case ContractStatusEnum.rejected:
         return Colors.red;
       case ContractStatusEnum.paymentPending:
         return Colors.orange;
       case ContractStatusEnum.paymentExpired:
-        return Colors.red;
+        return colorScheme.onError;
       case ContractStatusEnum.paymentRefused:
-        return Colors.red;
+        return colorScheme.error;
       case ContractStatusEnum.paymentFailed:
-        return Colors.red;
+        return colorScheme.error;
       case ContractStatusEnum.paid:
         return Colors.green;
-      case ContractStatusEnum.confirmed:
-        return Colors.blue;
       case ContractStatusEnum.completed:
         return colorScheme.primary;
       case ContractStatusEnum.rated:
-        return Colors.purple;
+        return Colors.blue;
       case ContractStatusEnum.canceled:
         return Colors.red;
     }
   }
 
-  String _getStatusLabel(ContractStatusEnum status) {
+  String _getStatusLabel(ContractStatusEnum status, bool isArtist) {
     switch (status) {
       case ContractStatusEnum.pending:
         return 'Solicitada';
-      case ContractStatusEnum.accepted:
-        return 'Aceita';
       case ContractStatusEnum.rejected:
         return 'Recusada';
       case ContractStatusEnum.paymentPending:
-        return 'Aguardando Pagamento';
+        return 'Aguardando Pagamento do Anfitrião';
       case ContractStatusEnum.paymentExpired:
-        return 'Pagamento Expirado';
+        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Expirado';
       case ContractStatusEnum.paymentRefused:
-        return 'Pagamento Recusado';
+        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Recusado';
       case ContractStatusEnum.paymentFailed:
-        return 'Pagamento Falhou';
+        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Falhou';
       case ContractStatusEnum.paid:
         return 'Pago';
-      case ContractStatusEnum.confirmed:
-        return 'Confirmado';
       case ContractStatusEnum.completed:
         return 'Finalizado';
       case ContractStatusEnum.rated:
@@ -101,7 +95,7 @@ class ContractStatusBadge extends StatelessWidget {
           ),
           SizedBox(width: DSSize.width(6)),
           Text(
-            _getStatusLabel(status),
+            _getStatusLabel(status, isArtist),
             style: textTheme.bodySmall?.copyWith(
               color: statusColor,
               fontWeight: FontWeight.w600,

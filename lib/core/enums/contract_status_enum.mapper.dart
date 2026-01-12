@@ -28,8 +28,6 @@ class ContractStatusEnumMapper extends EnumMapper<ContractStatusEnum> {
     switch (value) {
       case 'PENDING':
         return ContractStatusEnum.pending;
-      case 'ACCEPTED':
-        return ContractStatusEnum.accepted;
       case 'REJECTED':
         return ContractStatusEnum.rejected;
       case 'PAYMENT_PENDING':
@@ -42,8 +40,6 @@ class ContractStatusEnumMapper extends EnumMapper<ContractStatusEnum> {
         return ContractStatusEnum.paymentFailed;
       case 'PAID':
         return ContractStatusEnum.paid;
-      case 'CONFIRMED':
-        return ContractStatusEnum.confirmed;
       case 'COMPLETED':
         return ContractStatusEnum.completed;
       case 'RATED':
@@ -60,8 +56,6 @@ class ContractStatusEnumMapper extends EnumMapper<ContractStatusEnum> {
     switch (self) {
       case ContractStatusEnum.pending:
         return 'PENDING';
-      case ContractStatusEnum.accepted:
-        return 'ACCEPTED';
       case ContractStatusEnum.rejected:
         return 'REJECTED';
       case ContractStatusEnum.paymentPending:
@@ -74,8 +68,6 @@ class ContractStatusEnumMapper extends EnumMapper<ContractStatusEnum> {
         return 'PAYMENT_FAILED';
       case ContractStatusEnum.paid:
         return 'PAID';
-      case ContractStatusEnum.confirmed:
-        return 'CONFIRMED';
       case ContractStatusEnum.completed:
         return 'COMPLETED';
       case ContractStatusEnum.rated:

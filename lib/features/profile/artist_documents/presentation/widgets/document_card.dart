@@ -71,7 +71,7 @@ class DocumentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final hasDocument = document.url != null && document.url!.isNotEmpty;
+    // final hasDocument = document.url != null && document.url!.isNotEmpty;
     final statusText = _getStatusText(document.status);
     final statusColor = _getStatusColor(document.status, colorScheme);
     final statusIcon = _getStatusIcon(document.status);

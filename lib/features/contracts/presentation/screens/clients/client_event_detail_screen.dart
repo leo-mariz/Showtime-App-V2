@@ -9,6 +9,7 @@ import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
+import 'package:app/features/contracts/presentation/widgets/confirmation_code_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +84,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             // Status Badge
             Row(
               children: [
-                ContractStatusBadge(status: _status),
+                ContractStatusBadge(status: _status, isArtist: false),
               ],
             ),
 
@@ -106,6 +107,17 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildArtistInfo(context, colorScheme, textTheme, onPrimary),
 
             DSSizedBoxSpacing.vertical(24),
+
+            // Código de Confirmação (quando pago)
+            if (_status == ContractStatusEnum.paid && contract.keyCode != null && contract.keyCode!.isNotEmpty) ...[
+              _buildSectionTitle('Código de Confirmação', textTheme, onPrimary),
+              DSSizedBoxSpacing.vertical(12),
+              ConfirmationCodeCard(confirmationCode: contract.keyCode!),
+              DSSizedBoxSpacing.vertical(24),
+            ],
+
+
+            
 
             // Data e Hora
             _buildSectionTitle('Data e Hora', textTheme, onPrimary),
@@ -209,7 +221,7 @@ class ClientEventDetailScreen extends StatelessWidget {
               ),
             ),
 
-            DSSizedBoxSpacing.vertical(32),
+            DSSizedBoxSpacing.vertical(24),
 
             // Botões de Ação
             if (_status == ContractStatusEnum.paymentPending) ...[
@@ -228,19 +240,67 @@ class ClientEventDetailScreen extends StatelessWidget {
             if (_status != ContractStatusEnum.completed && 
                 _status != ContractStatusEnum.rejected &&
                 _status != ContractStatusEnum.canceled) ...[
-              SizedBox(
-                width: double.infinity,
+              // Botões de ajuda e cancelamento
+              Align(
+                alignment: Alignment.centerRight,
                 child: BlocBuilder<ContractsBloc, ContractsState>(
                   builder: (context, state) {
                     final isCanceling = state is CancelContractLoading;
-                    return CustomButton(
-                      label: 'Cancelar Evento',
-                      onPressed: isCanceling ? null : () => _handleCancelRequest(context),
-                      filled: true,
-                      backgroundColor: colorScheme.error,
-                      textColor: colorScheme.onError,
-                      height: DSSize.height(48),
-                      isLoading: isCanceling,
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: isCanceling ? null : () {
+                            // TODO: Implementar tela de ajuda
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: DSSize.width(12),
+                              vertical: DSSize.height(8),
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Precisa de ajuda?',
+                            style: textTheme.bodyMedium?.copyWith(
+                              decoration: TextDecoration.underline,
+                              color: onPrimary,
+                            ),
+                          ),
+                        ),
+                        DSSizedBoxSpacing.horizontal(8),
+                        TextButton(
+                          onPressed: isCanceling ? null : () => _handleCancelRequest(context),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: DSSize.width(12),
+                              vertical: DSSize.height(8),
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Cancelar',
+                            style: textTheme.bodyMedium?.copyWith(
+                              decoration: TextDecoration.underline,
+                              color: colorScheme.error,
+                            ),
+                          ),
+                        ),
+                        if (isCanceling)
+                          Padding(
+                            padding: EdgeInsets.only(left: DSSize.width(8)),
+                            child: SizedBox(
+                              width: DSSize.width(16),
+                              height: DSSize.width(16),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.error),
+                              ),
+                            ),
+                          ),
+                      ],
                     );
                   },
                 ),

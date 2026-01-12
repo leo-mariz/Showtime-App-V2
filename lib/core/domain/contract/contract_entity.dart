@@ -100,7 +100,6 @@ class ContractEntity with ContractEntityMappable {
   
   // Validações de negócio
   bool get isPending => status == ContractStatusEnum.pending;
-  bool get isAccepted => status == ContractStatusEnum.accepted;
   bool get isRejected => status == ContractStatusEnum.rejected;
   bool get isPaymentPending => status == ContractStatusEnum.paymentPending;
   bool get isPaid => status == ContractStatusEnum.paid;
@@ -137,6 +136,11 @@ extension ContractEntityReference on ContractEntity {
   static String cachedKey() {
     return 'CACHED_CONTRACT_INFO';
   }
+
+  // ==================== CACHE VALIDITY (Constantes) ====================
+  
+  /// Validade do cache de contratos (10 minutos)
+  static const Duration contractsCacheValidity = Duration(minutes: 1);
 
   static List<String> contractFields = [
     'uid',

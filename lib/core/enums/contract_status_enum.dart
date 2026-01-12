@@ -6,8 +6,6 @@ part 'contract_status_enum.mapper.dart';
 enum ContractStatusEnum {
   @MappableValue('PENDING')
   pending,           // Cliente solicitou o evento
-  @MappableValue('ACCEPTED')
-  accepted,         // Artista aceitou o evento
   @MappableValue('REJECTED')
   rejected,         // Artista recusou o evento
   @MappableValue('PAYMENT_PENDING')
@@ -19,9 +17,7 @@ enum ContractStatusEnum {
   @MappableValue('PAYMENT_FAILED')
   paymentFailed,   // Pagamento falhou
   @MappableValue('PAID')
-  paid,            // Cliente realizou o pagamento
-  @MappableValue('CONFIRMED')
-  confirmed,       // Show confirmado (código validado)
+  paid,            // Cliente realizou o pagamento  
   @MappableValue('COMPLETED')
   completed,       // Evento finalizado
   @MappableValue('RATED')
@@ -33,8 +29,6 @@ enum ContractStatusEnum {
     switch (this) {
       case ContractStatusEnum.pending:
         return 'PENDING';
-      case ContractStatusEnum.accepted:
-        return 'ACCEPTED';
       case ContractStatusEnum.rejected:
         return 'REJECTED';
       case ContractStatusEnum.paymentPending:
@@ -47,8 +41,6 @@ enum ContractStatusEnum {
         return 'PAYMENT_FAILED';
       case ContractStatusEnum.paid:
         return 'PAID';
-      case ContractStatusEnum.confirmed:
-        return 'CONFIRMED';
       case ContractStatusEnum.completed:
         return 'COMPLETED';
       case ContractStatusEnum.rated:

@@ -10,7 +10,9 @@ import 'package:app/core/shared/widgets/event_location_map.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+// import 'package:app/core/shared/widgets/informative_banner.dart';
 import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
+import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -115,7 +117,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   // Status Badge
                   Row(
                     children: [
-                      ContractStatusBadge(status: _status),
+                      ContractStatusBadge(status: _status, isArtist: true),
                     ],
                   ),
 
@@ -319,7 +321,32 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     ),
                   ),
 
-                  DSSizedBoxSpacing.vertical(32),
+                  DSSizedBoxSpacing.vertical(16),
+
+                  // Confirmação do Show (quando pago)
+                  if (_status == ContractStatusEnum.paid) ...[
+                    
+                    Divider(),
+                    DSSizedBoxSpacing.vertical(16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomButton(
+                        label: 'O Show foi realizado?',
+                        onPressed: isAnyLoading ? null : () => _handleConfirmShow(context),
+                        icon: Icons.check_circle_rounded,
+                        iconOnLeft: true,
+                        height: DSSize.height(48),
+                      ),
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+
+                    // InformativeBanner(
+                    //   message: 'Após a finalização do show, peça ao cliente o código de confirmação e confirme o evento realizado.',
+                    //   icon: Icons.info_outline_rounded,
+                    // ),
+                  ],
+
+                  DSSizedBoxSpacing.vertical(8),
 
                   // Botões baseados no status
                   if (_status == ContractStatusEnum.pending) ...[
@@ -354,16 +381,74 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                             _status == ContractStatusEnum.canceled) ...[
                     // REJECTED, CONFIRMED, COMPLETED, CANCELED -> Sem botões (já está cancelado ou finalizado)
                   ] else ...[
-                    // PAYMENT_PENDING, PAID -> Botão Cancelar
-                    SizedBox(
-                      width: double.infinity,
-                      child: CustomButton(
-                        label: 'Cancelar Evento',
-                        onPressed: isAnyLoading ? null : () => _handleCancelRequest(context),
-                        filled: true,
-                        backgroundColor: colorScheme.error,
-                        textColor: colorScheme.onError,
-                        height: DSSize.height(48),
+                    // PAYMENT_PENDING, PAID -> Botões de ajuda e cancelamento
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: isAnyLoading ? null : () {
+                              // TODO: Implementar tela de ajuda
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: DSSize.width(12),
+                                vertical: DSSize.height(8),
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Precisa de ajuda?',
+                              style: textTheme.bodyMedium?.copyWith(
+                                decoration: TextDecoration.underline,
+                                color: onPrimary,
+                              ),
+                            ),
+                          ),
+                          DSSizedBoxSpacing.horizontal(8),
+                          BlocBuilder<ContractsBloc, ContractsState>(
+                            builder: (context, state) {
+                              final isCanceling = state is CancelContractLoading;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextButton(
+                                    onPressed: isAnyLoading || isCanceling ? null : () => _handleCancelRequest(context),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: DSSize.width(12),
+                                        vertical: DSSize.height(8),
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: Text(
+                                      'Cancelar',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        decoration: TextDecoration.underline,
+                                        color: colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isCanceling)
+                                    Padding(
+                                      padding: EdgeInsets.only(left: DSSize.width(8)),
+                                      child: SizedBox(
+                                        width: DSSize.width(16),
+                                        height: DSSize.width(16),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.error),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -547,6 +632,22 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           canceledBy: 'ARTIST',
         ),
       );
+    }
+  }
+
+  void _handleConfirmShow(BuildContext context) async {
+    final code = await ConfirmShowModal.show(
+      context: context,
+      isLoading: false,
+    );
+
+    // TODO: Implementar lógica de confirmação do show com o código
+    // Por enquanto apenas mostra o código no console
+    if (code != null && code.isNotEmpty) {
+      // Aqui será implementado o evento do BLoC para confirmar o show
+      // context.read<ContractsBloc>().add(
+      //   ConfirmShowEvent(contractUid: contract.uid!, confirmationCode: code),
+      // );
     }
   }
 

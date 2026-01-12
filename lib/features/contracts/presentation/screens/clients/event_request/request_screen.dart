@@ -23,8 +23,6 @@ import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
-import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
-import 'package:app/features/profile/clients/presentation/bloc/states/clients_states.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

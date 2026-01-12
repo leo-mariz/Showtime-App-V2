@@ -21,13 +21,16 @@ import 'package:app/features/contracts/data/datasources/contract_local_datasourc
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
 import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/core/services/mercado_pago_service.dart';
 import 'package:app/features/contracts/domain/usecases/accept_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
@@ -580,6 +583,8 @@ ContractsBloc _createContractsBloc(
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
   final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService);
   final rejectContractUseCase = RejectContractUseCase(repository: contractRepository);
+  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: MercadoPagoService());
+  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository);
 
   // Criar e retornar ContractsBloc
   return ContractsBloc(
@@ -592,6 +597,8 @@ ContractsBloc _createContractsBloc(
     deleteContractUseCase: deleteContractUseCase,
     acceptContractUseCase: acceptContractUseCase,
     rejectContractUseCase: rejectContractUseCase,
+    makePaymentUseCase: makePaymentUseCase,
+    cancelContractUseCase: cancelContractUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }

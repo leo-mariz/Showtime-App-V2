@@ -110,6 +110,17 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
             setState(() {
               _isLoading = false;
             });
+          } else if (state is MakePaymentSuccess) {
+            // Recarregar contratos após pagamento bem-sucedido
+            _loadContracts();
+          } else if (state is MakePaymentFailure) {
+            context.showError(state.error);
+          } else if (state is CancelContractSuccess) {
+            context.showSuccess('Contrato cancelado com sucesso!');
+            // Recarregar contratos após cancelamento
+            _loadContracts();
+          } else if (state is CancelContractFailure) {
+            context.showError(state.error);
           }
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(
@@ -231,15 +242,22 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     );
   }
 
-  void _onRequestTapped(ContractEntity request) {
-    context.router.push(ClientEventDetailRoute(contract: request));
+  Future<void> _onRequestTapped(ContractEntity request) async {
+    final result = await context.router.push<bool>(
+      ClientEventDetailRoute(contract: request),
+    );
+    
+    // Se voltou da tela de detalhes com indicação de que precisa recarregar
+    if (result == true && mounted) {
+      _loadContracts();
+    }
   }
 
   // Constrói os botões de ação baseado no status do contrato (Cliente)
   List<Widget> _buildActionButtons(ContractEntity contract) {
     final buttons = <Widget>[];
 
-    if (contract.status == ContractStatusEnum.accepted) {
+    if (contract.status == ContractStatusEnum.paymentPending) {
       // Accepted → Realizar Pagamento
       buttons.add(
         SizedBox(
@@ -285,8 +303,14 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   }
 
   void _onMakePayment(ContractEntity contract) {
-    // TODO: Implementar lógica de pagamento
-    debugPrint('Realizar pagamento: ${contract.uid}');
+    if (contract.linkPayment == null || contract.linkPayment!.isEmpty) {
+      context.showError('Link de pagamento não disponível. Entre em contato com o suporte.');
+      return;
+    }
+
+    context.read<ContractsBloc>().add(
+          MakePaymentEvent(linkPayment: contract.linkPayment!),
+        );
   }
 
   void _onGeneratePayment(ContractEntity contract) {

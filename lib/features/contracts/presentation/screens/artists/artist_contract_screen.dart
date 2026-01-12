@@ -129,6 +129,15 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
               _processingContractUid = null; // Reset após falha
             });
             context.showError(state.error);
+          } else if (state is MakePaymentSuccess) {
+            // Recarregar contratos após pagamento bem-sucedido
+            _loadContracts();
+          } else if (state is CancelContractSuccess) {
+            context.showSuccess('Contrato cancelado com sucesso!');
+            // Recarregar contratos após cancelamento
+            _loadContracts();
+          } else if (state is CancelContractFailure) {
+            context.showError(state.error);
           }
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(

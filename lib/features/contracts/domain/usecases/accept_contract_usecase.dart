@@ -55,12 +55,12 @@ class AcceptContractUseCase {
       // Criar pagamento no Mercado Pago
       final paymentLink = await firebaseFunctionsService.createMercadoPagoPayment(
         contract.uid!,
-        true,
+        false,
       );
 
       // Criar cópia do contrato com status aceito
       final updatedContract = contract.copyWith(
-        status: ContractStatusEnum.accepted,
+        status: ContractStatusEnum.paymentPending,
         acceptedAt: DateTime.now(),
         linkPayment: paymentLink,
       );

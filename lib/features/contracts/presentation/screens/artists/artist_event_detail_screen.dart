@@ -10,6 +10,7 @@ import 'package:app/core/shared/widgets/event_location_map.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -86,13 +87,22 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           }
         } else if (state is RejectContractFailure) {
           context.showError(state.error);
+        } else if (state is CancelContractSuccess) {
+          context.showSuccess('Contrato cancelado com sucesso!');
+          // Voltar para a tela anterior e sinalizar que precisa recarregar
+          if (mounted) {
+            context.router.pop(true);
+          }
+        } else if (state is CancelContractFailure) {
+          context.showError(state.error);
         }
       },
       child: BlocBuilder<ContractsBloc, ContractsState>(
         builder: (context, state) {
           final isAccepting = state is AcceptContractLoading;
           final isRejecting = state is RejectContractLoading;
-          final isAnyLoading = isAccepting || isRejecting;
+          final isCanceling = state is CancelContractLoading;
+          final isAnyLoading = isAccepting || isRejecting || isCanceling;
 
           return BasePage(
             showAppBar: true,
@@ -340,17 +350,21 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                       ],
                     ),
                   ] else if (_status == ContractStatusEnum.rejected ||
-                            _status == ContractStatusEnum.confirmed ||
                             _status == ContractStatusEnum.completed ||
                             _status == ContractStatusEnum.canceled) ...[
-                    // REJECTED, CONFIRMED, COMPLETED, CANCELED -> Botão Cancelar
-                    CustomButton(
-                      label: 'Cancelar',
-                      onPressed: () => _handleCancelRequest(context),
-                      filled: true,
-                      backgroundColor: colorScheme.error,
-                      textColor: colorScheme.onError,
-                      height: DSSize.height(48),
+                    // REJECTED, CONFIRMED, COMPLETED, CANCELED -> Sem botões (já está cancelado ou finalizado)
+                  ] else ...[
+                    // PAYMENT_PENDING, PAID -> Botão Cancelar
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomButton(
+                        label: 'Cancelar Evento',
+                        onPressed: isAnyLoading ? null : () => _handleCancelRequest(context),
+                        filled: true,
+                        backgroundColor: colorScheme.error,
+                        textColor: colorScheme.onError,
+                        height: DSSize.height(48),
+                      ),
                     ),
                   ],
                   // Resto -> Sem botões
@@ -520,41 +534,20 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
     );
   }
 
-  void _handleCancelRequest(BuildContext context) {
-    showDialog(
+  void _handleCancelRequest(BuildContext context) async {
+    final confirmed = await CancelContractDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Cancelar Solicitação',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        content: Text(
-          'Tem certeza que deseja cancelar esta solicitação? Esta ação não pode ser desfeita.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Não'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Implementar lógica de cancelamento
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Solicitação cancelada com sucesso'),
-                ),
-              );
-            },
-            child: Text(
-              'Sim, cancelar',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
+      isLoading: false,
     );
+
+    if (confirmed == true && contract.uid != null && contract.uid!.isNotEmpty) {
+      context.read<ContractsBloc>().add(
+        CancelContractEvent(
+          contractUid: contract.uid!,
+          canceledBy: 'ARTIST',
+        ),
+      );
+    }
   }
 
 }

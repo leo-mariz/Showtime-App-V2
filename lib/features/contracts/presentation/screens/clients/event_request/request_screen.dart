@@ -615,6 +615,7 @@ class _RequestScreenState extends State<RequestScreen> {
                   onPressed: isEnabled ? _onSubmit : null,
                   icon: Icons.send,
                   iconOnLeft: true,
+                  isLoading: isLoading,
                 );
               },
             ),

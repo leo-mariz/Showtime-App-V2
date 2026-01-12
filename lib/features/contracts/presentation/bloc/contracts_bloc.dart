@@ -1,11 +1,13 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/contracts/domain/usecases/accept_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/add_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
@@ -30,6 +32,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final DeleteContractUseCase deleteContractUseCase;
   final AcceptContractUseCase acceptContractUseCase;
   final RejectContractUseCase rejectContractUseCase;
+  final MakePaymentUseCase makePaymentUseCase;
+  final CancelContractUseCase cancelContractUseCase;
 
   ContractsBloc({
     required this.getUserUidUseCase,
@@ -42,6 +46,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.deleteContractUseCase,
     required this.acceptContractUseCase,
     required this.rejectContractUseCase,
+    required this.makePaymentUseCase,
+    required this.cancelContractUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
     on<GetContractsByClientEvent>(_onGetContractsByClientEvent);
@@ -52,6 +58,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<DeleteContractEvent>(_onDeleteContractEvent);
     on<AcceptContractEvent>(_onAcceptContractEvent);
     on<RejectContractEvent>(_onRejectContractEvent);
+    on<MakePaymentEvent>(_onMakePaymentEvent);
+    on<CancelContractEvent>(_onCancelContractEvent);
   }
 
   // ==================== HELPERS ====================
@@ -264,6 +272,54 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(RejectContractSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== MAKE PAYMENT ====================
+
+  Future<void> _onMakePaymentEvent(
+    MakePaymentEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(MakePaymentLoading());
+
+    final result = await makePaymentUseCase.call(linkPayment: event.linkPayment);
+
+    result.fold(
+      (failure) {
+        emit(MakePaymentFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(MakePaymentSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== CANCEL CONTRACT ====================
+
+  Future<void> _onCancelContractEvent(
+    CancelContractEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(CancelContractLoading());
+
+    final result = await cancelContractUseCase.call(
+      contractUid: event.contractUid,
+      canceledBy: event.canceledBy,
+      cancelReason: event.cancelReason,
+    );
+
+    result.fold(
+      (failure) {
+        emit(CancelContractFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(CancelContractSuccess());
         emit(ContractsInitial());
       },
     );

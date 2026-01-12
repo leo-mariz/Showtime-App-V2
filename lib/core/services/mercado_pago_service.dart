@@ -9,13 +9,18 @@ class MercadoPagoService {
   /// Abre o checkout do Mercado Pago
   /// 
   /// [initPoint] - URL do checkout retornada pela API do Mercado Pago
-  /// [context] - BuildContext para temas e navegação
+  /// [context] - BuildContext para temas e navegação (opcional, usado apenas no Android)
+  /// [toolbarColor] - Cor da toolbar no Android (opcional, usado se context não for fornecido)
   /// 
   /// ⚠️ Importante: initPoint deve vir do backend (nunca criar no app)
-  Future<void> openCheckout(String initPoint, BuildContext context) async {
+  Future<void> openCheckout(
+    String initPoint, {
+    BuildContext? context,
+    int? toolbarColor,
+  }) async {
     try {
       if (Platform.isAndroid) {
-        await _openCheckoutAndroid(initPoint, context);
+        await _openCheckoutAndroid(initPoint, context: context, toolbarColor: toolbarColor);
       } else if (Platform.isIOS) {
         await _openCheckoutIOS(initPoint);
       } else {
@@ -28,15 +33,28 @@ class MercadoPagoService {
   }
 
   /// Abre checkout no Android usando Custom Tabs
-  Future<void> _openCheckoutAndroid(String initPoint, BuildContext context) async {
-    final theme = Theme.of(context);
+  Future<void> _openCheckoutAndroid(
+    String initPoint, {
+    BuildContext? context,
+    int? toolbarColor,
+  }) async {
+    int finalToolbarColor;
+    if (context != null) {
+      final theme = Theme.of(context);
+      finalToolbarColor = theme.colorScheme.surface.value;
+    } else if (toolbarColor != null) {
+      finalToolbarColor = toolbarColor;
+    } else {
+      // Cor padrão (branco)
+      finalToolbarColor = 0xFFFFFFFF;
+    }
     
     try {
       await custom_tabs.launchUrl(
         Uri.parse(initPoint),
         customTabsOptions: custom_tabs.CustomTabsOptions(
           colorSchemes: custom_tabs.CustomTabsColorSchemes.defaults(
-            toolbarColor: theme.colorScheme.surface,
+            toolbarColor: Color(finalToolbarColor),
           ),
           // Permite compartilhar o link
           shareState: custom_tabs.CustomTabsShareState.on,

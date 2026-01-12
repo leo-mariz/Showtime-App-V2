@@ -101,3 +101,33 @@ class RejectContractEvent extends ContractsEvent {
   List<Object?> get props => [contractUid];
 }
 
+// ==================== MAKE PAYMENT EVENTS ====================
+
+class MakePaymentEvent extends ContractsEvent {
+  final String linkPayment;
+
+  MakePaymentEvent({
+    required this.linkPayment,
+  });
+
+  @override
+  List<Object?> get props => [linkPayment];
+}
+
+// ==================== CANCEL CONTRACT EVENTS ====================
+
+class CancelContractEvent extends ContractsEvent {
+  final String contractUid;
+  final String canceledBy; // 'CLIENT' ou 'ARTIST'
+  final String? cancelReason;
+
+  CancelContractEvent({
+    required this.contractUid,
+    required this.canceledBy,
+    this.cancelReason,
+  });
+
+  @override
+  List<Object?> get props => [contractUid, canceledBy, cancelReason];
+}
+

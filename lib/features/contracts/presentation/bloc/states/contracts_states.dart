@@ -203,3 +203,33 @@ class RejectContractFailure extends ContractsState {
   List<Object?> get props => [error];
 }
 
+// ==================== MAKE PAYMENT STATES ====================
+
+class MakePaymentLoading extends ContractsState {}
+
+class MakePaymentSuccess extends ContractsState {}
+
+class MakePaymentFailure extends ContractsState {
+  final String error;
+
+  MakePaymentFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== CANCEL CONTRACT STATES ====================
+
+class CancelContractLoading extends ContractsState {}
+
+class CancelContractSuccess extends ContractsState {}
+
+class CancelContractFailure extends ContractsState {
+  final String error;
+
+  CancelContractFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+

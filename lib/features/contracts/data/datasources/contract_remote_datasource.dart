@@ -2,6 +2,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface do DataSource remoto (Firestore) para Contracts
 /// Responsável APENAS por operações CRUD no Firestore
@@ -54,6 +55,64 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
   ContractRemoteDataSourceImpl({required this.firestore});
 
+  /// Converte todos os Timestamps do Firestore para DateTime no mapa
+  /// Isso é necessário porque o dart_mappable espera DateTime, não Timestamp
+  Map<String, dynamic> _convertTimestampsToDateTime(Map<String, dynamic> map) {
+    final convertedMap = Map<String, dynamic>.from(map);
+    
+    // Lista de campos que podem ser Timestamp
+    final dateFields = [
+      'date',
+      'paymentDueDate',
+      'paymentDate',
+      'showConfirmedAt',
+      'ratedAt',
+      'createdAt',
+      'acceptedAt',
+      'rejectedAt',
+      'canceledAt',
+    ];
+    
+    // Converter campos de data do contrato
+    for (final field in dateFields) {
+      if (convertedMap.containsKey(field) && convertedMap[field] != null) {
+        if (convertedMap[field] is Timestamp) {
+          convertedMap[field] = (convertedMap[field] as Timestamp).toDate();
+        } else if (convertedMap[field] is String) {
+          // Se for String ISO, tentar converter
+          try {
+            convertedMap[field] = DateTime.parse(convertedMap[field] as String);
+          } catch (e) {
+            debugPrint('⚠️ Erro ao converter $field de String para DateTime: $e');
+          }
+        }
+      }
+    }
+    
+    // Converter datas dentro do availabilitySnapshot (se existir)
+    if (convertedMap.containsKey('availabilitySnapshot') && 
+        convertedMap['availabilitySnapshot'] is Map) {
+      final availabilityMap = convertedMap['availabilitySnapshot'] as Map<String, dynamic>;
+      final availabilityDateFields = ['dataInicio', 'dataFim'];
+      
+      for (final field in availabilityDateFields) {
+        if (availabilityMap.containsKey(field) && availabilityMap[field] != null) {
+          if (availabilityMap[field] is Timestamp) {
+            availabilityMap[field] = (availabilityMap[field] as Timestamp).toDate();
+          } else if (availabilityMap[field] is String) {
+            try {
+              availabilityMap[field] = DateTime.parse(availabilityMap[field] as String);
+            } catch (e) {
+              debugPrint('⚠️ Erro ao converter availabilitySnapshot.$field de String para DateTime: $e');
+            }
+          }
+        }
+      }
+    }
+    
+    return convertedMap;
+  }
+
   @override
   Future<ContractEntity> getContract(String contractUid) async {
     try {
@@ -75,8 +134,18 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       }
 
       final contractMap = snapshot.data() as Map<String, dynamic>;
-      final contract = ContractEntityMapper.fromMap(contractMap);
-      return contract.copyWith(uid: snapshot.id);
+      try {
+        // Converter Timestamps para DateTime antes do mapeamento
+        final convertedMap = _convertTimestampsToDateTime(contractMap);
+        final contract = ContractEntityMapper.fromMap(convertedMap);
+        return contract.copyWith(uid: snapshot.id);
+      } catch (e, stackTrace) {
+        // Log detalhado do erro para debug
+        debugPrint('❌ Erro ao mapear contrato ${snapshot.id}: $e');
+        debugPrint('📄 Dados do documento: $contractMap');
+        debugPrint('📚 Stack trace: $stackTrace');
+        rethrow;
+      }
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
         'Erro ao buscar contrato no Firestore: ${e.message}',
@@ -118,9 +187,19 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
       return querySnapshot.docs
           .map((doc) {
-            final contractMap = doc.data() as Map<String, dynamic>;
-            final contract = ContractEntityMapper.fromMap(contractMap);
-            return contract.copyWith(uid: doc.id);
+            try {
+              final contractMap = doc.data() as Map<String, dynamic>;
+              // Converter Timestamps para DateTime antes do mapeamento
+              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final contract = ContractEntityMapper.fromMap(convertedMap);
+              return contract.copyWith(uid: doc.id);
+            } catch (e, stackTrace) {
+              // Log detalhado do erro para debug
+              debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');
+              debugPrint('📄 Dados do documento: ${doc.data()}');
+              debugPrint('📚 Stack trace: $stackTrace');
+              rethrow;
+            }
           })
           .toList();
     } on FirebaseException catch (e, stackTrace) {
@@ -164,9 +243,19 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
       return querySnapshot.docs
           .map((doc) {
-            final contractMap = doc.data() as Map<String, dynamic>;
-            final contract = ContractEntityMapper.fromMap(contractMap);
-            return contract.copyWith(uid: doc.id);
+            try {
+              final contractMap = doc.data() as Map<String, dynamic>;
+              // Converter Timestamps para DateTime antes do mapeamento
+              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final contract = ContractEntityMapper.fromMap(convertedMap);
+              return contract.copyWith(uid: doc.id);
+            } catch (e, stackTrace) {
+              // Log detalhado do erro para debug
+              debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');
+              debugPrint('📄 Dados do documento: ${doc.data()}');
+              debugPrint('📚 Stack trace: $stackTrace');
+              rethrow;
+            }
           })
           .toList();
     } on FirebaseException catch (e, stackTrace) {
@@ -210,9 +299,19 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
       return querySnapshot.docs
           .map((doc) {
-            final contractMap = doc.data() as Map<String, dynamic>;
-            final contract = ContractEntityMapper.fromMap(contractMap);
-            return contract.copyWith(uid: doc.id);
+            try {
+              final contractMap = doc.data() as Map<String, dynamic>;
+              // Converter Timestamps para DateTime antes do mapeamento
+              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final contract = ContractEntityMapper.fromMap(convertedMap);
+              return contract.copyWith(uid: doc.id);
+            } catch (e, stackTrace) {
+              // Log detalhado do erro para debug
+              debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');
+              debugPrint('📄 Dados do documento: ${doc.data()}');
+              debugPrint('📚 Stack trace: $stackTrace');
+              rethrow;
+            }
           })
           .toList();
     } on FirebaseException catch (e, stackTrace) {

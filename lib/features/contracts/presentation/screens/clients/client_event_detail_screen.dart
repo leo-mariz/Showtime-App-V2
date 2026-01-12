@@ -2,11 +2,17 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
+import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 @RoutePage(deferredLoading: true)
@@ -54,11 +60,23 @@ class ClientEventDetailScreen extends StatelessWidget {
     final onPrimary = colorScheme.onPrimary;
     final primaryContainer = colorScheme.primaryContainer;
 
-    return BasePage(
-      showAppBar: true,
-      showAppBarBackButton: true,
-      appBarTitle: 'Detalhes do Evento',
-      child: SingleChildScrollView(
+    return BlocListener<ContractsBloc, ContractsState>(
+      listener: (context, state) {
+        if (state is MakePaymentFailure) {
+          context.showError(state.error);
+        } else if (state is CancelContractSuccess) {
+          context.showSuccess('Contrato cancelado com sucesso!');
+          // Voltar para a tela anterior e sinalizar que precisa recarregar
+          context.router.pop(true);
+        } else if (state is CancelContractFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BasePage(
+        showAppBar: true,
+        showAppBarBackButton: true,
+        appBarTitle: 'Detalhes do Evento',
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -127,34 +145,20 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.location_on_rounded,
               label: 'Endereço',
-              value: contract.address.title,
+              value: '${contract.address.district}, ${contract.address.city} - ${contract.address.state}',
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
             ),
-            DSSizedBoxSpacing.vertical(8),
+            DSSizedBoxSpacing.vertical(4),
             Padding(
-              padding: EdgeInsets.only(left: DSSize.width(40)),
+              padding: EdgeInsets.only(left: DSSize.width(32)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (contract.address.street != null && contract.address.street!.isNotEmpty)
                     Text(
                       '${contract.address.street}${contract.address.number != null ? ", ${contract.address.number}" : ""}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: onSurfaceVariant,
-                      ),
-                    ),
-                  if (contract.address.district != null && contract.address.district!.isNotEmpty)
-                    Text(
-                      contract.address.district!,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: onSurfaceVariant,
-                      ),
-                    ),
-                  if (contract.address.city != null && contract.address.state != null)
-                    Text(
-                      '${contract.address.city} - ${contract.address.state}',
                       style: textTheme.bodyMedium?.copyWith(
                         color: onSurfaceVariant,
                       ),
@@ -208,22 +212,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             DSSizedBoxSpacing.vertical(32),
 
             // Botões de Ação
-            if (_status != ContractStatusEnum.completed && _status != ContractStatusEnum.rejected) ...[
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  label: 'Cancelar Solicitação',
-                  onPressed: () => _handleCancelRequest(context),
-                  filled: true,
-                  backgroundColor: colorScheme.error,
-                  textColor: colorScheme.onError,
-                  height: DSSize.height(48),
-                ),
-              ),
-              DSSizedBoxSpacing.vertical(16),
-            ],
-
-            if (_status == ContractStatusEnum.accepted && contract.status == ContractStatusEnum.paymentPending) ...[
+            if (_status == ContractStatusEnum.paymentPending) ...[
               SizedBox(
                 width: double.infinity,
                 child: CustomButton(
@@ -236,10 +225,33 @@ class ClientEventDetailScreen extends StatelessWidget {
               ),
               DSSizedBoxSpacing.vertical(16),
             ],
+            if (_status != ContractStatusEnum.completed && 
+                _status != ContractStatusEnum.rejected &&
+                _status != ContractStatusEnum.canceled) ...[
+              SizedBox(
+                width: double.infinity,
+                child: BlocBuilder<ContractsBloc, ContractsState>(
+                  builder: (context, state) {
+                    final isCanceling = state is CancelContractLoading;
+                    return CustomButton(
+                      label: 'Cancelar Evento',
+                      onPressed: isCanceling ? null : () => _handleCancelRequest(context),
+                      filled: true,
+                      backgroundColor: colorScheme.error,
+                      textColor: colorScheme.onError,
+                      height: DSSize.height(48),
+                      isLoading: isCanceling,
+                    );
+                  },
+                ),
+              ),
+              DSSizedBoxSpacing.vertical(16),
+            ],
 
             DSSizedBoxSpacing.vertical(16),
           ],
         ),
+      ),
       ),
     );
   }
@@ -353,55 +365,35 @@ class ClientEventDetailScreen extends StatelessWidget {
     return status.name;
   }
 
-  void _handleCancelRequest(BuildContext context) {
-    showDialog(
+  void _handleCancelRequest(BuildContext context) async {
+    final confirmed = await CancelContractDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Cancelar Solicitação',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        content: Text(
-          'Tem certeza que deseja cancelar esta solicitação? Esta ação não pode ser desfeita.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Não'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Implementar lógica de cancelamento
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Solicitação cancelada com sucesso'),
-                ),
-              );
-            },
-            child: Text(
-              'Sim, cancelar',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
+      isLoading: false,
     );
-  }
 
-  void _handlePayment(BuildContext context) {
-    // TODO: Implementar lógica de pagamento
-    if (contract.linkPayment != null && contract.linkPayment!.isNotEmpty) {
-      // Abrir link de pagamento
-      debugPrint('Abrir link de pagamento: ${contract.linkPayment}');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Link de pagamento não disponível'),
+    if (confirmed == true && contract.uid != null && contract.uid!.isNotEmpty) {
+      context.read<ContractsBloc>().add(
+        CancelContractEvent(
+          contractUid: contract.uid!,
+          canceledBy: 'CLIENT',
         ),
       );
     }
+  }
+
+  void _handlePayment(BuildContext context) {
+    if (contract.linkPayment == null || contract.linkPayment!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Link de pagamento não disponível. Entre em contato com o suporte.'),
+        ),
+      );
+      return;
+    }
+
+    context.read<ContractsBloc>().add(
+          MakePaymentEvent(linkPayment: contract.linkPayment!),
+        );
   }
 }
 

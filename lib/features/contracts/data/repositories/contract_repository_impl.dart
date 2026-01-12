@@ -24,17 +24,19 @@ class ContractRepositoryImpl implements IContractRepository {
   // ==================== GET OPERATIONS ====================
 
   @override
-  Future<Either<Failure, ContractEntity>> getContract(String contractUid) async {
+  Future<Either<Failure, ContractEntity>> getContract(String contractUid, {bool forceRefresh = false}) async {
     try {
       // Primeiro tenta buscar do cache
-      try {
-        final cachedContract = await localDataSource.getCachedContract(contractUid);
-        if (cachedContract != null) {
-          return Right(cachedContract);
+      if (!forceRefresh) {
+        try {
+          final cachedContract = await localDataSource.getCachedContract(contractUid);
+          if (cachedContract != null) {
+            return Right(cachedContract);
+          }
+        } catch (e) {
+          // Se cache falhar, continua para buscar do remoto
+          // Não retorna erro aqui, apenas loga se necessário
         }
-      } catch (e) {
-        // Se cache falhar, continua para buscar do remoto
-        // Não retorna erro aqui, apenas loga se necessário
       }
 
       // Se não encontrou no cache, busca do remoto
@@ -50,17 +52,19 @@ class ContractRepositoryImpl implements IContractRepository {
   }
 
   @override
-  Future<Either<Failure, List<ContractEntity>>> getContractsByClient(String clientUid) async {
+  Future<Either<Failure, List<ContractEntity>>> getContractsByClient(String clientUid, {bool forceRefresh = false}) async {
     try {
       // Primeiro tenta buscar do cache
-      try {
-        final cachedContracts = await localDataSource.getCachedContractsByClient(clientUid);
-        if (cachedContracts.isNotEmpty) {
-          return Right(cachedContracts);
+      if (!forceRefresh) {
+        try {
+          final cachedContracts = await localDataSource.getCachedContractsByClient(clientUid);
+          if (cachedContracts.isNotEmpty) {
+            return Right(cachedContracts);
+          }
+        } catch (e) {
+          // Se cache falhar, continua para buscar do remoto
+          // Não retorna erro aqui, apenas loga se necessário
         }
-      } catch (e) {
-        // Se cache falhar, continua para buscar do remoto
-        // Não retorna erro aqui, apenas loga se necessário
       }
 
       // Se não encontrou no cache, busca do remoto
@@ -78,17 +82,19 @@ class ContractRepositoryImpl implements IContractRepository {
   }
 
   @override
-  Future<Either<Failure, List<ContractEntity>>> getContractsByArtist(String artistUid) async {
+  Future<Either<Failure, List<ContractEntity>>> getContractsByArtist(String artistUid, {bool forceRefresh = false}) async {
     try {
       // Primeiro tenta buscar do cache
-      try {
-        final cachedContracts = await localDataSource.getCachedContractsByArtist(artistUid);
-        if (cachedContracts.isNotEmpty) {
-          return Right(cachedContracts);
+      if (!forceRefresh) {
+        try {
+          final cachedContracts = await localDataSource.getCachedContractsByArtist(artistUid);
+          if (cachedContracts.isNotEmpty) {
+            return Right(cachedContracts);
+          }
+        } catch (e) {
+          // Se cache falhar, continua para buscar do remoto
+          // Não retorna erro aqui, apenas loga se necessário
         }
-      } catch (e) {
-        // Se cache falhar, continua para buscar do remoto
-        // Não retorna erro aqui, apenas loga se necessário
       }
 
       // Se não encontrou no cache, busca do remoto
@@ -106,17 +112,19 @@ class ContractRepositoryImpl implements IContractRepository {
   }
 
   @override
-  Future<Either<Failure, List<ContractEntity>>> getContractsByGroup(String groupUid) async {
+  Future<Either<Failure, List<ContractEntity>>> getContractsByGroup(String groupUid, {bool forceRefresh = false}) async {
     try {
       // Primeiro tenta buscar do cache
-      try {
-        final cachedContracts = await localDataSource.getCachedContractsByGroup(groupUid);
-        if (cachedContracts.isNotEmpty) {
-          return Right(cachedContracts);
+      if (!forceRefresh) {
+        try {
+          final cachedContracts = await localDataSource.getCachedContractsByGroup(groupUid);
+          if (cachedContracts.isNotEmpty) {
+            return Right(cachedContracts);
+          }
+        } catch (e) {
+          // Se cache falhar, continua para buscar do remoto
+          // Não retorna erro aqui, apenas loga se necessário
         }
-      } catch (e) {
-        // Se cache falhar, continua para buscar do remoto
-        // Não retorna erro aqui, apenas loga se necessário
       }
 
       // Se não encontrou no cache, busca do remoto

@@ -61,6 +61,8 @@ class ContractEntity with ContractEntityMappable {
   final DateTime? canceledAt;          // Data de cancelamento
   final String? canceledBy;            // Quem cancelou ('CLIENT' ou 'ARTIST')
   final String? cancelReason;          // Motivo do cancelamento
+
+  final bool? isPaying;
   
   ContractEntity({
     required this.date,
@@ -93,6 +95,7 @@ class ContractEntity with ContractEntityMappable {
     this.canceledAt,
     this.canceledBy,
     this.cancelReason,
+    this.isPaying = false,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Validações de negócio

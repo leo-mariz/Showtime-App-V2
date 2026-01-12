@@ -1,3 +1,4 @@
+import 'package:app/core/services/mercado_pago_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
 import 'package:app/core/services/auth_service.dart';
@@ -58,5 +59,9 @@ void setupLocator() {
   
   getIt.registerLazySingleton<IFirebaseFunctionsService>(
     () => FirebaseFunctionsService(),
+  );
+
+  getIt.registerLazySingleton<MercadoPagoService>(
+    () => MercadoPagoService(),
   );
 }

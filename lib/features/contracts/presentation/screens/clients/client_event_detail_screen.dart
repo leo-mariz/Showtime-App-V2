@@ -392,7 +392,7 @@ class ClientEventDetailScreen extends StatelessWidget {
     }
 
     context.read<ContractsBloc>().add(
-          MakePaymentEvent(linkPayment: contract.linkPayment!),
+          MakePaymentEvent(linkPayment: contract.linkPayment!, contractUid: contract.uid!),
         );
   }
 }

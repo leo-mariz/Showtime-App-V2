@@ -5,6 +5,7 @@ import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
@@ -572,6 +573,7 @@ ContractsBloc _createContractsBloc(
   IContractRepository contractRepository,
   GetUserUidUseCase getUserUidUseCase,
   IFirebaseFunctionsService firebaseFunctionsService,
+  MercadoPagoService mercadoPagoService,
 ) {
   // Criar UseCases
   final getContractUseCase = GetContractUseCase(repository: contractRepository);
@@ -583,8 +585,9 @@ ContractsBloc _createContractsBloc(
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
   final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService);
   final rejectContractUseCase = RejectContractUseCase(repository: contractRepository);
-  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: MercadoPagoService());
+  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository);
   final cancelContractUseCase = CancelContractUseCase(repository: contractRepository);
+  final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
 
   // Criar e retornar ContractsBloc
   return ContractsBloc(
@@ -599,6 +602,7 @@ ContractsBloc _createContractsBloc(
     rejectContractUseCase: rejectContractUseCase,
     makePaymentUseCase: makePaymentUseCase,
     cancelContractUseCase: cancelContractUseCase,
+    verifyPaymentUseCase: verifyPaymentUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }
@@ -665,6 +669,7 @@ Future <void> main() async {
   final biometricService = getIt<IBiometricAuthService>();
   final storageService = getIt<IStorageService>();
   final firebaseFunctionsService = getIt<IFirebaseFunctionsService>();
+  final mercadoPagoService = getIt<MercadoPagoService>();
 
   final appRouter = AppRouter();
 
@@ -814,6 +819,7 @@ Future <void> main() async {
               contractRepository,
               getUserUidUseCase,
               firebaseFunctionsService,
+              mercadoPagoService,
             ),
           ),
           BlocProvider(

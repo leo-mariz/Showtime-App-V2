@@ -197,6 +197,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$cancelReason,
     opt: true,
   );
+  static bool? _$isPaying(ContractEntity v) => v.isPaying;
+  static const Field<ContractEntity, bool> _f$isPaying = Field(
+    'isPaying',
+    _$isPaying,
+    opt: true,
+    def: false,
+  );
 
   @override
   final MappableFields<ContractEntity> fields = const {
@@ -230,6 +237,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #canceledAt: _f$canceledAt,
     #canceledBy: _f$canceledBy,
     #cancelReason: _f$cancelReason,
+    #isPaying: _f$isPaying,
   };
 
   static ContractEntity _instantiate(DecodingData data) {
@@ -264,6 +272,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       canceledAt: data.dec(_f$canceledAt),
       canceledBy: data.dec(_f$canceledBy),
       cancelReason: data.dec(_f$cancelReason),
+      isPaying: data.dec(_f$isPaying),
     );
   }
 
@@ -365,6 +374,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? canceledAt,
     String? canceledBy,
     String? cancelReason,
+    bool? isPaying,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -422,6 +432,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? canceledAt = $none,
     Object? canceledBy = $none,
     Object? cancelReason = $none,
+    Object? isPaying = $none,
   }) => $apply(
     FieldCopyWithData({
       if (date != null) #date: date,
@@ -455,6 +466,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (canceledAt != $none) #canceledAt: canceledAt,
       if (canceledBy != $none) #canceledBy: canceledBy,
       if (cancelReason != $none) #cancelReason: cancelReason,
+      if (isPaying != $none) #isPaying: isPaying,
     }),
   );
   @override
@@ -492,6 +504,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     canceledAt: data.get(#canceledAt, or: $value.canceledAt),
     canceledBy: data.get(#canceledBy, or: $value.canceledBy),
     cancelReason: data.get(#cancelReason, or: $value.cancelReason),
+    isPaying: data.get(#isPaying, or: $value.isPaying),
   );
 
   @override

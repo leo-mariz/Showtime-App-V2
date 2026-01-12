@@ -17,7 +17,7 @@ class GetContractsByArtistUseCase {
     required this.repository,
   });
 
-  Future<Either<Failure, List<ContractEntity>>> call(String artistUid) async {
+  Future<Either<Failure, List<ContractEntity>>> call(String artistUid, {bool forceRefresh = false}) async {
     try {
       // Validar UID
       if (artistUid.isEmpty) {
@@ -25,7 +25,7 @@ class GetContractsByArtistUseCase {
       }
 
       // Buscar contratos
-      final result = await repository.getContractsByArtist(artistUid);
+      final result = await repository.getContractsByArtist(artistUid, forceRefresh: forceRefresh);
 
       return result.fold(
         (failure) => Left(failure),

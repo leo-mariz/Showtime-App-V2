@@ -17,7 +17,7 @@ class GetContractUseCase {
     required this.repository,
   });
 
-  Future<Either<Failure, ContractEntity>> call(String contractUid) async {
+  Future<Either<Failure, ContractEntity>> call(String contractUid, {bool forceRefresh = false}) async {
     try {
       // Validar UID
       if (contractUid.isEmpty) {
@@ -25,7 +25,7 @@ class GetContractUseCase {
       }
 
       // Buscar contrato
-      final result = await repository.getContract(contractUid);
+      final result = await repository.getContract(contractUid, forceRefresh: forceRefresh);
 
       return result.fold(
         (failure) => Left(failure),

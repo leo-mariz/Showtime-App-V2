@@ -19,21 +19,36 @@ class GetContractEvent extends ContractsEvent {
 
 // ==================== GET CONTRACTS BY CLIENT EVENTS ====================
 
-class GetContractsByClientEvent extends ContractsEvent {}
+class GetContractsByClientEvent extends ContractsEvent {
+  final bool? forceRefresh;
+
+  GetContractsByClientEvent({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
 
 // ==================== GET CONTRACTS BY ARTIST EVENTS ====================
 
-class GetContractsByArtistEvent extends ContractsEvent {}
+class GetContractsByArtistEvent extends ContractsEvent {
+  final bool? forceRefresh;
+
+  GetContractsByArtistEvent({this.forceRefresh = false});
+
+  @override
+  List<Object?> get props => [forceRefresh];
+}
 
 // ==================== GET CONTRACTS BY GROUP EVENTS ====================
 
 class GetContractsByGroupEvent extends ContractsEvent {
   final String groupUid;
+  final bool? forceRefresh;
 
-  GetContractsByGroupEvent({required this.groupUid});
+  GetContractsByGroupEvent({required this.groupUid, this.forceRefresh = false});
 
   @override
-  List<Object?> get props => [groupUid];
+  List<Object?> get props => [groupUid, forceRefresh];
 }
 
 // ==================== ADD CONTRACT EVENTS ====================
@@ -105,13 +120,15 @@ class RejectContractEvent extends ContractsEvent {
 
 class MakePaymentEvent extends ContractsEvent {
   final String linkPayment;
+  final String contractUid;
 
   MakePaymentEvent({
     required this.linkPayment,
+    required this.contractUid,
   });
 
   @override
-  List<Object?> get props => [linkPayment];
+  List<Object?> get props => [linkPayment, contractUid];
 }
 
 // ==================== CANCEL CONTRACT EVENTS ====================
@@ -129,5 +146,16 @@ class CancelContractEvent extends ContractsEvent {
 
   @override
   List<Object?> get props => [contractUid, canceledBy, cancelReason];
+}
+
+// ==================== VERIFY PAYMENT EVENTS ====================
+
+class VerifyPaymentEvent extends ContractsEvent {
+  final String contractUid;
+
+  VerifyPaymentEvent({required this.contractUid});
+
+  @override
+  List<Object?> get props => [contractUid];
 }
 

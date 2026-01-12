@@ -56,7 +56,7 @@ class AppToastWidget extends StatelessWidget {
                   color: notificationConfig.textColor,
                   fontWeight: FontWeight.w500,
                 ),
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

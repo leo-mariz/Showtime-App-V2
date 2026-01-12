@@ -10,6 +10,7 @@ import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_us
 import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,6 +35,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final RejectContractUseCase rejectContractUseCase;
   final MakePaymentUseCase makePaymentUseCase;
   final CancelContractUseCase cancelContractUseCase;
+  final VerifyPaymentUseCase verifyPaymentUseCase;
 
   ContractsBloc({
     required this.getUserUidUseCase,
@@ -48,6 +50,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.rejectContractUseCase,
     required this.makePaymentUseCase,
     required this.cancelContractUseCase,
+    required this.verifyPaymentUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
     on<GetContractsByClientEvent>(_onGetContractsByClientEvent);
@@ -60,6 +63,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<RejectContractEvent>(_onRejectContractEvent);
     on<MakePaymentEvent>(_onMakePaymentEvent);
     on<CancelContractEvent>(_onCancelContractEvent);
+    on<VerifyPaymentEvent>(_onVerifyPaymentEvent);
   }
 
   // ==================== HELPERS ====================
@@ -104,7 +108,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
 
     final uid = await _getCurrentUserId();
 
-    final result = await getContractsByClientUseCase.call(uid!);
+    final result = await getContractsByClientUseCase.call(uid!, forceRefresh: event.forceRefresh ?? false);
 
     result.fold(
       (failure) {
@@ -128,7 +132,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
 
     final uid = await _getCurrentUserId();
 
-    final result = await getContractsByArtistUseCase.call(uid!);
+    final result = await getContractsByArtistUseCase.call(uid!, forceRefresh: event.forceRefresh ?? false);
 
     result.fold(
       (failure) {
@@ -285,7 +289,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   ) async {
     emit(MakePaymentLoading());
 
-    final result = await makePaymentUseCase.call(linkPayment: event.linkPayment);
+    final result = await makePaymentUseCase.call(linkPayment: event.linkPayment, contractUid: event.contractUid);
 
     result.fold(
       (failure) {
@@ -320,6 +324,28 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(CancelContractSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== VERIFY PAYMENT ====================
+
+  Future<void> _onVerifyPaymentEvent(
+    VerifyPaymentEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(VerifyPaymentLoading());
+
+    final result = await verifyPaymentUseCase.call(event.contractUid);
+
+    result.fold(
+      (failure) {
+        emit(VerifyPaymentFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(VerifyPaymentSuccess());
         emit(ContractsInitial());
       },
     );

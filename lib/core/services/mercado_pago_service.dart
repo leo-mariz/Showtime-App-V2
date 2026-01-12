@@ -40,7 +40,7 @@ class MercadoPagoService {
   }) async {
     int finalToolbarColor;
     if (context != null) {
-      final theme = Theme.of(context);
+    final theme = Theme.of(context);
       finalToolbarColor = theme.colorScheme.surface.value;
     } else if (toolbarColor != null) {
       finalToolbarColor = toolbarColor;

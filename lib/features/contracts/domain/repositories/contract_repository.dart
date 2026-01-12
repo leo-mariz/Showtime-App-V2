@@ -16,16 +16,16 @@ abstract class IContractRepository {
   // ==================== GET OPERATIONS ====================
   
   /// Busca um contrato específico por UID
-  Future<Either<Failure, ContractEntity>> getContract(String contractUid);
+  Future<Either<Failure, ContractEntity>> getContract(String contractUid, {bool forceRefresh = false});
   
   /// Busca lista de contratos por cliente
-  Future<Either<Failure, List<ContractEntity>>> getContractsByClient(String clientUid);
+  Future<Either<Failure, List<ContractEntity>>> getContractsByClient(String clientUid, {bool forceRefresh = false});
   
   /// Busca lista de contratos por artista
-  Future<Either<Failure, List<ContractEntity>>> getContractsByArtist(String artistUid);
+  Future<Either<Failure, List<ContractEntity>>> getContractsByArtist(String artistUid, {bool forceRefresh = false});
   
   /// Busca lista de contratos por grupo
-  Future<Either<Failure, List<ContractEntity>>> getContractsByGroup(String groupUid);
+  Future<Either<Failure, List<ContractEntity>>> getContractsByGroup(String groupUid, {bool forceRefresh = false});
 
   // ==================== CREATE OPERATIONS ====================
   

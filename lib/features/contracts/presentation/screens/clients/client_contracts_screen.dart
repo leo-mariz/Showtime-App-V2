@@ -28,6 +28,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   int _selectedTabIndex = 0;
   List<ContractEntity> _allContracts = [];
   bool _isLoading = false;
+  bool _isVerifyingPayment = false;
 
   @override
   void initState() {
@@ -45,9 +46,9 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     });
   }
 
-  Future<void> _loadContracts() async {
+  Future<void> _loadContracts({bool forceRefresh = false}) async {
       context.read<ContractsBloc>().add(
-        GetContractsByClientEvent(),
+        GetContractsByClientEvent(forceRefresh: forceRefresh),
       );
   }
 
@@ -115,18 +116,36 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
             _loadContracts();
           } else if (state is MakePaymentFailure) {
             context.showError(state.error);
+            _loadContracts(forceRefresh: true);
           } else if (state is CancelContractSuccess) {
             context.showSuccess('Contrato cancelado com sucesso!');
             // Recarregar contratos após cancelamento
             _loadContracts();
           } else if (state is CancelContractFailure) {
             context.showError(state.error);
+          } else if (state is VerifyPaymentSuccess) {
+            context.showSuccess('O pagamento foi identificado com sucesso!');
+            setState(() {
+              _isVerifyingPayment = false;
+            });
+            // Recarregar contratos após verificar pagamento
+            _loadContracts();
+          } else if (state is VerifyPaymentFailure) {
+            context.showError(state.error);
+            setState(() {
+              _isVerifyingPayment = false;
+            });
+            // Recarregar contratos após verificar pagamento
+            _loadContracts(forceRefresh: true);
+          } else if (state is VerifyPaymentLoading) {
+            setState(() {
+              _isVerifyingPayment = true;
+            });
           }
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(
           builder: (context, state) {
             final filteredContracts = _filteredContracts;
-
             return BasePage(
               showAppBar: true,
               appBarTitle: 'Solicitações',
@@ -258,19 +277,35 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     final buttons = <Widget>[];
 
     if (contract.status == ContractStatusEnum.paymentPending) {
-      // Accepted → Realizar Pagamento
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: CardActionButton(
-            label: 'Realizar Pagamento',
-            onPressed: () => _onMakePayment(contract),
-            icon: Icons.payment_rounded,
-            height: 40,
+      if (contract.isPaying == true) {
+        buttons.add(
+          SizedBox(
+            width: double.infinity,
+            child: CardActionButton(
+              label: 'Verificar Pagamento',
+              onPressed: () => _onVerifyPayment(contract),
+              icon: Icons.check_circle_rounded,
+              height: 40,
+              isLoading: _isVerifyingPayment,
+            ),
           ),
-        ),
-      );
-    } else if (contract.status == ContractStatusEnum.paymentExpired) {
+        );
+      } else {
+        // Accepted → Realizar Pagamento
+        buttons.add(
+          SizedBox(
+            width: double.infinity,
+            child: CardActionButton(
+              label: 'Realizar Pagamento',
+              onPressed: () => _onMakePayment(contract),
+              icon: Icons.payment_rounded,
+              height: 40,
+            ),
+          ),
+        );
+      } 
+    }
+    else if (contract.status == ContractStatusEnum.paymentExpired) {
       // paymentExpired → Gerar Pagamento
       buttons.add(
         SizedBox(
@@ -309,8 +344,14 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     }
 
     context.read<ContractsBloc>().add(
-          MakePaymentEvent(linkPayment: contract.linkPayment!),
-        );
+      MakePaymentEvent(linkPayment: contract.linkPayment!, contractUid: contract.uid!),
+    );
+  }
+
+  void _onVerifyPayment(ContractEntity contract) {
+    context.read<ContractsBloc>().add(
+      VerifyPaymentEvent(contractUid: contract.uid!),
+    );
   }
 
   void _onGeneratePayment(ContractEntity contract) {

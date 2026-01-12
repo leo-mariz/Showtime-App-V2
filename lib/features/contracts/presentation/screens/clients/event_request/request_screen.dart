@@ -13,6 +13,8 @@ import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/info_row.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
+import 'package:app/core/users/presentation/bloc/events/users_events.dart';
+import 'package:app/core/users/presentation/bloc/states/users_states.dart';
 import 'package:app/core/utils/availability_validator.dart';
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
@@ -21,6 +23,8 @@ import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
+import 'package:app/features/profile/clients/presentation/bloc/states/clients_states.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -101,6 +105,23 @@ class _RequestScreenState extends State<RequestScreen> {
     } else {
       return '${minutes}min';
     }
+  }
+
+  String _getClientName() {
+    final userBloc = context.read<UsersBloc>();
+    final currentUserState = userBloc.state;
+    if (currentUserState is! GetUserDataSuccess) {
+      userBloc.add(GetUserDataEvent());
+    }
+    if (currentUserState is GetUserDataSuccess) {
+      final user = currentUserState.user;
+      if (user.isCnpj == true) {
+        return user.cnpjUser?.companyName ?? '';
+      } else {
+        return '${user.cpfUser?.firstName ?? ''} ${user.cpfUser?.lastName ?? ''}';
+      }
+    }   
+    return '';
   }
 
   String _formatAddress(AddressInfoEntity address) {
@@ -416,6 +437,12 @@ class _RequestScreenState extends State<RequestScreen> {
       active: 'true',
     );
 
+    final nameClient = _getClientName();
+    if (nameClient.isEmpty) {
+      context.showError('Erro ao obter nome do cliente. Por favor, tente novamente.');
+      return;
+    }
+
     // Criar ContractEntity
     final contract = ContractEntity(
       date: _selectedDate!,
@@ -426,7 +453,7 @@ class _RequestScreenState extends State<RequestScreen> {
       refClient: clientUid,
       refArtist: widget.artist.uid,
       nameArtist: widget.artist.artistName,
-      nameClient: null, // Será preenchido no backend se necessário
+      nameClient: nameClient,
       eventType: eventType,
       value: _totalValue,
       availabilitySnapshot: widget.availability,

@@ -180,7 +180,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   // Caso contrário, mostrar apenas bairro e cidade
                   Builder(
                     builder: (context) {
-                      final isConfirmed = _status == ContractStatusEnum.confirmed ||
+                      final isConfirmed = _status == ContractStatusEnum.paid ||
                           _status == ContractStatusEnum.completed;
                       
                       return Padding(
@@ -292,7 +292,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   EventLocationMap(
                     address: contract.address,
                     height: 250,
-                    showExactLocation: _status == ContractStatusEnum.confirmed ||
+                    showExactLocation: _status == ContractStatusEnum.paid ||
                         _status == ContractStatusEnum.completed,
                     seed: contract.uid, // Usar UID do contrato como seed para localização consistente
                   ),

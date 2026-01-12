@@ -29,6 +29,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   List<ContractEntity> _allContracts = [];
   bool _isLoading = false;
   bool _isVerifyingPayment = false;
+  bool _isTryingToPay = false;
 
   @override
   void initState() {

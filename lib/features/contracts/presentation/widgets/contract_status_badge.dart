@@ -46,13 +46,13 @@ class ContractStatusBadge extends StatelessWidget {
       case ContractStatusEnum.rejected:
         return 'Recusada';
       case ContractStatusEnum.paymentPending:
-        return 'Aguardando Pagamento do Anfitrião';
+        return isArtist ? 'Aguardando Pagamento' : 'Aguardando Pagamento';
       case ContractStatusEnum.paymentExpired:
-        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Expirado';
+        return isArtist ? 'Aguardando Pagamento' : 'Pagamento Expirado';
       case ContractStatusEnum.paymentRefused:
-        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Recusado';
+        return isArtist ? 'Aguardando Pagamento' : 'Pagamento Recusado';
       case ContractStatusEnum.paymentFailed:
-        return isArtist ? 'Aguardando Pagamento do Anfitrião' : 'Pagamento Falhou';
+        return isArtist ? 'Aguardando Pagamento' : 'Pagamento Falhou';
       case ContractStatusEnum.paid:
         return 'Pago';
       case ContractStatusEnum.completed:

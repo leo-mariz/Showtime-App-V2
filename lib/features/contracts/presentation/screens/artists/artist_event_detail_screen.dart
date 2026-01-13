@@ -34,7 +34,15 @@ class ArtistEventDetailScreen extends StatefulWidget {
 }
 
 class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
-  ContractEntity get contract => widget.contract;
+  late ContractEntity _contract;
+  
+  @override
+  void initState() {
+    super.initState();
+    _contract = widget.contract;
+  }
+  
+  ContractEntity get contract => _contract;
 
   String _formatDuration(int durationInMinutes) {
     final hours = durationInMinutes ~/ 60;
@@ -62,7 +70,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
     return time;
   }
 
-  ContractStatusEnum get _status => contract.status;
+  ContractStatusEnum get _status => _contract.status;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +114,21 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           }
         } else if (state is ConfirmShowFailure) {
           context.showError(state.error);
+        } else if (state is RateClientSuccess) {
+          context.showSuccess('Avaliação enviada com sucesso!');
+          // Recarregar o contrato para atualizar a UI
+          if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+            context.read<ContractsBloc>().add(
+              GetContractEvent(contractUid: _contract.uid!),
+            );
+          }
+        } else if (state is RateClientFailure) {
+          context.showError(state.error);
+        } else if (state is GetContractSuccess) {
+          // Atualizar o contrato local quando recarregado
+          setState(() {
+            _contract = state.contract;
+          });
         }
       },
       child: BlocBuilder<ContractsBloc, ContractsState>(
@@ -140,7 +163,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
 
                   // Tipo de Evento
                   Text(
-                    contract.eventType?.name ?? 'Evento',
+                    _contract.eventType?.name ?? 'Evento',
                     style: textTheme.headlineSmall?.copyWith(
                       color: onPrimary,
                       fontWeight: FontWeight.w700,
@@ -162,7 +185,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   _buildInfoRow(
                     icon: Icons.calendar_today_rounded,
                     label: 'Data',
-                    value: _formatDate(contract.date),
+                    value: _formatDate(_contract.date),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
@@ -171,7 +194,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   _buildInfoRow(
                     icon: Icons.access_time_rounded,
                     label: 'Horário de Início',
-                    value: _formatTime(contract.time),
+                    value: _formatTime(_contract.time),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
@@ -180,7 +203,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   _buildInfoRow(
                     icon: Icons.timer_rounded,
                     label: 'Duração',
-                    value: _formatDuration(contract.duration),
+                    value: _formatDuration(_contract.duration),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
@@ -208,7 +231,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                             if (isConfirmed)
                               // Endereço completo (quando confirmado)
                               ...[
-                                if (contract.address.street != null && contract.address.street!.isNotEmpty)
+                                if (_contract.address.street != null && _contract.address.street!.isNotEmpty)
                                   Row(
                                     children: [
                                       Icon(
@@ -217,17 +240,17 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                                         color: onSurfaceVariant,
                                       ),
                                       DSSizedBoxSpacing.horizontal(16),
-                                      if (contract.address.district != null && contract.address.district!.isNotEmpty)
+                                      if (_contract.address.district != null && _contract.address.district!.isNotEmpty)
                                         Text(
-                                          '${contract.address.district!},',
+                                          '${_contract.address.district!},',
                                           style: textTheme.bodyMedium?.copyWith(
                                             color: onPrimary,
                                           ),
                                         ),
-                                      if (contract.address.district != null && contract.address.district!.isNotEmpty)
+                                      if (_contract.address.district != null && _contract.address.district!.isNotEmpty)
                                         DSSizedBoxSpacing.horizontal(16),
                                       Text(
-                                        '${contract.address.street}${contract.address.number != null ? ", ${contract.address.number}" : ""}',
+                                        '${_contract.address.street}${_contract.address.number != null ? ", ${_contract.address.number}" : ""}',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: onPrimary,
                                         ),
@@ -238,17 +261,17 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                                 Row(
                                   children: [
                                     DSSizedBoxSpacing.horizontal(32),
-                                    if (contract.address.city != null && contract.address.state != null)
+                                    if (_contract.address.city != null && _contract.address.state != null)
                                       Text(
-                                        '${contract.address.city} - ${contract.address.state}',
+                                        '${_contract.address.city} - ${_contract.address.state}',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: onSurfaceVariant,
                                         ),
                                       ),
                                     DSSizedBoxSpacing.horizontal(16),
-                                    if (contract.address.zipCode.isNotEmpty)
+                                    if (_contract.address.zipCode.isNotEmpty)
                                       Text(
-                                        'CEP: ${contract.address.zipCode}',
+                                        'CEP: ${_contract.address.zipCode}',
                                         style: textTheme.bodyMedium?.copyWith(
                                           color: onSurfaceVariant,
                                         ),
@@ -268,18 +291,18 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                                         color: onSurfaceVariant,
                                       ),
                                       DSSizedBoxSpacing.horizontal(16),
-                                      if (contract.address.district != null && contract.address.district!.isNotEmpty)
+                                      if (_contract.address.district != null && _contract.address.district!.isNotEmpty)
                                         Text(
-                                          contract.address.district!,
+                                          _contract.address.district!,
                                           style: textTheme.bodyMedium?.copyWith(
                                             color: onPrimary,
                                           ),
                                         ),
-                                      if (contract.address.district != null && contract.address.district!.isNotEmpty)
+                                      if (_contract.address.district != null && _contract.address.district!.isNotEmpty)
                                         DSSizedBoxSpacing.horizontal(8),
-                                      if (contract.address.city != null && contract.address.state != null)
+                                      if (_contract.address.city != null && _contract.address.state != null)
                                         Text(
-                                          '${contract.address.city} - ${contract.address.state}',
+                                          '${_contract.address.city} - ${_contract.address.state}',
                                           style: textTheme.bodyMedium?.copyWith(
                                             color: onPrimary,
                                           ),
@@ -307,25 +330,14 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   // Mostrar localização exata apenas quando o evento está confirmado ou completado
                   // Nos demais casos, mostrar localização aproximada para privacidade
                   EventLocationMap(
-                    address: contract.address,
+                    address: _contract.address,
                     height: 250,
                     showExactLocation: _status == ContractStatusEnum.paid ||
                         _status == ContractStatusEnum.completed,
-                    seed: contract.uid, // Usar UID do contrato como seed para localização consistente
+                    seed: _contract.uid, // Usar UID do contrato como seed para localização consistente
                   ),
 
                   DSSizedBoxSpacing.vertical(24),
-
-                  // Seção de Avaliação (quando completado)
-                  if (_status == ContractStatusEnum.completed) ...[
-                    _buildSectionTitle('Avaliação', textTheme, onPrimary),
-                    DSSizedBoxSpacing.vertical(12),
-                    RatingSection(
-                      personName: contract.nameClient ?? 'Anfitrião',
-                      isRatingArtist: false,
-                    ),
-                    DSSizedBoxSpacing.vertical(24),
-                  ],
 
                   // Informações Financeiras
                   _buildSectionTitle('Informações Financeiras', textTheme, onPrimary),
@@ -339,7 +351,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     child: _buildInfoRow(
                       icon: Icons.attach_money_rounded,
                       label: 'Valor Total',
-                      value: _formatCurrency(contract.value),
+                      value: _formatCurrency(_contract.value),
                       textTheme: textTheme,
                       onSurfaceVariant: onSurfaceVariant,
                       onPrimary: onPrimary,
@@ -349,6 +361,43 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
 
                   DSSizedBoxSpacing.vertical(16),
 
+
+                  // Seção de Avaliação (quando completado)
+                  if (_status == ContractStatusEnum.completed) ...[
+                    _buildSectionTitle('Avaliação', textTheme, onPrimary),
+                    DSSizedBoxSpacing.vertical(12),
+                    BlocBuilder<ContractsBloc, ContractsState>(
+                      builder: (context, state) {
+                        final isLoading = state is RateClientLoading;
+                        final hasAlreadyRated = _contract.rateByArtist != null;
+                        final existingRating = _contract.rateByArtist?.rating.toInt();
+                        final existingComment = _contract.rateByArtist?.comment;
+                        
+                        return RatingSection(
+                          personName: _contract.nameClient ?? 'Anfitrião',
+                          isRatingArtist: false,
+                          isLoading: isLoading,
+                          hasAlreadyRated: hasAlreadyRated,
+                          existingRating: existingRating,
+                          existingComment: existingComment,
+                          onSubmit: _contract.uid != null && _contract.uid!.isNotEmpty
+                              ? (rating, comment) {
+                                  context.read<ContractsBloc>().add(
+                                    RateClientEvent(
+                                      contractUid: _contract.uid!,
+                                      rating: rating.toDouble(),
+                                      comment: comment,
+                                    ),
+                                  );
+                                }
+                              : null,
+                        );
+                      },
+                    ),
+                    DSSizedBoxSpacing.vertical(24),
+                  ],
+
+                  
                   // Confirmação do Show (quando pago)
                   if (_status == ContractStatusEnum.paid) ...[
                     
@@ -519,7 +568,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
             radius: DSSize.width(24),
             backgroundColor: colorScheme.surfaceContainerHighest,
             child: Text(
-              (contract.nameClient ?? 'A')[0].toUpperCase(),
+              (_contract.nameClient ?? 'A')[0].toUpperCase(),
               style: textTheme.titleMedium?.copyWith(
                 color: onPrimary,
                 fontWeight: FontWeight.w600,
@@ -532,7 +581,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  contract.nameClient ?? 'Anfitrião',
+                  _contract.nameClient ?? 'Anfitrião',
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,
@@ -597,18 +646,18 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
   }
 
   void _handleAccept(BuildContext context) {
-    if (contract.uid == null || contract.uid!.isEmpty) {
+    if (_contract.uid == null || _contract.uid!.isEmpty) {
       context.showError('Erro: Contrato sem identificador');
       return;
     }
 
     context.read<ContractsBloc>().add(
-      AcceptContractEvent(contractUid: contract.uid!),
+      AcceptContractEvent(contractUid: _contract.uid!),
     );
   }
 
   void _handleReject(BuildContext context) {
-    if (contract.uid == null || contract.uid!.isEmpty) {
+    if (_contract.uid == null || _contract.uid!.isEmpty) {
       context.showError('Erro: Contrato sem identificador');
       return;
     }
@@ -633,7 +682,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               context.read<ContractsBloc>().add(
-                RejectContractEvent(contractUid: contract.uid!),
+                RejectContractEvent(contractUid: _contract.uid!),
               );
             },
             child: Text(
@@ -652,10 +701,10 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
       isLoading: false,
     );
 
-    if (confirmed == true && contract.uid != null && contract.uid!.isNotEmpty) {
+    if (confirmed == true && _contract.uid != null && _contract.uid!.isNotEmpty) {
       context.read<ContractsBloc>().add(
         CancelContractEvent(
-          contractUid: contract.uid!,
+          contractUid: _contract.uid!,
           canceledBy: 'ARTIST',
         ),
       );
@@ -663,14 +712,14 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
   }
 
   void _handleConfirmShow(BuildContext context) async {
-    if (contract.uid == null || contract.uid!.isEmpty) {
+    if (_contract.uid == null || _contract.uid!.isEmpty) {
       context.showError('Erro: Contrato sem identificador');
       return;
     }
 
     await ConfirmShowModal.show(
       context: context,
-      contractUid: contract.uid!,
+      contractUid: _contract.uid!,
     );
   }
 

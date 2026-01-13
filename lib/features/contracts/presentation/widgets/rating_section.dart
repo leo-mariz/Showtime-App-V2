@@ -16,11 +16,32 @@ class RatingSection extends StatefulWidget {
   /// Se true, está avaliando um artista (cliente avaliando)
   /// Se false, está avaliando um anfitrião (artista avaliando)
   final bool isRatingArtist;
+  
+  /// Se está carregando (enviando avaliação)
+  final bool isLoading;
+  
+  /// Se já foi avaliado
+  final bool hasAlreadyRated;
+  
+  /// Rating existente (1-5) se já foi avaliado
+  final int? existingRating;
+  
+  /// Comentário existente se já foi avaliado
+  final String? existingComment;
+  
+  /// Callback quando o usuário clicar em "Avaliar"
+  /// Recebe o rating (1-5) e o comentário (opcional)
+  final void Function(int rating, String? comment)? onSubmit;
 
   const RatingSection({
     super.key,
     required this.personName,
     this.isRatingArtist = true,
+    this.isLoading = false,
+    this.hasAlreadyRated = false,
+    this.existingRating,
+    this.existingComment,
+    this.onSubmit,
   });
 
   @override
@@ -28,8 +49,30 @@ class RatingSection extends StatefulWidget {
 }
 
 class _RatingSectionState extends State<RatingSection> {
-  int _selectedRating = 0;
-  final TextEditingController _commentController = TextEditingController();
+  late int _selectedRating;
+  late final TextEditingController _commentController;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRating = widget.existingRating ?? 0;
+    _commentController = TextEditingController(text: widget.existingComment ?? '');
+  }
+
+  @override
+  void didUpdateWidget(RatingSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Atualizar rating se mudou ou se agora está marcado como já avaliado
+    if (widget.existingRating != oldWidget.existingRating || 
+        (widget.hasAlreadyRated && !oldWidget.hasAlreadyRated)) {
+      _selectedRating = widget.existingRating ?? 0;
+    }
+    // Atualizar comentário se mudou ou se agora está marcado como já avaliado
+    if (widget.existingComment != oldWidget.existingComment || 
+        (widget.hasAlreadyRated && !oldWidget.hasAlreadyRated)) {
+      _commentController.text = widget.existingComment ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -38,17 +81,11 @@ class _RatingSectionState extends State<RatingSection> {
   }
 
   String _getInformativeMessage() {
-    if (widget.isRatingArtist) {
+    if (widget.isRatingArtist ) {
       return 'Sua avaliação é muito importante para o artista! Ela ajuda outros anfitriões a conhecerem melhor o trabalho dele e contribui para o crescimento da plataforma.';
     } else {
-      return 'Sua avaliação é muito importante para o anfitrião! Ela ajuda outros artistas a conhecerem melhor o trabalho dele e contribui para o crescimento da plataforma.';
+      return 'Sua avaliação é muito importante para o anfitrião! Ela ajuda outros artistas a conhecerem melhor o recepcionamento do anfitrião e contribui para o crescimento da plataforma.';
     }
-  }
-
-  String _getSectionTitle() {
-    return widget.isRatingArtist 
-        ? 'Avaliar Artista' 
-        : 'Avaliar Anfitrião';
   }
 
   @override
@@ -82,6 +119,7 @@ class _RatingSectionState extends State<RatingSection> {
           DSSizedBoxSpacing.vertical(12),
 
           // Banner informativo
+          if (!widget.hasAlreadyRated)
           InformativeBanner(
             message: _getInformativeMessage(),
             icon: Icons.star_outline_rounded,
@@ -92,7 +130,7 @@ class _RatingSectionState extends State<RatingSection> {
           // Nome da pessoa sendo avaliada
           Text.rich(
             TextSpan(
-              text: 'Avaliando: ',
+              text: widget.hasAlreadyRated ? 'Avaliado: ' : 'Avaliando: ',
               style: textTheme.bodyMedium?.copyWith(
                 color: onPrimary.withOpacity(0.8),
                 fontWeight: FontWeight.w500,
@@ -117,9 +155,10 @@ class _RatingSectionState extends State<RatingSection> {
               children: List.generate(5, (index) {
                 final starIndex = index + 1;
                 final isSelected = starIndex <= _selectedRating;
+                final isDisabled = widget.isLoading || widget.hasAlreadyRated;
                 
                 return GestureDetector(
-                  onTap: () {
+                  onTap: isDisabled ? null : () {
                     setState(() {
                       _selectedRating = starIndex;
                     });
@@ -128,7 +167,11 @@ class _RatingSectionState extends State<RatingSection> {
                     padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
                     child: Icon(
                       isSelected ? Icons.star : Icons.star_border,
-                      color: isSelected ? Colors.amber : colorScheme.onSurfaceVariant,
+                      color: isSelected 
+                          ? Colors.amber 
+                          : (isDisabled 
+                              ? colorScheme.onSurfaceVariant.withOpacity(0.5)
+                              : colorScheme.onSurfaceVariant),
                       size: DSSize.width(40),
                     ),
                   ),
@@ -164,40 +207,33 @@ class _RatingSectionState extends State<RatingSection> {
             labelText: 'Comentário (opcional)',
             hintText: 'Conte mais sobre sua experiência...',
             onChanged: (value) {},
+            readOnly: widget.isLoading || widget.hasAlreadyRated,
           ),
           DSSizedBoxSpacing.vertical(16),
 
-          // Botões
-          Row(
-            children: [
-              // Expanded(
-              //   child: TextButton(
-              //     onPressed: () {
-              //       // TODO: Implementar "Avaliar depois"
-              //     },
-              //     child: Text(
-              //       'Avaliar depois',
-              //       style: textTheme.bodyMedium?.copyWith(
-              //         color: onPrimary.withOpacity(0.7),
-              //       ),
-              //     ),
-              //   ),
-              // ),
-              DSSizedBoxSpacing.horizontal(12),
-              Expanded(
-                flex: 2,
-                child: CustomButton(
-                  label: 'Avaliar',
-                  onPressed: _selectedRating > 0 ? () {
-                    // TODO: Implementar envio de avaliação
-                  } : null,
-                  icon: Icons.stars_sharp,
-                  iconOnLeft: true,
-                  height: DSSize.height(44),
+          // Botão (só aparece se ainda não foi avaliado)
+          if (!widget.hasAlreadyRated)
+            Row(
+              children: [
+                DSSizedBoxSpacing.horizontal(12),
+                Expanded(
+                  flex: 2,
+                  child: CustomButton(
+                    label: 'Avaliar',
+                    onPressed: (_selectedRating > 0 && !widget.isLoading && widget.onSubmit != null) ? () {
+                      final comment = _commentController.text.trim().isEmpty 
+                          ? null 
+                          : _commentController.text.trim();
+                      widget.onSubmit!(_selectedRating, comment);
+                    } : null,
+                    icon: Icons.stars_sharp,
+                    iconOnLeft: true,
+                    height: DSSize.height(44),
+                    isLoading: widget.isLoading,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );

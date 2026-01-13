@@ -174,3 +174,50 @@ class ConfirmShowEvent extends ContractsEvent {
   List<Object?> get props => [contractUid, confirmationCode];
 }
 
+// ==================== RATE ARTIST EVENTS ====================
+
+class RateArtistEvent extends ContractsEvent {
+  final String contractUid;
+  final double rating;
+  final String? comment;
+
+  RateArtistEvent({
+    required this.contractUid,
+    required this.rating,
+    this.comment,
+  });
+
+  @override
+  List<Object?> get props => [contractUid, rating, comment];
+}
+
+// ==================== SKIP RATING ARTIST EVENTS ====================
+
+class SkipRatingArtistEvent extends ContractsEvent {
+  final String contractUid;
+
+  SkipRatingArtistEvent({
+    required this.contractUid,
+  });
+
+  @override
+  List<Object?> get props => [contractUid];
+}
+
+// ==================== RATE CLIENT EVENTS ====================
+
+class RateClientEvent extends ContractsEvent {
+  final String contractUid;
+  final double rating;
+  final String? comment;
+
+  RateClientEvent({
+    required this.contractUid,
+    required this.rating,
+    this.comment,
+  });
+
+  @override
+  List<Object?> get props => [contractUid, rating, comment];
+}
+

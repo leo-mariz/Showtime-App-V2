@@ -63,19 +63,24 @@ Future<void> main() async {
 
   try {
     // 1. Popular Talentos
-    print('📝 Populando lista de Talentos...');
-    await _populateTalents(firestore);
-    print('✅ Talentos populados com sucesso!\n');
+    // print('📝 Populando lista de Talentos...');
+    // await _populateTalents(firestore);
+    // print('✅ Talentos populados com sucesso!\n');
 
-    // 2. Popular Tipos de Evento
-    print('📝 Populando lista de Tipos de Evento...');
-    await _populateEventTypes(firestore);
-    print('✅ Tipos de Evento populados com sucesso!\n');
+    // // 2. Popular Tipos de Evento
+    // print('📝 Populando lista de Tipos de Evento...');
+    // await _populateEventTypes(firestore);
+    // print('✅ Tipos de Evento populados com sucesso!\n');
 
-    // 3. Popular Assuntos de Suporte
-    print('📝 Populando lista de Assuntos de Suporte...');
-    await _populateSupportSubjects(firestore);
-    print('✅ Assuntos de Suporte populados com sucesso!\n');
+    // // 3. Popular Assuntos de Suporte
+    // print('📝 Populando lista de Assuntos de Suporte...');
+    // await _populateSupportSubjects(firestore);
+    // print('✅ Assuntos de Suporte populados com sucesso!\n');
+
+    // // 4. Popular Palavras-chave
+    // print('📝 Populando lista de Palavras-chave...');
+    await _populateKeywords(firestore);
+    print('✅ Palavras-chave populadas com sucesso!\n');
 
     print('🎉 Todas as listas foram populadas com sucesso!');
   } catch (e, stackTrace) {
@@ -281,4 +286,219 @@ Future<void> _populateSupportSubjects(Firestore firestore) async {
   }
 
   print('   ✓ ${supportSubjects.length} assuntos de suporte adicionados');
+}
+
+/// Popula a lista de palavras chaves
+Future<void> _populateKeywords(Firestore firestore) async {
+  const keywords = [
+    'música',
+    'dança',
+    'canto',
+    'show',
+    'palco',
+    'artista',
+    'ator',
+    'atriz',
+    'teatro',
+    'cinema',
+    'filme',
+    'drama',
+    'comédia',
+    'ópera',
+    'balé',
+    'jazz',
+    'rock',
+    'pop',
+    'samba',
+    'bossa',
+    'funk',
+    'rap',
+    'blues',
+    'soul',
+    'reggae',
+    'gospel',
+    'sertanejo',
+    'forró',
+    'pagode',
+    'MPB',
+    'violão',
+    'guitarra',
+    'piano',
+    'bateria',
+    'baixo',
+    'saxofone',
+    'trompete',
+    'flauta',
+    'violino',
+    'cello',
+    'acordeon',
+    'pandeiro',
+    'tambor',
+    'cavaquinho',
+    'ukulele',
+    'harpa',
+    'órgão',
+    'sintetizador',
+    'microfone',
+    'amplificador',
+    'cenário',
+    'iluminação',
+    'som',
+    'mixagem',
+    'gravação',
+    'estúdio',
+    'ensaio',
+    'apresentação',
+    'performance',
+    'espetáculo',
+    'concerto',
+    'festival',
+    'turnê',
+    'público',
+    'plateia',
+    'palmas',
+    'bis',
+    'repertório',
+    'letra',
+    'melodia',
+    'harmonia',
+    'ritmo',
+    'acorde',
+    'tom',
+    'escala',
+    'partitura',
+    'nota',
+    'compasso',
+    'tempo',
+    'maestro',
+    'diretor',
+    'coreógrafo',
+    'produtor',
+    'técnico',
+    'manager',
+    'agente',
+    'contrato',
+    'ingresso',
+    'bilheteria',
+    'camarim',
+    'bastidores',
+    'cortina',
+    'figurino',
+    'maquiagem',
+    'caracterização',
+    'expressão',
+    'atuação',
+    'roteiro',
+    'elenco',
+    'personagem',
+    'cena',
+    'ato',
+    'monólogo',
+    'diálogo',
+    'solilóquio',
+    'protagonista',
+    'antagonista',
+    'coadjuvante',
+    'figurante',
+    'dublagem',
+    'narração',
+    'locução',
+    'voz',
+    'timbre',
+    'tessitura',
+    'vibrato',
+    'falsete',
+    'agudo',
+    'grave',
+    'médio',
+    'soprano',
+    'tenor',
+    'barítono',
+    'contralto',
+    'mezzosoprano',
+    'coral',
+    'coro',
+    'solo',
+    'dueto',
+    'trio',
+    'quarteto',
+    'orquestra',
+    'banda',
+    'grupo',
+    'conjunto',
+    'formação',
+    'instrumentista',
+    'vocalista',
+    'compositor',
+    'arranjador',
+    'letrista',
+    'autor',
+    'intérprete',
+    'executante',
+    'solista',
+    'regente',
+    'ensaiador',
+    'preparador',
+    'coach',
+    'professor',
+    'instrutor',
+    'mentor',
+    'discípulo',
+    'conservatório',
+    'academia',
+    'atelier',
+    'oficina',
+    'workshop',
+    'masterclass',
+    'técnica',
+    'método',
+    'estilo',
+    'gênero',
+    'modalidade',
+    'vertente',
+    'tendência',
+    'movimento',
+    'corrente',
+    'vanguarda',
+    'tradição',
+    'clássico',
+    'moderno',
+    'contemporâneo',
+    'experimental',
+    'alternativo',
+    'underground',
+    'mainstream',
+    'indie',
+    'autoral',
+    'cover',
+    'versão',
+  ];
+
+  final collectionRef = firestore
+      .collection('AppLists')
+      .doc('keywords')
+      .collection('items');
+
+  // Limpar documentos existentes (opcional - descomente se quiser limpar)
+  // final existingDocs = await collectionRef.get();
+  // for (var doc in existingDocs.docs) {
+  //   await doc.reference.delete();
+  // }
+
+  int order = 0;
+
+  for (final keyword in keywords) {
+    final docRef = collectionRef.doc();
+    final now = DateTime.now();
+    await docRef.set({
+      'name': keyword.trim(),
+      'description': null,
+      'order': order++,
+      'isActive': true,
+      'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+    });
+  }
+
+  print('   ✓ ${keywords.length} palavras-chave adicionadas');
 }

@@ -33,7 +33,10 @@ import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_u
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
@@ -590,6 +593,10 @@ ContractsBloc _createContractsBloc(
   final cancelContractUseCase = CancelContractUseCase(repository: contractRepository);
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
   final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, contractRepository: contractRepository);
+  final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
+  final skipRatingArtistUseCase = SkipRatingArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
+  final rateClientUseCase = RateClientUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
+
 
   // Criar e retornar ContractsBloc
   return ContractsBloc(
@@ -607,6 +614,9 @@ ContractsBloc _createContractsBloc(
     verifyPaymentUseCase: verifyPaymentUseCase,
     confirmShowUseCase: confirmShowUseCase,
     getUserUidUseCase: getUserUidUseCase,
+    rateArtistUseCase: rateArtistUseCase,
+    skipRatingArtistUseCase: skipRatingArtistUseCase,
+    rateClientUseCase: rateClientUseCase,
   );
 }
 

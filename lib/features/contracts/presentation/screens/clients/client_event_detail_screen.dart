@@ -18,13 +18,26 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 @RoutePage(deferredLoading: true)
-class ClientEventDetailScreen extends StatelessWidget {
+class ClientEventDetailScreen extends StatefulWidget {
   final ContractEntity contract;
 
   const ClientEventDetailScreen({
     super.key,
     required this.contract,
   });
+
+  @override
+  State<ClientEventDetailScreen> createState() => _ClientEventDetailScreenState();
+}
+
+class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
+  late ContractEntity _contract;
+
+  @override
+  void initState() {
+    super.initState();
+    _contract = widget.contract;
+  }
 
   String _formatDuration(int durationInMinutes) {
     final hours = durationInMinutes ~/ 60;
@@ -52,7 +65,7 @@ class ClientEventDetailScreen extends StatelessWidget {
     return time;
   }
 
-  ContractStatusEnum get _status => contract.status;
+  ContractStatusEnum get _status => _contract.status;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +85,37 @@ class ClientEventDetailScreen extends StatelessWidget {
           context.router.pop(true);
         } else if (state is CancelContractFailure) {
           context.showError(state.error);
+        } else if (state is RateArtistSuccess) {
+          context.showSuccess('Avaliação enviada com sucesso!');
+          // Recarregar o contrato para atualizar a UI
+          if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+            context.read<ContractsBloc>().add(
+              GetContractEvent(contractUid: _contract.uid!),
+            );
+          }
+        } else if (state is RateArtistFailure) {
+          context.showError(state.error);
+        } else if (state is GetContractSuccess) {
+          // Atualizar o contrato local quando recarregado
+          setState(() {
+            _contract = state.contract;
+          });
+        } else if (state is VerifyPaymentSuccess) {
+          context.showSuccess('O pagamento foi identificado com sucesso!');
+          // Recarregar o contrato após verificar pagamento
+          if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+            context.read<ContractsBloc>().add(
+              GetContractEvent(contractUid: _contract.uid!),
+            );
+          }
+        } else if (state is VerifyPaymentFailure) {
+          context.showError(state.error);
+          // Recarregar o contrato após verificar pagamento
+          if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+            context.read<ContractsBloc>().add(
+              GetContractEvent(contractUid: _contract.uid!),
+            );
+          }
         }
       },
       child: BasePage(
@@ -99,7 +143,7 @@ class ClientEventDetailScreen extends StatelessWidget {
 
             // Tipo de Evento
             Text(
-              contract.eventType?.name ?? 'Evento',
+              _contract.eventType?.name ?? 'Evento',
               style: textTheme.headlineSmall?.copyWith(
                 color: onPrimary,
                 fontWeight: FontWeight.w700,
@@ -116,10 +160,10 @@ class ClientEventDetailScreen extends StatelessWidget {
             DSSizedBoxSpacing.vertical(24),
 
             // Código de Confirmação (quando pago)
-            if (_status == ContractStatusEnum.paid && contract.keyCode != null && contract.keyCode!.isNotEmpty) ...[
+            if (_status == ContractStatusEnum.paid && _contract.keyCode != null && _contract.keyCode!.isNotEmpty) ...[
               _buildSectionTitle('Código de Confirmação', textTheme, onPrimary),
               DSSizedBoxSpacing.vertical(12),
-              ConfirmationCodeCard(confirmationCode: contract.keyCode!),
+              ConfirmationCodeCard(confirmationCode: _contract.keyCode!),
               DSSizedBoxSpacing.vertical(24),
             ],
 
@@ -132,7 +176,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.calendar_today_rounded,
               label: 'Data',
-              value: _formatDate(contract.date),
+              value: _formatDate(_contract.date),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -141,7 +185,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.access_time_rounded,
               label: 'Horário de Início',
-              value: _formatTime(contract.time),
+              value: _formatTime(_contract.time),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -150,7 +194,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.timer_rounded,
               label: 'Duração',
-              value: _formatDuration(contract.duration),
+              value: _formatDuration(_contract.duration),
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -164,7 +208,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             _buildInfoRow(
               icon: Icons.location_on_rounded,
               label: 'Endereço',
-              value: '${contract.address.district}, ${contract.address.city} - ${contract.address.state}',
+              value: '${_contract.address.district}, ${_contract.address.city} - ${_contract.address.state}',
               textTheme: textTheme,
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
@@ -175,16 +219,16 @@ class ClientEventDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (contract.address.street != null && contract.address.street!.isNotEmpty)
+                  if (_contract.address.street != null && _contract.address.street!.isNotEmpty)
                     Text(
-                      '${contract.address.street}${contract.address.number != null ? ", ${contract.address.number}" : ""}',
+                      '${_contract.address.street}${_contract.address.number != null ? ", ${_contract.address.number}" : ""}',
                       style: textTheme.bodyMedium?.copyWith(
                         color: onSurfaceVariant,
                       ),
                     ),
-                  if (contract.address.zipCode.isNotEmpty)
+                  if (_contract.address.zipCode.isNotEmpty)
                     Text(
-                      'CEP: ${contract.address.zipCode}',
+                      'CEP: ${_contract.address.zipCode}',
                       style: textTheme.bodyMedium?.copyWith(
                         color: onSurfaceVariant,
                       ),
@@ -209,7 +253,7 @@ class ClientEventDetailScreen extends StatelessWidget {
                   _buildInfoRow(
                     icon: Icons.attach_money_rounded,
                     label: 'Valor Total',
-                    value: _formatCurrency(contract.value),
+                    value: _formatCurrency(_contract.value),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
@@ -219,7 +263,7 @@ class ClientEventDetailScreen extends StatelessWidget {
                   _buildInfoRow(
                     icon: Icons.payment_rounded,
                     label: 'Status do Pagamento',
-                    value: _getPaymentStatusLabel(contract.status),
+                    value: _getPaymentStatusLabel(_contract.status),
                     textTheme: textTheme,
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
@@ -234,24 +278,60 @@ class ClientEventDetailScreen extends StatelessWidget {
             if (_status == ContractStatusEnum.completed) ...[
               _buildSectionTitle('Avaliação', textTheme, onPrimary),
               DSSizedBoxSpacing.vertical(12),
-              RatingSection(
-                personName: contract.contractorName ?? 'Artista',
-                isRatingArtist: true,
+              BlocBuilder<ContractsBloc, ContractsState>(
+                builder: (context, state) {
+                  final isLoading = state is RateArtistLoading;
+                  final hasAlreadyRated = _contract.rateByClient != null;
+                  final existingRating = _contract.rateByClient?.rating.toInt();
+                  final existingComment = _contract.rateByClient?.comment;
+                  
+                  return RatingSection(
+                    personName: _contract.contractorName ?? 'Artista',
+                    isRatingArtist: true,
+                    isLoading: isLoading,
+                    hasAlreadyRated: hasAlreadyRated,
+                    existingRating: existingRating,
+                    existingComment: existingComment,
+                    onSubmit: _contract.uid != null && _contract.uid!.isNotEmpty
+                        ? (rating, comment) {
+                            context.read<ContractsBloc>().add(
+                              RateArtistEvent(
+                                contractUid: _contract.uid!,
+                                rating: rating.toDouble(),
+                                comment: comment,
+                              ),
+                            );
+                          }
+                        : null,
+                  );
+                },
               ),
               DSSizedBoxSpacing.vertical(24),
             ],
 
             // Botões de Ação
             if (_status == ContractStatusEnum.paymentPending) ...[
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  label: 'Realizar Pagamento',
-                  onPressed: () => _handlePayment(context),
-                  icon: Icons.payment_rounded,
-                  iconOnRight: true,
-                  height: DSSize.height(48),
-                ),
+              BlocBuilder<ContractsBloc, ContractsState>(
+                builder: (context, state) {
+                  final isVerifying = state is VerifyPaymentLoading;
+                  final shouldShowVerifyButton = _contract.isPaying == true;
+                  
+                  return SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      label: shouldShowVerifyButton ? 'Verificar Pagamento' : 'Realizar Pagamento',
+                      onPressed: shouldShowVerifyButton 
+                          ? () => _handleVerifyPayment(context)
+                          : () => _handlePayment(context),
+                      icon: shouldShowVerifyButton 
+                          ? Icons.check_circle_rounded 
+                          : Icons.payment_rounded,
+                      iconOnRight: true,
+                      height: DSSize.height(48),
+                      isLoading: isVerifying,
+                    ),
+                  );
+                },
               ),
               DSSizedBoxSpacing.vertical(16),
             ],
@@ -363,7 +443,7 @@ class ClientEventDetailScreen extends StatelessWidget {
             radius: DSSize.width(24),
             backgroundColor: colorScheme.surfaceContainerHighest,
             child: Text(
-              (contract.contractorName ?? 'A')[0].toUpperCase(),
+              (_contract.contractorName ?? 'A')[0].toUpperCase(),
               style: textTheme.titleMedium?.copyWith(
                 color: onPrimary,
                 fontWeight: FontWeight.w600,
@@ -376,7 +456,7 @@ class ClientEventDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  contract.contractorName ?? 'Artista',
+                  _contract.contractorName ?? 'Artista',
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,
@@ -450,10 +530,10 @@ class ClientEventDetailScreen extends StatelessWidget {
       isLoading: false,
     );
 
-    if (confirmed == true && contract.uid != null && contract.uid!.isNotEmpty) {
+    if (confirmed == true && _contract.uid != null && _contract.uid!.isNotEmpty) {
       context.read<ContractsBloc>().add(
         CancelContractEvent(
-          contractUid: contract.uid!,
+          contractUid: _contract.uid!,
           canceledBy: 'CLIENT',
         ),
       );
@@ -461,7 +541,7 @@ class ClientEventDetailScreen extends StatelessWidget {
   }
 
   void _handlePayment(BuildContext context) {
-    if (contract.linkPayment == null || contract.linkPayment!.isEmpty) {
+    if (_contract.linkPayment == null || _contract.linkPayment!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Link de pagamento não disponível. Entre em contato com o suporte.'),
@@ -471,8 +551,19 @@ class ClientEventDetailScreen extends StatelessWidget {
     }
 
     context.read<ContractsBloc>().add(
-          MakePaymentEvent(linkPayment: contract.linkPayment!, contractUid: contract.uid!),
+          MakePaymentEvent(linkPayment: _contract.linkPayment!, contractUid: _contract.uid!),
         );
+  }
+
+  void _handleVerifyPayment(BuildContext context) {
+    if (_contract.uid == null || _contract.uid!.isEmpty) {
+      context.showError('Erro: Contrato sem identificador');
+      return;
+    }
+
+    context.read<ContractsBloc>().add(
+      VerifyPaymentEvent(contractUid: _contract.uid!),
+    );
   }
 }
 

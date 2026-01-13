@@ -29,17 +29,27 @@ class CustomMessageFieldState extends State<CustomMessageField> {
   late TextEditingController _controller;
   // ignore: unused_field
   int _charCount = 0;
+  late VoidCallback _listener;
 
   @override
   void initState() {
     super.initState();
     _controller = widget.controller;
     _charCount = widget.initialValue?.length ?? 0;
-    _controller.addListener(() {
-      setState(() {
-        _charCount = _controller.text.length;
-      });
-    });
+    _listener = () {
+      if (mounted) {
+        setState(() {
+          _charCount = _controller.text.length;
+        });
+      }
+    };
+    _controller.addListener(_listener);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_listener);
+    super.dispose();
   }
 
   @override

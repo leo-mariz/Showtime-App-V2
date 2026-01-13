@@ -263,3 +263,48 @@ class ConfirmShowFailure extends ContractsState {
   List<Object?> get props => [error];
 }
 
+// ==================== RATE ARTIST STATES ====================
+
+class RateArtistLoading extends ContractsState {}
+
+class RateArtistSuccess extends ContractsState {}
+
+class RateArtistFailure extends ContractsState {
+  final String error;
+
+  RateArtistFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== SKIP RATING ARTIST STATES ====================
+
+class SkipRatingArtistLoading extends ContractsState {}
+
+class SkipRatingArtistSuccess extends ContractsState {}
+
+class SkipRatingArtistFailure extends ContractsState {
+  final String error;
+
+  SkipRatingArtistFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== RATE CLIENT STATES ====================
+
+class RateClientLoading extends ContractsState {}
+
+class RateClientSuccess extends ContractsState {}
+
+class RateClientFailure extends ContractsState {
+  final String error;
+
+  RateClientFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+

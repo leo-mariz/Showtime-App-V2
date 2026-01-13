@@ -315,7 +315,7 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
       // PAID → Botão para confirmar show
       buttons.add(
         CardActionButton(
-          label: 'Confirmar Show',
+          label: 'O Show foi realizado?',
           onPressed: isAnyLoading ? null : () => _onConfirmShow(contract),
           icon: Icons.check_circle_rounded,
           height: DSSize.height(40),

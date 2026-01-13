@@ -5,6 +5,9 @@ import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.d
 import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/delete_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
@@ -38,6 +41,9 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final CancelContractUseCase cancelContractUseCase;
   final VerifyPaymentUseCase verifyPaymentUseCase;
   final ConfirmShowUseCase confirmShowUseCase;
+  final RateArtistUseCase rateArtistUseCase;
+  final SkipRatingArtistUseCase skipRatingArtistUseCase;
+  final RateClientUseCase rateClientUseCase;
 
   ContractsBloc({
     required this.getUserUidUseCase,
@@ -54,6 +60,9 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.cancelContractUseCase,
     required this.verifyPaymentUseCase,
     required this.confirmShowUseCase,
+    required this.rateArtistUseCase,
+    required this.skipRatingArtistUseCase,
+    required this.rateClientUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
     on<GetContractsByClientEvent>(_onGetContractsByClientEvent);
@@ -68,6 +77,9 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<CancelContractEvent>(_onCancelContractEvent);
     on<VerifyPaymentEvent>(_onVerifyPaymentEvent);
     on<ConfirmShowEvent>(_onConfirmShowEvent);
+    on<RateArtistEvent>(_onRateArtistEvent);
+    on<SkipRatingArtistEvent>(_onSkipRatingArtistEvent);
+    on<RateClientEvent>(_onRateClientEvent);
   }
 
   // ==================== HELPERS ====================
@@ -375,6 +387,82 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(ConfirmShowSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== RATE ARTIST ====================
+
+  Future<void> _onRateArtistEvent(
+    RateArtistEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(RateArtistLoading());
+
+    final result = await rateArtistUseCase.call(
+      contractUid: event.contractUid,
+      rating: event.rating,
+      comment: event.comment,
+    );
+
+    result.fold(
+      (failure) {
+        emit(RateArtistFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(RateArtistSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== SKIP RATING ARTIST ====================
+
+  Future<void> _onSkipRatingArtistEvent(
+    SkipRatingArtistEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(SkipRatingArtistLoading());
+
+    final result = await skipRatingArtistUseCase.call(
+      contractUid: event.contractUid,
+    );
+
+    result.fold(
+      (failure) {
+        emit(SkipRatingArtistFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(SkipRatingArtistSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== RATE CLIENT ====================
+
+  Future<void> _onRateClientEvent(
+    RateClientEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(RateClientLoading());
+
+    final result = await rateClientUseCase.call(
+      contractUid: event.contractUid,
+      rating: event.rating,
+      comment: event.comment,
+    );
+
+    result.fold(
+      (failure) {
+        emit(RateClientFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(RateClientSuccess());
         emit(ContractsInitial());
       },
     );

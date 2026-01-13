@@ -1,4 +1,5 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
+import 'package:app/core/domain/contract/rating_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
@@ -50,9 +51,8 @@ class ContractEntity with ContractEntityMappable {
   final DateTime? showConfirmedAt;    // Data/hora em que o código foi validado
   
   // Avaliação
-  final double? rating;                // Avaliação do cliente (0.0 a 5.0)
-  final String? ratingComment;         // Comentário da avaliação
-  final DateTime? ratedAt;            // Data da avaliação
+  final RatingEntity? rateByClient;
+  final RatingEntity? rateByArtist;
   
   // Timestamps
   final DateTime? createdAt;               // Data de criação da solicitação
@@ -86,9 +86,8 @@ class ContractEntity with ContractEntityMappable {
     this.paymentDate,
     this.keyCode,
     this.showConfirmedAt,
-    this.rating,
-    this.ratingComment,
-    this.ratedAt,
+    this.rateByClient,
+    this.rateByArtist,
     DateTime? createdAt,
     this.acceptedAt,
     this.rejectedAt,
@@ -104,7 +103,7 @@ class ContractEntity with ContractEntityMappable {
   bool get isPaymentPending => status == ContractStatusEnum.paymentPending;
   bool get isPaid => status == ContractStatusEnum.paid;
   bool get isCompleted => status == ContractStatusEnum.completed;
-  bool get canBeRated => isCompleted && rating == null;
+  bool get canBeRated => isCompleted && (rateByClient == null || rateByArtist == null);
   bool get isGroupContract => contractorType == ContractorTypeEnum.group;
   bool get isArtistContract => contractorType == ContractorTypeEnum.artist;
   

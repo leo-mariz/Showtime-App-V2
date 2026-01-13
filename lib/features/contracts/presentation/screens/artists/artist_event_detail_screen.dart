@@ -14,6 +14,7 @@ import 'package:app/features/contracts/presentation/bloc/states/contracts_states
 import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
 import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
+import 'package:app/features/contracts/presentation/widgets/rating_section.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -118,8 +119,14 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
             showAppBar: true,
             showAppBarBackButton: true,
             appBarTitle: 'Detalhes do Evento',
-            child: SingleChildScrollView(
-              child: Column(
+            child: GestureDetector(
+              onTap: () {
+                // Fechar teclado ao tocar em qualquer lugar da tela
+                FocusScope.of(context).unfocus();
+              },
+              behavior: HitTestBehavior.opaque,
+              child: SingleChildScrollView(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Status Badge
@@ -309,6 +316,17 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
 
                   DSSizedBoxSpacing.vertical(24),
 
+                  // Seção de Avaliação (quando completado)
+                  if (_status == ContractStatusEnum.completed) ...[
+                    _buildSectionTitle('Avaliação', textTheme, onPrimary),
+                    DSSizedBoxSpacing.vertical(12),
+                    RatingSection(
+                      personName: contract.nameClient ?? 'Anfitrião',
+                      isRatingArtist: false,
+                    ),
+                    DSSizedBoxSpacing.vertical(24),
+                  ],
+
                   // Informações Financeiras
                   _buildSectionTitle('Informações Financeiras', textTheme, onPrimary),
                   DSSizedBoxSpacing.vertical(12),
@@ -464,6 +482,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
 
                   DSSizedBoxSpacing.vertical(16),
                 ],
+              ),
               ),
             ),
           );

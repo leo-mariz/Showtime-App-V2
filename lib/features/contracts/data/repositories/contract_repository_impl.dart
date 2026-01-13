@@ -69,6 +69,7 @@ class ContractRepositoryImpl implements IContractRepository {
 
       // Se não encontrou no cache, busca do remoto
       final contracts = await remoteDataSource.getContractsByClient(clientUid);
+
       
       // Salva no cache após buscar do remoto
       if (contracts.isNotEmpty) {

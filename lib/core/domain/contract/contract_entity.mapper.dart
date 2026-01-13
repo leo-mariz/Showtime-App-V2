@@ -19,6 +19,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       AvailabilityEntityMapper.ensureInitialized();
       EventTypeEntityMapper.ensureInitialized();
       ContractStatusEnumMapper.ensureInitialized();
+      RatingEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -143,22 +144,16 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$showConfirmedAt,
     opt: true,
   );
-  static double? _$rating(ContractEntity v) => v.rating;
-  static const Field<ContractEntity, double> _f$rating = Field(
-    'rating',
-    _$rating,
+  static RatingEntity? _$rateByClient(ContractEntity v) => v.rateByClient;
+  static const Field<ContractEntity, RatingEntity> _f$rateByClient = Field(
+    'rateByClient',
+    _$rateByClient,
     opt: true,
   );
-  static String? _$ratingComment(ContractEntity v) => v.ratingComment;
-  static const Field<ContractEntity, String> _f$ratingComment = Field(
-    'ratingComment',
-    _$ratingComment,
-    opt: true,
-  );
-  static DateTime? _$ratedAt(ContractEntity v) => v.ratedAt;
-  static const Field<ContractEntity, DateTime> _f$ratedAt = Field(
-    'ratedAt',
-    _$ratedAt,
+  static RatingEntity? _$rateByArtist(ContractEntity v) => v.rateByArtist;
+  static const Field<ContractEntity, RatingEntity> _f$rateByArtist = Field(
+    'rateByArtist',
+    _$rateByArtist,
     opt: true,
   );
   static DateTime? _$createdAt(ContractEntity v) => v.createdAt;
@@ -228,9 +223,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #paymentDate: _f$paymentDate,
     #keyCode: _f$keyCode,
     #showConfirmedAt: _f$showConfirmedAt,
-    #rating: _f$rating,
-    #ratingComment: _f$ratingComment,
-    #ratedAt: _f$ratedAt,
+    #rateByClient: _f$rateByClient,
+    #rateByArtist: _f$rateByArtist,
     #createdAt: _f$createdAt,
     #acceptedAt: _f$acceptedAt,
     #rejectedAt: _f$rejectedAt,
@@ -263,9 +257,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       paymentDate: data.dec(_f$paymentDate),
       keyCode: data.dec(_f$keyCode),
       showConfirmedAt: data.dec(_f$showConfirmedAt),
-      rating: data.dec(_f$rating),
-      ratingComment: data.dec(_f$ratingComment),
-      ratedAt: data.dec(_f$ratedAt),
+      rateByClient: data.dec(_f$rateByClient),
+      rateByArtist: data.dec(_f$rateByArtist),
       createdAt: data.dec(_f$createdAt),
       acceptedAt: data.dec(_f$acceptedAt),
       rejectedAt: data.dec(_f$rejectedAt),
@@ -343,6 +336,8 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
   AvailabilityEntityCopyWith<$R, AvailabilityEntity, AvailabilityEntity>?
   get availabilitySnapshot;
   EventTypeEntityCopyWith<$R, EventTypeEntity, EventTypeEntity>? get eventType;
+  RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByClient;
+  RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByArtist;
   $R call({
     DateTime? date,
     String? time,
@@ -365,9 +360,8 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? paymentDate,
     String? keyCode,
     DateTime? showConfirmedAt,
-    double? rating,
-    String? ratingComment,
-    DateTime? ratedAt,
+    RatingEntity? rateByClient,
+    RatingEntity? rateByArtist,
     DateTime? createdAt,
     DateTime? acceptedAt,
     DateTime? rejectedAt,
@@ -401,6 +395,12 @@ class _ContractEntityCopyWithImpl<$R, $Out>
   EventTypeEntityCopyWith<$R, EventTypeEntity, EventTypeEntity>?
   get eventType => $value.eventType?.copyWith.$chain((v) => call(eventType: v));
   @override
+  RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByClient =>
+      $value.rateByClient?.copyWith.$chain((v) => call(rateByClient: v));
+  @override
+  RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByArtist =>
+      $value.rateByArtist?.copyWith.$chain((v) => call(rateByArtist: v));
+  @override
   $R call({
     DateTime? date,
     String? time,
@@ -423,9 +423,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? paymentDate = $none,
     Object? keyCode = $none,
     Object? showConfirmedAt = $none,
-    Object? rating = $none,
-    Object? ratingComment = $none,
-    Object? ratedAt = $none,
+    Object? rateByClient = $none,
+    Object? rateByArtist = $none,
     Object? createdAt = $none,
     Object? acceptedAt = $none,
     Object? rejectedAt = $none,
@@ -457,9 +456,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (paymentDate != $none) #paymentDate: paymentDate,
       if (keyCode != $none) #keyCode: keyCode,
       if (showConfirmedAt != $none) #showConfirmedAt: showConfirmedAt,
-      if (rating != $none) #rating: rating,
-      if (ratingComment != $none) #ratingComment: ratingComment,
-      if (ratedAt != $none) #ratedAt: ratedAt,
+      if (rateByClient != $none) #rateByClient: rateByClient,
+      if (rateByArtist != $none) #rateByArtist: rateByArtist,
       if (createdAt != $none) #createdAt: createdAt,
       if (acceptedAt != $none) #acceptedAt: acceptedAt,
       if (rejectedAt != $none) #rejectedAt: rejectedAt,
@@ -495,9 +493,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     paymentDate: data.get(#paymentDate, or: $value.paymentDate),
     keyCode: data.get(#keyCode, or: $value.keyCode),
     showConfirmedAt: data.get(#showConfirmedAt, or: $value.showConfirmedAt),
-    rating: data.get(#rating, or: $value.rating),
-    ratingComment: data.get(#ratingComment, or: $value.ratingComment),
-    ratedAt: data.get(#ratedAt, or: $value.ratedAt),
+    rateByClient: data.get(#rateByClient, or: $value.rateByClient),
+    rateByArtist: data.get(#rateByArtist, or: $value.rateByArtist),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     acceptedAt: data.get(#acceptedAt, or: $value.acceptedAt),
     rejectedAt: data.get(#rejectedAt, or: $value.rejectedAt),

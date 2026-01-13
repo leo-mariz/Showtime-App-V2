@@ -11,6 +11,7 @@ import 'package:app/features/contracts/presentation/bloc/states/contracts_states
 import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
 import 'package:app/features/contracts/presentation/widgets/confirmation_code_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
+import 'package:app/features/contracts/presentation/widgets/rating_section.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,8 +78,14 @@ class ClientEventDetailScreen extends StatelessWidget {
         showAppBar: true,
         showAppBarBackButton: true,
         appBarTitle: 'Detalhes do Evento',
-        child: SingleChildScrollView(
-        child: Column(
+        child: GestureDetector(
+          onTap: () {
+            // Fechar teclado ao tocar em qualquer lugar da tela
+            FocusScope.of(context).unfocus();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: SingleChildScrollView(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Status Badge
@@ -223,6 +230,17 @@ class ClientEventDetailScreen extends StatelessWidget {
 
             DSSizedBoxSpacing.vertical(24),
 
+            // Seção de Avaliação (quando completado)
+            if (_status == ContractStatusEnum.completed) ...[
+              _buildSectionTitle('Avaliação', textTheme, onPrimary),
+              DSSizedBoxSpacing.vertical(12),
+              RatingSection(
+                personName: contract.contractorName ?? 'Artista',
+                isRatingArtist: true,
+              ),
+              DSSizedBoxSpacing.vertical(24),
+            ],
+
             // Botões de Ação
             if (_status == ContractStatusEnum.paymentPending) ...[
               SizedBox(
@@ -310,6 +328,7 @@ class ClientEventDetailScreen extends StatelessWidget {
 
             DSSizedBoxSpacing.vertical(16),
           ],
+        ),
         ),
       ),
       ),

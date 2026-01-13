@@ -112,111 +112,111 @@ class _ConfirmShowModalState extends State<ConfirmShowModal> {
     final onPrimary = colorScheme.onPrimary;
 
     return Container(
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(DSSize.width(20)),
-                topRight: Radius.circular(DSSize.width(20)),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(DSSize.width(20)),
+          topRight: Radius.circular(DSSize.width(20)),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        left: DSSize.width(16),
+        right: DSSize.width(16),
+        top: DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              margin: EdgeInsets.only(bottom: DSSize.height(16)),
+              decoration: BoxDecoration(
+                color: onPrimary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
               ),
             ),
-            padding: EdgeInsets.only(
-              left: DSSize.width(16),
-              right: DSSize.width(16),
-              top: DSSize.height(16),
-              bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+          ),
+          // Título
+          Row(
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: colorScheme.onPrimaryContainer,
+                size: DSSize.width(24),
+              ),
+              DSSizedBoxSpacing.horizontal(8),
+              Expanded(
+                child: Text(
+                  'Palavra-chave',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: onPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          DSSizedBoxSpacing.vertical(8),
+          // Descrição
+          Text(
+            'Digite o código de confirmação fornecido pelo cliente após a finalização do show:',
+            style: textTheme.bodyMedium?.copyWith(
+              color: onPrimary.withOpacity(0.7),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: DSSize.width(40),
-                    height: DSSize.height(4),
-                    margin: EdgeInsets.only(bottom: DSSize.height(16)),
-                    decoration: BoxDecoration(
-                      color: onPrimary.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(DSSize.width(2)),
-                    ),
-                  ),
-                ),
-                // Título
-                Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle_rounded,
-                      color: colorScheme.onPrimaryContainer,
-                      size: DSSize.width(24),
-                    ),
-                    DSSizedBoxSpacing.horizontal(8),
-                    Expanded(
-                      child: Text(
-                        'Palavra-chave',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: onPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                DSSizedBoxSpacing.vertical(8),
-                // Descrição
-                Text(
-                  'Digite o código de confirmação fornecido pelo cliente após a finalização do show:',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: onPrimary.withOpacity(0.7),
-                  ),
-                ),
-                DSSizedBoxSpacing.vertical(24),
-                // Formulário
-                Form(
-                  key: _formKey,
-                  child: CustomTextField(
-                    label: 'Código de Confirmação',
-                    controller: ConfirmShowModal._codeController,
-                    keyboardType: TextInputType.text,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor, digite o código';
-                      }
-                      return null;
-                    },
-                    enabled: !isLoading,
-                  ),
-                ),
-                DSSizedBoxSpacing.vertical(24),
-                // Botões
-                Row(
-                  children: [
-                    // Expanded(
-                    //   child: TextButton(
-                    //     onPressed: isLoading ? null : () => Navigator.of(context).pop(null),
-                    //     child: Text(
-                    //       'Cancelar',
-                    //       style: textTheme.bodyLarge?.copyWith(
-                    //         color: onPrimary.withOpacity(0.7),
-                    //         fontWeight: FontWeight.w600,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    // DSSizedBoxSpacing.horizontal(12),
-                    Expanded(
-                      flex: 2,
-                      child: CustomButton(
-                        label: 'Confirmar',
-                        backgroundColor: colorScheme.onPrimaryContainer,
-                        textColor: colorScheme.primaryContainer,
-                        onPressed: isLoading ? null : () => _handleConfirm(context),
-                        isLoading: isLoading,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          // Formulário
+          Form(
+            key: _formKey,
+            child: CustomTextField(
+              label: 'Código de Confirmação',
+              controller: ConfirmShowModal._codeController,
+              keyboardType: TextInputType.text,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Por favor, digite o código';
+                }
+                return null;
+              },
+              enabled: !isLoading,
             ),
-          );
+          ),
+          DSSizedBoxSpacing.vertical(24),
+          // Botões
+          Row(
+            children: [
+              // Expanded(
+              //   child: TextButton(
+              //     onPressed: isLoading ? null : () => Navigator.of(context).pop(null),
+              //     child: Text(
+              //       'Cancelar',
+              //       style: textTheme.bodyLarge?.copyWith(
+              //         color: onPrimary.withOpacity(0.7),
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
+              // ),
+              // DSSizedBoxSpacing.horizontal(12),
+              Expanded(
+                flex: 2,
+                child: CustomButton(
+                  label: 'Confirmar',
+                  backgroundColor: colorScheme.onPrimaryContainer,
+                  textColor: colorScheme.primaryContainer,
+                  onPressed: isLoading ? null : () => _handleConfirm(context),
+                  isLoading: isLoading,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

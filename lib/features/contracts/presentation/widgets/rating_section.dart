@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/informative_banner.dart';
+import 'package:app/core/shared/widgets/custom_message_field.dart';
+import 'package:app/core/shared/widgets/custom_button.dart';
+
+/// Widget de seção de avaliação para contratos completados
+/// 
+/// Exibe UI para avaliar artista (cliente) ou anfitrião (artista)
+/// com estrelas, comentário opcional e botões de ação
+class RatingSection extends StatefulWidget {
+  /// Nome da pessoa a ser avaliada (artista ou anfitrião)
+  final String personName;
+  
+  /// Se true, está avaliando um artista (cliente avaliando)
+  /// Se false, está avaliando um anfitrião (artista avaliando)
+  final bool isRatingArtist;
+
+  const RatingSection({
+    super.key,
+    required this.personName,
+    this.isRatingArtist = true,
+  });
+
+  @override
+  State<RatingSection> createState() => _RatingSectionState();
+}
+
+class _RatingSectionState extends State<RatingSection> {
+  int _selectedRating = 0;
+  final TextEditingController _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  String _getInformativeMessage() {
+    if (widget.isRatingArtist) {
+      return 'Sua avaliação é muito importante para o artista! Ela ajuda outros anfitriões a conhecerem melhor o trabalho dele e contribui para o crescimento da plataforma.';
+    } else {
+      return 'Sua avaliação é muito importante para o anfitrião! Ela ajuda outros artistas a conhecerem melhor o trabalho dele e contribui para o crescimento da plataforma.';
+    }
+  }
+
+  String _getSectionTitle() {
+    return widget.isRatingArtist 
+        ? 'Avaliar Artista' 
+        : 'Avaliar Anfitrião';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final onPrimary = colorScheme.onPrimary;
+    final primaryContainer = colorScheme.primaryContainer;
+
+    return Container(
+      padding: EdgeInsets.only(left: DSSize.width(16), right: DSSize.width(16), top: DSSize.height(0), bottom: DSSize.height(16)),
+      decoration: BoxDecoration(
+        color: primaryContainer.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(DSSize.width(12)),
+        border: Border.all(
+          color: primaryContainer.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // // Título da seção
+          // Text(
+          //   _getSectionTitle(),
+          //   style: textTheme.titleMedium?.copyWith(
+          //     color: onPrimary,
+          //     fontWeight: FontWeight.w600,
+          //   ),
+          // ),
+          DSSizedBoxSpacing.vertical(12),
+
+          // Banner informativo
+          InformativeBanner(
+            message: _getInformativeMessage(),
+            icon: Icons.star_outline_rounded,
+            textColor: onPrimary,
+          ),
+          DSSizedBoxSpacing.vertical(16),
+
+          // Nome da pessoa sendo avaliada
+          Text.rich(
+            TextSpan(
+              text: 'Avaliando: ',
+              style: textTheme.bodyMedium?.copyWith(
+                color: onPrimary.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+              children: [
+                TextSpan(
+                  text: widget.personName,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: onPrimary.withOpacity(0.8),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+
+          // Estrelas
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(5, (index) {
+                final starIndex = index + 1;
+                final isSelected = starIndex <= _selectedRating;
+                
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedRating = starIndex;
+                    });
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
+                    child: Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: isSelected ? Colors.amber : colorScheme.onSurfaceVariant,
+                      size: DSSize.width(40),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(8),
+          
+          // Texto indicando a seleção (opcional)
+          if (_selectedRating > 0)
+            Center(
+              child: Text(
+                _selectedRating == 1 
+                    ? 'Péssimo'
+                    : _selectedRating == 2
+                        ? 'Ruim'
+                        : _selectedRating == 3
+                            ? 'Regular'
+                            : _selectedRating == 4
+                                ? 'Bom'
+                                : 'Excelente',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          DSSizedBoxSpacing.vertical(16),
+
+          // Campo de comentário (opcional)
+          CustomMessageField(
+            controller: _commentController,
+            labelText: 'Comentário (opcional)',
+            hintText: 'Conte mais sobre sua experiência...',
+            onChanged: (value) {},
+          ),
+          DSSizedBoxSpacing.vertical(16),
+
+          // Botões
+          Row(
+            children: [
+              // Expanded(
+              //   child: TextButton(
+              //     onPressed: () {
+              //       // TODO: Implementar "Avaliar depois"
+              //     },
+              //     child: Text(
+              //       'Avaliar depois',
+              //       style: textTheme.bodyMedium?.copyWith(
+              //         color: onPrimary.withOpacity(0.7),
+              //       ),
+              //     ),
+              //   ),
+              // ),
+              DSSizedBoxSpacing.horizontal(12),
+              Expanded(
+                flex: 2,
+                child: CustomButton(
+                  label: 'Avaliar',
+                  onPressed: _selectedRating > 0 ? () {
+                    // TODO: Implementar envio de avaliação
+                  } : null,
+                  icon: Icons.stars_sharp,
+                  iconOnLeft: true,
+                  height: DSSize.height(44),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+

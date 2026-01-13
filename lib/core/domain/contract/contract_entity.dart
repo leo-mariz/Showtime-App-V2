@@ -49,6 +49,7 @@ class ContractEntity with ContractEntityMappable {
   // Confirmação do show
   final String? keyCode;              // Código de confirmação (gerado após pagamento)
   final DateTime? showConfirmedAt;    // Data/hora em que o código foi validado
+  final DateTime? ratingsPublishedAt;  // NOVO: quando ficam públicas
   
   // Avaliação
   final RatingEntity? rateByClient;
@@ -86,6 +87,7 @@ class ContractEntity with ContractEntityMappable {
     this.paymentDate,
     this.keyCode,
     this.showConfirmedAt,
+    this.ratingsPublishedAt,
     this.rateByClient,
     this.rateByArtist,
     DateTime? createdAt,

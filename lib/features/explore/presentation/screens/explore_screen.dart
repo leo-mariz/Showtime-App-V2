@@ -373,8 +373,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
           musicianName: artist.artistName ?? 'Artista sem nome',
           genres: genres,
           description: description,
-          contracts: artist.finalizedContracts,
-          rating: artist.rating,
+          contracts: artist.rateCount ?? 0,
+          rating: artist.rating ?? 0.0,
           pricePerHour: pricePerHour,
           imageUrl: artist.profilePicture,
           isFavorite: false, // TODO: Implementar verificação de favoritos

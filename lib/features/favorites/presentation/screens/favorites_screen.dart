@@ -114,7 +114,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           artistName: 'Artista Favorito ${index + 1}',
           profilePicture: null, // TODO: URL real da foto
           rating: 4.7 + (index * 0.1),
-          finalizedContracts: 50 + index,
+          rateCount: 50 + index,
         ),
         pricePerHour: 180.0 + (index * 30.0),
         minimumDuration: Duration(minutes: 30),
@@ -131,7 +131,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       artistName: 'Artista Favorito ${index + 1}',
       profilePicture: null, // TODO: URL real da foto
       rating: 4.7 + (index * 0.1),
-      finalizedContracts: 50 + index,
+      rateCount: 50 + index,
       professionalInfo: ProfessionalInfoEntity(
         bio: 'Músico profissional com experiência em eventos corporativos e festas particulares. Repertório variado e qualidade garantida.',
         genrePreferences: ['Rock', 'Pop', 'Jazz'],

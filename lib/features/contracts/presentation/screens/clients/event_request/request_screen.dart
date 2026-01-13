@@ -639,7 +639,7 @@ class _RequestScreenState extends State<RequestScreen> {
                   label: isLoading ? 'Enviando...' : 'Solicitar Apresentação',
                   onPressed: isEnabled ? _onSubmit : null,
                   icon: Icons.send,
-                  iconOnLeft: true,
+                  iconOnRight: true,
                   isLoading: isLoading,
                 );
               },

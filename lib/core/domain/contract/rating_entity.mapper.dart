@@ -25,6 +25,7 @@ class RatingEntityMapper extends ClassMapperBase<RatingEntity> {
   static const Field<RatingEntity, String> _f$comment = Field(
     'comment',
     _$comment,
+    opt: true,
   );
   static double _$rating(RatingEntity v) => v.rating;
   static const Field<RatingEntity, double> _f$rating = Field(
@@ -47,6 +48,25 @@ class RatingEntityMapper extends ClassMapperBase<RatingEntity> {
     _$ratedAt,
     opt: true,
   );
+  static bool _$isPublic(RatingEntity v) => v.isPublic;
+  static const Field<RatingEntity, bool> _f$isPublic = Field(
+    'isPublic',
+    _$isPublic,
+    opt: true,
+    def: false,
+  );
+  static String? _$artistResponse(RatingEntity v) => v.artistResponse;
+  static const Field<RatingEntity, String> _f$artistResponse = Field(
+    'artistResponse',
+    _$artistResponse,
+    opt: true,
+  );
+  static DateTime? _$artistResponseAt(RatingEntity v) => v.artistResponseAt;
+  static const Field<RatingEntity, DateTime> _f$artistResponseAt = Field(
+    'artistResponseAt',
+    _$artistResponseAt,
+    opt: true,
+  );
   static DateTime _$createdAt(RatingEntity v) => v.createdAt;
   static const Field<RatingEntity, DateTime> _f$createdAt = Field(
     'createdAt',
@@ -61,6 +81,9 @@ class RatingEntityMapper extends ClassMapperBase<RatingEntity> {
     #isClientRating: _f$isClientRating,
     #skippedRating: _f$skippedRating,
     #ratedAt: _f$ratedAt,
+    #isPublic: _f$isPublic,
+    #artistResponse: _f$artistResponse,
+    #artistResponseAt: _f$artistResponseAt,
     #createdAt: _f$createdAt,
   };
 
@@ -71,6 +94,9 @@ class RatingEntityMapper extends ClassMapperBase<RatingEntity> {
       isClientRating: data.dec(_f$isClientRating),
       skippedRating: data.dec(_f$skippedRating),
       ratedAt: data.dec(_f$ratedAt),
+      isPublic: data.dec(_f$isPublic),
+      artistResponse: data.dec(_f$artistResponse),
+      artistResponseAt: data.dec(_f$artistResponseAt),
     );
   }
 
@@ -142,6 +168,9 @@ abstract class RatingEntityCopyWith<$R, $In extends RatingEntity, $Out>
     bool? isClientRating,
     bool? skippedRating,
     DateTime? ratedAt,
+    bool? isPublic,
+    String? artistResponse,
+    DateTime? artistResponseAt,
   });
   RatingEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -161,6 +190,9 @@ class _RatingEntityCopyWithImpl<$R, $Out>
     bool? isClientRating,
     bool? skippedRating,
     Object? ratedAt = $none,
+    bool? isPublic,
+    Object? artistResponse = $none,
+    Object? artistResponseAt = $none,
   }) => $apply(
     FieldCopyWithData({
       if (comment != $none) #comment: comment,
@@ -168,6 +200,9 @@ class _RatingEntityCopyWithImpl<$R, $Out>
       if (isClientRating != null) #isClientRating: isClientRating,
       if (skippedRating != null) #skippedRating: skippedRating,
       if (ratedAt != $none) #ratedAt: ratedAt,
+      if (isPublic != null) #isPublic: isPublic,
+      if (artistResponse != $none) #artistResponse: artistResponse,
+      if (artistResponseAt != $none) #artistResponseAt: artistResponseAt,
     }),
   );
   @override
@@ -177,6 +212,9 @@ class _RatingEntityCopyWithImpl<$R, $Out>
     isClientRating: data.get(#isClientRating, or: $value.isClientRating),
     skippedRating: data.get(#skippedRating, or: $value.skippedRating),
     ratedAt: data.get(#ratedAt, or: $value.ratedAt),
+    isPublic: data.get(#isPublic, or: $value.isPublic),
+    artistResponse: data.get(#artistResponse, or: $value.artistResponse),
+    artistResponseAt: data.get(#artistResponseAt, or: $value.artistResponseAt),
   );
 
   @override

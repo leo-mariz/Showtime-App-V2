@@ -10,6 +10,9 @@ class ClientEntity with ClientEntityMappable {
   final DateTime? dateRegistered;
   List<String>? preferences;
   bool? agreedToClientTermsOfUse;
+  double? rating;
+  int? rateCount;
+  List<String>? contractsRatedUids;
 
   ClientEntity({
     this.uid,
@@ -17,6 +20,9 @@ class ClientEntity with ClientEntityMappable {
     this.dateRegistered,
     this.preferences,
     this.agreedToClientTermsOfUse,
+    this.rating,
+    this.rateCount,
+    this.contractsRatedUids,
   });
 
   factory ClientEntity.defaultClientEntity() {

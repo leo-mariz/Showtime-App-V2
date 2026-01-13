@@ -20,8 +20,9 @@ class ArtistEntity with ArtistEntityMappable {
   bool? hasIncompleteSections;
   bool? agreedToArtistTermsOfUse;
   bool? isOnAnyGroup;
-  double rating;
-  int finalizedContracts;
+  double? rating;
+  int? rateCount;
+  List<String>? contractsRatedUids;
   DateTime? dateRegistered;
 
   ArtistEntity({
@@ -39,8 +40,9 @@ class ArtistEntity with ArtistEntityMappable {
     this.agreedToArtistTermsOfUse,
     this.isOnAnyGroup,
     this.groupsInUids,
-    this.rating = 0,
-    this.finalizedContracts = 0,
+    this.rating,
+    this.rateCount,
+    this.contractsRatedUids,
   });
 
   // Método de fábrica para criar uma entidade padrão

@@ -211,9 +211,9 @@ class ArtistProfileScreen extends StatelessWidget {
                       // Badges de avaliação, contratos e favorito
                       Row(
                         children: [
-                          CustomBadge(value: artist.rating.toStringAsFixed(2), icon: Icons.star, color: onPrimaryContainer),
+                          CustomBadge(value: artist.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
                           DSSizedBoxSpacing.horizontal(8),
-                          CustomBadge(title: 'Contratos', value: artist.finalizedContracts.toString(), color: onPrimaryContainer),
+                          CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
                           const Spacer(),
                           FavoriteButton(
                             isFavorite: isFavorite,
@@ -254,9 +254,9 @@ class ArtistProfileScreen extends StatelessWidget {
 
           // Footer fixo
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
+            left: DSSize.width(0),
+            right: DSSize.width(0),
+            bottom: DSSize.height(-12),
             child: ArtistFooter(
               onRequestPressed: () => _onRequestPressed(context),
             ),

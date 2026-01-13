@@ -148,7 +148,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
         // Converter Timestamps para DateTime antes do mapeamento
         final convertedMap = _convertTimestampsToDateTime(contractMap);
         final contract = ContractEntityMapper.fromMap(convertedMap);
-        return contract.copyWith(uid: snapshot.id);
+      return contract.copyWith(uid: snapshot.id);
       } catch (e, stackTrace) {
         // Log detalhado do erro para debug
         debugPrint('❌ Erro ao mapear contrato ${snapshot.id}: $e');
@@ -198,11 +198,11 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       return querySnapshot.docs
           .map((doc) {
             try {
-              final contractMap = doc.data() as Map<String, dynamic>;
+            final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
               final convertedMap = _convertTimestampsToDateTime(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
-              return contract.copyWith(uid: doc.id);
+            return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {
               // Log detalhado do erro para debug
               debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');
@@ -254,11 +254,11 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       return querySnapshot.docs
           .map((doc) {
             try {
-              final contractMap = doc.data() as Map<String, dynamic>;
+            final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
               final convertedMap = _convertTimestampsToDateTime(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
-              return contract.copyWith(uid: doc.id);
+            return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {
               // Log detalhado do erro para debug
               debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');
@@ -310,11 +310,11 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       return querySnapshot.docs
           .map((doc) {
             try {
-              final contractMap = doc.data() as Map<String, dynamic>;
+            final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
               final convertedMap = _convertTimestampsToDateTime(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
-              return contract.copyWith(uid: doc.id);
+            return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {
               // Log detalhado do erro para debug
               debugPrint('❌ Erro ao mapear contrato ${doc.id}: $e');

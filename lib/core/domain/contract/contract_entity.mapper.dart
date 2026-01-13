@@ -144,6 +144,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$showConfirmedAt,
     opt: true,
   );
+  static DateTime? _$ratingsPublishedAt(ContractEntity v) =>
+      v.ratingsPublishedAt;
+  static const Field<ContractEntity, DateTime> _f$ratingsPublishedAt = Field(
+    'ratingsPublishedAt',
+    _$ratingsPublishedAt,
+    opt: true,
+  );
   static RatingEntity? _$rateByClient(ContractEntity v) => v.rateByClient;
   static const Field<ContractEntity, RatingEntity> _f$rateByClient = Field(
     'rateByClient',
@@ -223,6 +230,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #paymentDate: _f$paymentDate,
     #keyCode: _f$keyCode,
     #showConfirmedAt: _f$showConfirmedAt,
+    #ratingsPublishedAt: _f$ratingsPublishedAt,
     #rateByClient: _f$rateByClient,
     #rateByArtist: _f$rateByArtist,
     #createdAt: _f$createdAt,
@@ -257,6 +265,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       paymentDate: data.dec(_f$paymentDate),
       keyCode: data.dec(_f$keyCode),
       showConfirmedAt: data.dec(_f$showConfirmedAt),
+      ratingsPublishedAt: data.dec(_f$ratingsPublishedAt),
       rateByClient: data.dec(_f$rateByClient),
       rateByArtist: data.dec(_f$rateByArtist),
       createdAt: data.dec(_f$createdAt),
@@ -360,6 +369,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? paymentDate,
     String? keyCode,
     DateTime? showConfirmedAt,
+    DateTime? ratingsPublishedAt,
     RatingEntity? rateByClient,
     RatingEntity? rateByArtist,
     DateTime? createdAt,
@@ -423,6 +433,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? paymentDate = $none,
     Object? keyCode = $none,
     Object? showConfirmedAt = $none,
+    Object? ratingsPublishedAt = $none,
     Object? rateByClient = $none,
     Object? rateByArtist = $none,
     Object? createdAt = $none,
@@ -456,6 +467,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (paymentDate != $none) #paymentDate: paymentDate,
       if (keyCode != $none) #keyCode: keyCode,
       if (showConfirmedAt != $none) #showConfirmedAt: showConfirmedAt,
+      if (ratingsPublishedAt != $none) #ratingsPublishedAt: ratingsPublishedAt,
       if (rateByClient != $none) #rateByClient: rateByClient,
       if (rateByArtist != $none) #rateByArtist: rateByArtist,
       if (createdAt != $none) #createdAt: createdAt,
@@ -493,6 +505,10 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     paymentDate: data.get(#paymentDate, or: $value.paymentDate),
     keyCode: data.get(#keyCode, or: $value.keyCode),
     showConfirmedAt: data.get(#showConfirmedAt, or: $value.showConfirmedAt),
+    ratingsPublishedAt: data.get(
+      #ratingsPublishedAt,
+      or: $value.ratingsPublishedAt,
+    ),
     rateByClient: data.get(#rateByClient, or: $value.rateByClient),
     rateByArtist: data.get(#rateByArtist, or: $value.rateByArtist),
     createdAt: data.get(#createdAt, or: $value.createdAt),

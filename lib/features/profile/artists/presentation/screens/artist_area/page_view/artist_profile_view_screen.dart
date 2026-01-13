@@ -247,7 +247,7 @@ class _ArtistProfileViewScreenState extends State<ArtistProfileViewScreen> {
                                   DSSizedBoxSpacing.horizontal(8),
                                   CustomBadge(
                                     title: 'Contratos',
-                                    value: artist.finalizedContracts.toString(),
+                                    value: artist.rateCount?.toString() ?? '0',
                                     color: onPrimaryContainer,
                                   ),
                                   const Spacer(),

@@ -52,6 +52,25 @@ class ClientEntityMapper extends ClassMapperBase<ClientEntity> {
     _$agreedToClientTermsOfUse,
     opt: true,
   );
+  static double? _$rating(ClientEntity v) => v.rating;
+  static const Field<ClientEntity, double> _f$rating = Field(
+    'rating',
+    _$rating,
+    opt: true,
+  );
+  static int? _$rateCount(ClientEntity v) => v.rateCount;
+  static const Field<ClientEntity, int> _f$rateCount = Field(
+    'rateCount',
+    _$rateCount,
+    opt: true,
+  );
+  static List<String>? _$contractsRatedUids(ClientEntity v) =>
+      v.contractsRatedUids;
+  static const Field<ClientEntity, List<String>> _f$contractsRatedUids = Field(
+    'contractsRatedUids',
+    _$contractsRatedUids,
+    opt: true,
+  );
 
   @override
   final MappableFields<ClientEntity> fields = const {
@@ -60,6 +79,9 @@ class ClientEntityMapper extends ClassMapperBase<ClientEntity> {
     #dateRegistered: _f$dateRegistered,
     #preferences: _f$preferences,
     #agreedToClientTermsOfUse: _f$agreedToClientTermsOfUse,
+    #rating: _f$rating,
+    #rateCount: _f$rateCount,
+    #contractsRatedUids: _f$contractsRatedUids,
   };
 
   static ClientEntity _instantiate(DecodingData data) {
@@ -69,6 +91,9 @@ class ClientEntityMapper extends ClassMapperBase<ClientEntity> {
       dateRegistered: data.dec(_f$dateRegistered),
       preferences: data.dec(_f$preferences),
       agreedToClientTermsOfUse: data.dec(_f$agreedToClientTermsOfUse),
+      rating: data.dec(_f$rating),
+      rateCount: data.dec(_f$rateCount),
+      contractsRatedUids: data.dec(_f$contractsRatedUids),
     );
   }
 
@@ -135,12 +160,17 @@ extension ClientEntityValueCopy<$R, $Out>
 abstract class ClientEntityCopyWith<$R, $In extends ClientEntity, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get preferences;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids;
   $R call({
     String? uid,
     String? profilePicture,
     DateTime? dateRegistered,
     List<String>? preferences,
     bool? agreedToClientTermsOfUse,
+    double? rating,
+    int? rateCount,
+    List<String>? contractsRatedUids,
   });
   ClientEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -163,12 +193,24 @@ class _ClientEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids => $value.contractsRatedUids != null
+      ? ListCopyWith(
+          $value.contractsRatedUids!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(contractsRatedUids: v),
+        )
+      : null;
+  @override
   $R call({
     Object? uid = $none,
     Object? profilePicture = $none,
     Object? dateRegistered = $none,
     Object? preferences = $none,
     Object? agreedToClientTermsOfUse = $none,
+    Object? rating = $none,
+    Object? rateCount = $none,
+    Object? contractsRatedUids = $none,
   }) => $apply(
     FieldCopyWithData({
       if (uid != $none) #uid: uid,
@@ -177,6 +219,9 @@ class _ClientEntityCopyWithImpl<$R, $Out>
       if (preferences != $none) #preferences: preferences,
       if (agreedToClientTermsOfUse != $none)
         #agreedToClientTermsOfUse: agreedToClientTermsOfUse,
+      if (rating != $none) #rating: rating,
+      if (rateCount != $none) #rateCount: rateCount,
+      if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
     }),
   );
   @override
@@ -188,6 +233,12 @@ class _ClientEntityCopyWithImpl<$R, $Out>
     agreedToClientTermsOfUse: data.get(
       #agreedToClientTermsOfUse,
       or: $value.agreedToClientTermsOfUse,
+    ),
+    rating: data.get(#rating, or: $value.rating),
+    rateCount: data.get(#rateCount, or: $value.rateCount),
+    contractsRatedUids: data.get(
+      #contractsRatedUids,
+      or: $value.contractsRatedUids,
     ),
   );
 

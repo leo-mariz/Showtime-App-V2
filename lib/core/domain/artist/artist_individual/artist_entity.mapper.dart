@@ -105,19 +105,24 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     _$groupsInUids,
     opt: true,
   );
-  static double _$rating(ArtistEntity v) => v.rating;
+  static double? _$rating(ArtistEntity v) => v.rating;
   static const Field<ArtistEntity, double> _f$rating = Field(
     'rating',
     _$rating,
     opt: true,
-    def: 0,
   );
-  static int _$finalizedContracts(ArtistEntity v) => v.finalizedContracts;
-  static const Field<ArtistEntity, int> _f$finalizedContracts = Field(
-    'finalizedContracts',
-    _$finalizedContracts,
+  static int? _$rateCount(ArtistEntity v) => v.rateCount;
+  static const Field<ArtistEntity, int> _f$rateCount = Field(
+    'rateCount',
+    _$rateCount,
     opt: true,
-    def: 0,
+  );
+  static List<String>? _$contractsRatedUids(ArtistEntity v) =>
+      v.contractsRatedUids;
+  static const Field<ArtistEntity, List<String>> _f$contractsRatedUids = Field(
+    'contractsRatedUids',
+    _$contractsRatedUids,
+    opt: true,
   );
 
   @override
@@ -137,7 +142,8 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     #isOnAnyGroup: _f$isOnAnyGroup,
     #groupsInUids: _f$groupsInUids,
     #rating: _f$rating,
-    #finalizedContracts: _f$finalizedContracts,
+    #rateCount: _f$rateCount,
+    #contractsRatedUids: _f$contractsRatedUids,
   };
 
   static ArtistEntity _instantiate(DecodingData data) {
@@ -157,7 +163,8 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       isOnAnyGroup: data.dec(_f$isOnAnyGroup),
       groupsInUids: data.dec(_f$groupsInUids),
       rating: data.dec(_f$rating),
-      finalizedContracts: data.dec(_f$finalizedContracts),
+      rateCount: data.dec(_f$rateCount),
+      contractsRatedUids: data.dec(_f$contractsRatedUids),
     );
   }
 
@@ -242,6 +249,8 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
   get incompleteSections;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
   get groupsInUids;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids;
   $R call({
     String? uid,
     String? profilePicture,
@@ -258,7 +267,8 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     bool? isOnAnyGroup,
     List<String>? groupsInUids,
     double? rating,
-    int? finalizedContracts,
+    int? rateCount,
+    List<String>? contractsRatedUids,
   });
   ArtistEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -318,6 +328,15 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids => $value.contractsRatedUids != null
+      ? ListCopyWith(
+          $value.contractsRatedUids!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(contractsRatedUids: v),
+        )
+      : null;
+  @override
   $R call({
     Object? uid = $none,
     Object? profilePicture = $none,
@@ -333,8 +352,9 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     Object? agreedToArtistTermsOfUse = $none,
     Object? isOnAnyGroup = $none,
     Object? groupsInUids = $none,
-    double? rating,
-    int? finalizedContracts,
+    Object? rating = $none,
+    Object? rateCount = $none,
+    Object? contractsRatedUids = $none,
   }) => $apply(
     FieldCopyWithData({
       if (uid != $none) #uid: uid,
@@ -353,8 +373,9 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
         #agreedToArtistTermsOfUse: agreedToArtistTermsOfUse,
       if (isOnAnyGroup != $none) #isOnAnyGroup: isOnAnyGroup,
       if (groupsInUids != $none) #groupsInUids: groupsInUids,
-      if (rating != null) #rating: rating,
-      if (finalizedContracts != null) #finalizedContracts: finalizedContracts,
+      if (rating != $none) #rating: rating,
+      if (rateCount != $none) #rateCount: rateCount,
+      if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
     }),
   );
   @override
@@ -386,9 +407,10 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     isOnAnyGroup: data.get(#isOnAnyGroup, or: $value.isOnAnyGroup),
     groupsInUids: data.get(#groupsInUids, or: $value.groupsInUids),
     rating: data.get(#rating, or: $value.rating),
-    finalizedContracts: data.get(
-      #finalizedContracts,
-      or: $value.finalizedContracts,
+    rateCount: data.get(#rateCount, or: $value.rateCount),
+    contractsRatedUids: data.get(
+      #contractsRatedUids,
+      or: $value.contractsRatedUids,
     ),
   );
 

@@ -16,7 +16,7 @@ class ArtistFooter extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: EdgeInsets.all(DSSize.width(24)),
+      padding: EdgeInsets.all(DSSize.width(16)),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         boxShadow: [
@@ -27,15 +27,13 @@ class ArtistFooter extends StatelessWidget {
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: CustomButton(
-          label: 'Solicitar Artista',
+      child: CustomButton(
+          label: 'Solicitar',
           onPressed: onRequestPressed,
           icon: Icons.send,
           iconOnRight: true,
         ),
-      ),
+      
     );
   }
 }

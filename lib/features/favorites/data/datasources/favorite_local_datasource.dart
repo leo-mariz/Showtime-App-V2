@@ -1,73 +1,65 @@
-import 'package:app/core/domain/favorites/favorite_artist_entity.dart';
+import 'package:app/core/domain/favorites/favorite_entity.dart';
 import 'package:app/core/services/auto_cache_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface para operações locais (cache) de favoritos
 abstract class IFavoriteLocalDataSource {
   /// Armazena a lista de favoritos em cache
   Future<void> cacheFavorites({
-    required String clientId,
-    required List<FavoriteArtistEntity> favorites,
+    required List<FavoriteEntity> favorites,
   });
 
   /// Busca a lista de favoritos do cache
-  Future<List<FavoriteArtistEntity>?> getCachedFavorites({
-    required String clientId,
-  });
+  Future<List<FavoriteEntity>?> getCachedFavorites();
 
-  /// Armazena a verificação de favorito em cache
-  Future<void> cacheIsFavorite({
-    required String clientId,
-    required String artistId,
-    required bool isFavorite,
-  });
-
-  /// Busca a verificação de favorito do cache
-  Future<bool?> getCachedIsFavorite({
-    required String clientId,
+  /// Remove um favorito específico do cache
+  Future<void> removeFavorite({
     required String artistId,
   });
 
-  /// Limpa todo o cache de favoritos de um cliente
-  Future<void> clearCache({required String clientId});
-
-  /// Limpa cache específico de verificação de favorito
-  Future<void> clearIsFavoriteCache({
-    required String clientId,
-    required String artistId,
+  /// Adiciona um favorito específico ao cache
+  Future<void> addFavorite({
+    required FavoriteEntity favorite,
   });
+
+  /// Limpa todo o cache de favoritos
+  Future<void> clearCache();
 }
 
 /// Implementação do datasource local de favoritos
 class FavoriteLocalDataSourceImpl implements IFavoriteLocalDataSource {
   final ILocalCacheService autoCache;
 
-  /// TTL (Time To Live) para o cache de favoritos: 5 minutos
-  static const Duration favoritesCacheTTL = Duration(minutes: 5);
+  static final String key = FavoriteEntityReference.cachedFavoritesKey();
+  static const String favoritesFieldKey = 'favorites';
+  static const String cachedAtFieldKey = 'cachedAt';
 
   FavoriteLocalDataSourceImpl({required this.autoCache});
 
   @override
   Future<void> cacheFavorites({
-    required String clientId,
-    required List<FavoriteArtistEntity> favorites,
+    required List<FavoriteEntity> favorites,
   }) async {
-    final key = FavoriteArtistEntityReference.cachedFavoritesKey(clientId);
-    
-    // Serializar a lista para JSON
-    final jsonList = favorites.map((fav) => fav.toMap()).toList();
-    
-    await autoCache.cacheDataString(
-      key,
-      {'favorites': jsonList, 'cachedAt': DateTime.now().toIso8601String()},
-    );
+    try {
+      // Serializar a lista para JSON
+      final jsonList = favorites.map((fav) => fav.toMap()).toList();
+      
+      await autoCache.cacheDataString(
+        key,
+        {
+          favoritesFieldKey: jsonList,
+          cachedAtFieldKey: DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      // Em caso de erro ao serializar/cachear, limpar cache
+      await clearCache();
+      rethrow;
+    }
   }
 
   @override
-  Future<List<FavoriteArtistEntity>?> getCachedFavorites({
-    required String clientId,
-  }) async {
-    final key = FavoriteArtistEntityReference.cachedFavoritesKey(clientId);
-    
+  Future<List<FavoriteEntity>?> getCachedFavorites() async {
     try {
       final cachedData = await autoCache.getCachedDataString(key);
 
@@ -75,106 +67,98 @@ class FavoriteLocalDataSourceImpl implements IFavoriteLocalDataSource {
         return null;
       }
 
-      // Verificar se o cache ainda é válido (TTL manual)
-      final cachedAtStr = cachedData['cachedAt'] as String?;
-      if (cachedAtStr != null) {
-        final cachedAt = DateTime.parse(cachedAtStr);
-        final now = DateTime.now();
-        
-        if (now.difference(cachedAt) > favoritesCacheTTL) {
-          // Cache expirado
-          await clearCache(clientId: clientId);
-          return null;
-        }
-      }
-
       // Deserializar a lista
-      final jsonList = cachedData['favorites'] as List<dynamic>?;
+      final jsonList = cachedData[favoritesFieldKey] as List<dynamic>?;
       if (jsonList == null) {
         return null;
       }
 
       return jsonList
-          .map((json) => FavoriteArtistEntityMapper.fromMap(json as Map<String, dynamic>))
+          .map((json) => FavoriteEntityMapper.fromMap(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       // Se houver erro ao deserializar, limpar cache
-      await clearCache(clientId: clientId);
+      await clearCache();
       return null;
     }
   }
 
   @override
-  Future<void> cacheIsFavorite({
-    required String clientId,
-    required String artistId,
-    required bool isFavorite,
-  }) async {
-    final key = FavoriteArtistEntityReference.cachedIsFavoriteKey(
-      clientId,
-      artistId,
-    );
-    
-    await autoCache.cacheDataString(
-      key,
-      {'isFavorite': isFavorite, 'cachedAt': DateTime.now().toIso8601String()},
-    );
-  }
-
-  @override
-  Future<bool?> getCachedIsFavorite({
-    required String clientId,
-    required String artistId,
-  }) async {
-    final key = FavoriteArtistEntityReference.cachedIsFavoriteKey(
-      clientId,
-      artistId,
-    );
-    
+  Future<void> removeFavorite({required String artistId}) async {
     try {
-      final cachedData = await autoCache.getCachedDataString(key);
+      if (artistId.isEmpty) {
+        throw ArgumentError('artistId não pode ser vazio');
+      }
+
+      final cachedData = await getCachedFavorites();
       
-      if (cachedData.isEmpty) {
-        return null;
+      // Se não houver cache, não há nada para remover
+      if (cachedData == null || cachedData.isEmpty) {
+        return;
       }
 
-      // Verificar se o cache ainda é válido (TTL manual)
-      final cachedAtStr = cachedData['cachedAt'] as String?;
-      if (cachedAtStr != null) {
-        final cachedAt = DateTime.parse(cachedAtStr);
-        final now = DateTime.now();
-        
-        if (now.difference(cachedAt) > favoritesCacheTTL) {
-          // Cache expirado
-          await clearIsFavoriteCache(clientId: clientId, artistId: artistId);
-          return null;
-        }
-      }
+      // Filtrar removendo o favorito com o artistId especificado
+      final updatedFavorites = cachedData
+          .where((favorite) => favorite.artistId != artistId)
+          .toList();
 
-      return cachedData['isFavorite'] as bool?;
+      // Atualizar cache com a lista atualizada
+      await cacheFavorites(favorites: updatedFavorites);
     } catch (e) {
-      // Se houver erro, limpar cache específico
-      await clearIsFavoriteCache(clientId: clientId, artistId: artistId);
-      return null;
+      // Em caso de erro, limpar cache para evitar inconsistências
+      await clearCache();
+      rethrow;
     }
   }
 
   @override
-  Future<void> clearCache({required String clientId}) async {
-    final key = FavoriteArtistEntityReference.cachedFavoritesKey(clientId);
-    await autoCache.deleteCachedDataString(key);
+  Future<void> addFavorite({required FavoriteEntity favorite}) async {
+    try {
+      if (favorite.artistId.isEmpty) {
+        throw ArgumentError('artistId do favorito não pode ser vazio');
+      }
+
+      final cachedData = await getCachedFavorites();
+      
+      // Se não houver cache, criar nova lista apenas com este favorito
+      if (cachedData == null || cachedData.isEmpty) {
+        await cacheFavorites(favorites: [favorite]);
+        return;
+      }
+
+      // Verificar se o favorito já existe
+      final favoriteExists = cachedData.any(
+        (cachedFavorite) => cachedFavorite.artistId == favorite.artistId,
+      );
+
+      // Se já existe, não adicionar novamente (evitar duplicatas)
+      if (favoriteExists) {
+        return;
+      }
+
+      // Adicionar o novo favorito à lista existente
+      final updatedFavorites = [...cachedData, favorite];
+      
+      // Atualizar cache com a lista atualizada
+      await cacheFavorites(favorites: updatedFavorites);
+    } catch (e) {
+      // Em caso de erro, limpar cache para evitar inconsistências
+      await clearCache();
+      rethrow;
+    }
   }
 
   @override
-  Future<void> clearIsFavoriteCache({
-    required String clientId,
-    required String artistId,
-  }) async {
-    final key = FavoriteArtistEntityReference.cachedIsFavoriteKey(
-      clientId,
-      artistId,
-    );
-    await autoCache.deleteCachedDataString(key);
+  Future<void> clearCache() async {
+    try {
+      await autoCache.deleteCachedDataString(key);
+    } catch (e) {
+      // Erro ao limpar cache - logar mas não propagar
+      // (não é crítico se falhar ao limpar)
+      if (kDebugMode) {
+        print('Erro ao limpar cache de favoritos: $e');
+      }
+    }
   }
 }
 

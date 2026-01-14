@@ -19,6 +19,9 @@ import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
 import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
+import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
+import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,6 +45,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool _hasMore = false;
   bool _isLoadingMore = false;
   static const int _pageSize = 10;
+  
+  // Mapa para rastrear mudanças locais de favoritos (artistId -> isFavorite)
+  // Isso permite atualização visual imediata antes do ExploreBloc recarregar
+  final Map<String, bool> _localFavoriteUpdates = {};
+  
+  // Rastrear último artista que teve favorito alterado
+  String? _lastFavoriteArtistId;
 
   String get _currentAddressDisplay {
     if (_selectedAddress == null) {
@@ -240,6 +250,44 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     }
                   },
                 ),
+                // Escutar FavoritesBloc para feedback de adicionar/remover favoritos
+                BlocListener<FavoritesBloc, FavoritesState>(
+                  listener: (context, state) {
+                    if (state is AddFavoriteSuccess) {
+                      context.showSuccess('Artista adicionado aos favoritos');
+                      // Atualizar estado local para refletir mudança visual imediatamente
+                      if (_lastFavoriteArtistId != null) {
+                        setState(() {
+                          _localFavoriteUpdates[_lastFavoriteArtistId!] = true;
+                        });
+                      }
+                    } else if (state is AddFavoriteFailure) {
+                      context.showError(state.error);
+                      // Reverter mudança local em caso de erro
+                      if (_lastFavoriteArtistId != null) {
+                        setState(() {
+                          _localFavoriteUpdates.remove(_lastFavoriteArtistId);
+                        });
+                      }
+                    } else if (state is RemoveFavoriteSuccess) {
+                      context.showSuccess('Artista removido dos favoritos');
+                      // Atualizar estado local para refletir mudança visual imediatamente
+                      if (_lastFavoriteArtistId != null) {
+                        setState(() {
+                          _localFavoriteUpdates[_lastFavoriteArtistId!] = false;
+                        });
+                      }
+                    } else if (state is RemoveFavoriteFailure) {
+                      context.showError(state.error);
+                      // Reverter mudança local em caso de erro
+                      if (_lastFavoriteArtistId != null) {
+                        setState(() {
+                          _localFavoriteUpdates.remove(_lastFavoriteArtistId);
+                        });
+                      }
+                    }
+                  },
+                ),
               ],
               child: BlocBuilder<ExploreBloc, ExploreState>(
                 builder: (context, state) {
@@ -353,6 +401,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
         final artistWithAvailabilities = artistsWithAvailabilities[index];
         final artist = artistWithAvailabilities.artist;
         final availabilities = artistWithAvailabilities.availabilities;
+        
+        // Verificar se há atualização local de favorito para este artista
+        final artistId = artist.uid ?? '';
+        final isFavorite = _localFavoriteUpdates.containsKey(artistId)
+            ? _localFavoriteUpdates[artistId]!
+            : artistWithAvailabilities.isFavorite;
 
         // Obter preço da primeira disponibilidade (ou usar hourlyRate do professionalInfo)
         String? pricePerHour;
@@ -377,9 +431,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
           rating: artist.rating ?? 0.0,
           pricePerHour: pricePerHour,
           imageUrl: artist.profilePicture,
-          isFavorite: false, // TODO: Implementar verificação de favoritos
+          isFavorite: isFavorite,
           artistId: artist.uid ?? '',
-          onFavoriteToggle: () => _onFavoriteTapped(artist.uid ?? ''),
+          onFavoriteToggle: () => _onFavoriteTapped(artist.uid ?? '', isFavorite),
           onHirePressed: () => _onRequestTapped(artistWithAvailabilities),
           onTap: () => _onArtistCardTapped(artistWithAvailabilities),
         );
@@ -443,9 +497,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
     print('🎛️ Filtros clicados');
   }
 
-  void _onFavoriteTapped(String artistId) {
-    // TODO: Implementar adicionar/remover favorito
+  void _onFavoriteTapped(String artistId, bool isFavorite) {
     print('❤️ Favorito $artistId clicado');
+    // Armazenar o artistId para atualizar o estado após sucesso
+    _lastFavoriteArtistId = artistId;
+    
+    // Atualizar estado local imediatamente para feedback visual instantâneo
+    setState(() {
+      _localFavoriteUpdates[artistId] = !isFavorite;
+    });
+    
+    if (isFavorite) {
+      context.read<FavoritesBloc>().add(RemoveFavoriteEvent(artistId: artistId));
+    } else {
+      context.read<FavoritesBloc>().add(AddFavoriteEvent(artistId: artistId));
+    }
   }
 
   void _onRequestTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
@@ -489,13 +555,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
   void _onArtistCardTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
     final router = AutoRouter.of(context);
     final artist = artistWithAvailabilities.artist;
+    final isFavorite = _localFavoriteUpdates.containsKey(artist.uid ?? '')
+        ? _localFavoriteUpdates[artist.uid ?? '']!
+        : artistWithAvailabilities.isFavorite;
 
     // Encontrar a disponibilidade correspondente ao endereço e data selecionados
     final matchedAvailability = _findAvailability(artistWithAvailabilities);
 
     router.push(ArtistProfileRoute(
       artist: artist,
-      isFavorite: false, 
+      isFavorite: isFavorite, 
       selectedDate: _selectedDate,
       selectedAddress: _selectedAddress,
       availability: matchedAvailability,

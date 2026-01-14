@@ -61,6 +61,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     bool forceRefresh = false,
     int startIndex = 0,
     int pageSize = 10,
+    String? userId,
   }) async {
     print('🟣 [USECASE] GetArtistsWithAvailabilitiesFiltered - Iniciando busca');
     print('🟣 [USECASE] Parâmetros:');
@@ -102,6 +103,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
       print('🟣 [USECASE] Buscando todos os artistas com disponibilidades...');
       final allArtistsResult = await getArtistsWithAvailabilitiesUseCase.call(
         forceRefresh: forceRefresh,
+        userId: userId,
       );
 
       return allArtistsResult.fold(
@@ -129,6 +131,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
             artistsProcessed++;
             final artist = artistWithAvailabilities.artist;
             final allAvailabilities = artistWithAvailabilities.availabilities;
+            final isFavorite = artistWithAvailabilities.isFavorite;
             
             print('🟣 [USECASE] Processando artista: ${artist.artistName} (ID: ${artist.uid}) [idx=$i]');
             print('🟣 [USECASE] Artista ${artist.uid} - Total de disponibilidades: ${allAvailabilities.length}');
@@ -158,6 +161,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
                 ArtistWithAvailabilitiesEntity(
                   artist: artist,
                   availabilities: filtered,
+                  isFavorite: isFavorite,
                 ),
               );
             } else {

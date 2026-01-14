@@ -1,4 +1,4 @@
-import 'package:app/core/domain/favorites/favorite_artist_entity.dart';
+import 'package:app/core/domain/favorites/favorite_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
@@ -21,7 +21,7 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
   @override
   Future<Either<Failure, void>> addFavorite({
     required String clientId,
-    required FavoriteArtistEntity favorite,
+    required FavoriteEntity favorite,
   }) async {
     try {
       // Adicionar no Firestore
@@ -31,14 +31,7 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
       );
 
       // Limpar cache para forçar atualização na próxima busca
-      await localDataSource.clearCache(clientId: clientId);
-      
-      // Atualizar cache de verificação
-      await localDataSource.cacheIsFavorite(
-        clientId: clientId,
-        artistId: favorite.artistId,
-        isFavorite: true,
-      );
+      await localDataSource.addFavorite(favorite: favorite);
 
       return const Right(null);
     } catch (e) {
@@ -59,14 +52,7 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
       );
 
       // Limpar cache para forçar atualização na próxima busca
-      await localDataSource.clearCache(clientId: clientId);
-      
-      // Atualizar cache de verificação
-      await localDataSource.cacheIsFavorite(
-        clientId: clientId,
-        artistId: artistId,
-        isFavorite: false,
-      );
+      await localDataSource.removeFavorite(artistId: artistId);
 
       return const Right(null);
     } catch (e) {
@@ -75,16 +61,14 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
   }
 
   @override
-  Future<Either<Failure, List<FavoriteArtistEntity>>> getFavorites({
+  Future<Either<Failure, List<FavoriteEntity>>> getAllFavorites({
     required String clientId,
     bool forceRefresh = false,
   }) async {
     try {
       // Se não forçar refresh, tentar buscar do cache
       if (!forceRefresh) {
-        final cachedFavorites = await localDataSource.getCachedFavorites(
-          clientId: clientId,
-        );
+        final cachedFavorites = await localDataSource.getCachedFavorites();
 
         if (cachedFavorites != null) {
           return Right(cachedFavorites);
@@ -92,77 +76,16 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
       }
 
       // Buscar do Firestore
-      final favorites = await remoteDataSource.getFavorites(
+      final favorites = await remoteDataSource.getAllFavorites(
         clientId: clientId,
       );
 
       // Armazenar em cache
       await localDataSource.cacheFavorites(
-        clientId: clientId,
         favorites: favorites,
       );
 
       return Right(favorites);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool>> isFavorite({
-    required String clientId,
-    required String artistId,
-    bool forceRefresh = false,
-  }) async {
-    try {
-      // Se não forçar refresh, tentar buscar do cache
-      if (!forceRefresh) {
-        final cachedIsFavorite = await localDataSource.getCachedIsFavorite(
-          clientId: clientId,
-          artistId: artistId,
-        );
-
-        if (cachedIsFavorite != null) {
-          return Right(cachedIsFavorite);
-        }
-      }
-
-      // Verificar no Firestore
-      final isFav = await remoteDataSource.isFavorite(
-        clientId: clientId,
-        artistId: artistId,
-      );
-
-      // Armazenar em cache
-      await localDataSource.cacheIsFavorite(
-        clientId: clientId,
-        artistId: artistId,
-        isFavorite: isFav,
-      );
-
-      return Right(isFav);
-    } catch (e) {
-      return Left(ErrorHandler.handle(e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, FavoriteArtistEntity>> getFavorite({
-    required String clientId,
-    required String artistId,
-  }) async {
-    try {
-      // Buscar do Firestore
-      final favorite = await remoteDataSource.getFavorite(
-        clientId: clientId,
-        artistId: artistId,
-      );
-
-      if (favorite == null) {
-        return const Left(NotFoundFailure('Favorito não encontrado'));
-      }
-
-      return Right(favorite);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

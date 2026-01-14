@@ -2,6 +2,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
+import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Buscar todos os artistas com suas disponibilidades para explorar
@@ -20,13 +21,17 @@ import 'package:dartz/dartz.dart';
 /// [forceRefresh]: Se true, ignora o cache e busca tudo diretamente do Firestore (útil para testes)
 class GetArtistsWithAvailabilitiesUseCase {
   final IExploreRepository repository;
+  final IsArtistFavoriteUseCase isArtistFavoriteUseCase;
+  
 
   GetArtistsWithAvailabilitiesUseCase({
     required this.repository,
+    required this.isArtistFavoriteUseCase,
   });
 
   Future<Either<Failure, List<ArtistWithAvailabilitiesEntity>>> call({
     bool forceRefresh = false,
+    String? userId,
   }) async {
     try {
       // 1. Buscar todos os artistas aprovados e ativos
@@ -58,11 +63,25 @@ class GetArtistsWithAvailabilitiesUseCase {
                 forceRefresh: forceRefresh,
               );
 
+              bool isFavorite = false;
+              if (userId != null && userId.isNotEmpty) {
+                final isFavoriteResult = await isArtistFavoriteUseCase.call(
+                  clientId: userId,
+                  artistId: artist.uid!,
+                  forceRefresh: forceRefresh,
+                );
+                isFavorite = isFavoriteResult.fold(
+                  (_) => false, // Em caso de erro, considerar como não favorito
+                  (fav) => fav,
+                );
+              }
+
               return availabilitiesResult.fold(
                 (_) => ArtistWithAvailabilitiesEntity.empty(artist),
                 (availabilities) => ArtistWithAvailabilitiesEntity(
                   artist: artist,
                   availabilities: availabilities,
+                  isFavorite: isFavorite,
                 ),
               );
             }).toList();

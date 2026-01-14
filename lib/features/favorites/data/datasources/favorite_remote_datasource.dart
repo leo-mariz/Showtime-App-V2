@@ -1,4 +1,4 @@
-import 'package:app/core/domain/favorites/favorite_artist_entity.dart';
+import 'package:app/core/domain/favorites/favorite_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -7,7 +7,7 @@ abstract class IFavoriteRemoteDataSource {
   /// Adiciona um artista aos favoritos no Firestore
   Future<void> addFavorite({
     required String clientId,
-    required FavoriteArtistEntity favorite,
+    required FavoriteEntity favorite,
   });
 
   /// Remove um artista dos favoritos no Firestore
@@ -17,20 +17,8 @@ abstract class IFavoriteRemoteDataSource {
   });
 
   /// Busca todos os favoritos de um cliente do Firestore
-  Future<List<FavoriteArtistEntity>> getFavorites({
+  Future<List<FavoriteEntity>> getAllFavorites({
     required String clientId,
-  });
-
-  /// Verifica se um artista está nos favoritos no Firestore
-  Future<bool> isFavorite({
-    required String clientId,
-    required String artistId,
-  });
-
-  /// Busca um favorito específico do Firestore
-  Future<FavoriteArtistEntity?> getFavorite({
-    required String clientId,
-    required String artistId,
   });
 }
 
@@ -43,10 +31,10 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
   @override
   Future<void> addFavorite({
     required String clientId,
-    required FavoriteArtistEntity favorite,
+    required FavoriteEntity favorite,
   }) async {
     try {
-      final docRef = FavoriteArtistEntityReference.favoriteDocument(
+      final docRef = FavoriteEntityReference.favoriteDocument(
         firestore,
         clientId,
         favorite.artistId,
@@ -66,7 +54,7 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
     required String artistId,
   }) async {
     try {
-      final docRef = FavoriteArtistEntityReference.favoriteDocument(
+      final docRef = FavoriteEntityReference.favoriteDocument(
         firestore,
         clientId,
         artistId,
@@ -81,11 +69,11 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
   }
 
   @override
-  Future<List<FavoriteArtistEntity>> getFavorites({
+  Future<List<FavoriteEntity>> getAllFavorites({
     required String clientId,
   }) async {
     try {
-      final collectionRef = FavoriteArtistEntityReference.favoritesCollection(
+      final collectionRef = FavoriteEntityReference.favoritesCollection(
         firestore,
         clientId,
       );
@@ -98,14 +86,12 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
           .map((doc) {
             try {
               final data = doc.data() as Map<String, dynamic>;
-              return FavoriteArtistEntityMapper.fromMap(data);
+              return FavoriteEntityMapper.fromMap(data);
             } catch (e) {
-              // Se houver erro ao mapear um documento, logar e pular
-              debugPrint('❌ Erro ao mapear favorito ${doc.id}: $e');
-              return null;
+              // Se houver erro ao mapear, criar entidade apenas com o ID
+              return FavoriteEntity(artistId: doc.id);
             }
           })
-          .whereType<FavoriteArtistEntity>()
           .toList();
     } on FirebaseException catch (e) {
       throw ServerException(e.message ?? 'Erro ao buscar favoritos');
@@ -113,58 +99,5 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
       throw ServerException('Erro desconhecido ao buscar favoritos: $e');
     }
   }
-
-  @override
-  Future<bool> isFavorite({
-    required String clientId,
-    required String artistId,
-  }) async {
-    try {
-      final docRef = FavoriteArtistEntityReference.favoriteDocument(
-        firestore,
-        clientId,
-        artistId,
-      );
-
-      final docSnapshot = await docRef.get();
-      return docSnapshot.exists;
-    } on FirebaseException catch (e) {
-      throw ServerException(e.message ?? 'Erro ao verificar favorito');
-    } catch (e) {
-      throw ServerException('Erro desconhecido ao verificar favorito: $e');
-    }
-  }
-
-  @override
-  Future<FavoriteArtistEntity?> getFavorite({
-    required String clientId,
-    required String artistId,
-  }) async {
-    try {
-      final docRef = FavoriteArtistEntityReference.favoriteDocument(
-        firestore,
-        clientId,
-        artistId,
-      );
-
-      final docSnapshot = await docRef.get();
-
-      if (!docSnapshot.exists) {
-        return null;
-      }
-
-      final data = docSnapshot.data() as Map<String, dynamic>;
-      return FavoriteArtistEntityMapper.fromMap(data);
-    } on FirebaseException catch (e) {
-      throw ServerException(e.message ?? 'Erro ao buscar favorito');
-    } catch (e) {
-      throw ServerException('Erro desconhecido ao buscar favorito: $e');
-    }
-  }
-}
-
-// Helper para debug
-void debugPrint(String message) {
-  print(message);
 }
 

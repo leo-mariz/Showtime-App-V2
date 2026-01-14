@@ -1,3 +1,4 @@
+import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
@@ -16,14 +17,27 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
   final GetArtistsWithAvailabilitiesUseCase getArtistsWithAvailabilitiesUseCase;
   final GetArtistsWithAvailabilitiesFilteredUseCase
       getArtistsWithAvailabilitiesFilteredUseCase;
+  final GetUserUidUseCase getUserUidUseCase;
 
   ExploreBloc({
     required this.getArtistsWithAvailabilitiesUseCase,
     required this.getArtistsWithAvailabilitiesFilteredUseCase,
+    required this.getUserUidUseCase,
   }) : super(ExploreInitial()) {
     on<GetArtistsWithAvailabilitiesEvent>(_onGetArtistsWithAvailabilitiesEvent);
     on<GetArtistsWithAvailabilitiesFilteredEvent>(
       _onGetArtistsWithAvailabilitiesFilteredEvent,
+    );
+  }
+
+
+  // ==================== HELPERS ====================
+
+  Future<String?> _getCurrentUserId() async {
+    final result = await getUserUidUseCase.call();
+    return result.fold(
+      (_) => null,
+      (uid) => uid,
     );
   }
 
@@ -35,8 +49,11 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
   ) async {
     emit(GetArtistsWithAvailabilitiesLoading());
 
+    final userId = await _getCurrentUserId();
+
     final result = await getArtistsWithAvailabilitiesUseCase.call(
       forceRefresh: event.forceRefresh,
+      userId: userId,
     );
 
     result.fold(
@@ -63,12 +80,15 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
       emit(GetArtistsWithAvailabilitiesLoading());
     }
 
+    final userId = await _getCurrentUserId();
+
     final result = await getArtistsWithAvailabilitiesFilteredUseCase.call(
       selectedDate: event.selectedDate,
       userAddress: event.userAddress,
       forceRefresh: event.forceRefresh,
       startIndex: event.startIndex,
       pageSize: event.pageSize,
+      userId: userId,
     );
 
     result.fold(

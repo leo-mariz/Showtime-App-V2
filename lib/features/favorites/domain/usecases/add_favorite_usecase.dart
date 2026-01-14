@@ -1,4 +1,4 @@
-import 'package:app/core/domain/favorites/favorite_artist_entity.dart';
+import 'package:app/core/domain/favorites/favorite_entity.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
 import 'package:dartz/dartz.dart';
@@ -15,14 +15,14 @@ class AddFavoriteUseCase {
   /// Adiciona um artista aos favoritos do cliente
   /// 
   /// [clientId] - UID do cliente
-  /// [favorite] - Dados do favorito a ser adicionado
+  /// [artistId] - UID do artista a ser adicionado
   /// 
   /// Retorna [Right(void)] em caso de sucesso
   /// Retorna [Left(ValidationFailure)] se dados inválidos
   /// Retorna [Left(Failure)] em caso de erro
   Future<Either<Failure, void>> call({
     required String clientId,
-    required FavoriteArtistEntity favorite,
+    required String artistId,
   }) async {
     // Validar clientId
     if (clientId.isEmpty) {
@@ -30,9 +30,12 @@ class AddFavoriteUseCase {
     }
 
     // Validar artistId
-    if (favorite.artistId.isEmpty) {
+    if (artistId.isEmpty) {
       return const Left(ValidationFailure('ID do artista não pode ser vazio'));
     }
+
+    // Criar entidade do favorito
+    final favorite = FavoriteEntity(artistId: artistId);
 
     // Adicionar aos favoritos
     return await repository.addFavorite(

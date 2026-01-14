@@ -7,6 +7,14 @@ import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
+import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
+import 'package:app/features/favorites/data/datasources/favorite_remote_datasource.dart';
+import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
+import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
+import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
+import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
@@ -548,13 +556,19 @@ BankAccountBloc _createBankAccountBloc(
 ExploreBloc _createExploreBloc(
   IExploreRepository exploreRepository,
   CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
+  IFavoriteRepository favoriteRepository,
+  GetUserUidUseCase getUserUidUseCase,
 ) {
   // Criar UseCase orquestrador de validações (usa helpers internamente)
   final isAvailabilityValidForDateUseCase = IsAvailabilityValidForDateUseCase();
+
+  // Criar UseCase para verificar se um artista está nos favoritos
+  final isArtistFavoriteUseCase = IsArtistFavoriteUseCase(repository: favoriteRepository);
   
   // Criar UseCases principais
   final getArtistsWithAvailabilitiesUseCase = GetArtistsWithAvailabilitiesUseCase(
     repository: exploreRepository,
+    isArtistFavoriteUseCase: isArtistFavoriteUseCase,
   );
   
   final getArtistsWithAvailabilitiesFilteredUseCase =
@@ -569,6 +583,8 @@ ExploreBloc _createExploreBloc(
     getArtistsWithAvailabilitiesUseCase: getArtistsWithAvailabilitiesUseCase,
     getArtistsWithAvailabilitiesFilteredUseCase:
         getArtistsWithAvailabilitiesFilteredUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+        
   );
 }
 
@@ -618,6 +634,16 @@ ContractsBloc _createContractsBloc(
     skipRatingArtistUseCase: skipRatingArtistUseCase,
     rateClientUseCase: rateClientUseCase,
   );
+}
+
+FavoritesBloc _createFavoritesBloc(
+  IFavoriteRepository favoriteRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final addFavoriteUseCase = AddFavoriteUseCase(repository: favoriteRepository);
+  final removeFavoriteUseCase = RemoveFavoriteUseCase(repository: favoriteRepository);
+  return FavoritesBloc(getUserUidUseCase: getUserUidUseCase, addFavoriteUseCase: addFavoriteUseCase, removeFavoriteUseCase: removeFavoriteUseCase);
 }
 
 AppListsBloc _createAppListsBloc(
@@ -746,6 +772,11 @@ Future <void> main() async {
     remoteDataSource: contractRemoteDataSource,
   );
 
+  // Favorites
+  final favoriteLocalDataSource = FavoriteLocalDataSourceImpl(autoCache: localCacheService);
+  final favoriteRemoteDataSource = FavoriteRemoteDataSourceImpl(firestore: firestore);
+  final favoriteRepository = FavoriteRepositoryImpl(localDataSource: favoriteLocalDataSource, remoteDataSource: favoriteRemoteDataSource);
+
   // AppLists
   final appListsLocalDataSource = AppListsLocalDataSourceImpl(autoCacheService: localCacheService);
   final appListsRemoteDataSource = AppListsRemoteDataSourceImpl(firestore: firestore);
@@ -825,6 +856,8 @@ Future <void> main() async {
             create: (context) => _createExploreBloc(
               exploreRepository,
               calculateAddressGeohashUseCase,
+              favoriteRepository,
+              getUserUidUseCase,
             ),
           ),
           BlocProvider(
@@ -833,6 +866,12 @@ Future <void> main() async {
               getUserUidUseCase,
               firebaseFunctionsService,
               mercadoPagoService,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createFavoritesBloc(
+              favoriteRepository,
+              getUserUidUseCase,
             ),
           ),
           BlocProvider(

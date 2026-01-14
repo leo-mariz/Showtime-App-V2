@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
+import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:flutter/material.dart';
 
 /// Card de artista na listagem
@@ -95,26 +96,14 @@ class ArtistCard extends StatelessWidget {
                         ),
                 ),
                 Positioned(
-                  top: DSSize.height(8),
-                  right: DSSize.width(8),
-                  child: GestureDetector(
-                    onTap: onFavoriteToggle,
-                    child: Container(
-                      padding: EdgeInsets.all(DSSize.width(8)),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withOpacity(0.8),
-                        shape: BoxShape.circle,
+                  top: DSSize.height(4),
+                  right: DSSize.width(4),
+                  child: FavoriteButton(
+                        isFavorite: isFavorite,
+                        onTap: onFavoriteToggle,
                       ),
-                      child: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite 
-                            ? colorScheme.error 
-                            : onPrimaryContainer,
-                        size: DSSize.width(20),
-                      ),
-                    ),
+                    
                   ),
-                ),
               ],
             ),
             

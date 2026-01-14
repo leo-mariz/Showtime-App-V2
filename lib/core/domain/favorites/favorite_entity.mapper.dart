@@ -21,31 +21,28 @@ class FavoriteEntityMapper extends ClassMapperBase<FavoriteEntity> {
   @override
   final String id = 'FavoriteEntity';
 
-  static String _$uid(FavoriteEntity v) => v.uid;
-  static const Field<FavoriteEntity, String> _f$uid = Field('uid', _$uid);
   static String _$artistId(FavoriteEntity v) => v.artistId;
   static const Field<FavoriteEntity, String> _f$artistId = Field(
     'artistId',
     _$artistId,
   );
-  static String _$userId(FavoriteEntity v) => v.userId;
-  static const Field<FavoriteEntity, String> _f$userId = Field(
-    'userId',
-    _$userId,
+  static DateTime _$addedAt(FavoriteEntity v) => v.addedAt;
+  static const Field<FavoriteEntity, DateTime> _f$addedAt = Field(
+    'addedAt',
+    _$addedAt,
+    opt: true,
   );
 
   @override
   final MappableFields<FavoriteEntity> fields = const {
-    #uid: _f$uid,
     #artistId: _f$artistId,
-    #userId: _f$userId,
+    #addedAt: _f$addedAt,
   };
 
   static FavoriteEntity _instantiate(DecodingData data) {
     return FavoriteEntity(
-      uid: data.dec(_f$uid),
       artistId: data.dec(_f$artistId),
-      userId: data.dec(_f$userId),
+      addedAt: data.dec(_f$addedAt),
     );
   }
 
@@ -111,7 +108,7 @@ extension FavoriteEntityValueCopy<$R, $Out>
 
 abstract class FavoriteEntityCopyWith<$R, $In extends FavoriteEntity, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
-  $R call({String? uid, String? artistId, String? userId});
+  $R call({String? artistId, DateTime? addedAt});
   FavoriteEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   );
@@ -126,18 +123,16 @@ class _FavoriteEntityCopyWithImpl<$R, $Out>
   late final ClassMapperBase<FavoriteEntity> $mapper =
       FavoriteEntityMapper.ensureInitialized();
   @override
-  $R call({String? uid, String? artistId, String? userId}) => $apply(
+  $R call({String? artistId, Object? addedAt = $none}) => $apply(
     FieldCopyWithData({
-      if (uid != null) #uid: uid,
       if (artistId != null) #artistId: artistId,
-      if (userId != null) #userId: userId,
+      if (addedAt != $none) #addedAt: addedAt,
     }),
   );
   @override
   FavoriteEntity $make(CopyWithData data) => FavoriteEntity(
-    uid: data.get(#uid, or: $value.uid),
     artistId: data.get(#artistId, or: $value.artistId),
-    userId: data.get(#userId, or: $value.userId),
+    addedAt: data.get(#addedAt, or: $value.addedAt),
   );
 
   @override

@@ -4,11 +4,12 @@ import 'package:dartz/dartz.dart';
 
 /// Use case para verificar se um artista está nos favoritos
 /// 
-/// Utiliza cache local quando disponível para verificação instantânea
-class IsFavoriteUseCase {
+/// Utiliza getAllFavorites e verifica se o artista está na lista.
+/// Aproveita o cache de getAllFavorites para melhor performance.
+class IsArtistFavoriteUseCase {
   final IFavoriteRepository repository;
 
-  IsFavoriteUseCase({required this.repository});
+  IsArtistFavoriteUseCase({required this.repository});
 
   /// Verifica se um artista está nos favoritos do cliente
   /// 
@@ -27,7 +28,7 @@ class IsFavoriteUseCase {
   }) async {
     // Validar clientId
     if (clientId.isEmpty) {
-      return const Left(ValidationFailure('ID do cliente não pode ser vazio'));
+      return const Left(ValidationFailure('Usuário não autenticado'));
     }
 
     // Validar artistId
@@ -35,11 +36,21 @@ class IsFavoriteUseCase {
       return const Left(ValidationFailure('ID do artista não pode ser vazio'));
     }
 
-    // Verificar se é favorito
-    return await repository.isFavorite(
+    // Buscar todos os favoritos
+    final favoritesResult = await repository.getAllFavorites(
       clientId: clientId,
-      artistId: artistId,
       forceRefresh: forceRefresh,
+    );
+
+    // Verificar se o artista está na lista
+    return favoritesResult.fold(
+      (failure) => Left(failure),
+      (favorites) {
+        final isFavorite = favorites.any(
+          (favorite) => favorite.artistId == artistId,
+        );
+        return Right(isFavorite);
+      },
     );
   }
 }

@@ -11,10 +11,12 @@ part 'artist_with_availabilities_entity.mapper.dart';
 class ArtistWithAvailabilitiesEntity with ArtistWithAvailabilitiesEntityMappable {
   final ArtistEntity artist;
   final List<AvailabilityEntity> availabilities;
+  final bool isFavorite;
 
   ArtistWithAvailabilitiesEntity({
     required this.artist,
     required this.availabilities,
+    this.isFavorite = false,
   });
 
   /// Factory para criar uma instância com lista vazia de disponibilidades
@@ -22,6 +24,7 @@ class ArtistWithAvailabilitiesEntity with ArtistWithAvailabilitiesEntityMappable
     return ArtistWithAvailabilitiesEntity(
       artist: artist,
       availabilities: [],
+      isFavorite: false,
     );
   }
 
@@ -38,6 +41,8 @@ extension ArtistWithAvailabilitiesEntityReference on ArtistWithAvailabilitiesEnt
   
   /// Prefixo usado para criar chaves únicas de disponibilidades por artista
   static const String availabilitiesCacheKeyPrefix = 'explore_availability_';
+
+  static const String favoritesCacheKey = 'favorites_cache';
   
   // ==================== CACHE VALIDITY (Constantes) ====================
   
@@ -93,7 +98,7 @@ extension ArtistWithAvailabilitiesEntityReference on ArtistWithAvailabilitiesEnt
     final geohashKey = userGeohash != null && userGeohash.isNotEmpty
         ? '_$userGeohash'
         : '';
-    return '${availabilitiesCacheKeyPrefix}${artistId}$dateKey$geohashKey';
+    return '$availabilitiesCacheKeyPrefix$artistId$dateKey$geohashKey';
   }
 }
 

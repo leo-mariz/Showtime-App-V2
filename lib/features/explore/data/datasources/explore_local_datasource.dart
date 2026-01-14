@@ -67,6 +67,8 @@ abstract class IExploreLocalDataSource {
   
   /// Limpa todo o cache de explorar
   Future<void> clearExploreCache();
+
+
 }
 
 /// Implementação do DataSource local usando ILocalCacheService
@@ -363,5 +365,6 @@ class ExploreLocalDataSourceImpl implements IExploreLocalDataSource {
       );
     }
   }
+
 }
 

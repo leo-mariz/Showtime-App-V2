@@ -34,17 +34,22 @@ class ArtistWithAvailabilitiesEntityMapper
   ) => v.availabilities;
   static const Field<ArtistWithAvailabilitiesEntity, List<AvailabilityEntity>>
   _f$availabilities = Field('availabilities', _$availabilities);
+  static bool _$isFavorite(ArtistWithAvailabilitiesEntity v) => v.isFavorite;
+  static const Field<ArtistWithAvailabilitiesEntity, bool> _f$isFavorite =
+      Field('isFavorite', _$isFavorite, opt: true, def: false);
 
   @override
   final MappableFields<ArtistWithAvailabilitiesEntity> fields = const {
     #artist: _f$artist,
     #availabilities: _f$availabilities,
+    #isFavorite: _f$isFavorite,
   };
 
   static ArtistWithAvailabilitiesEntity _instantiate(DecodingData data) {
     return ArtistWithAvailabilitiesEntity(
       artist: data.dec(_f$artist),
       availabilities: data.dec(_f$availabilities),
+      isFavorite: data.dec(_f$isFavorite),
     );
   }
 
@@ -133,7 +138,11 @@ abstract class ArtistWithAvailabilitiesEntityCopyWith<
     AvailabilityEntityCopyWith<$R, AvailabilityEntity, AvailabilityEntity>
   >
   get availabilities;
-  $R call({ArtistEntity? artist, List<AvailabilityEntity>? availabilities});
+  $R call({
+    ArtistEntity? artist,
+    List<AvailabilityEntity>? availabilities,
+    bool? isFavorite,
+  });
   ArtistWithAvailabilitiesEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   );
@@ -171,18 +180,23 @@ class _ArtistWithAvailabilitiesEntityCopyWithImpl<$R, $Out>
     (v) => call(availabilities: v),
   );
   @override
-  $R call({ArtistEntity? artist, List<AvailabilityEntity>? availabilities}) =>
-      $apply(
-        FieldCopyWithData({
-          if (artist != null) #artist: artist,
-          if (availabilities != null) #availabilities: availabilities,
-        }),
-      );
+  $R call({
+    ArtistEntity? artist,
+    List<AvailabilityEntity>? availabilities,
+    bool? isFavorite,
+  }) => $apply(
+    FieldCopyWithData({
+      if (artist != null) #artist: artist,
+      if (availabilities != null) #availabilities: availabilities,
+      if (isFavorite != null) #isFavorite: isFavorite,
+    }),
+  );
   @override
   ArtistWithAvailabilitiesEntity $make(CopyWithData data) =>
       ArtistWithAvailabilitiesEntity(
         artist: data.get(#artist, or: $value.artist),
         availabilities: data.get(#availabilities, or: $value.availabilities),
+        isFavorite: data.get(#isFavorite, or: $value.isFavorite),
       );
 
   @override

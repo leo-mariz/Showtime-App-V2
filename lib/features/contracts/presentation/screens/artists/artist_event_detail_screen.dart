@@ -588,11 +588,38 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                   ),
                 ),
                 DSSizedBoxSpacing.vertical(4),
-                Text(
-                  'Anfitrião',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Anfitrião',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    DSSizedBoxSpacing.horizontal(8),
+                    if (_contract.clientRatingCount != null && _contract.clientRatingCount! > 0) ...[
+                      Text(
+                        _contract.clientRating?.toStringAsFixed(2) ?? '0',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      DSSizedBoxSpacing.horizontal(2),
+                      Icon(
+                        Icons.star_rounded,
+                        size: DSSize.width(16),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ] else ...[
+                      Text(
+                        'Sem avaliações',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ]
                 ),
               ],
             ),

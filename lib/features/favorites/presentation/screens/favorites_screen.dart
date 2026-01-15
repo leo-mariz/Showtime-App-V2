@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/shared/extensions/artist_search_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
@@ -26,7 +30,7 @@ class FavoritesScreen extends StatefulWidget {
   State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   
   // Mapa para rastrear mudanças locais de favoritos (artistId -> isFavorite)
@@ -35,6 +39,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   
   // Rastrear último artista que teve favorito alterado
   String? _lastFavoriteArtistId;
+  
+  // Query de busca atual
+  String _searchQuery = '';
+  
+  // Timer para debounce da busca
+  Timer? _searchDebounceTimer;
+
+  @override
+  bool get wantKeepAlive => true;
   
   @override
   void initState() {
@@ -50,11 +63,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounceTimer?.cancel(); // Cancelar timer ao dispor
     super.dispose();
+  }
+
+  void _onUpdateArtistFavoriteStatus(String artistId, bool isFavorite) {
+    context.read<ExploreBloc>().add(
+      UpdateArtistFavoriteStatusEvent(
+        artistId: artistId,
+        isFavorite: isFavorite,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Necessário quando usar AutomaticKeepAliveClientMixin
     return BasePage(
       showAppBar: true,
       appBarTitle: 'Favoritos',
@@ -85,6 +109,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         setState(() {
                           _localFavoriteUpdates[_lastFavoriteArtistId!] = false;
                         });
+                        _onUpdateArtistFavoriteStatus(_lastFavoriteArtistId!, false);
                       }
                     } else if (state is RemoveFavoriteFailure) {
                       context.showError(state.error);
@@ -119,6 +144,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.error_outline,
@@ -126,15 +152,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   color: Theme.of(context).colorScheme.error,
                 ),
                 DSSizedBoxSpacing.vertical(16),
-                Text(
-                  'Erro ao carregar favoritos',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                  child: Text(
+                    'Erro ao carregar favoritos',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 DSSizedBoxSpacing.vertical(8),
-                Text(
-                  state.error,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                  child: Text(
+                    state.error,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 DSSizedBoxSpacing.vertical(16),
                 ElevatedButton(
@@ -162,11 +195,51 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 return artist.isFavorite;
               })
               .toList();
+          
+          // Aplicar filtro de busca nos favoritos
+          final filteredFavoriteArtists = favoriteArtists.filterBySearch(_searchQuery);
 
-          if (favoriteArtists.isEmpty) {
+          if (filteredFavoriteArtists.isEmpty) {
+            // Se houver query de busca, mostrar mensagem específica
+            if (_searchQuery.isNotEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: DSSize.width(48),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                      child: Text(
+                        'Nenhum resultado encontrado',
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    DSSizedBoxSpacing.vertical(8),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                      child: Text(
+                        'Não encontramos favoritos que correspondam à sua busca',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            // Se não houver query, mostrar mensagem padrão
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.favorite_border,
@@ -174,15 +247,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   DSSizedBoxSpacing.vertical(16),
-                  Text(
-                    'Nenhum favorito ainda',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                    child: Text(
+                      'Nenhum favorito ainda',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   DSSizedBoxSpacing.vertical(8),
-                  Text(
-                    'Adicione artistas aos favoritos para vê-los aqui',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                    child: Text(
+                      'Adicione artistas aos favoritos para vê-los aqui',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ],
               ),
@@ -190,9 +270,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           }
 
           return ListView.builder(
-            itemCount: favoriteArtists.length,
+            itemCount: filteredFavoriteArtists.length,
             itemBuilder: (context, index) {
-              final artistWithAvailabilities = favoriteArtists[index];
+              final artistWithAvailabilities = filteredFavoriteArtists[index];
               final artist = artistWithAvailabilities.artist;
               // final availabilities = artistWithAvailabilities.availabilities;
               
@@ -244,13 +324,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   void _onSearchChanged(String query) {
-    // TODO: Implementar debounce e busca nos favoritos
-    print('🔍 Busca alterada: $query');
+    // Cancelar timer anterior se existir
+    _searchDebounceTimer?.cancel();
+    
+    // Criar novo timer com debounce de 500ms
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = query.trim();
+        });
+      }
+    });
   }
 
   void _onSearchCleared() {
-    // TODO: Limpar filtros de busca
-    print('🔍 Busca limpa');
+    setState(() {
+      _searchQuery = '';
+    });
+    _searchController.clear();
   }
 
   void _onFavoriteTapped(String artistId, bool isFavorite) {

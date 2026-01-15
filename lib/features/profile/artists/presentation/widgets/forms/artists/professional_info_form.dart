@@ -12,6 +12,7 @@ class ProfessionalInfoForm extends StatelessWidget {
   final TextEditingController bioController;
   final VoidCallback onDurationTap;
   final String durationDisplayValue;
+  final List<String>? talentOptions;
   
 
   const ProfessionalInfoForm({
@@ -22,11 +23,13 @@ class ProfessionalInfoForm extends StatelessWidget {
     required this.bioController,
     required this.onDurationTap,
     required this.durationDisplayValue,
+    this.talentOptions,
   });
 
   @override
   Widget build(BuildContext context) {
-    final talentOptions = [
+    // Usar lista fornecida ou fallback para lista padrão
+    final defaultTalentOptions = [
       'Cantor',
       'Dançarino',
       'Músico',
@@ -34,23 +37,24 @@ class ProfessionalInfoForm extends StatelessWidget {
       'Comediantes',
       'Outros',
     ];
+    final talentOptionsList = talentOptions ?? defaultTalentOptions;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomMultiSelectField(
           controller: talentController,
-          items: talentOptions,
+          items: talentOptionsList,
           labelText: 'Talentos',
           hintText: 'Selecione seus talentos',
         ),
-        DSSizedBoxSpacing.vertical(16),
-        CustomMultiSelectField(
-          controller: genrePreferencesController,
-          items: talentOptions,
-          labelText: 'Gêneros Musicais',
-          hintText: 'Quais são as suas especialidades?',
-        ),
+        // DSSizedBoxSpacing.vertical(16),
+        // CustomMultiSelectField(
+        //   controller: genrePreferencesController,
+        //   items: talentOptionsList,
+        //   labelText: 'Gêneros Musicais',
+        //   hintText: 'Quais são as suas especialidades?',
+        // ),
         DSSizedBoxSpacing.vertical(16),
         CustomMessageField(
           controller: bioController,

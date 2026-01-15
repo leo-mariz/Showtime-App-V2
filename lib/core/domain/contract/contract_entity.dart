@@ -26,6 +26,8 @@ class ContractEntity with ContractEntityMappable {
   final String? nameArtist;           // Nome do artista no momento da solicitação
   final String? nameGroup;            // Nome do grupo (se aplicável)
   final String? nameClient;           // Nome do cliente no momento da solicitação
+  final double? clientRating;          // Avaliação do cliente no momento da solicitação
+  final int? clientRatingCount;        // Quantidade de avaliações do cliente no momento da solicitação
   
   // Snapshot da disponibilidade (para consulta futura)
   final AvailabilityEntity? availabilitySnapshot; // Snapshot da disponibilidade usada
@@ -78,6 +80,8 @@ class ContractEntity with ContractEntityMappable {
     this.nameArtist,
     this.nameGroup,
     this.nameClient,
+    this.clientRating,
+    this.clientRatingCount,
     this.availabilitySnapshot,
     this.eventType,
     this.status = ContractStatusEnum.pending,

@@ -22,14 +22,17 @@ class EventTypeSelectionScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Ordenar lista alfabeticamente
+    final sortedEventTypes = List<String>.from(eventTypes)..sort();
+
     return BasePage(
       showAppBar: true,
       appBarTitle: 'Tipo de Evento',
       showAppBarBackButton: true,
       child: ListView.builder(
-        itemCount: eventTypes.length,
+        itemCount: sortedEventTypes.length,
         itemBuilder: (context, index) {
-          final eventType = eventTypes[index];
+          final eventType = sortedEventTypes[index];
           final isSelected = eventType == selectedEventType;
 
           return Padding(

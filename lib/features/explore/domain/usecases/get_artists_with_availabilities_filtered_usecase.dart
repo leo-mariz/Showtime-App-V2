@@ -22,6 +22,7 @@ import 'package:dartz/dartz.dart';
 /// 1. Geohash: Filtra disponibilidades com geohash dentro do range do usuário
 /// 2. Data: Valida range, dia da semana e horários bloqueados
 /// 3. Distância: Filtra usando Haversine (distância <= raioAtuacao)
+/// 4. Busca: Filtra por nome, talentos (specialty) e bio (quando searchQuery fornecida)
 /// 
 /// OBSERVAÇÕES:
 /// - Usa GetArtistsWithAvailabilitiesUseCase como fonte de dados (cache de 2h)
@@ -62,6 +63,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     int startIndex = 0,
     int pageSize = 10,
     String? userId,
+    String? searchQuery,
   }) async {
     print('🟣 [USECASE] GetArtistsWithAvailabilitiesFiltered - Iniciando busca');
     print('🟣 [USECASE] Parâmetros:');
@@ -71,6 +73,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     print('   - forceRefresh: $forceRefresh');
     print('   - startIndex: $startIndex');
     print('   - pageSize: $pageSize');
+    print('   - searchQuery: ${searchQuery ?? "Nenhuma"}');
     
     try {
       // 1. Calcular range de geohash do endereço do usuário (se fornecido)
@@ -155,15 +158,21 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
 
             // Só adicionar artista se tiver pelo menos uma disponibilidade válida
             if (filtered.isNotEmpty) {
-              artistsWithValidAvailabilities++;
-              print('🟢 [USECASE] Artista ${artist.uid} - ADICIONADO com ${filtered.length} disponibilidades válidas');
-              filteredArtistsWithAvailabilities.add(
-                ArtistWithAvailabilitiesEntity(
-                  artist: artist,
-                  availabilities: filtered,
-                  isFavorite: isFavorite,
-                ),
+              // Criar artista com disponibilidades filtradas
+              final artistWithFilteredAvailabilities = ArtistWithAvailabilitiesEntity(
+                artist: artist,
+                availabilities: filtered,
+                isFavorite: isFavorite,
               );
+              
+              // Filtro 4: Por busca (nome, talentos, bio) - aplicar apenas se houver busca
+              if (searchQuery == null || searchQuery.isEmpty || _matchesSearch(artistWithFilteredAvailabilities, searchQuery)) {
+                artistsWithValidAvailabilities++;
+                print('🟢 [USECASE] Artista ${artist.uid} - ADICIONADO com ${filtered.length} disponibilidades válidas');
+                filteredArtistsWithAvailabilities.add(artistWithFilteredAvailabilities);
+              } else {
+                print('🟡 [USECASE] Artista ${artist.uid} - REMOVIDO (não corresponde à busca)');
+              }
             } else {
               print('🟡 [USECASE] Artista ${artist.uid} - REMOVIDO (sem disponibilidades válidas)');
             }
@@ -329,6 +338,49 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     print('🟣 [USECASE] _filterByDistance - Resultado: ${filtered.length} disponibilidades dentro do raio de ${availabilities.length}');
     
     return filtered;
+  }
+
+  /// Verifica se um artista corresponde à query de busca
+  /// 
+  /// Busca case-insensitive em:
+  /// - Nome do artista (artistName)
+  /// - Talentos (professionalInfo.specialty)
+  /// - Bio (professionalInfo.bio)
+  /// 
+  /// Retorna true se o artista corresponde à busca, false caso contrário
+  bool _matchesSearch(
+    ArtistWithAvailabilitiesEntity artistWithAvailabilities,
+    String searchQuery,
+  ) {
+    if (searchQuery.isEmpty) {
+      return true; // Sem busca, aceita todos
+    }
+
+    final lowerQuery = searchQuery.trim().toLowerCase();
+    final artist = artistWithAvailabilities.artist;
+
+    // Buscar no nome do artista
+    final artistName = (artist.artistName ?? '').toLowerCase();
+    if (artistName.contains(lowerQuery)) {
+      return true;
+    }
+
+    // Buscar nos talentos (specialty)
+    final specialty = artist.professionalInfo?.specialty ?? [];
+    final hasMatchingSpecialty = specialty.any(
+      (talent) => talent.toLowerCase().contains(lowerQuery),
+    );
+    if (hasMatchingSpecialty) {
+      return true;
+    }
+
+    // Buscar na bio
+    final bio = (artist.professionalInfo?.bio ?? '').toLowerCase();
+    if (bio.contains(lowerQuery)) {
+      return true;
+    }
+
+    return false;
   }
 }
 

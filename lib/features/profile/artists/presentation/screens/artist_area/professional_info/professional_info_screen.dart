@@ -8,6 +8,9 @@ import 'package:app/features/profile/artists/presentation/widgets/forms/artists/
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
+import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
+import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
+import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +36,9 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
   // Valores iniciais para comparação
   ProfessionalInfoEntity? _initialProfessionalInfo;
+  
+  // Lista de talentos obtida do AppListsBloc
+  List<String> _talentOptions = [];
 
   @override
   void initState() {
@@ -50,6 +56,8 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     // Carregar dados do artista após o frame ser construído
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleGetArtist(forceRefresh: false);
+      // Buscar lista de talentos do AppListsBloc
+      _loadTalents();
     });
   }
 
@@ -58,6 +66,11 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _loadTalents() {
+    // Buscar talentos do AppListsBloc
+    context.read<AppListsBloc>().add(GetTalentsEvent());
   }
 
   @override
@@ -237,59 +250,83 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ArtistsBloc, ArtistsState>(
-      listener: (context, state) {
-        if (state is GetArtistLoading) {
-          setState(() {
-            _isLoading = true;
-          });
-        } else if (state is GetArtistSuccess) {
-          setState(() {
-            _isLoading = false;
-          });
-          // Carregar dados profissionais do artista
-          _loadProfessionalInfo(state.artist.professionalInfo);
-        } else if (state is GetArtistFailure) {
-          setState(() {
-            _isLoading = false;
-          });
-          context.showError(state.error);
-        } else if (state is UpdateArtistProfessionalInfoLoading) {
-          setState(() {
-            _isLoading = true;
-          });
-        } else if (state is UpdateArtistProfessionalInfoSuccess) {
-          setState(() {
-            _isLoading = false;
-            _hasLoadedData = false; // Resetar flag para permitir recarregar após atualização
-            // Atualizar valores iniciais com os novos valores salvos
-            final specialty = talentController.text.trim().isEmpty
-                ? null
-                : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
-            final genrePreferences = genrePreferencesController.text.trim().isEmpty
-                ? null
-                : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
-            final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
-            final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
-            _initialProfessionalInfo = ProfessionalInfoEntity(
-              specialty: specialty,
-              genrePreferences: genrePreferences,
-              minimumShowDuration: minimumShowDuration,
-              bio: bio,
-            );
-          });
-          // Recarregar dados atualizados antes de voltar
-          _handleGetArtist(forceRefresh: true);
-          context.showSuccess('Informações profissionais salvas com sucesso!');
-          // Voltar para a tela anterior após salvar
-          Navigator.of(context).pop();
-        } else if (state is UpdateArtistProfessionalInfoFailure) {
-          setState(() {
-            _isLoading = false;
-          });
-          context.showError(state.error);
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ArtistsBloc, ArtistsState>(
+          listener: (context, state) {
+            if (state is GetArtistLoading) {
+              setState(() {
+                _isLoading = true;
+              });
+            } else if (state is GetArtistSuccess) {
+              setState(() {
+                _isLoading = false;
+              });
+              // Carregar dados profissionais do artista
+              _loadProfessionalInfo(state.artist.professionalInfo);
+            } else if (state is GetArtistFailure) {
+              setState(() {
+                _isLoading = false;
+              });
+              context.showError(state.error);
+            } else if (state is UpdateArtistProfessionalInfoLoading) {
+              setState(() {
+                _isLoading = true;
+              });
+            } else if (state is UpdateArtistProfessionalInfoSuccess) {
+              setState(() {
+                _isLoading = false;
+                _hasLoadedData = false; // Resetar flag para permitir recarregar após atualização
+                // Atualizar valores iniciais com os novos valores salvos
+                final specialty = talentController.text.trim().isEmpty
+                    ? null
+                    : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
+                final genrePreferences = genrePreferencesController.text.trim().isEmpty
+                    ? null
+                    : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
+                final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
+                final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
+                _initialProfessionalInfo = ProfessionalInfoEntity(
+                  specialty: specialty,
+                  genrePreferences: genrePreferences,
+                  minimumShowDuration: minimumShowDuration,
+                  bio: bio,
+                );
+              });
+              // Recarregar dados atualizados antes de voltar
+              _handleGetArtist(forceRefresh: true);
+              context.showSuccess('Informações profissionais salvas com sucesso!');
+              // Voltar para a tela anterior após salvar
+              Navigator.of(context).pop();
+            } else if (state is UpdateArtistProfessionalInfoFailure) {
+              setState(() {
+                _isLoading = false;
+              });
+              context.showError(state.error);
+            }
+          },
+        ),
+        BlocListener<AppListsBloc, AppListsState>(
+          listener: (context, state) {
+            if (state is GetTalentsSuccess) {
+              // Extrair nomes dos talentos e ordenar alfabeticamente
+              final talentNames = state.talents
+                  .map((talent) => talent.name)
+                  .toList()
+                ..sort();
+              
+              setState(() {
+                _talentOptions = talentNames;
+              });
+            } else if (state is GetTalentsFailure) {
+              // Em caso de erro, manter lista vazia (o form usará a lista padrão)
+              setState(() {
+                _talentOptions = [];
+              });
+            }
+          },
+        ),
+      ],
       child: BasePage(
         showAppBar: true,
         appBarTitle: 'Dados Profissionais',
@@ -323,6 +360,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                     durationDisplayValue: minimumShowDurationController.text.isEmpty
                         ? 'Selecione'
                         : minimumShowDurationController.text,
+                    talentOptions: _talentOptions.isNotEmpty ? _talentOptions : null,
                   ),
                   DSSizedBoxSpacing.vertical(48),
                   CustomButton(

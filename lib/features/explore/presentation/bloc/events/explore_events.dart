@@ -27,6 +27,7 @@ class GetArtistsWithAvailabilitiesEvent extends ExploreEvent {
 /// [selectedDate]: Data selecionada para filtrar disponibilidades (opcional)
 /// [userAddress]: Endereço do usuário para filtro geográfico (opcional)
 /// [forceRefresh]: Se true, ignora o cache e busca tudo diretamente do Firestore (útil para testes)
+/// [searchQuery]: Query de busca para filtrar por nome, talentos ou bio (opcional)
 class GetArtistsWithAvailabilitiesFilteredEvent extends ExploreEvent {
   final DateTime? selectedDate;
   final AddressInfoEntity? userAddress;
@@ -34,6 +35,7 @@ class GetArtistsWithAvailabilitiesFilteredEvent extends ExploreEvent {
   final int startIndex;
   final int pageSize;
   final bool append;
+  final String? searchQuery;
 
   GetArtistsWithAvailabilitiesFilteredEvent({
     this.selectedDate,
@@ -42,6 +44,7 @@ class GetArtistsWithAvailabilitiesFilteredEvent extends ExploreEvent {
     this.startIndex = 0,
     this.pageSize = 10,
     this.append = false,
+    this.searchQuery,
   });
 
   @override
@@ -52,6 +55,27 @@ class GetArtistsWithAvailabilitiesFilteredEvent extends ExploreEvent {
         startIndex,
         pageSize,
         append,
+        searchQuery,
       ];
+}
+
+// ==================== UPDATE ARTIST FAVORITE STATUS EVENT ====================
+
+/// Evento para atualizar o status de favorito de um artista na lista atual
+/// 
+/// Atualiza apenas o campo isFavorite do artista específico sem recarregar os dados
+/// [artistId]: ID do artista a ser atualizado
+/// [isFavorite]: Novo status de favorito
+class UpdateArtistFavoriteStatusEvent extends ExploreEvent {
+  final String artistId;
+  final bool isFavorite;
+
+  UpdateArtistFavoriteStatusEvent({
+    required this.artistId,
+    required this.isFavorite,
+  });
+
+  @override
+  List<Object?> get props => [artistId, isFavorite];
 }
 

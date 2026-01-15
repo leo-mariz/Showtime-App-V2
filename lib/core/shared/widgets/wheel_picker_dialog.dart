@@ -1,6 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/core/shared/widgets/dialog_button.dart';
 import 'package:flutter/material.dart';
 
 enum WheelPickerType {
@@ -235,16 +235,18 @@ class _WheelPickerDialogState extends State<WheelPickerDialog> {
         Row(
           children: [
             Expanded(
-              child: CustomButton(
-                label: 'Cancelar',
-                buttonType: CustomButtonType.cancel,
+              child: DialogButton(
+                text: 'Cancelar',
+                type: DialogButtonType.text,
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
             DSSizedBoxSpacing.horizontal(16),
             Expanded(
-              child: CustomButton(
-                label: 'Confirmar',
+              child: DialogButton(
+                text: 'Confirmar',
+                type: DialogButtonType.primary,
+                backgroundColor: colorScheme.onPrimaryContainer,
                 onPressed: _isValid() ? _onConfirm : null,
               ),
             ),

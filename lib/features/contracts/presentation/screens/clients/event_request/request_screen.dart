@@ -23,6 +23,9 @@ import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
+import 'package:app/features/profile/clients/presentation/bloc/events/clients_events.dart';
+import 'package:app/features/profile/clients/presentation/bloc/states/clients_states.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -120,6 +123,18 @@ class _RequestScreenState extends State<RequestScreen> {
       }
     }   
     return '';
+  }
+
+  double _getClientRating() {
+    final currentClientState = context.read<ClientsBloc>().state;
+    if (currentClientState is! GetClientSuccess) {
+      context.read<ClientsBloc>().add(GetClientEvent());
+    }
+    if (currentClientState is GetClientSuccess) {
+      final client = currentClientState.client;
+      return client.rating ?? 0;
+    }
+    return 0;
   }
 
   String _formatAddress(AddressInfoEntity address) {
@@ -441,6 +456,8 @@ class _RequestScreenState extends State<RequestScreen> {
       return;
     }
 
+    final clientRating =_getClientRating();
+
     // Criar ContractEntity
     final contract = ContractEntity(
       date: _selectedDate!,
@@ -452,6 +469,7 @@ class _RequestScreenState extends State<RequestScreen> {
       refArtist: widget.artist.uid,
       nameArtist: widget.artist.artistName,
       nameClient: nameClient,
+      clientRating: clientRating,
       eventType: eventType,
       value: _totalValue,
       availabilitySnapshot: widget.availability,

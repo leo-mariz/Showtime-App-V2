@@ -6,7 +6,6 @@ import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
-import 'package:app/features/profile/shared/presentation/widgets/icon_menu_button.dart';
 import 'package:app/features/profile/shared/presentation/widgets/logout_button.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_header.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_option_tile.dart';
@@ -290,32 +289,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                       _buildHeaderSkeleton(),
                                 
                                     DSSizedBoxSpacing.vertical(24),
-
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
-                                        IconMenuButton(
-                                          icon: Icons.star,
-                                          label: 'Preferências',
-                                          onPressed: () {},
-                                          showWarning: false,
-                                        ),
-                                        IconMenuButton(
-                                          icon: Icons.location_on,
-                                          label: 'Endereços',
-                                          onPressed: () => router.push(const AddressesListRoute()),
-                                          showWarning: false,
-                                        ),
-                                        IconMenuButton(
-                                          icon: Icons.history,
-                                          label: 'Histórico',
-                                          onPressed: () {},
-                                          showWarning: false,
-                                        ),
-                                      ],
-                                    ),
-
-                                    DSSizedBoxSpacing.vertical(24),
                                     
                                     // Opções do perfil
                                     ClipRRect(
@@ -340,6 +313,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                               onTap: () {
                                                 router.push(const LoginSecurityRoute());
                                               },
+                                            ),
+                                            ProfileOptionTile(
+                                              icon: Icons.star,
+                                              title: 'Preferências',
+                                              showDivider: true,
+                                              onTap: () {},
+                                              isLast: false,
                                             ),
                                             ProfileOptionTile(
                                               icon: Icons.support_agent,

@@ -5,6 +5,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/core/shared/widgets/event_location_map.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -235,6 +236,17 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                     ),
                 ],
               ),
+            ),
+            DSSizedBoxSpacing.vertical(16),
+                  
+            // Mapa com a localização do evento
+            // Mostrar localização exata apenas quando o evento está confirmado ou completado
+            // Nos demais casos, mostrar localização aproximada para privacidade
+            EventLocationMap(
+              address: _contract.address,
+              height: 250,
+              showExactLocation: true,
+              seed: _contract.uid, // Usar UID do contrato como seed para localização consistente
             ),
 
             DSSizedBoxSpacing.vertical(24),
@@ -521,6 +533,23 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
   }
 
   String _getPaymentStatusLabel(ContractStatusEnum status) {
+    if (status == ContractStatusEnum.paymentPending) {
+      return 'Aguardando pagamento';
+    } else if (status == ContractStatusEnum.paid) {
+      return 'Pago';
+    } else if (status == ContractStatusEnum.completed) {
+      return 'Pago';
+    } else if (status == ContractStatusEnum.rejected) {
+      return 'Rejeitado';
+    } else if (status == ContractStatusEnum.canceled) {
+      return 'Cancelado';
+    } else if (status == ContractStatusEnum.paymentExpired) {
+      return 'Pagamento expirado';
+    } else if (status == ContractStatusEnum.paymentRefused) {
+      return 'Pagamento recusado';
+    } else if (status == ContractStatusEnum.paymentFailed) {
+      return 'Pagamento falhou';
+    }
     return status.name;
   }
 

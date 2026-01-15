@@ -86,6 +86,18 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$nameClient,
     opt: true,
   );
+  static double? _$clientRating(ContractEntity v) => v.clientRating;
+  static const Field<ContractEntity, double> _f$clientRating = Field(
+    'clientRating',
+    _$clientRating,
+    opt: true,
+  );
+  static int? _$clientRatingCount(ContractEntity v) => v.clientRatingCount;
+  static const Field<ContractEntity, int> _f$clientRatingCount = Field(
+    'clientRatingCount',
+    _$clientRatingCount,
+    opt: true,
+  );
   static AvailabilityEntity? _$availabilitySnapshot(ContractEntity v) =>
       v.availabilitySnapshot;
   static const Field<ContractEntity, AvailabilityEntity>
@@ -221,6 +233,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #nameArtist: _f$nameArtist,
     #nameGroup: _f$nameGroup,
     #nameClient: _f$nameClient,
+    #clientRating: _f$clientRating,
+    #clientRatingCount: _f$clientRatingCount,
     #availabilitySnapshot: _f$availabilitySnapshot,
     #eventType: _f$eventType,
     #status: _f$status,
@@ -256,6 +270,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       nameArtist: data.dec(_f$nameArtist),
       nameGroup: data.dec(_f$nameGroup),
       nameClient: data.dec(_f$nameClient),
+      clientRating: data.dec(_f$clientRating),
+      clientRatingCount: data.dec(_f$clientRatingCount),
       availabilitySnapshot: data.dec(_f$availabilitySnapshot),
       eventType: data.dec(_f$eventType),
       status: data.dec(_f$status),
@@ -360,6 +376,8 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? nameArtist,
     String? nameGroup,
     String? nameClient,
+    double? clientRating,
+    int? clientRatingCount,
     AvailabilityEntity? availabilitySnapshot,
     EventTypeEntity? eventType,
     ContractStatusEnum? status,
@@ -424,6 +442,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? nameArtist = $none,
     Object? nameGroup = $none,
     Object? nameClient = $none,
+    Object? clientRating = $none,
+    Object? clientRatingCount = $none,
     Object? availabilitySnapshot = $none,
     Object? eventType = $none,
     ContractStatusEnum? status,
@@ -457,6 +477,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (nameArtist != $none) #nameArtist: nameArtist,
       if (nameGroup != $none) #nameGroup: nameGroup,
       if (nameClient != $none) #nameClient: nameClient,
+      if (clientRating != $none) #clientRating: clientRating,
+      if (clientRatingCount != $none) #clientRatingCount: clientRatingCount,
       if (availabilitySnapshot != $none)
         #availabilitySnapshot: availabilitySnapshot,
       if (eventType != $none) #eventType: eventType,
@@ -493,6 +515,11 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     nameArtist: data.get(#nameArtist, or: $value.nameArtist),
     nameGroup: data.get(#nameGroup, or: $value.nameGroup),
     nameClient: data.get(#nameClient, or: $value.nameClient),
+    clientRating: data.get(#clientRating, or: $value.clientRating),
+    clientRatingCount: data.get(
+      #clientRatingCount,
+      or: $value.clientRatingCount,
+    ),
     availabilitySnapshot: data.get(
       #availabilitySnapshot,
       or: $value.availabilitySnapshot,

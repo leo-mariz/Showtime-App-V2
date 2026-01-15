@@ -178,8 +178,11 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
                       ),
                       unselectedLabelStyle: textTheme.bodyMedium,
                       dividerColor: Colors.transparent,
+                      tabAlignment: TabAlignment.fill,
+                      padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
+                      labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
                       tabs: const [
-                        Tab(text: 'Abertas'),
+                        Tab(text: 'Em aberto'),
                         Tab(text: 'Confirmadas'),
                         Tab(text: 'Finalizadas'),
                       ],

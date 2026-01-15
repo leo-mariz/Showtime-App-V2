@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
@@ -34,11 +36,10 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
-  // TODO: Substituir por dados reais do Bloc
   AddressInfoEntity? _selectedAddress;
   DateTime _selectedDate = DateTime.now();
   int _nextIndex = 0;
@@ -46,12 +47,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool _isLoadingMore = false;
   static const int _pageSize = 10;
   
+  // Tamanho anterior da lista para detectar se é nova busca ou apenas atualização
+  int _previousListSize = 0;
+  
   // Mapa para rastrear mudanças locais de favoritos (artistId -> isFavorite)
   // Isso permite atualização visual imediata antes do ExploreBloc recarregar
   final Map<String, bool> _localFavoriteUpdates = {};
   
   // Rastrear último artista que teve favorito alterado
   String? _lastFavoriteArtistId;
+  
+  // Query de busca atual
+  String _searchQuery = '';
+  
+  // Timer para debounce da busca
+  Timer? _searchDebounceTimer;
+
+  @override
+  bool get wantKeepAlive => true;
 
   String get _currentAddressDisplay {
     if (_selectedAddress == null) {
@@ -63,18 +76,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
-    print('🔵 [EXPLORE_SCREEN] initState - Iniciando tela');
     
     // Buscar endereços se ainda não foram buscados
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final addressesState = context.read<AddressesBloc>().state;
-      print('🔵 [EXPLORE_SCREEN] initState - Estado atual do AddressesBloc: ${addressesState.runtimeType}');
-      
+      final addressesState = context.read<AddressesBloc>().state;      
       if (addressesState is! GetAddressesSuccess) {
-        print('🔵 [EXPLORE_SCREEN] initState - Disparando GetAddressesEvent');
         context.read<AddressesBloc>().add(GetAddressesEvent());
       } else {
-        print('🔵 [EXPLORE_SCREEN] initState - Endereços já carregados, obtendo primário');
         _getPrimaryAddressFromState(addressesState);
       }
     });
@@ -92,10 +100,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   /// Obtém endereço primário do estado do AddressesBloc
   void _getPrimaryAddressFromState(GetAddressesSuccess state) {
-    print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Total de endereços: ${state.addresses.length}');
     
     if (state.addresses.isEmpty) {
-      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Nenhum endereço disponível');
       // Sem endereço, buscar sem filtro geográfico
       _onGetArtistsWithAvailabilitiesFiltered();
       return;
@@ -106,42 +112,31 @@ class _ExploreScreenState extends State<ExploreScreen> {
       primaryAddress = state.addresses.firstWhere(
         (address) => address.isPrimary,
       );
-      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Endereço primário encontrado: ${primaryAddress.title}');
     } catch (e) {
       // Se não encontrar primário, usar o primeiro endereço
       primaryAddress = state.addresses.first;
-      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Usando primeiro endereço (sem primário): ${primaryAddress.title}');
     }
 
     if (_selectedAddress == null) {
       setState(() {
         _selectedAddress = primaryAddress;
       });
-      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Endereço definido: ${primaryAddress.title}');
-      print('🔵 [EXPLORE_SCREEN] _getPrimaryAddressFromState - Coordenadas: lat=${primaryAddress.latitude}, lon=${primaryAddress.longitude}');
       // Buscar artistas filtrados com endereço primário e data atual
       _onGetArtistsWithAvailabilitiesFiltered();
     }
   }
 
-  /// Busca artistas com filtros aplicados (data e endereço)
+  /// Busca artistas com filtros aplicados (data, endereço e busca)
   /// 
-  /// Usa o endereço selecionado (_selectedAddress) e a data selecionada (_selectedDate)
+  /// Usa o endereço selecionado (_selectedAddress), a data selecionada (_selectedDate)
+  /// e a query de busca (_searchQuery)
   /// Se não houver endereço selecionado, busca sem filtro geográfico
   void _onGetArtistsWithAvailabilitiesFiltered() {
     if (!mounted) {
-      print('🔴 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Widget não está montado, abortando');
       return;
     }
 
     final forceRefresh = false; // Mudado para false para usar cache
-    final currentState = context.read<ExploreBloc>().state;
-    
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Iniciando busca');
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Data selecionada: $_selectedDate');
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Endereço selecionado: ${_selectedAddress?.title ?? "Nenhum"}');
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Estado atual: ${currentState.runtimeType}');
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - forceRefresh: $forceRefresh');
     
     // Sempre disparar o evento (removida a verificação de estado de sucesso)
     context.read<ExploreBloc>().add(
@@ -152,20 +147,31 @@ class _ExploreScreenState extends State<ExploreScreen> {
         startIndex: 0,
         pageSize: _pageSize,
         append: false,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
       ),
     );
-    print('🔵 [EXPLORE_SCREEN] _onGetArtistsWithAvailabilitiesFiltered - Evento disparado');
+  }
+
+  void _onUpdateArtistFavoriteStatus(String artistId, bool isFavorite) {
+    context.read<ExploreBloc>().add(
+      UpdateArtistFavoriteStatusEvent(
+        artistId: artistId,
+        isFavorite: isFavorite,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _searchDebounceTimer?.cancel(); // Cancelar timer ao dispor
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Necessário quando usar AutomaticKeepAliveClientMixin
     return BasePage(
       showAppBar: true,
       appBarTitle: 'Explorar',
@@ -224,7 +230,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 BlocListener<AddressesBloc, AddressesState>(
                   listener: (context, state) {
                     if (state is GetAddressesSuccess && _selectedAddress == null) {
-                      print('🔵 [EXPLORE_SCREEN] BlocListener AddressesBloc - Endereços carregados');
                       _getPrimaryAddressFromState(state);
                     }
                   },
@@ -233,13 +238,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 BlocListener<ExploreBloc, ExploreState>(
                   listener: (context, state) {
                     if (state is GetArtistsWithAvailabilitiesSuccess) {
+                      final currentListSize = state.artistsWithAvailabilities.length;
                       _nextIndex = state.nextIndex;
                       _hasMore = state.hasMore;
                       if (state.append) {
                         _isLoadingMore = false;
                       } else {
-                        // Reset de scroll em nova busca (só se o controller estiver attached)
-                        if (_scrollController.hasClients) {
+                        // Reset de scroll apenas se for uma nova busca (tamanho mudou)
+                        // Se o tamanho for o mesmo, é apenas atualização de favorito, não faz scroll
+                        if (currentListSize != _previousListSize && _scrollController.hasClients) {
                           _scrollController.animateTo(
                             0,
                             duration: const Duration(milliseconds: 250),
@@ -247,6 +254,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           );
                         }
                       }
+                      _previousListSize = currentListSize;
                     }
                   },
                 ),
@@ -260,6 +268,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         setState(() {
                           _localFavoriteUpdates[_lastFavoriteArtistId!] = true;
                         });
+                        _onUpdateArtistFavoriteStatus(_lastFavoriteArtistId!, true);
                       }
                     } else if (state is AddFavoriteFailure) {
                       context.showError(state.error);
@@ -276,6 +285,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         setState(() {
                           _localFavoriteUpdates[_lastFavoriteArtistId!] = false;
                         });
+                        _onUpdateArtistFavoriteStatus(_lastFavoriteArtistId!, false);
                       }
                     } else if (state is RemoveFavoriteFailure) {
                       context.showError(state.error);
@@ -291,20 +301,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ],
               child: BlocBuilder<ExploreBloc, ExploreState>(
                 builder: (context, state) {
-                  print('🔵 [EXPLORE_SCREEN] BlocBuilder ExploreBloc - Estado: ${state.runtimeType}');
-                  
                   if (state is GetArtistsWithAvailabilitiesLoading) {
-                    print('🔵 [EXPLORE_SCREEN] BlocBuilder - Mostrando loading');
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
                   }
 
                 if (state is GetArtistsWithAvailabilitiesFailure) {
-                  print('🔴 [EXPLORE_SCREEN] BlocBuilder - Erro: ${state.error}');
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.error_outline,
@@ -312,15 +319,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           color: Theme.of(context).colorScheme.error,
                         ),
                         DSSizedBoxSpacing.vertical(16),
-                        Text(
-                          'Erro ao carregar artistas',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                          child: Text(
+                            'Erro ao carregar artistas',
+                            style: Theme.of(context).textTheme.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         DSSizedBoxSpacing.vertical(8),
-                        Text(
-                          state.error,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                          child: Text(
+                            state.error,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         DSSizedBoxSpacing.vertical(16),
                         ElevatedButton(
@@ -335,13 +349,50 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 }
 
                 if (state is GetArtistsWithAvailabilitiesSuccess) {
-                  print('🟢 [EXPLORE_SCREEN] BlocBuilder - Sucesso! Total de artistas: ${state.artistsWithAvailabilities.length}');
+                  // A busca agora é feita no UseCase, então usamos diretamente a lista do estado
+                  final artists = state.artistsWithAvailabilities;
                   
-                  if (state.artistsWithAvailabilities.isEmpty) {
-                    print('🟡 [EXPLORE_SCREEN] BlocBuilder - Nenhum artista encontrado');
+                  if (artists.isEmpty) {
+                    // Se houver query de busca, mostrar mensagem específica
+                    if (_searchQuery.isNotEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: DSSize.width(48),
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            DSSizedBoxSpacing.vertical(16),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                              child: Text(
+                                'Nenhum resultado encontrado',
+                                style: Theme.of(context).textTheme.titleMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            DSSizedBoxSpacing.vertical(8),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                              child: Text(
+                                'Não encontramos artistas que correspondam à sua busca',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    // Se não houver query, mostrar mensagem padrão
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.search_off,
@@ -349,27 +400,32 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           DSSizedBoxSpacing.vertical(16),
-                          Text(
-                            'Nenhum artista encontrado',
-                            style: Theme.of(context).textTheme.titleMedium,
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                            child: Text(
+                              'Nenhum artista encontrado',
+                              style: Theme.of(context).textTheme.titleMedium,
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                           DSSizedBoxSpacing.vertical(8),
-                          Text(
-                            'Não há artistas disponíveis no momento',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+                            child: Text(
+                              'Não há artistas disponíveis para a data e endereço selecionados no momento.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ],
                       ),
                     );
                   }
 
-                  print('🟢 [EXPLORE_SCREEN] BlocBuilder - Exibindo lista com ${state.artistsWithAvailabilities.length} artistas');
-                  return _buildArtistsList(state.artistsWithAvailabilities);
+                  return _buildArtistsList(artists);
                 }
 
                 // Estado inicial - mostrar loading
-                print('🟡 [EXPLORE_SCREEN] BlocBuilder - Estado inicial, mostrando loading');
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
@@ -442,27 +498,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onAddressSelected() async {
-    print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Abrindo modal de endereços');
     final selectedAddress = await AddressesModal.show(
       context: context,
       selectedAddress: _selectedAddress,
     );
 
     if (selectedAddress != null && selectedAddress != _selectedAddress) {
-      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Novo endereço selecionado: ${selectedAddress.title}');
-      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Coordenadas: lat=${selectedAddress.latitude}, lon=${selectedAddress.longitude}');
       setState(() {
         _selectedAddress = selectedAddress;
       });
       // Buscar artistas filtrados com novo endereço
       _onGetArtistsWithAvailabilitiesFiltered();
     } else {
-      print('🔵 [EXPLORE_SCREEN] _onAddressSelected - Nenhum endereço selecionado ou mesmo endereço');
     }
   }
 
   void _onDateSelected() async {
-    print('🔵 [EXPLORE_SCREEN] _onDateSelected - Abrindo seletor de data');
     final DateTime? picked = await CustomDatePickerDialog.show(
       context: context,
       initialDate: _selectedDate,
@@ -471,34 +522,45 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
     
     if (picked != null && picked != _selectedDate) {
-      print('🔵 [EXPLORE_SCREEN] _onDateSelected - Nova data selecionada: $picked');
       setState(() {
         _selectedDate = picked;
       });
       // Buscar artistas filtrados com nova data
       _onGetArtistsWithAvailabilitiesFiltered();
     } else {
-      print('🔵 [EXPLORE_SCREEN] _onDateSelected - Nenhuma data selecionada ou mesma data');
     }
   }
 
   void _onSearchChanged(String query) {
-    // TODO: Implementar debounce e busca
-    print('🔍 Busca alterada: $query');
+    // Cancelar timer anterior se existir
+    _searchDebounceTimer?.cancel();
+    
+    // Criar novo timer com debounce de 500ms
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = query.trim();
+        });
+        // Buscar artistas com a nova query de busca
+        _onGetArtistsWithAvailabilitiesFiltered();
+      }
+    });
   }
 
   void _onSearchCleared() {
-    // TODO: Limpar filtros de busca
-    print('🔍 Busca limpa');
+    setState(() {
+      _searchQuery = '';
+    });
+    _searchController.clear();
+    // Buscar artistas sem a query de busca
+    _onGetArtistsWithAvailabilitiesFiltered();
   }
 
   void _onFilterTapped() {
     // TODO: Abrir bottomsheet/modal com filtros
-    print('🎛️ Filtros clicados');
   }
 
   void _onFavoriteTapped(String artistId, bool isFavorite) {
-    print('❤️ Favorito $artistId clicado');
     // Armazenar o artistId para atualizar o estado após sucesso
     _lastFavoriteArtistId = artistId;
     
@@ -573,7 +635,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   void _loadMore() {
     if (!_hasMore || _isLoadingMore) return;
-    print('🔵 [EXPLORE_SCREEN] _loadMore - Carregando mais. nextIndex=$_nextIndex');
     _isLoadingMore = true;
     context.read<ExploreBloc>().add(
       GetArtistsWithAvailabilitiesFilteredEvent(

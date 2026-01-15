@@ -4,9 +4,9 @@ import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
-import 'package:app/features/profile/artist_dashboard/presentation/widgets/metric_card.dart';
+import 'package:app/features/artist_dashboard/presentation/widgets/metric_card.dart';
 // import 'package:app/features/artist_dashboard/presentation/widgets/period_filter_section.dart';
-import 'package:app/features/profile/artist_dashboard/presentation/widgets/quick_action_button.dart';
+import 'package:app/features/artist_dashboard/presentation/widgets/quick_action_button.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -116,8 +116,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
             DSSizedBoxSpacing.vertical(24),
 
             // // Main metrics grid
-            // _buildMetricsGrid(colorScheme),
-            // DSSizedBoxSpacing.vertical(24),
+            _buildMetricsGrid(colorScheme),
+            DSSizedBoxSpacing.vertical(24),
 
             // Earnings chart placeholder
             _buildEarningsChart(textTheme, colorScheme),
@@ -219,7 +219,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen> {
           icon: Icons.calendar_today,
           value: '$upcomingEvents',
           label: 'Eventos agendados',
-          subtitle: 'Próximo evento em 3 dias',
+          subtitle: 'Próximo evento: 3 dias',
           iconColor: colorScheme.onPrimaryContainer,
         ),
         MetricCard(

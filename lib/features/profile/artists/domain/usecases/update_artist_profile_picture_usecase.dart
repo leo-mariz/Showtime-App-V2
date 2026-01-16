@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -20,11 +21,13 @@ class UpdateArtistProfilePictureUseCase {
   final GetArtistUseCase getArtistUseCase;
   final UpdateArtistUseCase updateArtistUseCase;
   final IStorageService storageService;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   UpdateArtistProfilePictureUseCase({
     required this.getArtistUseCase,
     required this.updateArtistUseCase,
     required this.storageService,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, void>> call(String uid, String localFilePath) async {
@@ -74,6 +77,9 @@ class UpdateArtistProfilePictureUseCase {
 
           // Atualizar artista no Firestore
           final updateResult = await updateArtistUseCase(uid, updatedArtist);
+
+          // Sincronizar completude apenas se mudou
+          await syncArtistCompletenessIfChangedUseCase.call();
           
           return updateResult;
         },

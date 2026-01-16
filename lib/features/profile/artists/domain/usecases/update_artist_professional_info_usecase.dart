@@ -2,6 +2,7 @@ import 'package:app/core/domain/artist/professional_info_entity/professional_inf
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -16,10 +17,12 @@ import 'package:dartz/dartz.dart';
 class UpdateArtistProfessionalInfoUseCase {
   final GetArtistUseCase getArtistUseCase;
   final UpdateArtistUseCase updateArtistUseCase;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   UpdateArtistProfessionalInfoUseCase({
     required this.getArtistUseCase,
     required this.updateArtistUseCase,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, void>> call(
@@ -44,7 +47,12 @@ class UpdateArtistProfessionalInfoUseCase {
           );
 
           // Atualizar artista
-          return await updateArtistUseCase(uid, updatedArtist);
+          final updateResult = await updateArtistUseCase(uid, updatedArtist);
+
+          // Sincronizar completude apenas se mudou
+          await syncArtistCompletenessIfChangedUseCase.call();
+
+          return updateResult;
         },
       );
     } catch (e) {

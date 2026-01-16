@@ -5,6 +5,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/profile/shared/presentation/widgets/icon_menu_button.dart';
@@ -361,7 +362,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                           Container(
                             color: Colors.black.withOpacity(0.5),
                             child: Center(
-                              child: CircularProgressIndicator(
+                              child: CustomLoadingIndicator(
                                 color: Theme.of(context).colorScheme.onPrimaryContainer,
                               ),
                             ),

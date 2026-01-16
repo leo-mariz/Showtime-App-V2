@@ -3,6 +3,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/services/cep_service.dart';
@@ -241,7 +242,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
             appBarTitle: existingAddress == null ? 'Adicionar Endereço' : 'Editar Endereço',
             showAppBarBackButton: true,
             child: state is GetAddressLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CustomLoadingIndicator())
               : GestureDetector(
                 onTap: () => FocusScope.of(context).unfocus(),
                 behavior: HitTestBehavior.opaque,
@@ -283,7 +284,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
                           SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
+                            child: CustomLoadingIndicator(
                               strokeWidth: 2,
                               color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),

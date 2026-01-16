@@ -1,3 +1,4 @@
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 
@@ -183,11 +184,9 @@ class DialogButton extends StatelessWidget {
       return SizedBox(
         height: DSSize.height(20),
         width: DSSize.width(20),
-        child: CircularProgressIndicator(
+        child: CustomLoadingIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            foregroundColor ?? theme.colorScheme.onPrimary,
-          ),
+          color: foregroundColor!,
         ),
       );
     }

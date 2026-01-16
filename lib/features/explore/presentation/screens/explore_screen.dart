@@ -7,6 +7,7 @@ import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
@@ -303,7 +304,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
                 builder: (context, state) {
                   if (state is GetArtistsWithAvailabilitiesLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      child: CustomLoadingIndicator(),
                     );
                   }
 
@@ -427,7 +428,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
 
                 // Estado inicial - mostrar loading
                 return const Center(
-                  child: CircularProgressIndicator(),
+                  child: CustomLoadingIndicator(),
                 );
               },
             ),
@@ -451,7 +452,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
         if (index >= artistsWithAvailabilities.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: CustomLoadingIndicator()),
           );
         }
         final artistWithAvailabilities = artistsWithAvailabilities[index];

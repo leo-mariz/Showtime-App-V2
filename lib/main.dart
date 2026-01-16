@@ -5,6 +5,7 @@ import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
+import 'package:app/features/artist_dashboard/presentation/bloc/artist_dashboard_bloc.dart';
 import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
@@ -47,6 +48,15 @@ import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.d
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_acceptance_rate_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_completed_events_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_monthly_earnings_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_monthly_stats_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_next_show_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_pending_requests_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/calculate_upcoming_events_usecase.dart';
+import 'package:app/features/artist_dashboard/domain/usecases/get_artist_dashboard_stats_usecase.dart';
+import 'package:app/features/chat/presentation/bloc/chat_bloc.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/close_availability_usecase.dart';
@@ -80,6 +90,10 @@ import 'package:app/features/profile/artists/data/datasources/artists_remote_dat
 import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
 import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
 import 'package:app/features/profile/artists/domain/usecases/add_artist_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/check_artist_completeness_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/get_artist_completeness_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_incomplete_sections_usecase.dart';
 import 'package:app/features/profile/artists/groups/data/datasources/groups_local_datasource.dart';
 import 'package:app/features/profile/artists/groups/data/datasources/groups_remote_datasource.dart';
 import 'package:app/features/profile/artists/groups/data/repositories/groups_repository_impl.dart';
@@ -407,6 +421,7 @@ ArtistsBloc _createArtistsBloc(
   IArtistsRepository artistsRepository,
   GetUserUidUseCase getUserUidUseCase,
   IStorageService storageService,
+  SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
   // Criar UseCases
   final getArtistUseCase = GetArtistUseCase(repository: artistsRepository);
@@ -415,6 +430,7 @@ ArtistsBloc _createArtistsBloc(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
     storageService: storageService,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
   final checkArtistNameExistsUseCase = CheckArtistNameExistsUseCase(
     repository: artistsRepository,
@@ -427,6 +443,7 @@ ArtistsBloc _createArtistsBloc(
   final updateArtistProfessionalInfoUseCase = UpdateArtistProfessionalInfoUseCase(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
   final updateArtistAgreementUseCase = UpdateArtistAgreementUseCase(
     getArtistUseCase: getArtistUseCase,
@@ -436,6 +453,7 @@ ArtistsBloc _createArtistsBloc(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
     storageService: storageService,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
   final addArtistUseCase = AddArtistUseCase(repository: artistsRepository); 
 
@@ -459,6 +477,7 @@ DocumentsBloc _createDocumentsBloc(
   IDocumentsRepository documentsRepository,
   GetUserUidUseCase getUserUidUseCase,
   IStorageService storageService,
+  SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
   // 1. Criar DataSources
 
@@ -471,6 +490,7 @@ DocumentsBloc _createDocumentsBloc(
     documentsRepository: documentsRepository,
     storageService: storageService,
     getUserUidUseCase: getUserUidUseCase,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase, 
   );
 
   // 4. Criar e retornar DocumentsBloc
@@ -507,6 +527,7 @@ GroupsBloc _createGroupsBloc(
 AvailabilityBloc _createAvailabilityBloc(
   IAvailabilityRepository availabilityRepository,
   GetUserUidUseCase getUserUidUseCase,
+  SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
   // Criar UseCase para calcular Geohash
   
@@ -514,11 +535,15 @@ AvailabilityBloc _createAvailabilityBloc(
   final getAvailabilityUseCase = GetAvailabilitiesUseCase(availabilityRepository: availabilityRepository);
   final addAvailabilityUseCase = AddAvailabilityUseCase(
     availabilityRepository: availabilityRepository,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
   final updateAvailabilityUseCase = UpdateAvailabilityUseCase(
     repository: availabilityRepository,
   );
-  final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(availabilityRepository);
+  final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(
+    repository: availabilityRepository,
+    syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
+  );
   final closeAvailabilityUseCase = CloseAvailabilityUseCase(availabilityRepository: availabilityRepository);
   final checkAvailabilityOverlapUseCase = CheckAvailabilityOverlapUseCase(availabilityRepository: availabilityRepository);
 
@@ -538,11 +563,12 @@ AvailabilityBloc _createAvailabilityBloc(
 BankAccountBloc _createBankAccountBloc(
   IBankAccountRepository bankAccountRepository,
   GetUserUidUseCase getUserUidUseCase,
+  SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
   // Criar UseCases
   final getBankAccountUseCase = GetBankAccountUseCase(repository: bankAccountRepository);
-  final saveBankAccountUseCase = SaveBankAccountUseCase(repository: bankAccountRepository);
-  final deleteBankAccountUseCase = DeleteBankAccountUseCase(repository: bankAccountRepository);
+  final saveBankAccountUseCase = SaveBankAccountUseCase(repository: bankAccountRepository, syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase);
+  final deleteBankAccountUseCase = DeleteBankAccountUseCase(repository: bankAccountRepository, syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase);
   
   return BankAccountBloc(
     getBankAccountUseCase: getBankAccountUseCase,
@@ -664,6 +690,46 @@ AppListsBloc _createAppListsBloc(
   );
 }
 
+/// Factory function para criar o ArtistDashboardBloc com todas as dependências
+ArtistDashboardBloc _createArtistDashboardBloc(
+  IArtistsRepository artistsRepository,
+  IContractRepository contractRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases de cálculo
+  const calculateMonthlyEarningsUseCase = CalculateMonthlyEarningsUseCase();
+  const calculatePendingRequestsUseCase = CalculatePendingRequestsUseCase();
+  const calculateUpcomingEventsUseCase = CalculateUpcomingEventsUseCase();
+  const calculateCompletedEventsUseCase = CalculateCompletedEventsUseCase();
+  const calculateAcceptanceRateUseCase = CalculateAcceptanceRateUseCase();
+  const calculateMonthlyStatsUseCase = CalculateMonthlyStatsUseCase();
+  const calculateNextShowUseCase = CalculateNextShowUseCase();
+
+  // Criar UseCases principais
+  final getArtistUseCase = GetArtistUseCase(repository: artistsRepository);
+  final getContractsByArtistUseCase = GetContractsByArtistUseCase(repository: contractRepository);
+
+  // Criar UseCase principal do dashboard
+  final getArtistDashboardStatsUseCase = GetArtistDashboardStatsUseCase(
+    getUserUidUseCase: getUserUidUseCase,
+    getArtistUseCase: getArtistUseCase,
+    getContractsByArtistUseCase: getContractsByArtistUseCase,
+    calculateMonthlyEarningsUseCase: calculateMonthlyEarningsUseCase,
+    calculatePendingRequestsUseCase: calculatePendingRequestsUseCase,
+    calculateUpcomingEventsUseCase: calculateUpcomingEventsUseCase,
+    calculateCompletedEventsUseCase: calculateCompletedEventsUseCase,
+    calculateAcceptanceRateUseCase: calculateAcceptanceRateUseCase,
+    calculateMonthlyStatsUseCase: calculateMonthlyStatsUseCase,
+    calculateNextShowUseCase: calculateNextShowUseCase,
+  );
+
+  // Criar e retornar ArtistDashboardBloc
+  return ArtistDashboardBloc(
+    getArtistDashboardStatsUseCase: getArtistDashboardStatsUseCase,
+  );
+}
+
+
 
 Future <void> main() async {
 
@@ -753,6 +819,27 @@ Future <void> main() async {
   final bankAccountRemoteDataSource = BankAccountRemoteDataSourceImpl(firestore: firestore);
   final bankAccountRepository = BankAccountRepositoryImpl(localDataSource: bankAccountLocalDataSource, remoteDataSource: bankAccountRemoteDataSource);
 
+
+  final checkArtistCompletenessUseCase = CheckArtistCompletenessUseCase(      );
+
+  // SyncArtistCompletenessIfChangedUseCase
+  final syncArtistCompletenessIfChangedUseCase = SyncArtistCompletenessIfChangedUseCase(
+    getArtistCompletenessUseCase: GetArtistCompletenessUseCase(
+      getArtistUseCase: GetArtistUseCase(repository: artistsRepository),
+      documentsRepository: documentsRepository,
+      bankAccountRepository: bankAccountRepository,
+      availabilityRepository: availabilityRepository,
+      getUserUidUseCase: getUserUidUseCase,
+      checkArtistCompletenessUseCase: checkArtistCompletenessUseCase,
+    ),
+    updateArtistIncompleteSectionsUseCase: UpdateArtistIncompleteSectionsUseCase(
+      getArtistUseCase: GetArtistUseCase(repository: artistsRepository),
+      repository: artistsRepository,
+    ),
+    getArtistUseCase: GetArtistUseCase(repository: artistsRepository),
+    getUserUidUseCase: getUserUidUseCase,
+  );
+
   // Explore
   final exploreLocalDataSource = ExploreLocalDataSourceImpl(autoCacheService: localCacheService);
   final exploreRemoteDataSource = ExploreRemoteDataSourceImpl(firestore: firestore);
@@ -819,6 +906,7 @@ Future <void> main() async {
               artistsRepository,
               getUserUidUseCase,
               storageService,
+              syncArtistCompletenessIfChangedUseCase,
             ),
           ),
           BlocProvider(
@@ -832,6 +920,7 @@ Future <void> main() async {
               documentsRepository,
               getUserUidUseCase,
               storageService,
+              syncArtistCompletenessIfChangedUseCase,
             ),
           ),
           BlocProvider(
@@ -844,12 +933,14 @@ Future <void> main() async {
             create: (context) => _createAvailabilityBloc(
               availabilityRepository,
               getUserUidUseCase,
+              syncArtistCompletenessIfChangedUseCase,
             ),
           ),
           BlocProvider(
             create: (context) => _createBankAccountBloc(
               bankAccountRepository,
               getUserUidUseCase,
+              syncArtistCompletenessIfChangedUseCase,
             ),
           ),
           BlocProvider(
@@ -877,6 +968,16 @@ Future <void> main() async {
           BlocProvider(
             create: (context) => _createAppListsBloc(
               appListsRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => ChatBloc(),
+          ),
+          BlocProvider(
+            create: (context) => _createArtistDashboardBloc(
+              artistsRepository,
+              contractRepository,
+              getUserUidUseCase,
             ),
           ),
         ],

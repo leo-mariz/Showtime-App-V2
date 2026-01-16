@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -131,8 +132,8 @@ class ImageCacheService implements IImageCacheService {
   Widget _defaultPlaceholder() {
     return Container(
       color: Colors.grey[200],
-      child: const Center(
-        child: CircularProgressIndicator(),
+      child: Center(
+        child: CustomLoadingIndicator(),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/event_location_map.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
@@ -404,9 +405,9 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                             child: SizedBox(
                               width: DSSize.width(16),
                               height: DSSize.width(16),
-                              child: CircularProgressIndicator(
+                              child: CustomLoadingIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.error),
+                                color: colorScheme.error,
                               ),
                             ),
                           ),

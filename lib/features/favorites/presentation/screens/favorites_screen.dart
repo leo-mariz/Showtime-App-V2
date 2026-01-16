@@ -8,6 +8,7 @@ import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/extensions/artist_search_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
@@ -136,7 +137,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
       builder: (context, state) {
         if (state is GetArtistsWithAvailabilitiesLoading) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: CustomLoadingIndicator(),
           );
         }
 
@@ -317,7 +318,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
 
         // Estado inicial - mostrar loading
         return const Center(
-          child: CircularProgressIndicator(),
+          child: CustomLoadingIndicator(),
         );
       },
     );

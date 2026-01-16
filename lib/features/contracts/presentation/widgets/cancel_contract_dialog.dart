@@ -130,7 +130,7 @@ class CancelContractDialog extends StatelessWidget {
         DialogButton.primary(
           text: 'Cancelar',
           backgroundColor: colorScheme.error,
-          foregroundColor: colorScheme.onError,
+          textColor: colorScheme.onError,
           onPressed: isLoading ? null : (onConfirm ?? () => Navigator.of(context).pop(true)),
           isLoading: isLoading,
         ),

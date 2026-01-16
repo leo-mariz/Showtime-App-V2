@@ -83,29 +83,29 @@ class AppToastWidget extends StatelessWidget {
       case NotificationType.success:
         return _NotificationConfig(
           backgroundColor: const Color(0xFF2E7D32), // Verde escuro
-          textColor: Colors.white,
-          iconColor: Colors.white,
+          textColor: colorScheme.onPrimary,
+          iconColor: colorScheme.onPrimary,
           icon: Icons.check_circle_rounded,
         );
       case NotificationType.error:
         return _NotificationConfig(
-          backgroundColor: colorScheme.onError, // Vermelho do tema
-          textColor: Colors.white,
-          iconColor: Colors.white,
+          backgroundColor: colorScheme.error, // Vermelho do tema
+          textColor: colorScheme.onError,
+          iconColor: colorScheme.onError,
           icon: Icons.error_rounded,
         );
       case NotificationType.warning:
         return _NotificationConfig(
           backgroundColor: const Color(0xFFF57C00), // Laranja
-          textColor: Colors.white,
-          iconColor: Colors.white,
+          textColor: colorScheme.onPrimary,
+          iconColor: colorScheme.onPrimary,
           icon: Icons.warning_rounded,
         );
       case NotificationType.info:
         return _NotificationConfig(
-          backgroundColor: colorScheme.primaryContainer,
-          textColor: colorScheme.onPrimaryContainer,
-          iconColor: colorScheme.onPrimaryContainer,
+          backgroundColor: colorScheme.onPrimaryContainer,
+          textColor: colorScheme.primaryContainer,
+          iconColor: colorScheme.primaryContainer,
           icon: Icons.info_rounded,
         );
     }

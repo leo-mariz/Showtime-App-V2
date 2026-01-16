@@ -7,6 +7,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/card_action_button.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -188,7 +189,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                   // Lista de contratos
                   Expanded(
                     child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: CustomLoadingIndicator())
                         : filteredContracts.isEmpty
                             ? _buildEmptyState()
                             : ListView.builder(

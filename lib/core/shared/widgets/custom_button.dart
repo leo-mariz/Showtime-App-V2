@@ -1,4 +1,5 @@
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/font/font_size_calculator.dart';
@@ -99,9 +100,9 @@ class CustomButton extends StatelessWidget {
       final loadingIndicator = SizedBox(
         width: DSSize.width(16),
         height: DSSize.width(16),
-        child: CircularProgressIndicator(
+        child: CustomLoadingIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(effectiveTextColor),
+          color: effectiveTextColor,
         ),
       );
       
@@ -224,7 +225,7 @@ class CustomButton extends StatelessWidget {
     
     // Quando habilitado, usar ElevatedButton ou OutlinedButton normalmente
     return SizedBox(
-      width: buttonWidth,
+      width: buttonWidth ?? double.infinity,
       height: buttonHeight,
       child: effectiveFilled
           ? ElevatedButton(

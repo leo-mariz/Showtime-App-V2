@@ -2,6 +2,7 @@ import 'package:app/core/domain/artist/availability_calendar_entitys/availabilit
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Adicionar nova disponibilidade
@@ -14,9 +15,11 @@ import 'package:dartz/dartz.dart';
 /// - Retornar ID da disponibilidade criada
 class AddAvailabilityUseCase {
   final IAvailabilityRepository availabilityRepository;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   AddAvailabilityUseCase({
     required this.availabilityRepository,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, String>> call(String uid, AvailabilityEntity availability) async {
@@ -33,6 +36,9 @@ class AddAvailabilityUseCase {
 
       // Adicionar disponibilidade
       final result = await availabilityRepository.addAvailability(uid, availability);
+
+      // Sincronizar completude apenas se mudou
+      await syncArtistCompletenessIfChangedUseCase.call();
 
       return result.fold(
         (failure) => Left(failure),

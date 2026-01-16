@@ -10,8 +10,8 @@ class AppColors {
   static const Color onSecondaryContainerDark = Color.fromARGB(255, 56, 204, 42);
   static const Color secondaryContainerDark = Color.fromARGB(255, 56, 204, 42);
   static const Color onTertiaryContainerDark = Color.fromARGB(255, 238, 102, 12);
-  static const Color errorDark = Color(0xFFFFB4AB);
-  static const Color onErrorDark = Color.fromARGB(255, 255, 17, 29);
+  static const Color onErrorDark = Color.fromARGB(255, 255, 255, 255);
+  static const Color errorDark = Color.fromARGB(235, 241, 54, 64);
   static const Color onBackgroundDark = Color(0xFFE6E0E9);
   static const Color surfaceDark = Color.fromRGBO(19, 19, 19, 1);
   static const Color onSurfaceDark = Color.fromRGBO(226, 226, 226, 1);

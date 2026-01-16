@@ -1,4 +1,5 @@
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 
 /// Widget que exibe feedback visual de validação de documento (CPF/CNPJ)
@@ -32,11 +33,9 @@ class DocumentValidationIndicator extends StatelessWidget {
         return SizedBox(
           width: DSSize.width(20),
           height: DSSize.height(20),
-          child: CircularProgressIndicator(
+          child: CustomLoadingIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              colorScheme.onPrimaryContainer,
-            ),
+            color: colorScheme.onPrimaryContainer,
           ),
         );
       case DocumentValidationStatus.available:

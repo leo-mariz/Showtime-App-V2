@@ -1,25 +1,31 @@
-import 'dart:async';
+import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/features/chat/presentation/widgets/message_bubble.dart';
 import 'package:app/features/chat/presentation/widgets/message_input.dart';
+import 'package:app/features/chat/presentation/bloc/chat_bloc.dart';
+import 'package:app/features/chat/presentation/bloc/events/chat_events.dart';
+import 'package:app/features/chat/presentation/bloc/states/chat_states.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Tela de detalhes do chat - Conversa individual
 /// 
-/// Exibe mensagens de uma conversa com dados mockados
+/// Exibe mensagens de uma conversa
 class ChatDetailScreen extends StatefulWidget {
   final String conversationId;
   final String recipientName;
   final String? recipientAvatar;
+  final String? contractReference;
 
   const ChatDetailScreen({
     super.key,
     required this.conversationId,
     required this.recipientName,
     this.recipientAvatar,
+    this.contractReference,
   });
 
   @override
@@ -29,13 +35,14 @@ class ChatDetailScreen extends StatefulWidget {
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadMessages();
+    // Carregar mensagens ao inicializar
+    context.read<ChatBloc>().add(GetMessagesEvent(contractId: widget.conversationId));
+    // Marcar mensagens como lidas quando abrir a conversa
+    context.read<ChatBloc>().add(MarkMessagesAsReadEvent(contractId: widget.conversationId));
     // Listener para atualizar botão de envio
     _messageController.addListener(() {
       setState(() {});
@@ -49,12 +56,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
-  void _loadMessages() {
-    // Carregar mensagens mockadas
-    setState(() {
-      _messages.addAll(_getMockMessages());
-    });
-    // Scroll para o final após carregar
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -68,60 +70,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _onSendMessage() {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _isLoading) return;
+    if (text.isEmpty) return;
 
-    // Adicionar mensagem enviada
-    setState(() {
-      _messages.add({
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'message': text,
-        'timestamp': DateTime.now(),
-        'isSent': true,
-        'isRead': false,
-      });
-      _messageController.clear();
-    });
-
-    // Simular envio
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Scroll para o final
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+    // Enviar mensagem através do BLoC
+    context.read<ChatBloc>().add(
+          SendMessageEvent(
+            contractId: widget.conversationId,
+            text: text,
+            senderName: widget.recipientName,
+            senderAvatarUrl: widget.recipientAvatar,
+          ),
         );
-      }
-    });
 
-    // Simular resposta após 1 segundo
-    Timer(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          // Marcar última mensagem como lida
-          if (_messages.isNotEmpty) {
-            _messages.last['isRead'] = true;
-          }
-          // Simular resposta (opcional)
-          // _messages.add({
-          //   'id': DateTime.now().millisecondsSinceEpoch.toString(),
-          //   'message': 'Resposta automática',
-          //   'timestamp': DateTime.now(),
-          //   'isSent': false,
-          // });
-        });
-      }
-    });
+    _messageController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return BasePage(
       showAppBar: true,
@@ -131,33 +98,133 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       verticalPadding: 0,
       child: Column(
         children: [
+          // Referência do contrato abaixo do AppBar
+          if (widget.contractReference != null && widget.contractReference!.isNotEmpty)
+            Container(
+              width: double.infinity,
+              // padding: EdgeInsets.symmetric(
+              //   horizontal: DSPadding.horizontal(16),
+              //   vertical: DSPadding.vertical(8),
+              // ),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Text(
+                widget.contractReference!,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  fontSize: calculateFontSize(12),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           // Lista de mensagens
           Expanded(
-            child: _messages.isEmpty
-                ? _buildEmptyState(context, colorScheme)
-                : ListView.builder(
+            child: BlocConsumer<ChatBloc, ChatState>(
+              listener: (context, state) {
+                if (state is GetMessagesSuccess || state is SendMessageSuccess) {
+                  _scrollToBottom();
+                }
+                if (state is SendMessageSuccess) {
+                  // Recarregar mensagens após enviar
+                  context.read<ChatBloc>().add(GetMessagesEvent(contractId: widget.conversationId));
+                }
+              },
+              builder: (context, state) {
+                if (state is GetMessagesLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is GetMessagesFailure) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: colorScheme.error,
+                        ),
+                        DSSizedBoxSpacing.vertical(16),
+                        Text(
+                          'Erro ao carregar mensagens',
+                          style: textTheme.titleMedium?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                        DSSizedBoxSpacing.vertical(8),
+                        Text(
+                          state.error,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        DSSizedBoxSpacing.vertical(16),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<ChatBloc>().add(
+                                  GetMessagesEvent(contractId: widget.conversationId),
+                                );
+                          },
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (state is GetMessagesSuccess) {
+                  final messages = state.messages;
+
+                  if (messages.isEmpty) {
+                    return _buildEmptyState(context, colorScheme);
+                  }
+
+                  return ListView.builder(
                     controller: _scrollController,
                     padding: EdgeInsets.symmetric(
                       horizontal: DSPadding.horizontal(16),
                       vertical: DSPadding.vertical(16),
                     ),
-                    itemCount: _messages.length,
+                    itemCount: messages.length,
                     itemBuilder: (context, index) {
-                      final message = _messages[index];
+                      final message = messages[index];
+                      // TODO: Determinar se a mensagem foi enviada pelo usuário atual
+                      // quando tivermos acesso ao userId
+                      final isSent = false; // TODO: implementar
+
                       return MessageBubble(
-                        message: message['message'] as String,
-                        timestamp: message['timestamp'] as DateTime,
-                        isSent: message['isSent'] as bool,
-                        isRead: message['isRead'] as bool? ?? true,
+                        message: message.text,
+                        timestamp: message.timestamp,
+                        isSent: isSent,
+                        isRead: message.isRead,
                       );
                     },
-                  ),
+                  );
+                }
+
+                // Estado inicial - mostrar empty state
+                return _buildEmptyState(context, colorScheme);
+              },
+            ),
           ),
           // Input de mensagem
-          MessageInput(
-            controller: _messageController,
-            onSend: _onSendMessage,
-            isLoading: _isLoading,
+          BlocBuilder<ChatBloc, ChatState>(
+            builder: (context, state) {
+              final isLoading = state is SendMessageLoading;
+              return MessageInput(
+                controller: _messageController,
+                onSend: _onSendMessage,
+                isLoading: isLoading,
+              );
+            },
           ),
         ],
       ),
@@ -180,6 +247,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             widget.recipientName,
             style: textTheme.titleMedium,
           ),
+          if (widget.contractReference != null && widget.contractReference!.isNotEmpty) ...[
+            DSSizedBoxSpacing.vertical(4),
+            Text(
+              widget.contractReference!,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                fontSize: 12,
+              ),
+            ),
+          ],
           DSSizedBoxSpacing.vertical(8),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
@@ -194,54 +271,5 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ],
       ),
     );
-  }
-
-  // Mensagens mockadas
-  List<Map<String, dynamic>> _getMockMessages() {
-    final now = DateTime.now();
-    return [
-      {
-        'id': '1',
-        'message': 'Olá! Gostaria de contratar seus serviços para um evento.',
-        'timestamp': now.subtract(const Duration(days: 2, hours: 10)),
-        'isSent': false,
-        'isRead': true,
-      },
-      {
-        'id': '2',
-        'message': 'Olá! Fico feliz em ajudar. Qual tipo de evento você está planejando?',
-        'timestamp': now.subtract(const Duration(days: 2, hours: 9, minutes: 45)),
-        'isSent': true,
-        'isRead': true,
-      },
-      {
-        'id': '3',
-        'message': 'É um casamento no próximo mês. Você está disponível?',
-        'timestamp': now.subtract(const Duration(days: 2, hours: 9, minutes: 30)),
-        'isSent': false,
-        'isRead': true,
-      },
-      {
-        'id': '4',
-        'message': 'Sim, estou disponível! Vou enviar mais detalhes sobre os pacotes.',
-        'timestamp': now.subtract(const Duration(days: 2, hours: 9, minutes: 15)),
-        'isSent': true,
-        'isRead': true,
-      },
-      {
-        'id': '5',
-        'message': 'Perfeito! Aguardo os detalhes.',
-        'timestamp': now.subtract(const Duration(days: 2, hours: 9)),
-        'isSent': false,
-        'isRead': true,
-      },
-      {
-        'id': '6',
-        'message': 'Obrigado! Entro em contato em breve com todas as informações.',
-        'timestamp': now.subtract(const Duration(days: 1, hours: 14)),
-        'isSent': true,
-        'isRead': true,
-      },
-    ];
   }
 }

@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 
 /// Widget para input de mensagem no chat
@@ -126,11 +127,9 @@ class _MessageInputState extends State<MessageInput> {
                         ? SizedBox(
                             width: DSSize.width(20),
                             height: DSSize.height(20),
-                            child: CircularProgressIndicator(
+                            child: CustomLoadingIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                colorScheme.surface,
-                              ),
+                              color: colorScheme.surface,
                             ),
                           )
                         : Icon(

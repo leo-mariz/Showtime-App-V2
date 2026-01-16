@@ -8,7 +8,6 @@ import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/dialog_button.dart';
-import 'package:app/core/shared/widgets/informative_banner.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
@@ -71,7 +70,6 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
   DateTime? _endDate;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
-  bool _isRecurring = false;
   List<String> _selectedDays = [];
   AddressInfoEntity? _selectedAddress;
   double _radiusKm = 0.1; // Inicia com 100 metros
@@ -91,6 +89,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
       _endDate = _startDate;
       _startTime = const TimeOfDay(hour: 9, minute: 0);
       _endTime = const TimeOfDay(hour: 18, minute: 0);
+      // Inicia com todos os dias selecionados por padrão
+      _selectedDays = List.from(AvailabilityEntityOptions.daysOfWeekList());
       _updateControllers();
     }
   }
@@ -106,8 +106,10 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
       hour: int.parse(availability.horarioFim.split(':')[0]),
       minute: int.parse(availability.horarioFim.split(':')[1]),
     );
-    _isRecurring = availability.repetir;
-    _selectedDays = List.from(availability.diasDaSemana);
+    // Se a disponibilidade tinha dias, usa eles, senão usa todos os dias
+    _selectedDays = availability.diasDaSemana.isNotEmpty 
+        ? List.from(availability.diasDaSemana)
+        : List.from(AvailabilityEntityOptions.daysOfWeekList());
     _blockedSlots = List.from(availability.blockedSlots);
     _selectedAddress = availability.endereco;
     _radiusKm = availability.raioAtuacao;
@@ -134,14 +136,23 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     if (_endTime != null) {
       _endTimeController.text = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
     }
-    _recurrenceDaysController.text = _selectedDays.isEmpty
-        ? ''
-        : _selectedDays.map((day) {
-            final index = AvailabilityEntityOptions.daysOfWeekList().indexOf(day);
-            return index != -1
-                ? AvailabilityEntityOptions.daysOfWeek()[index]
-                : day;
-          }).join(', ');
+    // Verifica se todos os dias estão selecionados
+    final allDays = AvailabilityEntityOptions.daysOfWeekList();
+    final isAllDaysSelected = _selectedDays.length == allDays.length &&
+        _selectedDays.every((day) => allDays.contains(day));
+    
+    if (isAllDaysSelected) {
+      _recurrenceDaysController.text = 'Todos os dias';
+    } else if (_selectedDays.isEmpty) {
+      _recurrenceDaysController.text = '';
+    } else {
+      _recurrenceDaysController.text = _selectedDays.map((day) {
+        final index = AvailabilityEntityOptions.daysOfWeekList().indexOf(day);
+        return index != -1
+            ? AvailabilityEntityOptions.daysOfWeek()[index]
+            : day;
+      }).join(', ');
+    }
   }
 
   @override
@@ -183,12 +194,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
       return true;
     }
 
-    // Compara recorrência
-    if (_isRecurring != _initialAvailability!.repetir) {
-      return true;
-    }
-
-    // Compara dias da semana
+    // Compara dias da semana (recorrência sempre está ativa agora)
     if (_selectedDays.length != _initialAvailability!.diasDaSemana.length ||
         !_selectedDays.every((day) => _initialAvailability!.diasDaSemana.contains(day))) {
       return true;
@@ -325,10 +331,18 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
 
   Future<void> _selectRecurrenceDays() async {
     final dayOptions = AvailabilityEntityOptions.daysOfWeek();
-    final currentSelected = _selectedDays.map((day) {
-      final index = AvailabilityEntityOptions.daysOfWeekList().indexOf(day);
-      return index != -1 ? dayOptions[index] : day;
-    }).toList();
+    final allDays = AvailabilityEntityOptions.daysOfWeekList();
+    
+    // Verifica se todos os dias estão selecionados
+    final isAllDaysSelected = _selectedDays.length == allDays.length &&
+        _selectedDays.every((day) => allDays.contains(day));
+    
+    final currentSelected = isAllDaysSelected
+        ? ['Todos os dias']
+        : _selectedDays.map((day) {
+            final index = AvailabilityEntityOptions.daysOfWeekList().indexOf(day);
+            return index != -1 ? dayOptions[index] : day;
+          }).toList();
 
     final result = await showDialog<List<String>>(
       context: context,
@@ -340,9 +354,17 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
 
     if (result != null) {
       setState(() {
-        // Converte de português para código (SU, MO, etc)
-        final dayMap = AvailabilityEntityOptions.daysOfWeekMap();
-        _selectedDays = result.map((ptDay) => dayMap[ptDay] ?? ptDay).toList();
+        // Se "Todos os dias" foi selecionado, preenche todos os dias
+        if (result.contains('Todos os dias')) {
+          _selectedDays = List.from(AvailabilityEntityOptions.daysOfWeekList());
+        } else {
+          // Converte de português para código (SU, MO, etc)
+          final dayMap = AvailabilityEntityOptions.daysOfWeekMap();
+          _selectedDays = result
+              .where((day) => day != 'Todos os dias')
+              .map((ptDay) => dayMap[ptDay] ?? ptDay)
+              .toList();
+        }
         _updateControllers();
       });
     }
@@ -365,7 +387,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
       initialBlockedSlots: List.from(_blockedSlots),
       startDate: _startDate!,
       endDate: _endDate!,
-      isRecurring: _isRecurring,
+      isRecurring: true, // Sempre ativo
       selectedDays: _selectedDays,
       startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
       endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
@@ -413,17 +435,23 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
       return;
     }
 
+    // Validação de dias da semana
+    if (_selectedDays.isEmpty) {
+      context.showError('Selecione os dias da semana');
+      return;
+    }
+
     final availability = AvailabilityEntity(
       id: widget.availability?.id,
       dataInicio: _startDate!,
       dataFim: _endDate!,
       horarioInicio: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
       horarioFim: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
-      diasDaSemana: _isRecurring ? _selectedDays : [],
+      diasDaSemana: _selectedDays,
       valorShow: double.parse(_valueController.text.replaceAll(',', '.')),
       endereco: _selectedAddress!,
       raioAtuacao: _radiusKm,
-      repetir: _isRecurring,
+      repetir: true, // Sempre ativo
       blockedSlots: _blockedSlots,
     );
 
@@ -439,7 +467,13 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     final screenHeight = mediaQuery.size.height;
     final hasChanges = _hasChanges();
 
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        // Fecha o teclado ao tocar fora dos campos
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.translucent,
+      child: Container(
       constraints: BoxConstraints(
         maxHeight: screenHeight * 0.9,
       ),
@@ -536,59 +570,14 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                     ),
                     DSSizedBoxSpacing.vertical(16),
                     
-                    // Recorrência
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 4,
-                          child: Text(
-                            'Recorrência?',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Switch(
-                                activeColor: colorScheme.onPrimaryContainer,
-                                value: _isRecurring,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isRecurring = value;
-                                    if (!value) {
-                                      _selectedDays = [];
-                                      _updateControllers();
-                                    }
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    // Dias da semana (sempre visível)
+                    SelectableRow(
+                      label: 'Dias da semana',
+                      value: _recurrenceDaysController.text.isEmpty
+                          ? 'Selecione'
+                          : _recurrenceDaysController.text,
+                      onTap: _selectRecurrenceDays,
                     ),
-                    
-                    if (_isRecurring) ...[
-                      DSSizedBoxSpacing.vertical(8),
-                      SelectableRow(
-                        label: 'Dias da semana',
-                        value: _recurrenceDaysController.text.isEmpty
-                            ? 'Selecione'
-                            : _recurrenceDaysController.text,
-                        onTap: _selectRecurrenceDays,
-                      ),
-                    ] else ...[
-                      DSSizedBoxSpacing.vertical(8),
-                      InformativeBanner(
-                        message: 'Com a recorrência desativada, ficarão disponíveis todos os dias entre a data de início e a data de fim selecionadas.',
-                      ),
-                    ],
                     Divider(height: DSSize.height(32)),
                     DSSizedBoxSpacing.vertical(16),
                     
@@ -709,8 +698,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                             child: Slider(
                               value: _radiusKm,
                               min: 0.1,
-                              max: 50.0,
-                              divisions: 999, // Permite incrementos de 0.1 (100 metros)
+                              max: 200.0,
+                              divisions: 1999, // Permite incrementos de 0.1 (100 metros)
                               label: _radiusKm >= 1
                                   ? '${_radiusKm.toStringAsFixed(1)} km'
                                   : '${(_radiusKm * 1000).toStringAsFixed(0)} m',
@@ -741,7 +730,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                               ],
                               onChanged: (value) {
                                 final num = double.tryParse(value.replaceAll(',', '.'));
-                                if (num != null && num >= 0.1 && num <= 100) {
+                                if (num != null && num >= 0.1 && num <= 200) {
                                   setState(() {
                                     _radiusKm = num;
                                   });
@@ -752,8 +741,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                                   return null;
                                 }
                                 final num = double.tryParse(value.replaceAll(',', '.'));
-                                if (num == null || num < 0.1 || num > 100) {
-                                  return 'Entre 0.1 e 100';
+                                if (num == null || num < 0.1 || num > 200) {
+                                  return 'Entre 0.1 e 200';
                                 }
                                 return null;
                               },
@@ -901,6 +890,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -921,15 +911,37 @@ class _RecurrenceDaysDialog extends StatefulWidget {
 
 class _RecurrenceDaysDialogState extends State<_RecurrenceDaysDialog> {
   late List<String> _selected;
+  late bool _allDaysSelected;
 
   @override
   void initState() {
     super.initState();
     _selected = List.from(widget.initialSelected);
+    _allDaysSelected = _selected.contains('Todos os dias');
+  }
+
+  void _toggleAllDays() {
+    setState(() {
+      if (_allDaysSelected) {
+        // Desmarca "Todos os dias" e limpa seleção
+        _allDaysSelected = false;
+        _selected.remove('Todos os dias');
+      } else {
+        // Marca "Todos os dias" e desmarca todos os outros
+        _allDaysSelected = true;
+        _selected.clear();
+        _selected.add('Todos os dias');
+      }
+    });
   }
 
   void _toggleDay(String day) {
     setState(() {
+      // Se "Todos os dias" estiver selecionado, não permite selecionar dias específicos
+      if (_allDaysSelected) {
+        return;
+      }
+      
       if (_selected.contains(day)) {
         _selected.remove(day);
       } else {
@@ -951,14 +963,28 @@ class _RecurrenceDaysDialogState extends State<_RecurrenceDaysDialog> {
         width: double.maxFinite,
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: widget.options.length,
+          itemCount: widget.options.length + 1, // +1 para "Todos os dias"
           itemBuilder: (context, index) {
-            final day = widget.options[index];
+            if (index == 0) {
+              // Opção "Todos os dias"
+              return CheckboxListTile(
+                title: Text(
+                  'Todos os dias',
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                value: _allDaysSelected,
+                onChanged: (_) => _toggleAllDays(),
+              );
+            }
+            
+            final day = widget.options[index - 1];
             final isSelected = _selected.contains(day);
             return CheckboxListTile(
               title: Text(day),
               value: isSelected,
-              onChanged: (_) => _toggleDay(day),
+              onChanged: _allDaysSelected ? null : (_) => _toggleDay(day),
             );
           },
         ),
@@ -973,7 +999,14 @@ class _RecurrenceDaysDialogState extends State<_RecurrenceDaysDialog> {
           text: 'Confirmar',
           type: DialogButtonType.primary,
           textColor: colorScheme.onPrimaryContainer,
-          onPressed: () => Navigator.of(context).pop(_selected),
+          onPressed: () {
+            // Se "Todos os dias" estiver selecionado, retorna apenas ele
+            // Senão, retorna os dias específicos selecionados
+            final result = _allDaysSelected 
+                ? ['Todos os dias']
+                : _selected.where((day) => day != 'Todos os dias').toList();
+            Navigator.of(context).pop(result);
+          },
         ),
       ],
     );

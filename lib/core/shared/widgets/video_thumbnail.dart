@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -106,7 +107,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                   child: !_hasError && !_isInitialized
                       ? Center(
                           // Mostra loading enquanto está inicializando
-                          child: CircularProgressIndicator(
+                          child: CustomLoadingIndicator(
                             color: colorScheme.onPrimaryContainer,
                           ),
                         )

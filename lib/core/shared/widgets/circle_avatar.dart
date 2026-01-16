@@ -1,3 +1,4 @@
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 
@@ -75,9 +76,9 @@ class CustomCircleAvatar extends StatelessWidget {
       return SizedBox(
         width: DSSize.width(size * 0.4),
         height: DSSize.height(size * 0.4),
-        child: CircularProgressIndicator(
+        child: CustomLoadingIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+          color: iconColor,
         ),
       );
     }

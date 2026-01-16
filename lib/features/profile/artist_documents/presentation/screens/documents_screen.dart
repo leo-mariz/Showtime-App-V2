@@ -3,6 +3,7 @@ import 'package:app/core/domain/artist/artist_individual/documents/documents_ent
 import 'package:app/core/enums/document_type_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/profile/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/profile/artist_documents/presentation/bloc/events/documents_events.dart';
 import 'package:app/features/profile/artist_documents/presentation/bloc/states/documents_states.dart';
@@ -95,7 +96,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             appBarTitle: 'Documentos',
             showAppBarBackButton: true,
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CustomLoadingIndicator())
                 : SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

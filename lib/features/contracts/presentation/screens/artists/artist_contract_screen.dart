@@ -7,6 +7,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/card_action_button.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -194,7 +195,7 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
                   // Lista de contratos
                   Expanded(
                     child: isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: CustomLoadingIndicator())
                         : filteredContracts.isEmpty
                             ? _buildEmptyState()
                             : ListView.builder(
@@ -318,7 +319,7 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
       // PAID → Botão para confirmar show
       buttons.add(
         CardActionButton(
-          label: 'O Show foi realizado?',
+          label: 'O Show irá começar?',
           onPressed: isAnyLoading ? null : () => _onConfirmShow(contract),
           icon: Icons.check_circle_rounded,
           height: DSSize.height(40),

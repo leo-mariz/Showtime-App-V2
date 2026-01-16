@@ -3,6 +3,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/tabs_section.dart';
@@ -105,7 +106,7 @@ class _ArtistProfileViewScreenState extends State<ArtistProfileViewScreen> {
             child: Stack(
               children: [
                 if (isLoading)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(child: CustomLoadingIndicator())
                 else if (artist != null)
                   SingleChildScrollView(
                     child: Column(
@@ -123,7 +124,7 @@ class _ArtistProfileViewScreenState extends State<ArtistProfileViewScreen> {
                                       imageUrl: artist.profilePicture!,
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) => Center(
-                                        child: CircularProgressIndicator(
+                                        child: CustomLoadingIndicator(
                                           color: colorScheme.onPrimaryContainer,
                                         ),
                                       ),

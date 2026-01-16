@@ -50,28 +50,50 @@ class ConfirmationCodeCard extends StatelessWidget {
                 width: 1,
               ),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Ícone à esquerda
-                Positioned(
-                  left: 0,
-                  child: Icon(
-                    Icons.vpn_key_rounded,
-                    color: onPrimary,
-                    size: DSSize.width(24),
-                  ),
-                ),
-                // Código centralizado
-                Text(
-                  confirmationCode.toUpperCase(),
-                  style: textTheme.headlineMedium?.copyWith(
-                    color: onPrimary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final codeText = confirmationCode.toUpperCase();
+                final codeLength = codeText.length;
+                
+                // Ajusta o tamanho da fonte baseado no comprimento do código
+                double fontSize;
+                if (codeLength <= 8) {
+                  fontSize = textTheme.headlineMedium?.fontSize ?? 28;
+                } else if (codeLength <= 12) {
+                  fontSize = textTheme.titleLarge?.fontSize ?? 24;
+                } else {
+                  fontSize = textTheme.titleMedium?.fontSize ?? 20;
+                }
+                
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Ícone
+                    Icon(
+                      Icons.vpn_key_rounded,
+                      color: onPrimary,
+                      size: DSSize.width(24),
+                    ),
+                    DSSizedBoxSpacing.horizontal(12),
+                    // Código com quebra de linha quando necessário
+                    Flexible(
+                      child: Text(
+                        codeText,
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: onPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2.0,
+                          fontSize: fontSize,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 

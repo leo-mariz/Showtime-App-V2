@@ -3,6 +3,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
@@ -234,7 +235,7 @@ class _AddressesModalState extends State<AddressesModal> {
                           // Conteúdo
                           Expanded(
                             child: state is GetAddressesLoading
-                                ? const Center(child: CircularProgressIndicator())
+                                ? const Center(child: CustomLoadingIndicator())
                                 : sortedAddresses.isEmpty
                                     ? Center(
                                         child: Column(

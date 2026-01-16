@@ -4,6 +4,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/profile/shared/presentation/widgets/logout_button.dart';
@@ -366,7 +367,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                               Container(
                                 color: Colors.black.withOpacity(0.5),
                                 child: Center(
-                                  child: CircularProgressIndicator(
+                                  child: CustomLoadingIndicator(
                                     color: Theme.of(context).colorScheme.onPrimaryContainer,
                                   ),
                                 ),

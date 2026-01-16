@@ -2,6 +2,7 @@ import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.d
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/profile/artist_bank_account/domain/repositories/bank_account_repository.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Salvar ou atualizar conta bancária do artista
@@ -13,9 +14,11 @@ import 'package:dartz/dartz.dart';
 /// - Como cada artista tem apenas uma conta, sempre salva no documento "account"
 class SaveBankAccountUseCase {
   final IBankAccountRepository repository;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   SaveBankAccountUseCase({
     required this.repository,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, void>> call(
@@ -29,7 +32,12 @@ class SaveBankAccountUseCase {
       }
 
       // Salva ou atualiza conta bancária no repositório
-      return await repository.saveBankAccount(artistId, bankAccount);
+      final result = await repository.saveBankAccount(artistId, bankAccount);
+
+      // Sincronizar completude apenas se mudou
+      await syncArtistCompletenessIfChangedUseCase.call();
+
+      return result;
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

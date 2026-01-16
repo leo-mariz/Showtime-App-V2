@@ -2,6 +2,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/dropdown_button.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
@@ -371,7 +372,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
             appBarTitle: 'Dados Bancários',
             showAppBarBackButton: true,
             child: isLoadingInitial
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CustomLoadingIndicator())
                 : GestureDetector(
                     onTap: () {
                       // Fechar teclado ao tocar em qualquer lugar da tela

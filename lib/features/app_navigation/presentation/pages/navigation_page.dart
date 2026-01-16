@@ -10,6 +10,8 @@ import 'package:app/features/profile/clients/presentation/screens/client_profile
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 
+// GlobalKey para acessar o estado do NavigationPage
+final _navigationPageKey = GlobalKey<_NavigationPageState>();
 
 @RoutePage(deferredLoading: true)
 class NavigationPage extends StatefulWidget {
@@ -22,6 +24,14 @@ class NavigationPage extends StatefulWidget {
 
   @override
   State<NavigationPage> createState() => _NavigationPageState();
+  
+  /// Método estático para navegar para uma página específica
+  static void navigateToPageIndex(BuildContext context, int index) {
+    final state = _navigationPageKey.currentState;
+    if (state != null) {
+      state.navigateToPage(index);
+    }
+  }
 }
 
 class _NavigationPageState extends State<NavigationPage> {
@@ -123,13 +133,22 @@ class _NavigationPageState extends State<NavigationPage> {
     });
   }
 
+  /// Método público para permitir navegação programática entre páginas
+  void navigateToPage(int index) {
+    if (index >= 0 && index < (isArtist ? _artistPages.length : _clientPages.length)) {
+      _onTabTapped(index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = isArtist ? _artistPages : _clientPages;
     final navItems = isArtist ? _artistNavItems : _clientNavItems;
     final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor = colorScheme.surface;
+    
     return Scaffold(
+      key: _navigationPageKey,
       backgroundColor: backgroundColor,
       body: PageView(
         controller: _pageController,

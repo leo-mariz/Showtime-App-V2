@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/selection_modal.dart';
 import 'package:flutter/material.dart';
@@ -287,7 +288,7 @@ class _VideoUploadCardState extends State<VideoUploadCard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CircularProgressIndicator(
+                              CustomLoadingIndicator(
                                 color: colorScheme.onPrimaryContainer,
                               ),
                               DSSizedBoxSpacing.vertical(16),

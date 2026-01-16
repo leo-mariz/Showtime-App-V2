@@ -4,6 +4,7 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/features/profile/artist_documents/domain/repositories/documents_repository.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Salvar/atualizar documento do artista
@@ -19,11 +20,13 @@ class SetDocumentUseCase {
   final IDocumentsRepository documentsRepository;
   final IStorageService storageService;
   final GetUserUidUseCase getUserUidUseCase;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   SetDocumentUseCase({
     required this.documentsRepository,
     required this.storageService,
     required this.getUserUidUseCase,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, void>> call(
@@ -96,6 +99,9 @@ class SetDocumentUseCase {
 
       // Salvar documento no repositório
       final result = await documentsRepository.setDocument(uid, documentToSave);
+
+      // Sincronizar completude apenas se mudou
+      await syncArtistCompletenessIfChangedUseCase.call();
 
       return result.fold(
         (failure) => Left(failure),

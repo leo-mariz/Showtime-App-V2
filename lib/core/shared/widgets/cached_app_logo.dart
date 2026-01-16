@@ -1,4 +1,5 @@
 import 'package:app/core/services/image_cache_service.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/config/setup_locator.dart';
@@ -54,7 +55,7 @@ class CachedAppLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(
-        child: CircularProgressIndicator(),
+        child: CustomLoadingIndicator(),
       ),
     );
   }

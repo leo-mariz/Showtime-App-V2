@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +52,7 @@ class GroupCard extends StatelessWidget {
                       imageUrl: group.profilePicture!,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(
+                        child: CustomLoadingIndicator(
                           color: colorScheme.onPrimaryContainer,
                         ),
                       ),

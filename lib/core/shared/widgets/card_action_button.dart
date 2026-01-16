@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/font/font_size_calculator.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:flutter/material.dart';
 
 enum CardActionButtonType {
@@ -82,9 +83,9 @@ class CardActionButton extends StatelessWidget {
         return SizedBox(
           width: DSSize.width(16),
           height: DSSize.width(16),
-          child: CircularProgressIndicator(
+          child: CustomLoadingIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(effectiveTextColor),
+            color: effectiveTextColor,
           ),
         );
       }

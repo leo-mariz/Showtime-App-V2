@@ -5,6 +5,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/card_action_button.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/event_location_map.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:app/features/contracts/presentation/bloc/states/contracts_states
 import 'package:app/features/contracts/presentation/widgets/cancel_contract_dialog.dart';
 import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
+import 'package:app/features/contracts/presentation/widgets/navigation_options_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/rating_section.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -337,6 +339,55 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     seed: _contract.uid, // Usar UID do contrato como seed para localização consistente
                   ),
 
+                  // Botão "Como chegar" (apenas quando PAID)
+                  if (_status == ContractStatusEnum.paid) ...[
+                    DSSizedBoxSpacing.vertical(16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          final address = _contract.address;
+                          if (address.latitude != null && address.longitude != null) {
+                            // Monta o endereço completo para exibir no modal
+                            final addressParts = <String>[];
+                            if (address.street != null && address.street!.isNotEmpty) {
+                              addressParts.add(address.street!);
+                              if (address.number != null && address.number!.isNotEmpty) {
+                                addressParts.add(address.number!);
+                              }
+                            }
+                            if (address.district != null && address.district!.isNotEmpty) {
+                              addressParts.add(address.district!);
+                            }
+                            if (address.city != null && address.state != null) {
+                              addressParts.add('${address.city} - ${address.state}');
+                            }
+                            
+                            NavigationOptionsModal.show(
+                              context: context,
+                              latitude: address.latitude!,
+                              longitude: address.longitude!,
+                              addressLabel: addressParts.isNotEmpty 
+                                  ? addressParts.join(', ')
+                                  : null,
+                            );
+                          } else {
+                            context.showError('Localização não disponível');
+                          }
+                        },
+                        icon: Icon(Icons.directions_rounded),
+                        label: Text('Como chegar'),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: DSSize.width(16),
+                            vertical: DSSize.height(12),
+                          ),
+                          backgroundColor: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+
                   DSSizedBoxSpacing.vertical(24),
 
                   // Informações Financeiras
@@ -406,7 +457,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
-                        label: 'O Show foi realizado?',
+                        label: 'O Show irá começar?',
                         onPressed: isAnyLoading ? null : () => _handleConfirmShow(context),
                         icon: Icons.check_circle_rounded,
                         iconOnLeft: true,
@@ -513,9 +564,9 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                                       child: SizedBox(
                                         width: DSSize.width(16),
                                         height: DSSize.width(16),
-                                        child: CircularProgressIndicator(
+                                        child: CustomLoadingIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.error),
+                                          color: colorScheme.error,
                                         ),
                                       ),
                                     ),

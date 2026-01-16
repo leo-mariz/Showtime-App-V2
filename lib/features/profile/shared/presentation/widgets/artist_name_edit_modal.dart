@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:flutter/material.dart';
@@ -192,11 +193,9 @@ class _ArtistNameEditModalState extends State<ArtistNameEditModal> {
       return SizedBox(
         width: DSSize.width(20),
         height: DSSize.height(20),
-        child: CircularProgressIndicator(
+        child: CustomLoadingIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            colorScheme.onPrimaryContainer,
-          ),
+          color: colorScheme.onPrimaryContainer,
         ),
       );
     }

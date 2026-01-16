@@ -1,6 +1,7 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
@@ -80,7 +81,7 @@ class _RegisterDataAreaScreenState extends State<RegisterDataAreaScreen> {
         appBarTitle: 'Dados Cadastrais',
         showAppBarBackButton: true,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CustomLoadingIndicator())
             : SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

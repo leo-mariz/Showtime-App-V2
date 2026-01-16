@@ -13,7 +13,7 @@ class IOSDarkTheme {
         primaryContainer: AppColors.primaryContainerDark,
         onPrimaryContainer: AppColors.onPrimaryContainerDark,
         error: AppColors.errorDark,
-        onError: Color.fromARGB(255, 224, 28, 38),
+        onError: AppColors.onErrorDark,
         surface: AppColors.backgroundDark,
         onSurface: AppColors.onSurfaceDark,
         surfaceContainerHighest: AppColors.surfaceContainerHighest,
@@ -21,6 +21,7 @@ class IOSDarkTheme {
         outline: AppColors.outlineDark,
         onSecondaryContainer: AppColors.onSecondaryContainerDark,
         secondaryContainer: AppColors.secondaryContainerDark,
+        onTertiaryContainer: AppColors.onTertiaryContainerDark,
       ),
     scaffoldBackgroundColor: AppColors.backgroundDark,
     appBarTheme: const AppBarTheme(

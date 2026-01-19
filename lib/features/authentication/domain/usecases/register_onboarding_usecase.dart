@@ -6,6 +6,7 @@ import 'package:app/features/authentication/domain/entities/register_entity.dart
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/send_welcome_email_usecase.dart';
 import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
 import 'package:dartz/dartz.dart';
 
@@ -25,6 +26,7 @@ class RegisterOnboardingUseCase {
   final IArtistsRepository artistsRepository;
   final IAuthServices authServices;
   final SendWelcomeEmailUsecase sendWelcomeEmailUsecase;
+  final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   RegisterOnboardingUseCase({
     required this.authRepository,
@@ -33,6 +35,7 @@ class RegisterOnboardingUseCase {
     required this.artistsRepository,
     required this.authServices,
     required this.sendWelcomeEmailUsecase,
+    required this.syncArtistCompletenessIfChangedUseCase,
   });
 
   Future<Either<Failure, void>> call(RegisterEntity register) async {
@@ -135,6 +138,9 @@ class RegisterOnboardingUseCase {
           (failure) => throw failure,
           (_) => null,
         );
+
+        // Sincronizar completude apenas se mudou
+        await syncArtistCompletenessIfChangedUseCase.call();
       } else {
         var client = register.client;
         client = client.copyWith(uid: uid);

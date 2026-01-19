@@ -16,6 +16,7 @@ import 'package:app/features/artist_dashboard/presentation/widgets/next_show_car
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
+import 'package:app/features/profile/artists/presentation/widgets/profile_completeness_card_simple.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:flutter/material.dart';
@@ -220,6 +221,12 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                           isActive,
                         ),
                         DSSizedBoxSpacing.vertical(24),
+
+                        // Completude do perfil
+                        if (artist != null && artist.hasIncompleteSections == true) ...[
+                          ProfileCompletenessCardSimple(artist: artist),
+                          DSSizedBoxSpacing.vertical(24),
+                        ],
 
                         // Main metrics grid
                         if (stats != null) ...[

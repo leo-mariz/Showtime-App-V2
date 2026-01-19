@@ -8,6 +8,7 @@ class ArtistAreaOptionCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final VoidCallback onTap;
+  final bool hasIncompleteInfo;
 
   const ArtistAreaOptionCard({
     super.key,
@@ -16,6 +17,7 @@ class ArtistAreaOptionCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.onTap,
+    this.hasIncompleteInfo = false,
   });
 
   @override
@@ -59,6 +61,22 @@ class ArtistAreaOptionCard extends StatelessWidget {
               ),
             ),
             DSSizedBoxSpacing.horizontal(4),
+            // Indicador de informação incompleta
+            if (hasIncompleteInfo) ...[
+              Container(
+                padding: EdgeInsets.all(DSSize.width(4)),
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: DSSize.width(12),
+                  color: colorScheme.onError,
+                ),
+              ),
+              DSSizedBoxSpacing.horizontal(8),
+            ],
             Icon(
               Icons.arrow_forward_ios,
               size: DSSize.width(16),

@@ -5,6 +5,9 @@ import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/features/profile/artists/domain/enums/artist_incomplete_info_type_enum.dart';
+import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
 import 'package:app/features/profile/artists/presentation/widgets/artist_area_option_card.dart';
 import 'package:app/features/profile/artists/presentation/widgets/reauthentication_dialog.dart';
 import 'package:auto_route/auto_route.dart';
@@ -82,34 +85,58 @@ class _RegisterDataAreaScreenState extends State<RegisterDataAreaScreen> {
         showAppBarBackButton: true,
         child: _isLoading
             ? Center(child: CustomLoadingIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Opção: Documentos
-              ArtistAreaOptionCard(
-                title: 'Documentos',
-                description: 'Faça o envio dos seus documentos.',
-                icon: Icons.document_scanner,
-                iconColor: onPrimaryContainer,
-                onTap: () {
-                  AutoRouter.of(context).push(const DocumentsRoute());
+            : BlocBuilder<ArtistsBloc, ArtistsState>(
+                builder: (context, artistsState) {
+                  final artist = artistsState is GetArtistSuccess ? artistsState.artist : null;
+                  
+                  // Helper para verificar se uma seção está incompleta
+                  bool _isSectionIncomplete(ArtistIncompleteInfoType infoType) {
+                    if (artist == null || 
+                        artist.incompleteSections == null || 
+                        artist.incompleteSections!.isEmpty) {
+                      return false;
+                    }
+                    
+                    final incompleteSections = artist.incompleteSections!;
+                    return incompleteSections.values.any(
+                      (types) => types.contains(infoType.name),
+                    );
+                  }
+                  
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DSSizedBoxSpacing.vertical(16),
+                        
+                        // Opção: Documentos
+                        ArtistAreaOptionCard(
+                          title: 'Documentos',
+                          description: 'Faça o envio dos seus documentos.',
+                          icon: Icons.document_scanner,
+                          iconColor: onPrimaryContainer,
+                          hasIncompleteInfo: _isSectionIncomplete(ArtistIncompleteInfoType.documents),
+                          onTap: () {
+                            AutoRouter.of(context).push(const DocumentsRoute());
+                          },
+                        ),
+
+                        DSSizedBoxSpacing.vertical(8),
+
+                        // Opção: Dados Bancários
+                        ArtistAreaOptionCard(
+                          title: 'Dados Bancários',
+                          description: 'Adicione seus dados bancários para receber pagamentos.',
+                          icon: Icons.payments,
+                          iconColor: onPrimaryContainer,
+                          hasIncompleteInfo: _isSectionIncomplete(ArtistIncompleteInfoType.bankAccount),
+                          onTap: _handleBankAccountTap,
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
-
-              DSSizedBoxSpacing.vertical(8),
-
-              // Opção: Dados Bancários
-              ArtistAreaOptionCard(
-                title: 'Dados Bancários',
-                description: 'Adicione seus dados bancários para receber pagamentos.',
-                icon: Icons.payments,
-                iconColor: onPrimaryContainer,
-                onTap: _handleBankAccountTap,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

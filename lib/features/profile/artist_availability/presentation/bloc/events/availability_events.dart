@@ -1,80 +1,35 @@
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
-import 'package:equatable/equatable.dart';
-import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
 
-abstract class AvailabilityEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
+/// Eventos base para Availability
+abstract class AvailabilityEvent {}
+
+/// Evento para buscar disponibilidades
+class GetAvailabilityEvent extends AvailabilityEvent {
+  final GetAvailabilityDto dto;
+  
+  GetAvailabilityEvent(this.dto);
 }
 
-// ==================== GET AVAILABILITIES EVENTS ====================
-
-class GetAvailabilitiesEvent extends AvailabilityEvent {}
-
-// ==================== ADD AVAILABILITY EVENTS ====================
-
-class AddAvailabilityEvent extends AvailabilityEvent {
-  final AvailabilityEntity availability;
-
-  AddAvailabilityEvent({
-    required this.availability,
-  });
-
-  @override
-  List<Object?> get props => [availability];
+/// Evento para criar disponibilidade
+class CreateAvailabilityEvent extends AvailabilityEvent {
+  final CreateAvailabilityDto dto;
+  
+  CreateAvailabilityEvent(this.dto);
 }
 
-// ==================== UPDATE AVAILABILITY EVENTS ====================
-
+/// Evento para atualizar disponibilidade
 class UpdateAvailabilityEvent extends AvailabilityEvent {
-  final AvailabilityEntity availability;
-
-  UpdateAvailabilityEvent({
-    required this.availability,
-  });
-
-  @override
-  List<Object?> get props => [availability];
+  final UpdateAvailabilityDto dto;
+  
+  UpdateAvailabilityEvent(this.dto);
 }
 
-// ==================== DELETE AVAILABILITY EVENTS ====================
-
+/// Evento para deletar disponibilidade
 class DeleteAvailabilityEvent extends AvailabilityEvent {
-  final String availabilityId;
-
-  DeleteAvailabilityEvent({
-    required this.availabilityId,
-  });
-
-  @override
-  List<Object?> get props => [availabilityId];
+  final DeleteAvailabilityDto dto;
+  
+  DeleteAvailabilityEvent(this.dto);
 }
 
-// ==================== CLOSE AVAILABILITY EVENTS ====================
-
-class CloseAvailabilityEvent extends AvailabilityEvent {
-  final Appointment closeAppointment;
-
-  CloseAvailabilityEvent({
-    required this.closeAppointment,
-  });
-
-  @override
-  List<Object?> get props => [closeAppointment];
-}
-
-// ==================== CHECK AVAILABILITY OVERLAP EVENTS ====================
-
-class CheckAvailabilityOverlapEvent extends AvailabilityEvent {
-  final AvailabilityEntity availability;
-  final String? excludeAvailabilityId; // ID da disponibilidade a ser excluída da verificação (para updates)
-
-  CheckAvailabilityOverlapEvent({
-    required this.availability,
-    this.excludeAvailabilityId,
-  });
-
-  @override
-  List<Object?> get props => [availability, excludeAvailabilityId];
-}
-
+/// Evento para resetar estado
+class ResetAvailabilityStateEvent extends AvailabilityEvent {}

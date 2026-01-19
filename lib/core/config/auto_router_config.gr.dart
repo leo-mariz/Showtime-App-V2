@@ -10,11 +10,9 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:app/core/domain/addresses/address_info_entity.dart' as _i36;
-import 'package:app/core/domain/artist/artist_groups/group_entity.dart' as _i41;
+import 'package:app/core/domain/artist/artist_groups/group_entity.dart' as _i40;
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart'
     as _i38;
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart'
-    as _i39;
 import 'package:app/core/domain/contract/contract_entity.dart' as _i37;
 import 'package:app/features/addresses/presentation/screens/address_form_page.dart'
     deferred as _i1;
@@ -44,7 +42,7 @@ import 'package:app/features/contracts/presentation/screens/clients/event_reques
     deferred as _i31;
 import 'package:app/features/explore/presentation/screens/artist_profile_screen.dart'
     deferred as _i5;
-import 'package:app/features/profile/artist_availability/presentation/screens/availability_screen.dart'
+import 'package:app/features/profile/artist_availability/presentation/screens/availability_management_screen.dart'
     deferred as _i8;
 import 'package:app/features/profile/artist_bank_account/presentation/screens/bank_account_screen.dart'
     deferred as _i9;
@@ -83,7 +81,7 @@ import 'package:app/features/profile/shared/presentation/screens/terms/client/cl
 import 'package:app/features/profile/shared/presentation/screens/terms/terms_of_privacy_page.dart'
     deferred as _i33;
 import 'package:auto_route/auto_route.dart' as _i34;
-import 'package:collection/collection.dart' as _i40;
+import 'package:collection/collection.dart' as _i39;
 import 'package:flutter/material.dart' as _i35;
 
 /// generated route for
@@ -238,7 +236,6 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
     bool viewOnly = false,
     DateTime? selectedDate,
     _i36.AddressInfoEntity? selectedAddress,
-    _i39.AvailabilityEntity? availability,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          ArtistProfileRoute.name,
@@ -249,7 +246,6 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
            viewOnly: viewOnly,
            selectedDate: selectedDate,
            selectedAddress: selectedAddress,
-           availability: availability,
          ),
          initialChildren: children,
        );
@@ -269,7 +265,6 @@ class ArtistProfileRoute extends _i34.PageRouteInfo<ArtistProfileRouteArgs> {
           viewOnly: args.viewOnly,
           selectedDate: args.selectedDate,
           selectedAddress: args.selectedAddress,
-          availability: args.availability,
         ),
       );
     },
@@ -284,7 +279,6 @@ class ArtistProfileRouteArgs {
     this.viewOnly = false,
     this.selectedDate,
     this.selectedAddress,
-    this.availability,
   });
 
   final _i35.Key? key;
@@ -299,11 +293,9 @@ class ArtistProfileRouteArgs {
 
   final _i36.AddressInfoEntity? selectedAddress;
 
-  final _i39.AvailabilityEntity? availability;
-
   @override
   String toString() {
-    return 'ArtistProfileRouteArgs{key: $key, artist: $artist, isFavorite: $isFavorite, viewOnly: $viewOnly, selectedDate: $selectedDate, selectedAddress: $selectedAddress, availability: $availability}';
+    return 'ArtistProfileRouteArgs{key: $key, artist: $artist, isFavorite: $isFavorite, viewOnly: $viewOnly, selectedDate: $selectedDate, selectedAddress: $selectedAddress}';
   }
 
   @override
@@ -315,8 +307,7 @@ class ArtistProfileRouteArgs {
         isFavorite == other.isFavorite &&
         viewOnly == other.viewOnly &&
         selectedDate == other.selectedDate &&
-        selectedAddress == other.selectedAddress &&
-        availability == other.availability;
+        selectedAddress == other.selectedAddress;
   }
 
   @override
@@ -326,8 +317,7 @@ class ArtistProfileRouteArgs {
       isFavorite.hashCode ^
       viewOnly.hashCode ^
       selectedDate.hashCode ^
-      selectedAddress.hashCode ^
-      availability.hashCode;
+      selectedAddress.hashCode;
 }
 
 /// generated route for
@@ -369,19 +359,19 @@ class ArtistsTermsOfUseRoute extends _i34.PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [_i8.AvailabilityScreen]
-class AvailabilityRoute extends _i34.PageRouteInfo<void> {
-  const AvailabilityRoute({List<_i34.PageRouteInfo>? children})
-    : super(AvailabilityRoute.name, initialChildren: children);
+/// [_i8.AvailabilityManagementScreen]
+class AvailabilityManagementRoute extends _i34.PageRouteInfo<void> {
+  const AvailabilityManagementRoute({List<_i34.PageRouteInfo>? children})
+    : super(AvailabilityManagementRoute.name, initialChildren: children);
 
-  static const String name = 'AvailabilityRoute';
+  static const String name = 'AvailabilityManagementRoute';
 
   static _i34.PageInfo page = _i34.PageInfo(
     name,
     builder: (data) {
       return _i34.DeferredWidget(
         _i8.loadLibrary,
-        () => _i8.AvailabilityScreen(),
+        () => _i8.AvailabilityManagementScreen(),
       );
     },
   );
@@ -670,7 +660,7 @@ class EventTypeSelectionRouteArgs {
     if (identical(this, other)) return true;
     if (other is! EventTypeSelectionRouteArgs) return false;
     return key == other.key &&
-        const _i40.ListEquality<String>().equals(
+        const _i39.ListEquality<String>().equals(
           eventTypes,
           other.eventTypes,
         ) &&
@@ -681,7 +671,7 @@ class EventTypeSelectionRouteArgs {
   @override
   int get hashCode =>
       key.hashCode ^
-      const _i40.ListEquality<String>().hash(eventTypes) ^
+      const _i39.ListEquality<String>().hash(eventTypes) ^
       selectedEventType.hashCode ^
       onEventTypeSelected.hashCode;
 }
@@ -710,7 +700,7 @@ class ForgotPasswordRoute extends _i34.PageRouteInfo<void> {
 class GroupAreaRoute extends _i34.PageRouteInfo<GroupAreaRouteArgs> {
   GroupAreaRoute({
     _i35.Key? key,
-    required _i41.GroupEntity group,
+    required _i40.GroupEntity group,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          GroupAreaRoute.name,
@@ -737,7 +727,7 @@ class GroupAreaRouteArgs {
 
   final _i35.Key? key;
 
-  final _i41.GroupEntity group;
+  final _i40.GroupEntity group;
 
   @override
   String toString() {
@@ -1006,12 +996,12 @@ class PresentationsRouteArgs {
     if (identical(this, other)) return true;
     if (other is! PresentationsRouteArgs) return false;
     return key == other.key &&
-        const _i40.ListEquality<String>().equals(talents, other.talents);
+        const _i39.ListEquality<String>().equals(talents, other.talents);
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ const _i40.ListEquality<String>().hash(talents);
+      key.hashCode ^ const _i39.ListEquality<String>().hash(talents);
 }
 
 /// generated route for
@@ -1078,7 +1068,6 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
     required _i38.ArtistEntity artist,
     required double pricePerHour,
     required Duration minimumDuration,
-    _i39.AvailabilityEntity? availability,
     List<_i34.PageRouteInfo>? children,
   }) : super(
          RequestRoute.name,
@@ -1089,7 +1078,6 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
            artist: artist,
            pricePerHour: pricePerHour,
            minimumDuration: minimumDuration,
-           availability: availability,
          ),
          initialChildren: children,
        );
@@ -1109,7 +1097,6 @@ class RequestRoute extends _i34.PageRouteInfo<RequestRouteArgs> {
           artist: args.artist,
           pricePerHour: args.pricePerHour,
           minimumDuration: args.minimumDuration,
-          availability: args.availability,
         ),
       );
     },
@@ -1124,7 +1111,6 @@ class RequestRouteArgs {
     required this.artist,
     required this.pricePerHour,
     required this.minimumDuration,
-    this.availability,
   });
 
   final _i35.Key? key;
@@ -1139,11 +1125,9 @@ class RequestRouteArgs {
 
   final Duration minimumDuration;
 
-  final _i39.AvailabilityEntity? availability;
-
   @override
   String toString() {
-    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, pricePerHour: $pricePerHour, minimumDuration: $minimumDuration, availability: $availability}';
+    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, pricePerHour: $pricePerHour, minimumDuration: $minimumDuration}';
   }
 
   @override
@@ -1155,8 +1139,7 @@ class RequestRouteArgs {
         selectedAddress == other.selectedAddress &&
         artist == other.artist &&
         pricePerHour == other.pricePerHour &&
-        minimumDuration == other.minimumDuration &&
-        availability == other.availability;
+        minimumDuration == other.minimumDuration;
   }
 
   @override
@@ -1166,8 +1149,7 @@ class RequestRouteArgs {
       selectedAddress.hashCode ^
       artist.hashCode ^
       pricePerHour.hashCode ^
-      minimumDuration.hashCode ^
-      availability.hashCode;
+      minimumDuration.hashCode;
 }
 
 /// generated route for

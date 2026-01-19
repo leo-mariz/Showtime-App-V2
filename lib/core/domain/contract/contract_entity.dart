@@ -1,7 +1,7 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/rating_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,7 +30,7 @@ class ContractEntity with ContractEntityMappable {
   final int? clientRatingCount;        // Quantidade de avaliações do cliente no momento da solicitação
   
   // Snapshot da disponibilidade (para consulta futura)
-  final AvailabilityEntity? availabilitySnapshot; // Snapshot da disponibilidade usada
+  final AvailabilityDayEntity? availabilitySnapshot; // Snapshot da disponibilidade usada
   
   // Detalhes do evento
   final DateTime date;                // Data do evento

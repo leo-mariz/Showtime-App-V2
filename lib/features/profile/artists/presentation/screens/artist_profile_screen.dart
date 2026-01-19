@@ -18,6 +18,7 @@ import 'package:app/features/profile/shared/presentation/widgets/artist_name_edi
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/features/profile/artists/domain/enums/artist_incomplete_info_type_enum.dart';
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
@@ -226,138 +227,161 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                     final isSwitchingAccount = authState is SwitchUserTypeLoading ||
                         clientsState is AddClientLoading;
 
+                    // Helper para verificar se uma seção está incompleta
+                    bool _isSectionIncomplete(ArtistIncompleteInfoType infoType) {
+                      if (artist == null || 
+                          artist.incompleteSections == null || 
+                          artist.incompleteSections!.isEmpty) {
+                        return false;
+                      }
+                      
+                      final incompleteSections = artist.incompleteSections!;
+                      return incompleteSections.values.any(
+                        (types) => types.contains(infoType.name),
+                      );
+                    }
+
+                    // Verificar se há informações incompletas na "Área do Artista"
+                    final hasArtistAreaIncomplete = _isSectionIncomplete(ArtistIncompleteInfoType.professionalInfo) ||
+                        _isSectionIncomplete(ArtistIncompleteInfoType.presentations) ||
+                        _isSectionIncomplete(ArtistIncompleteInfoType.availability);
+
+                    // Verificar se há informações incompletas em "Dados Cadastrais"
+                    final hasRegisterDataIncomplete = _isSectionIncomplete(ArtistIncompleteInfoType.documents) ||
+                        _isSectionIncomplete(ArtistIncompleteInfoType.bankAccount);
+
                     return Stack(
                       children: [
                         BasePage(
-              showAppBar: true,
-              appBarTitle: 'Perfil',
-              child: SingleChildScrollView(
-                child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header com dados do artista
-                        if (isLoadingData)
-                          // Mostrar skeleton enquanto carrega
-                          _buildHeaderSkeleton()
-                        else if (isDataReady && artistName != null)
-                          // Mostrar header real quando dados estiverem prontos
-                          ProfileHeader(
-                            name: artistName,
-                            isArtist: true,
-                            imageUrl: artist?.profilePicture,
-                            onProfilePictureTap: () => _handleProfilePictureTap(),
-                            isLoadingProfilePicture: isLoadingProfilePicture,
-                            onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                            onEditName: () => _handleEditName(artist?.artistName),
-                          )
-                        else
-                          // Fallback caso não tenha nome (não deveria acontecer, mas por segurança)
-                          ProfileHeader(
-                            name: 'Artista',
-                            isArtist: true,
-                            imageUrl: artist?.profilePicture,
-                            onProfilePictureTap: () => _handleProfilePictureTap(),
-                            isLoadingProfilePicture: isLoadingProfilePicture,
-                            onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                            onEditName: () => _handleEditName(artist?.artistName),
+                          showAppBar: true,
+                          appBarTitle: 'Perfil',
+                          child: SingleChildScrollView(
+                            child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Header com dados do artista
+                                    if (isLoadingData)
+                                      // Mostrar skeleton enquanto carrega
+                                      _buildHeaderSkeleton()
+                                    else if (isDataReady && artistName != null)
+                                      // Mostrar header real quando dados estiverem prontos
+                                      ProfileHeader(
+                                        name: artistName,
+                                        isArtist: true,
+                                        imageUrl: artist?.profilePicture,
+                                        onProfilePictureTap: () => _handleProfilePictureTap(),
+                                        isLoadingProfilePicture: isLoadingProfilePicture,
+                                        onSwitchUserType: () => _showSwitchAccountConfirmation(),
+                                        onEditName: () => _handleEditName(artist?.artistName),
+                                      )
+                                    else
+                                      // Fallback caso não tenha nome (não deveria acontecer, mas por segurança)
+                                      ProfileHeader(
+                                        name: 'Artista',
+                                        isArtist: true,
+                                        imageUrl: artist?.profilePicture,
+                                        onProfilePictureTap: () => _handleProfilePictureTap(),
+                                        isLoadingProfilePicture: isLoadingProfilePicture,
+                                        onSwitchUserType: () => _showSwitchAccountConfirmation(),
+                                        onEditName: () => _handleEditName(artist?.artistName),
+                                      ),
+                                
+                                DSSizedBoxSpacing.vertical(24),
+
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    IconMenuButton(
+                                      icon: Icons.music_note,
+                                      label: 'Área do Artista',
+                                      onPressed: () => router.push(const ArtistAreaRoute()),
+                                      showWarning: hasArtistAreaIncomplete,
+                                    ),
+                                    IconMenuButton(
+                                      icon: Icons.edit_document,
+                                      label: 'Dados Cadastrais',
+                                      onPressed: () => router.push(const RegisterDataAreaRoute()),
+                                      showWarning: hasRegisterDataIncomplete,
+                                    ),
+                                    IconMenuButton(
+                                      icon: Icons.group,
+                                      label: 'Conjuntos',
+                                      onPressed: () {
+                                        router.push(const GroupsRoute());
+                                      },
+                                      showWarning: false,
+                                    ),
+                                  ],
+                                ),
+
+                                DSSizedBoxSpacing.vertical(24),
+                                
+                                // Opções do perfil
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    color: primaryContainerWithOpacity,
+                                    child: Column(
+                                      children: [
+                                        ProfileOptionTile(
+                                          icon: Icons.person,
+                                          title: 'Informações pessoais',
+                                          showDivider: true,
+                                          isFirst: true,
+                                          onTap: () {
+                                            router.push(const PersonalInfoRoute());
+                                          },
+                                        ),
+                                        ProfileOptionTile(
+                                          icon: Icons.security,
+                                          title: 'Login e Segurança',
+                                          showDivider: true,
+                                          onTap: () {
+                                            router.push(const LoginSecurityRoute());
+                                          },
+                                        ),
+                                        ProfileOptionTile(
+                                          icon: Icons.support_agent,
+                                          title: 'Atendimento',
+                                          showDivider: true,
+                                          onTap: () {
+                                            router.push(const SupportRoute());
+                                          },
+                                        ),
+                                        ProfileOptionTile(
+                                          icon: Icons.description,
+                                          title: 'Termos de uso',
+                                          showDivider: true,
+                                          onTap: () {
+                                            router.push(const ClientTermsOfUseRoute());
+                                          },
+                                        ),
+                                        ProfileOptionTile(
+                                          icon: Icons.privacy_tip,
+                                          title: 'Política de privacidade',
+                                          showDivider: false,
+                                          isLast: true,
+                                          onTap: () {
+                                            router.push(const TermsOfPrivacyRoute());
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                
+                                DSSizedBoxSpacing.vertical(40),
+
+                                
+                                // Botão de logout
+                                LogoutButton(
+                                  onLogout: () => _handleLogout(context),
+                                ),
+                                DSSizedBoxSpacing.vertical(16),
+                              ],
+                            ),
                           ),
-                    
-                    DSSizedBoxSpacing.vertical(24),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        IconMenuButton(
-                          icon: Icons.music_note,
-                          label: 'Área do Artista',
-                          onPressed: () => router.push(const ArtistAreaRoute()),
-                          showWarning: false,
                         ),
-                        IconMenuButton(
-                          icon: Icons.edit_document,
-                          label: 'Dados Cadastrais',
-                          onPressed: () => router.push(const RegisterDataAreaRoute()),
-                          showWarning: false,
-                        ),
-                        IconMenuButton(
-                          icon: Icons.group,
-                          label: 'Conjuntos',
-                          onPressed: () {
-                            router.push(const GroupsRoute());
-                          },
-                          showWarning: false,
-                        ),
-                      ],
-                    ),
-
-                    DSSizedBoxSpacing.vertical(24),
-                    
-                    // Opções do perfil
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        color: primaryContainerWithOpacity,
-                        child: Column(
-                          children: [
-                            ProfileOptionTile(
-                              icon: Icons.person,
-                              title: 'Informações pessoais',
-                              showDivider: true,
-                              isFirst: true,
-                              onTap: () {
-                                router.push(const PersonalInfoRoute());
-                              },
-                            ),
-                            ProfileOptionTile(
-                              icon: Icons.security,
-                              title: 'Login e Segurança',
-                              showDivider: true,
-                              onTap: () {
-                                router.push(const LoginSecurityRoute());
-                              },
-                            ),
-                            ProfileOptionTile(
-                              icon: Icons.support_agent,
-                              title: 'Atendimento',
-                              showDivider: true,
-                              onTap: () {
-                                router.push(const SupportRoute());
-                              },
-                            ),
-                            ProfileOptionTile(
-                              icon: Icons.description,
-                              title: 'Termos de uso',
-                              showDivider: true,
-                              onTap: () {
-                                router.push(const ClientTermsOfUseRoute());
-                              },
-                            ),
-                            ProfileOptionTile(
-                              icon: Icons.privacy_tip,
-                              title: 'Política de privacidade',
-                              showDivider: false,
-                              isLast: true,
-                              onTap: () {
-                                router.push(const TermsOfPrivacyRoute());
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    DSSizedBoxSpacing.vertical(40),
-
-                    
-                    // Botão de logout
-                    LogoutButton(
-                      onLogout: () => _handleLogout(context),
-                    ),
-                    DSSizedBoxSpacing.vertical(16),
-                  ],
-                ),
-              ),
-            ),
                         if (isSwitchingAccount)
                           Container(
                             color: Colors.black.withOpacity(0.5),

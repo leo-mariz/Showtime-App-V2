@@ -41,8 +41,9 @@ class _NavigationPageState extends State<NavigationPage> {
 
   // Páginas para alunos/clientes
   List<Widget> get _clientPages => [
-    ExploreScreen(),
-    FavoritesScreen(),
+    Placeholder(),
+    Placeholder(),
+    // FavoritesScreen(),
     ClientContractsScreen(),
     ChatScreen(),
     ClientProfileScreen(),

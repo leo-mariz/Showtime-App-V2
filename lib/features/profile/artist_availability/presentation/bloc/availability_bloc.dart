@@ -1,42 +1,35 @@
-import 'package:app/features/profile/artist_availability/domain/usecases/add_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/check_availability_overlap_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/close_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/delete_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_availabilities_usecase.dart';
+import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/create_availability_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/update_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/delete_availability_usecase.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
-import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// BLoC para gerenciar disponibilidade
 class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
-  final GetAvailabilitiesUseCase getAvailabilitiesUseCase;
-  final AddAvailabilityUseCase addAvailabilityUseCase;
+  final GetAvailabilityUseCase getAvailabilityUseCase;
+  final CreateAvailabilityUseCase createAvailabilityUseCase;
   final UpdateAvailabilityUseCase updateAvailabilityUseCase;
   final DeleteAvailabilityUseCase deleteAvailabilityUseCase;
-  final CloseAvailabilityUseCase closeAvailabilityUseCase;
-  final CheckAvailabilityOverlapUseCase checkAvailabilityOverlapUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
   AvailabilityBloc({
-    required this.getAvailabilitiesUseCase,
-    required this.addAvailabilityUseCase,
+    required this.getAvailabilityUseCase,
+    required this.createAvailabilityUseCase,
     required this.updateAvailabilityUseCase,
     required this.deleteAvailabilityUseCase,
-    required this.closeAvailabilityUseCase,
-    required this.checkAvailabilityOverlapUseCase,
     required this.getUserUidUseCase,
-  }) : super(AvailabilityInitial()) {
-    on<GetAvailabilitiesEvent>(_onGetAvailabilitiesEvent);
-    on<AddAvailabilityEvent>(_onAddAvailabilityEvent);
-    on<UpdateAvailabilityEvent>(_onUpdateAvailabilityEvent);
-    on<DeleteAvailabilityEvent>(_onDeleteAvailabilityEvent);
-    on<CloseAvailabilityEvent>(_onCloseAvailabilityEvent);
-    on<CheckAvailabilityOverlapEvent>(_onCheckAvailabilityOverlapEvent);
+  }) : super(AvailabilityInitialState()) {
+    on<GetAvailabilityEvent>(_onGetAvailability);
+    on<CreateAvailabilityEvent>(_onCreateAvailability);
+    on<UpdateAvailabilityEvent>(_onUpdateAvailability);
+    on<DeleteAvailabilityEvent>(_onDeleteAvailability);
+    on<ResetAvailabilityStateEvent>(_onResetState);
   }
 
-  // ==================== HELPERS ====================
-
+  /// Busca o ID do usuário atual
   Future<String?> _getCurrentUserId() async {
     final result = await getUserUidUseCase.call();
     return result.fold(
@@ -45,169 +38,95 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
     );
   }
 
-  // ==================== GET AVAILABILITIES ====================
-
-  Future<void> _onGetAvailabilitiesEvent(
-    GetAvailabilitiesEvent event,
+  /// Handler para buscar disponibilidades
+  Future<void> _onGetAvailability(
+    GetAvailabilityEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(GetAvailabilitiesLoading());
+    emit(AvailabilityLoadingState(message: 'Carregando disponibilidades...'));
 
-    final uid = await _getCurrentUserId();
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
 
-    final result = await getAvailabilitiesUseCase.call(uid!);
+    final result = await getAvailabilityUseCase(artistId, event.dto);
 
     result.fold(
-      (failure) {
-        emit(GetAvailabilitiesFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (availabilities) {
-        emit(GetAvailabilitiesSuccess(availabilities: availabilities));
-      },
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (days) => emit(AvailabilityLoadedState(days: days)),
     );
   }
 
-  // ==================== ADD AVAILABILITY ====================
-
-  Future<void> _onAddAvailabilityEvent(
-    AddAvailabilityEvent event,
+  /// Handler para criar disponibilidade
+  Future<void> _onCreateAvailability(
+    CreateAvailabilityEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(AddAvailabilityLoading());
+    emit(AvailabilityLoadingState(message: 'Criando disponibilidade...'));
 
-    final uid = await _getCurrentUserId();
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
 
-    final result = await addAvailabilityUseCase.call(uid!, event.availability);
+    final result = await createAvailabilityUseCase(artistId, event.dto);
 
     result.fold(
-      (failure) {
-        emit(AddAvailabilityFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (_) {
-        emit(AddAvailabilitySuccess());
-        emit(AvailabilityInitial());
-      },
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (day) => emit(AvailabilityCreatedState(day: day)),
     );
   }
 
-  // ==================== UPDATE AVAILABILITY ====================
-
-  Future<void> _onUpdateAvailabilityEvent(
+  /// Handler para atualizar disponibilidade
+  Future<void> _onUpdateAvailability(
     UpdateAvailabilityEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(UpdateAvailabilityLoading());
+    emit(AvailabilityLoadingState(message: 'Atualizando disponibilidade...'));
 
-    final uid = await _getCurrentUserId();
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
 
-    final result = await updateAvailabilityUseCase.call(
-      artistId: uid!,
-      updatedAvailability: event.availability,
-    );
+    final result = await updateAvailabilityUseCase(artistId, event.dto);
 
     result.fold(
-      (failure) {
-        emit(UpdateAvailabilityFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (_) {
-        emit(UpdateAvailabilitySuccess());
-        emit(AvailabilityInitial());
-      },
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (day) => emit(AvailabilityUpdatedState(day: day)),
     );
   }
 
-  // ==================== DELETE AVAILABILITY ====================
-
-  Future<void> _onDeleteAvailabilityEvent(
+  /// Handler para deletar disponibilidade
+  Future<void> _onDeleteAvailability(
     DeleteAvailabilityEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(DeleteAvailabilityLoading());
+    emit(AvailabilityLoadingState(message: 'Removendo disponibilidade...'));
 
-    final uid = await _getCurrentUserId();
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
 
-    final result = await deleteAvailabilityUseCase.call(
-      artistId: uid!,
-      availabilityId: event.availabilityId,
-    );
+    final result = await deleteAvailabilityUseCase(artistId, event.dto);
 
     result.fold(
-      (failure) {
-        emit(DeleteAvailabilityFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (_) {
-        emit(DeleteAvailabilitySuccess());
-        emit(AvailabilityInitial());
-      },
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (_) => emit(AvailabilityDeletedState()),
     );
   }
 
-  // ==================== CLOSE AVAILABILITY ====================
-
-  Future<void> _onCloseAvailabilityEvent(
-    CloseAvailabilityEvent event,
+  /// Handler para resetar estado
+  void _onResetState(
+    ResetAvailabilityStateEvent event,
     Emitter<AvailabilityState> emit,
-  ) async {
-    emit(CloseAvailabilityLoading());
-
-    final uid = await _getCurrentUserId();
-
-    final result = await closeAvailabilityUseCase.call(uid!, event.closeAppointment);
-
-    result.fold(
-      (failure) {
-        emit(CloseAvailabilityFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (_) {
-        emit(CloseAvailabilitySuccess());
-        emit(AvailabilityInitial());
-      },
-    );
-  }
-
-  // ==================== CHECK AVAILABILITY OVERLAP ====================
-
-  Future<void> _onCheckAvailabilityOverlapEvent(
-    CheckAvailabilityOverlapEvent event,
-    Emitter<AvailabilityState> emit,
-  ) async {
-    emit(CheckAvailabilityOverlapLoading());
-
-    final uid = await _getCurrentUserId();
-
-    final result = await checkAvailabilityOverlapUseCase.call(
-      uid!,
-      event.availability,
-      excludeAvailabilityId: event.excludeAvailabilityId,
-    );
-
-    result.fold(
-      (failure) {
-        emit(CheckAvailabilityOverlapFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (overlapResult) {
-        if (overlapResult.hasOverlap) {
-          // Há sobreposição - emitir aviso
-          final overlappingAddressTitle = overlapResult.overlappingAvailability?.endereco.title ?? 'desconhecido';
-          emit(CheckAvailabilityOverlapWarning(
-            priorityReason: overlapResult.priorityReason,
-            overlappingAddressTitle: overlappingAddressTitle,
-          ));
-        } else {
-          // Sem sobreposição - sucesso
-          emit(CheckAvailabilityOverlapSuccess(
-            hasOverlap: false,
-            priorityReason: '',
-          ));
-        }
-      },
-    );
+  ) {
+    emit(AvailabilityInitialState());
   }
 }
-

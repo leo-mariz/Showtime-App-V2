@@ -20,7 +20,7 @@ class IconMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final surfaceColor = colorScheme.surfaceContainerHighest;
-    final errorColor = colorScheme.onError;
+    final errorColor = colorScheme.error;
     final onPrimary = colorScheme.onPrimary;
     return 
         Column(

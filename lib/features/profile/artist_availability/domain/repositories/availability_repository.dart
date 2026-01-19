@@ -1,65 +1,62 @@
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
-import 'package:app/core/errors/failure.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:dartz/dartz.dart';
+import 'package:app/core/errors/failure.dart';
 
-/// Interface do Repository de Availability
+/// Repository para gerenciar disponibilidade
 /// 
-/// Define operações básicas de dados sem lógica de negócio.
-/// A lógica de negócio fica nos UseCases.
-/// 
-/// ORGANIZAÇÃO:
-/// - Get: Buscar dados (primeiro do cache, depois do remoto)
-/// - Create: Adicionar nova disponibilidade
-/// - Update: Atualizar disponibilidade existente
-/// - Delete: Remover disponibilidade
+/// Interface que define operações de disponibilidade
+/// Implementação deve orquestrar remote e local datasources
 abstract class IAvailabilityRepository {
-  // ==================== GET OPERATIONS ====================
+  /// Busca todas as disponibilidades de um artista
+  /// 
+  /// [artistId]: ID do artista
+  /// [forceRemote]: Se true, força busca no servidor (ignora cache)
+  /// 
+  /// Retorna Right(days) em caso de sucesso
+  /// Retorna Left(Failure) em caso de erro
+  Future<Either<Failure, List<AvailabilityDayEntity>>> getAvailability({
+    required String artistId,
+    bool forceRemote = false,
+  });
   
-  /// Busca lista de disponibilidades do artista
-  /// Primeiro tenta buscar do cache, se não encontrar busca do remoto
-  /// Retorna lista vazia se não existir
-  Future<Either<Failure, List<AvailabilityEntity>>> getAvailabilities(String artistId);
-    
-  /// Busca uma disponibilidade específica por ID
-  /// Busca diretamente do remoto para garantir dados atualizados
-  Future<Either<Failure, AvailabilityEntity>> getAvailability(
-    String artistId,
-    String availabilityId,
-  );
-
-  // ==================== CREATE OPERATIONS ====================
+  /// Cria uma nova disponibilidade
+  /// 
+  /// [artistId]: ID do artista
+  /// [day]: Dia de disponibilidade a criar
+  /// 
+  /// Retorna Right(day) em caso de sucesso
+  /// Retorna Left(Failure) em caso de erro
+  Future<Either<Failure, AvailabilityDayEntity>> createAvailability({
+    required String artistId,
+    required AvailabilityDayEntity day,
+  });
   
-  /// Adiciona uma nova disponibilidade à subcoleção do artista
-  /// Retorna o ID da disponibilidade criada
-  Future<Either<Failure, String>> addAvailability(
-    String artistId,
-    AvailabilityEntity availability,
-  );
-
-  // ==================== UPDATE OPERATIONS ====================
+  /// Atualiza uma disponibilidade
+  /// 
+  /// [artistId]: ID do artista
+  /// [day]: Dia atualizado
+  /// 
+  /// Retorna Right(day) em caso de sucesso
+  /// Retorna Left(Failure) em caso de erro
+  Future<Either<Failure, AvailabilityDayEntity>> updateAvailability({
+    required String artistId,
+    required AvailabilityDayEntity day,
+  });
   
-  /// Atualiza uma disponibilidade existente na subcoleção
-  Future<Either<Failure, void>> updateAvailability(
-    String artistId,
-    AvailabilityEntity availability,
-  );
-
-  // ==================== DELETE OPERATIONS ====================
+  /// Deleta uma disponibilidade
+  /// 
+  /// [artistId]: ID do artista
+  /// [dayId]: ID do dia a deletar
+  /// 
+  /// Retorna Right(void) em caso de sucesso
+  /// Retorna Left(Failure) em caso de erro
+  Future<Either<Failure, void>> deleteAvailability({
+    required String artistId,
+    required String dayId,
+  });
   
-  /// Remove uma disponibilidade da subcoleção
-  Future<Either<Failure, void>> deleteAvailability(
-    String artistId,
-    String availabilityId,
-  );
-
-  // ==================== REPLACE OPERATIONS ====================
-  
-  /// Substitui todas as disponibilidades do artista (deleta antigas e adiciona novas)
-  /// Usa batch operations para garantir atomicidade e eficiência
-  /// Ideal para operações que modificam múltiplas disponibilidades
-  Future<Either<Failure, void>> replaceAvailabilities(
-    String artistId,
-    List<AvailabilityEntity> newAvailabilities,
-  );
+  /// Limpa o cache de disponibilidade
+  /// 
+  /// [artistId]: ID do artista
+  Future<Either<Failure, void>> clearCache({required String artistId});
 }
-

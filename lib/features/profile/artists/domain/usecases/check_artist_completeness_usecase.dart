@@ -1,6 +1,6 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/documents/documents_entity.dart';
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/enums/document_status_enum.dart';
 import 'package:app/core/enums/document_type_enum.dart';
@@ -34,7 +34,7 @@ class CheckArtistCompletenessUseCase {
     required ArtistEntity artist,
     required List<DocumentsEntity> documents,
     BankAccountEntity? bankAccount,
-    required List<AvailabilityEntity> availabilities,
+    required List<AvailabilityDayEntity> availabilities,
   }) {
     // Lista de todos os status de informações
     final List<ArtistInfoStatusEntity> infoStatuses = [];
@@ -209,15 +209,15 @@ class CheckArtistCompletenessUseCase {
   /// 
   /// Uma disponibilidade é considerada ativa se:
   /// - dataFim >= hoje (disponibilidade futura)
-  ArtistInfoStatusEntity _checkAvailability(List<AvailabilityEntity> availabilities) {
+  ArtistInfoStatusEntity _checkAvailability(List<AvailabilityDayEntity> availabilities) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     final hasActiveAvailability = availabilities.any((availability) {
       final endDate = DateTime(
-        availability.dataFim.year,
-        availability.dataFim.month,
-        availability.dataFim.day,
+        availability.date.year,
+        availability.date.month,
+        availability.date.day,
       );
       return endDate.isAfter(today) || endDate.isAtSameMomentAs(today);
     });

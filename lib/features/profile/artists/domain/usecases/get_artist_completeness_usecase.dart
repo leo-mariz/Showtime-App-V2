@@ -56,7 +56,7 @@ class GetArtistCompletenessUseCase {
       final artistResult = await getArtistUseCase.call(uid);
       final documentsResult = await documentsRepository.getDocuments(uid);
       final bankAccountResult = await bankAccountRepository.getBankAccount(uid);
-      final availabilitiesResult = await availabilityRepository.getAvailabilities(uid);
+      final availabilitiesResult = await availabilityRepository.getAvailability(artistId: uid);
 
       // 3. Verificar se algum falhou
       if (artistResult.isLeft()) {

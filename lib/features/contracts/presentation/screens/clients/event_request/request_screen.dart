@@ -2,7 +2,6 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
@@ -38,7 +37,7 @@ class RequestScreen extends StatefulWidget {
   final ArtistEntity artist;
   final double pricePerHour;
   final Duration minimumDuration;
-  final AvailabilityEntity? availability; // Disponibilidade correspondente ao explorar
+  // final AvailabilityEntity? availability; // Disponibilidade correspondente ao explorar
 
   const RequestScreen({
     super.key,
@@ -47,7 +46,7 @@ class RequestScreen extends StatefulWidget {
     required this.artist,
     required this.pricePerHour,
     required this.minimumDuration,
-    this.availability, // Opcional para manter compatibilidade
+    // this.availability, // Opcional para manter compatibilidade
   });
 
   @override
@@ -217,155 +216,155 @@ class _RequestScreenState extends State<RequestScreen> {
     }
   }
 
-  Future<void> _selectDate() async {
-    // Se temos uma disponibilidade, usar suas restrições de data
-    DateTime? firstDate;
-    DateTime? lastDate;
-    bool Function(DateTime)? selectableDayPredicate;
+  // Future<void> _selectDate() async {
+  //   // Se temos uma disponibilidade, usar suas restrições de data
+  //   DateTime? firstDate;
+  //   DateTime? lastDate;
+  //   bool Function(DateTime)? selectableDayPredicate;
     
-    if (widget.availability != null) {
-      final availability = widget.availability!;
-      firstDate = availability.dataInicio.isBefore(DateTime.now()) 
-          ? DateTime.now() 
-          : availability.dataInicio;
-      lastDate = availability.dataFim;
+  //   if (widget.availability != null) {
+  //     final availability = widget.availability!;
+  //     firstDate = availability.dataInicio.isBefore(DateTime.now()) 
+  //         ? DateTime.now() 
+  //         : availability.dataInicio;
+  //     lastDate = availability.dataFim;
       
-      // Criar função para validar dias selecionáveis baseado na disponibilidade
-      selectableDayPredicate = (DateTime date) {
-        return AvailabilityValidator.isDateValidForAvailability(
-          availability.dataInicio,
-          availability.dataFim,
-          availability.diasDaSemana,
-          availability.repetir,
-          availability.blockedSlots,
-          availability.horarioInicio,
-          availability.horarioFim,
-          date,
-        );
-      };
-    } else {
-      firstDate = DateTime.now();
-      lastDate = DateTime.now().add(const Duration(days: 365));
-    }
+  //     // Criar função para validar dias selecionáveis baseado na disponibilidade
+  //     selectableDayPredicate = (DateTime date) {
+  //       return AvailabilityValidator.isDateValidForAvailability(
+  //         availability.dataInicio,
+  //         availability.dataFim,
+  //         availability.diasDaSemana,
+  //         availability.repetir,
+  //         availability.blockedSlots,
+  //         availability.horarioInicio,
+  //         availability.horarioFim,
+  //         date,
+  //       );
+  //     };
+  //   } else {
+  //     firstDate = DateTime.now();
+  //     lastDate = DateTime.now().add(const Duration(days: 365));
+  //   }
     
-    final picked = await CustomDatePickerDialog.show(
-      context: context,
-      initialDate: _selectedDate ?? widget.selectedDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      selectableDayPredicate: selectableDayPredicate,
-    );
+  //   final picked = await CustomDatePickerDialog.show(
+  //     context: context,
+  //     initialDate: _selectedDate ?? widget.selectedDate,
+  //     firstDate: firstDate,
+  //     lastDate: lastDate,
+  //     selectableDayPredicate: selectableDayPredicate,
+  //   );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        // Resetar horário se a data mudou e temos disponibilidade (para recalcular horários válidos)
-        if (widget.availability != null) {
-          _selectedTime = null;
-          _timeController.clear();
-        }
-      });
-    }
-  }
+  //   if (picked != null && picked != _selectedDate) {
+  //     setState(() {
+  //       _selectedDate = picked;
+  //       // Resetar horário se a data mudou e temos disponibilidade (para recalcular horários válidos)
+  //       if (widget.availability != null) {
+  //         _selectedTime = null;
+  //         _timeController.clear();
+  //       }
+  //     });
+  //   }
+  // }
 
-  Future<void> _selectTime() async {
-    // Validar se há data selecionada quando temos disponibilidade
-    if (widget.availability != null && _selectedDate == null) {
-      context.showError('Selecione uma data primeiro');
-      return;
-    }
+  // Future<void> _selectTime() async {
+  //   // Validar se há data selecionada quando temos disponibilidade
+  //   if (widget.availability != null && _selectedDate == null) {
+  //     context.showError('Selecione uma data primeiro');
+  //     return;
+  //   }
     
-    final currentTime = _selectedTime ?? TimeOfDay.now();
-    final hours = currentTime.hour;
-    final minutes = currentTime.minute;
+  //   final currentTime = _selectedTime ?? TimeOfDay.now();
+  //   final hours = currentTime.hour;
+  //   final minutes = currentTime.minute;
 
-    // Calcular intervalos disponíveis se temos disponibilidade e data selecionada
-    String? subtitle;
-    if (widget.availability != null && _selectedDate != null) {
-      final intervals = AvailabilityValidator.getAvailableTimeIntervals(
-        widget.availability!.horarioInicio,
-        widget.availability!.horarioFim,
-        widget.availability!.blockedSlots,
-        _selectedDate!,
-      );
-      if (intervals.isNotEmpty) {
-        subtitle = 'Disponíveis para início:\n${intervals.join(', ')}';
-      }
-    }
+  //   // Calcular intervalos disponíveis se temos disponibilidade e data selecionada
+  //   String? subtitle;
+  //   if (widget.availability != null && _selectedDate != null) {
+  //     final intervals = AvailabilityValidator.getAvailableTimeIntervals(
+  //       widget.availability!.horarioInicio,
+  //       widget.availability!.horarioFim,
+  //       widget.availability!.blockedSlots,
+  //       _selectedDate!,
+  //     );
+  //     if (intervals.isNotEmpty) {
+  //       subtitle = 'Disponíveis para início:\n${intervals.join(', ')}';
+  //     }
+  //   }
 
-    final result = await showDialog<TimeOfDay>(
-      context: context,
-      builder: (context) => WheelPickerDialog(
-        title: 'Selecione o horário de início',
-        subtitle: subtitle,
-        initialHours: hours,
-        initialMinutes: minutes,
-        type: WheelPickerType.time,
-      ),
-    );
+  //   final result = await showDialog<TimeOfDay>(
+  //     context: context,
+  //     builder: (context) => WheelPickerDialog(
+  //       title: 'Selecione o horário de início',
+  //       subtitle: subtitle,
+  //       initialHours: hours,
+  //       initialMinutes: minutes,
+  //       type: WheelPickerType.time,
+  //     ),
+  //   );
 
-    if (result != null) {
-      // Validar horário se temos disponibilidade
-      if (widget.availability != null && _selectedDate != null) {
-        final availability = widget.availability!;
-        final selectedTimeMinutes = AvailabilityValidator.timeToMinutes(
-          '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}'
-        );
-        final availabilityStartMinutes = AvailabilityValidator.timeToMinutes(availability.horarioInicio);
-        final availabilityEndMinutes = AvailabilityValidator.timeToMinutes(availability.horarioFim, isEndTime: true);
+  //   if (result != null) {
+  //     // Validar horário se temos disponibilidade
+  //     if (widget.availability != null && _selectedDate != null) {
+  //       final availability = widget.availability!;
+  //       final selectedTimeMinutes = AvailabilityValidator.timeToMinutes(
+  //         '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}'
+  //       );
+  //       final availabilityStartMinutes = AvailabilityValidator.timeToMinutes(availability.horarioInicio);
+  //       final availabilityEndMinutes = AvailabilityValidator.timeToMinutes(availability.horarioFim, isEndTime: true);
         
-        // Verificar se o horário está dentro do intervalo disponível
-        // Quando horarioFim é 00:00, foi tratado como 1440 minutos (24:00)
-        // Permite selecionar até o último horário (<= availabilityEndMinutes)
-        if (selectedTimeMinutes < availabilityStartMinutes || selectedTimeMinutes > availabilityEndMinutes) {
-          final intervals = AvailabilityValidator.getAvailableTimeIntervals(
-            availability.horarioInicio,
-            availability.horarioFim,
-            availability.blockedSlots,
-            _selectedDate!,
-          );
-          context.showError(
-            'Horário fora dos intervalos disponíveis: ${intervals.join(', ')}'
-          );
-          return;
-        }
+  //       // Verificar se o horário está dentro do intervalo disponível
+  //       // Quando horarioFim é 00:00, foi tratado como 1440 minutos (24:00)
+  //       // Permite selecionar até o último horário (<= availabilityEndMinutes)
+  //       if (selectedTimeMinutes < availabilityStartMinutes || selectedTimeMinutes > availabilityEndMinutes) {
+  //         final intervals = AvailabilityValidator.getAvailableTimeIntervals(
+  //           availability.horarioInicio,
+  //           availability.horarioFim,
+  //           availability.blockedSlots,
+  //           _selectedDate!,
+  //         );
+  //         context.showError(
+  //           'Horário fora dos intervalos disponíveis: ${intervals.join(', ')}'
+  //         );
+  //         return;
+  //       }
         
-        // Verificar se há blockedSlots na data selecionada que conflitam
-        final normalizedSelectedDate = DateTime(
-          _selectedDate!.year,
-          _selectedDate!.month,
-          _selectedDate!.day,
-        );
+  //       // Verificar se há blockedSlots na data selecionada que conflitam
+  //       final normalizedSelectedDate = DateTime(
+  //         _selectedDate!.year,
+  //         _selectedDate!.month,
+  //         _selectedDate!.day,
+  //       );
         
-        final blockedSlotsForDate = availability.blockedSlots.where((blockedSlot) {
-          final blockedDate = DateTime(
-            blockedSlot.date.year,
-            blockedSlot.date.month,
-            blockedSlot.date.day,
-          );
-          return blockedDate == normalizedSelectedDate;
-        }).toList();
+  //       final blockedSlotsForDate = availability.blockedSlots.where((blockedSlot) {
+  //         final blockedDate = DateTime(
+  //           blockedSlot.date.year,
+  //           blockedSlot.date.month,
+  //           blockedSlot.date.day,
+  //         );
+  //         return blockedDate == normalizedSelectedDate;
+  //       }).toList();
         
-        for (final blockedSlot in blockedSlotsForDate) {
-          final blockedStartMinutes = AvailabilityValidator.timeToMinutes(blockedSlot.startTime);
-          final blockedEndMinutes = AvailabilityValidator.timeToMinutes(blockedSlot.endTime);
+  //       for (final blockedSlot in blockedSlotsForDate) {
+  //         final blockedStartMinutes = AvailabilityValidator.timeToMinutes(blockedSlot.startTime);
+  //         final blockedEndMinutes = AvailabilityValidator.timeToMinutes(blockedSlot.endTime);
           
-          // Verificar se o horário selecionado está dentro de um bloqueio
-          if (selectedTimeMinutes >= blockedStartMinutes && selectedTimeMinutes < blockedEndMinutes) {
-            context.showError(
-              'Horário bloqueado na data selecionada (${blockedSlot.startTime} - ${blockedSlot.endTime})'
-            );
-            return;
-          }
-        }
-      }
+  //         // Verificar se o horário selecionado está dentro de um bloqueio
+  //         if (selectedTimeMinutes >= blockedStartMinutes && selectedTimeMinutes < blockedEndMinutes) {
+  //           context.showError(
+  //             'Horário bloqueado na data selecionada (${blockedSlot.startTime} - ${blockedSlot.endTime})'
+  //           );
+  //           return;
+  //         }
+  //       }
+  //     }
       
-      setState(() {
-        _selectedTime = result;
-        _timeController.text = '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}';
-      });
-    }
-  }
+  //     setState(() {
+  //       _selectedTime = result;
+  //       _timeController.text = '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}';
+  //     });
+  //   }
+  // }
 
   Future<void> _selectDuration() async {
     final hours = _selectedDuration?.inHours ?? 0;
@@ -472,7 +471,7 @@ class _RequestScreenState extends State<RequestScreen> {
       clientRating: clientRating,
       eventType: eventType,
       value: _totalValue,
-      availabilitySnapshot: widget.availability,
+      // availabilitySnapshot: widget.availability,
     );
 
     // Adicionar evento ao Bloc
@@ -585,7 +584,8 @@ class _RequestScreenState extends State<RequestScreen> {
             SelectableRow(
               label: 'Data',
               value: _selectedDate != null ? _formatDate(_selectedDate!) : '',
-              onTap: _selectDate,
+              // onTap: _selectDate,
+              onTap: () {},
               errorMessage: _hasAttemptedSubmit && _selectedDate == null ? 'Selecione a data' : null,
             ),
             
@@ -595,7 +595,8 @@ class _RequestScreenState extends State<RequestScreen> {
             SelectableRow(
               label: 'Horário de início',
               value: _timeController.text,
-              onTap: _selectTime,
+              // onTap: _selectTime,
+              onTap: () {},
               errorMessage: _hasAttemptedSubmit && _timeController.text.isEmpty ? 'Selecione o horário' : null,
             ),
             

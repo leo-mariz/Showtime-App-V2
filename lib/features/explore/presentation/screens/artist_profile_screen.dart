@@ -4,7 +4,6 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/availability_calendar_entitys/availability_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
@@ -22,7 +21,7 @@ class ArtistProfileScreen extends StatelessWidget {
   final bool viewOnly;
   final DateTime? selectedDate;
   final AddressInfoEntity? selectedAddress;
-  final AvailabilityEntity? availability;
+  // final AvailabilityEntity? availability;
 
   const ArtistProfileScreen({
     super.key,
@@ -31,7 +30,7 @@ class ArtistProfileScreen extends StatelessWidget {
     this.viewOnly = false,
     this.selectedDate,
     this.selectedAddress,
-    this.availability,
+    // this.availability,
   });
 
   void _onVideoTap(BuildContext context, String videoUrl) {
@@ -77,11 +76,11 @@ class ArtistProfileScreen extends StatelessWidget {
     
     // Calcular preço e duração mínima
     double pricePerHour = 0.0;
-    if (availability != null) {
-      pricePerHour = availability!.valorShow;
-    } else if (artist.professionalInfo?.hourlyRate != null) {
-      pricePerHour = artist.professionalInfo!.hourlyRate!;
-    }
+    // if (availability != null) {
+    //   pricePerHour = availability!.valorShow;
+    // } else if (artist.professionalInfo?.hourlyRate != null) {
+    //   pricePerHour = artist.professionalInfo!.hourlyRate!;
+    // }
 
     final minimumDuration = artist.professionalInfo?.minimumShowDuration != null
         ? Duration(minutes: artist.professionalInfo!.minimumShowDuration!)
@@ -99,7 +98,7 @@ class ArtistProfileScreen extends StatelessWidget {
         artist: artist,
         pricePerHour: pricePerHour,
         minimumDuration: minimumDuration,
-        availability: availability,
+        // availability: availability,
       ),
     );
   }

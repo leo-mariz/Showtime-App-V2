@@ -1,19 +1,24 @@
-import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
-import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
-import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
-import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 /// Widget da Tab Agenda
 /// 
 /// Visualização de horários em formato de timeline
 /// SOMENTE LEITURA (sem edição)
+/// 
+/// Widget de apresentação puro que recebe dados por parâmetros
 class AgendaViewWidget extends StatefulWidget {
+  /// Lista de dias com disponibilidade
+  final List<AvailabilityDayEntity> days;
+  
+  /// Indica se está carregando
+  final bool isLoading;
 
   const AgendaViewWidget({
     super.key,
+    required this.days,
+    required this.isLoading,
   });
 
   @override
@@ -23,20 +28,6 @@ class AgendaViewWidget extends StatefulWidget {
 class _AgendaViewWidgetState extends State<AgendaViewWidget> {
   DateTime _selectedDate = DateTime.now();
   bool _isWeekView = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDay(_selectedDate);
-  }
-
-  void _loadDay(DateTime date) {
-    context.read<AvailabilityBloc>().add(
-      GetAvailabilityEvent(GetAvailabilityDto(
-        forceRemote: false,
-      )),
-    );
-  }
 
   String _formatDateToId(DateTime date) {
     final year = date.year.toString().padLeft(4, '0');
@@ -74,7 +65,6 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
                           Duration(days: _isWeekView ? 7 : 1),
                         );
                       });
-                      _loadDay(_selectedDate);
                     },
                     icon: const Icon(Icons.chevron_left),
                   ),
@@ -109,7 +99,6 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
                           Duration(days: _isWeekView ? 7 : 1),
                         );
                       });
-                      _loadDay(_selectedDate);
                     },
                     icon: const Icon(Icons.chevron_right),
                   ),
@@ -145,23 +134,22 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
         
         // Timeline
         Expanded(
-          child: BlocBuilder<AvailabilityBloc, AvailabilityState>(
-            builder: (context, state) {
-              if (state is AvailabilityLoadingState) {
+          child: Builder(
+            builder: (context) {
+              if (widget.isLoading && widget.days.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (state is AvailabilityLoadedState) {
+              if (widget.days.isNotEmpty) {
                 // Buscar o dia específico
                 final dayId = _formatDateToId(_selectedDate);
-                final day = state.days.firstWhere(
-                  (d) => d.documentId == dayId,
-                  orElse: () => null as dynamic,
-                );
+                final dayIndex = widget.days.indexWhere((d) => d.documentId == dayId);
                 
-                if (day == null) {
+                if (dayIndex == -1) {
                   return _buildEmptyState();
                 }
+                
+                final day = widget.days[dayIndex];
                 
                 if (_isWeekView) {
                   return _buildWeekView();
@@ -170,31 +158,7 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
                 }
               }
 
-              if (state is AvailabilityErrorState) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          state.message,
-                          style: const TextStyle(color: Colors.red),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return const SizedBox.shrink();
+              return _buildEmptyState();
             },
           ),
         ),
@@ -266,8 +230,8 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
         
         const SizedBox(height: 16),
         
-        // Endereços e slots
-        ...day.addresses.map((address) => _buildAddressTimeline(address)),
+        // Availabilities (cada uma com seu endereço e slots)
+        ...day.availabilities.map((availability) => _buildAddressTimeline(availability.address)),
       ],
     );
   }
@@ -301,22 +265,22 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
   }
 
   int _countAvailableSlots(day) {
-    return day.addresses
-        .expand((a) => a.slots)
+    return day.availabilities
+        .expand((av) => av.slots)
         .where((s) => s.isAvailable)
         .length;
   }
 
   int _countBlockedSlots(day) {
-    return day.addresses
-        .expand((a) => a.slots)
+    return day.availabilities
+        .expand((av) => av.slots)
         .where((s) => s.isBlocked)
         .length;
   }
 
   int _countBookedSlots(day) {
-    return day.addresses
-        .expand((a) => a.slots)
+    return day.availabilities
+        .expand((av) => av.slots)
         .where((s) => s.isBooked)
         .length;
   }
@@ -508,7 +472,6 @@ class _AgendaViewWidgetState extends State<AgendaViewWidget> {
       setState(() {
         _selectedDate = picked;
       });
-      _loadDay(_selectedDate);
     }
   }
 }

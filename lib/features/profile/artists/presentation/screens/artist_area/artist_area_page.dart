@@ -78,20 +78,7 @@ class ArtistAreaScreen extends StatelessWidget {
                     router.push(PresentationsRoute(talents: talents));
                   },
                 ),
-
-                DSSizedBoxSpacing.vertical(8),
-
-                // Opção: Disponibilidade
-                ArtistAreaOptionCard(
-                  title: 'Disponibilidade',
-                  description: 'Abra ou feche datas para disponibilidade de shows.',
-                  icon: Icons.calendar_today_outlined,
-                  iconColor: onPrimaryContainer,
-                  hasIncompleteInfo: _isSectionIncomplete(ArtistIncompleteInfoType.availability),
-                  onTap: () {
-                    router.push(const AvailabilityManagementRoute());
-                  },
-                ),
+                
 
 
             DSSizedBoxSpacing.vertical(8),

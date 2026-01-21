@@ -2,10 +2,14 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
+import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
+import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/dialog_button.dart';
+import 'package:app/core/shared/widgets/price_per_hour_input.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
@@ -13,29 +17,39 @@ import 'package:app/features/profile/artist_availability/presentation/widgets/ra
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 
 
 /// Modal para criar/editar disponibilidade
 class AvailabilityFormModal extends StatefulWidget {
   final DateTime? initialDate;
+  final DateTime? initialStartDate; // Para seleção de período
+  final DateTime? initialEndDate; // Para seleção de período
 
   const AvailabilityFormModal({
     super.key,
     this.initialDate,
+    this.initialStartDate,
+    this.initialEndDate,
   });
 
   /// Exibe o modal de disponibilidade
-  static Future<void> show({
+  /// Retorna a lista de [AvailabilityDayEntity] criadas, ou null se cancelado
+  static Future<List<AvailabilityDayEntity>?> show({
     required BuildContext context,
     DateTime? initialDate,
+    DateTime? initialStartDate,
+    DateTime? initialEndDate,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<List<AvailabilityDayEntity>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AvailabilityFormModal(
         initialDate: initialDate,
+        initialStartDate: initialStartDate,
+        initialEndDate: initialEndDate,
       ),
     );
   }
@@ -71,8 +85,17 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
   @override
   void initState() {
     super.initState();
-    _startDate = widget.initialDate ?? DateTime.now();
-    _endDate = _startDate;
+    
+    // Se foi passado um período (seleção múltipla), usar essas datas
+    if (widget.initialStartDate != null && widget.initialEndDate != null) {
+      _startDate = widget.initialStartDate;
+      _endDate = widget.initialEndDate;
+    } else {
+      // Caso contrário, usar data única ou hoje
+      _startDate = widget.initialDate ?? DateTime.now();
+      _endDate = _startDate;
+    }
+    
     _startTime = const TimeOfDay(hour: 9, minute: 0);
     _endTime = const TimeOfDay(hour: 18, minute: 0);
     _updateControllers();
@@ -250,6 +273,87 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     }
   }
 
+  /// Gera a lista de dias com disponibilidade baseado nas configurações
+  List<AvailabilityDayEntity> _generateAvailabilityDays() {
+    final days = <AvailabilityDayEntity>[];
+    final now = DateTime.now();
+    
+    // Gera IDs únicos
+    const uuid = Uuid();
+    final patternId = uuid.v4();
+    
+    // Cria o metadata do padrão
+    final patternMetadata = PatternMetadata(
+      patternId: patternId,
+      creationType: 'recurring_pattern',
+      recurrence: RecurrenceSettings(
+        weekdays: _allDays ? null : _selectedWeekdays,
+        originalStartDate: _startDate!,
+        originalEndDate: _endDate!,
+        originalStartTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
+        originalEndTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
+        originalValorHora: double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0,
+        originalAddressId: _selectedAddress!.uid ?? '',
+      ),
+      createdAt: now,
+    );
+    
+    // Itera sobre o período selecionado
+    DateTime currentDate = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+    final endDate = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+    
+    while (!currentDate.isAfter(endDate)) {
+      // Verifica se deve incluir este dia
+      bool shouldInclude = false;
+      
+      if (_allDays) {
+        shouldInclude = true;
+      } else {
+        // Mapeia dia da semana: 1=Segunda, 7=Domingo
+        final weekdayCode = WeekdayConstants.codes[currentDate.weekday - 1];
+        shouldInclude = _selectedWeekdays.contains(weekdayCode);
+      }
+      
+      if (shouldInclude) {
+        // Cria o slot de tempo
+        final timeSlot = TimeSlot(
+          slotId: uuid.v4(),
+          startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
+          endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
+          status: 'available',
+          valorHora: double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0,
+          sourcePatternId: patternId,
+        );
+        
+        // Cria a entry de disponibilidade (estrutura simplificada)
+        final availabilityEntry = AvailabilityEntry(
+          availabilityId: uuid.v4(),
+          generatedFrom: patternMetadata,
+          addressId: _selectedAddress!.uid ?? '',
+          raioAtuacao: _radiusKm,
+          endereco: _selectedAddress!,
+          slots: [timeSlot],
+          isManualOverride: false,
+          createdAt: now,
+        );
+        
+        // Cria a entidade do dia com a nova estrutura
+        final dayEntity = AvailabilityDayEntity(
+          date: currentDate,
+          availabilities: [availabilityEntry],
+          createdAt: now,
+        );
+        
+        days.add(dayEntity);
+      }
+      
+      // Avança para o próximo dia
+      currentDate = currentDate.add(const Duration(days: 1));
+    }
+    
+    return days;
+  }
+
   void _onSave() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -277,25 +381,35 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
         return;
       }
 
-      // Validação de 6 meses
-      final maxEndDate = _startDate!.add(const Duration(days: 180));
-      if (_endDate!.isAfter(maxEndDate)) {
-        context.showError('Disponibilidade não pode ter mais de 6 meses de duração');
-        return;
-      }
-
       // Validação de endereço
       if (_selectedAddress == null) {
         context.showError('Selecione um endereço');
         return;
       }
 
-    // Validação de dias da semana (somente se não for "Todos os dias")
-    if (!_allDays && _selectedWeekdays.isEmpty) {
-      context.showError('Selecione os dias da semana');
-      return;
-    }
-
+      // Validação de dias da semana (somente se não for "Todos os dias")
+      if (!_allDays && _selectedWeekdays.isEmpty) {
+        context.showError('Selecione os dias da semana');
+        return;
+      }
+      
+      // Validação de valor
+      final value = double.tryParse(_valueController.text.replaceAll(',', '.'));
+      if (value == null || value <= 0) {
+        context.showError('Digite um valor válido');
+        return;
+      }
+      
+      // Gera os dias com disponibilidade
+      final availabilityDays = _generateAvailabilityDays();
+      
+      if (availabilityDays.isEmpty) {
+        context.showError('Nenhum dia foi gerado. Verifique as configurações.');
+        return;
+      }
+      
+      // Retorna a lista de dias para a screen
+      Navigator.of(context).pop(availabilityDays);
     }
   }
 
@@ -304,7 +418,6 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.viewInsets.bottom;
     final screenHeight = mediaQuery.size.height;
 
     return GestureDetector(
@@ -527,88 +640,10 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                     // Campos específicos para modo Abrir
                     if (!_isBlocking) ...[
                       // Valor/hora
-                      Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: Text(
-                                'Valor/hora',
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 3,
-                              child: TextFormField(
-                                controller: _valueController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                textAlign: TextAlign.end,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                                ],
-                                onChanged: (_) => setState(() {}), // Atualiza para verificar mudanças
-                                decoration: InputDecoration(
-                                  hintText: '0.00',
-                                  prefixText: 'R\$/h ',
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerHighest,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(DSSize.width(12)),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(DSSize.width(12)),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(DSSize.width(12)),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.onPrimaryContainer,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  errorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(DSSize.width(12)),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.error,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  focusedErrorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(DSSize.width(12)),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.error,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: DSSize.width(12),
-                                    vertical: DSSize.height(12),
-                                  ),
-                                  errorStyle: const TextStyle(height: 0, fontSize: 0),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Digite o valor';
-                                  }
-                                  final num = double.tryParse(value.replaceAll(',', '.'));
-                                  if (num == null || num <= 0) {
-                                    return 'Valor inválido';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      PricePerHourInput(
+                        controller: _valueController,
+                        onChanged: (_) => setState(() {}),
+                      ),
                     DSSizedBoxSpacing.vertical(16),
                     
                     // Endereço
@@ -788,36 +823,38 @@ class _WeekdaySelectionDialogState extends State<_WeekdaySelectionDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Opção "Todos os dias"
-            CheckboxListTile(
-              title: Text(
-                'Todos os dias',
-                style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Opção "Todos os dias"
+              CheckboxListTile(
+                title: Text(
+                  'Todos os dias',
+                  style: textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                value: _allDays,
+                onChanged: (_) => _toggleAllDays(),
               ),
-              value: _allDays,
-              onChanged: (_) => _toggleAllDays(),
-            ),
-            
-            const Divider(),
-            
-            // Lista de dias da semana
-            ...List.generate(WeekdayConstants.codes.length, (index) {
-              final code = WeekdayConstants.codes[index];
-              final name = WeekdayConstants.names[index];
-              final isSelected = _selected.contains(code);
               
-              return CheckboxListTile(
-                title: Text(name),
-                value: isSelected,
-                onChanged: _allDays ? null : (_) => _toggleDay(code),
-              );
-            }),
-          ],
+              const Divider(),
+              
+              // Lista de dias da semana
+              ...List.generate(WeekdayConstants.codes.length, (index) {
+                final code = WeekdayConstants.codes[index];
+                final name = WeekdayConstants.names[index];
+                final isSelected = _selected.contains(code);
+                
+                return CheckboxListTile(
+                  title: Text(name),
+                  value: isSelected,
+                  onChanged: _allDays ? null : (_) => _toggleDay(code),
+                );
+              }),
+            ],
+          ),
         ),
       ),
       actions: [

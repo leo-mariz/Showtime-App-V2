@@ -1,6 +1,6 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/availability/address_availability_entity.dart';
-import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
+import 'package:app/core/utils/timestamp_hook.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
@@ -9,8 +9,8 @@ part 'availability_day_entity.mapper.dart';
 /// Representa a disponibilidade de um artista em um dia específico
 /// 
 /// Este é o documento principal que armazena toda a informação de disponibilidade
-/// Substitui o antigo modelo de regras de recorrência
-@MappableClass()
+/// Um dia pode conter múltiplas disponibilidades independentes (entries)
+@MappableClass(hook: TimestampHook())
 class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   /// ID do documento (formato: YYYY-MM-DD)
   final String? id;
@@ -18,33 +18,30 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   /// Data específica deste dia
   final DateTime date;
   
-  /// Metadata sobre como este dia foi gerado
-  final PatternMetadata? generatedFrom;
+  /// Lista de disponibilidades independentes neste dia
+  /// 
+  /// Cada entry pode ser:
+  /// - De um padrão de recorrência diferente
+  /// - Em endereços diferentes
+  /// - Com horários e valores diferentes
+  final List<AvailabilityEntry> availabilities;
   
-  /// Indica se este dia foi customizado manualmente (override)
-  final bool isOverridden;
-  
-  /// Campos que foram alterados manualmente (para tracking)
-  final Map<String, dynamic>? overrides;
-  
-  /// Lista de disponibilidades por endereço
-  final List<AddressAvailabilityEntity> addresses;
-  
-  /// Data de criação
+  /// Data de criação do documento
   final DateTime createdAt;
   
-  /// Última atualização
+  /// Última atualização do documento
   final DateTime? updatedAt;
+
+  /// Indica se o dia está ativo
+  final bool isActive;
   
   const AvailabilityDayEntity({
     this.id,
     required this.date,
-    this.generatedFrom,
-    this.isOverridden = false,
-    this.overrides,
-    required this.addresses,
+    required this.availabilities,
     required this.createdAt,
     this.updatedAt,
+    this.isActive = true,
   });
   
   /// Retorna o ID do documento (YYYY-MM-DD)
@@ -57,17 +54,31 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   
   /// Verifica se tem alguma disponibilidade neste dia
   bool get hasAvailability => 
-      addresses.any((addr) => addr.hasAvailableSlots);
+      availabilities.any((av) => av.hasAvailableSlots);
   
-  /// Retorna todos os endereços com slots disponíveis
-  List<AddressAvailabilityEntity> get availableAddresses => 
-      addresses.where((addr) => addr.hasAvailableSlots).toList();
+  /// Retorna todas as availabilities com slots disponíveis
+  List<AvailabilityEntry> get availableEntries => 
+      availabilities.where((av) => av.hasAvailableSlots).toList();
   
-  /// Verifica se foi gerado de um padrão
-  bool get isFromPattern => generatedFrom != null;
+  /// Retorna lista de IDs de padrões presentes neste dia
+  List<String> get patternIds => 
+      availabilities
+          .where((av) => av.isFromPattern)
+          .map((av) => av.patternId!)
+          .toSet()
+          .toList();
   
-  /// Retorna o ID do padrão (se existir)
-  String? get patternId => generatedFrom?.patternId;
+  /// Verifica se tem alguma availability de um padrão específico
+  bool hasPattern(String patternId) =>
+      patternIds.contains(patternId);
+  
+  /// Retorna availabilities de um padrão específico
+  List<AvailabilityEntry> getEntriesByPattern(String patternId) =>
+      availabilities.where((av) => av.patternId == patternId).toList();
+  
+  /// Verifica se tem availabilities que podem ser editadas via padrão
+  bool get hasEditableViaPattern =>
+      availabilities.any((av) => av.canUpdateViaPattern);
 }
 
 /// Extension para referências do Firestore e cache

@@ -17,8 +17,20 @@ abstract class IAvailabilityRemoteDataSource {
   /// 
   /// Retorna lista de todos os dias com disponibilidade
   /// Lança [ServerException] em caso de erro
-  Future<List<AvailabilityDayEntity>> getAvailability(String artistId);
+  Future<List<AvailabilityDayEntity>> getAvailabilities(String artistId);
   
+
+  /// Busca todas as disponibilidades de um artista
+  /// 
+  /// [artistId]: ID do artista
+  /// [forceRemote]: Se true, força busca no servidor (ignora cache)
+  /// 
+  /// Retorna lista de todos os dias com disponibilidade
+  /// Lança [ServerException] em caso de erro
+  Future<AvailabilityDayEntity> getAvailability(String artistId, String dayId);
+
+
+
   /// Cria um novo dia de disponibilidade
   /// 
   /// [artistId]: ID do artista
@@ -59,7 +71,7 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
   AvailabilityRemoteDataSourceImpl({required this.firestore});
   
   @override
-  Future<List<AvailabilityDayEntity>> getAvailability(String artistId) async {
+  Future<List<AvailabilityDayEntity>> getAvailabilities(String artistId) async {
     try {
       _validateArtistId(artistId);
       
@@ -70,11 +82,17 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
       
       final querySnapshot = await collection.get();
       
-      return querySnapshot.docs.map((doc) {
+      final days = querySnapshot.docs.map((doc) {
         final dayMap = doc.data() as Map<String, dynamic>;
-        final day = AvailabilityDayEntityMapper.fromMap(dayMap);
+        
+        // Converter Timestamps para DateTime antes do mapper
+        final cleanedMap = _convertTimestamps(dayMap);
+        
+        final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
         return day.copyWith(id: doc.id);
       }).toList();
+      
+      return days;
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
         'Erro ao buscar disponibilidades: ${e.message}',
@@ -85,6 +103,44 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao buscar disponibilidades',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<AvailabilityDayEntity> getAvailability(String artistId, String dayId) async {
+    try {
+      _validateArtistId(artistId);
+      _validateDayId(dayId);
+      
+      final docRef = AvailabilityDayReference.firestoreDocument(
+        firestore,
+        artistId,
+        dayId,
+      );
+      
+      final snapshot = await docRef.get();
+      
+      if (!snapshot.exists) {
+        throw NotFoundException('Disponibilidade não encontrada para o dia: $dayId');
+      }
+      
+      final dayMap = snapshot.data() as Map<String, dynamic>;
+      final cleanedMap = _convertTimestamps(dayMap);
+      final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
+      return day.copyWith(id: dayId);
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar disponibilidade: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao buscar disponibilidade',
         originalError: e,
         stackTrace: stackTrace,
       );
@@ -213,5 +269,37 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
     if (!regex.hasMatch(dayId)) {
       throw ValidationException('Formato de ID inválido. Use YYYY-MM-DD. Recebido: $dayId');
     }
+  }
+  
+  /// Converte recursivamente todos os Timestamps em DateTime
+  Map<String, dynamic> _convertTimestamps(Map<String, dynamic> map) {
+    final result = <String, dynamic>{};
+    
+    for (final entry in map.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      
+      if (value is Timestamp) {
+        // Converter Timestamp para DateTime
+        result[key] = value.toDate();
+      } else if (value is Map) {
+        // Recursão para mapas aninhados
+        result[key] = _convertTimestamps(value as Map<String, dynamic>);
+      } else if (value is List) {
+        // Processar listas
+        result[key] = value.map((item) {
+          if (item is Map) {
+            return _convertTimestamps(item as Map<String, dynamic>);
+          } else if (item is Timestamp) {
+            return item.toDate();
+          }
+          return item;
+        }).toList();
+      } else {
+        result[key] = value;
+      }
+    }
+    
+    return result;
   }
 }

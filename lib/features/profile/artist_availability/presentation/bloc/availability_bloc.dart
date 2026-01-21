@@ -1,46 +1,75 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/create_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/update_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/delete_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/add_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/delete_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_by_date_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/toggle_availability_status_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/update_address_and_radius_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/update_time_slot_usecase.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// BLoC para gerenciar disponibilidade
+/// BLoC para gerenciar disponibilidade do artista
+/// 
+/// Gerencia todas as operações relacionadas à disponibilidade:
+/// - Consulta (GetAll, GetByDate)
+/// - Toggle de status (ativar/desativar)
+/// - Endereço e raio
+/// - Slots de horário (Add, Update, Delete)
 class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
-  final GetAvailabilityUseCase getAvailabilityUseCase;
-  final CreateAvailabilityUseCase createAvailabilityUseCase;
-  final UpdateAvailabilityUseCase updateAvailabilityUseCase;
-  final DeleteAvailabilityUseCase deleteAvailabilityUseCase;
+  // Use Cases
+  final GetAllAvailabilitiesUseCase getAllAvailabilities;
+  final GetAvailabilityByDateUseCase getAvailabilityByDate;
+  final ToggleAvailabilityStatusUseCase toggleAvailabilityStatus;
+  final UpdateAddressAndRadiusUseCase updateAddressRadius;
+  final AddTimeSlotUseCase addTimeSlot;
+  final UpdateTimeSlotUseCase updateTimeSlot;
+  final DeleteTimeSlotUseCase deleteTimeSlot;
+  
+  // Authentication
   final GetUserUidUseCase getUserUidUseCase;
 
   AvailabilityBloc({
-    required this.getAvailabilityUseCase,
-    required this.createAvailabilityUseCase,
-    required this.updateAvailabilityUseCase,
-    required this.deleteAvailabilityUseCase,
+    required this.getAllAvailabilities,
+    required this.getAvailabilityByDate,
+    required this.toggleAvailabilityStatus,
+    required this.updateAddressRadius,
+    required this.addTimeSlot,
+    required this.updateTimeSlot,
+    required this.deleteTimeSlot,
     required this.getUserUidUseCase,
   }) : super(AvailabilityInitialState()) {
-    on<GetAvailabilityEvent>(_onGetAvailability);
-    on<CreateAvailabilityEvent>(_onCreateAvailability);
-    on<UpdateAvailabilityEvent>(_onUpdateAvailability);
-    on<DeleteAvailabilityEvent>(_onDeleteAvailability);
-    on<ResetAvailabilityStateEvent>(_onResetState);
+    // Registrar handlers
+    on<GetAllAvailabilitiesEvent>(_onGetAllAvailabilities);
+    on<GetAvailabilityByDateEvent>(_onGetAvailabilityByDate);
+    on<ToggleAvailabilityStatusEvent>(_onToggleAvailabilityStatus);
+    on<UpdateAddressRadiusEvent>(_onUpdateAddressRadius);
+    on<AddTimeSlotEvent>(_onAddTimeSlot);
+    on<UpdateTimeSlotEvent>(_onUpdateTimeSlot);
+    on<DeleteTimeSlotEvent>(_onDeleteTimeSlot);
+    on<ResetAvailabilityEvent>(_onReset);
   }
 
-  /// Busca o ID do usuário atual
+  // ══════════════════════════════════════════════════════════════════════════
+  // Helper: Obter ID do usuário atual
+  // ══════════════════════════════════════════════════════════════════════════
+
   Future<String?> _getCurrentUserId() async {
-    final result = await getUserUidUseCase.call();
+    final result = await getUserUidUseCase();
     return result.fold(
-      (_) => null,
+      (failure) => null,
       (uid) => uid,
     );
   }
 
-  /// Handler para buscar disponibilidades
-  Future<void> _onGetAvailability(
-    GetAvailabilityEvent event,
+  // ══════════════════════════════════════════════════════════════════════════
+  // Handlers de Consulta
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Handler para buscar todas as disponibilidades
+  Future<void> _onGetAllAvailabilities(
+    GetAllAvailabilitiesEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
     emit(AvailabilityLoadingState(message: 'Carregando disponibilidades...'));
@@ -51,20 +80,20 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       return;
     }
 
-    final result = await getAvailabilityUseCase(artistId, event.dto);
+    final result = await getAllAvailabilities(artistId, event.forceRemote);
 
     result.fold(
       (failure) => emit(AvailabilityErrorState(message: failure.message)),
-      (days) => emit(AvailabilityLoadedState(days: days)),
+      (days) => emit(AllAvailabilitiesLoadedState(days: days)),
     );
   }
 
-  /// Handler para criar disponibilidade
-  Future<void> _onCreateAvailability(
-    CreateAvailabilityEvent event,
+  /// Handler para buscar disponibilidade de um dia
+  Future<void> _onGetAvailabilityByDate(
+    GetAvailabilityByDateEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(AvailabilityLoadingState(message: 'Criando disponibilidade...'));
+    emit(AvailabilityLoadingState(message: 'Buscando disponibilidade...'));
 
     final artistId = await _getCurrentUserId();
     if (artistId == null) {
@@ -72,20 +101,24 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       return;
     }
 
-    final result = await createAvailabilityUseCase(artistId, event.dto);
+    final result = await getAvailabilityByDate(artistId, event.dto);
 
     result.fold(
       (failure) => emit(AvailabilityErrorState(message: failure.message)),
-      (day) => emit(AvailabilityCreatedState(day: day)),
+      (day) => emit(AvailabilityDayLoadedState(day: day)),
     );
   }
 
-  /// Handler para atualizar disponibilidade
-  Future<void> _onUpdateAvailability(
-    UpdateAvailabilityEvent event,
+  // ══════════════════════════════════════════════════════════════════════════
+  // Handlers de Disponibilidade do Dia
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Handler para ativar/desativar disponibilidade
+  Future<void> _onToggleAvailabilityStatus(
+    ToggleAvailabilityStatusEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(AvailabilityLoadingState(message: 'Atualizando disponibilidade...'));
+    emit(AvailabilityLoadingState(message: 'Atualizando status...'));
 
     final artistId = await _getCurrentUserId();
     if (artistId == null) {
@@ -93,20 +126,25 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       return;
     }
 
-    final result = await updateAvailabilityUseCase(artistId, event.dto);
+    final result = await toggleAvailabilityStatus(artistId, event.dto);
 
     result.fold(
       (failure) => emit(AvailabilityErrorState(message: failure.message)),
-      (day) => emit(AvailabilityUpdatedState(day: day)),
+      (day) => emit(AvailabilityDayUpdatedState(
+        day: day,
+        message: event.dto.isActive
+            ? 'Disponibilidade ativada'
+            : 'Disponibilidade desativada',
+      )),
     );
   }
 
-  /// Handler para deletar disponibilidade
-  Future<void> _onDeleteAvailability(
-    DeleteAvailabilityEvent event,
+  /// Handler para atualizar endereço e raio
+  Future<void> _onUpdateAddressRadius(
+    UpdateAddressRadiusEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(AvailabilityLoadingState(message: 'Removendo disponibilidade...'));
+    emit(AvailabilityLoadingState(message: 'Atualizando endereço...'));
 
     final artistId = await _getCurrentUserId();
     if (artistId == null) {
@@ -114,17 +152,91 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       return;
     }
 
-    final result = await deleteAvailabilityUseCase(artistId, event.dto);
+    final result = await updateAddressRadius(artistId, event.dto);
 
     result.fold(
       (failure) => emit(AvailabilityErrorState(message: failure.message)),
-      (_) => emit(AvailabilityDeletedState()),
+      (day) => emit(AvailabilityDayUpdatedState(
+        day: day,
+        message: 'Endereço e raio atualizados',
+      )),
     );
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Handlers de Slots
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Handler para adicionar slot
+  Future<void> _onAddTimeSlot(
+    AddTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(AvailabilityLoadingState(message: 'Adicionando horário...'));
+
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
+
+    final result = await addTimeSlot(artistId, event.dto);
+
+    result.fold(
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (day) => emit(TimeSlotAddedState(day: day)),
+    );
+  }
+
+  /// Handler para atualizar slot
+  Future<void> _onUpdateTimeSlot(
+    UpdateTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(AvailabilityLoadingState(message: 'Atualizando horário...'));
+
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
+
+    final result = await updateTimeSlot(artistId, event.dto);
+
+    result.fold(
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (day) => emit(TimeSlotUpdatedState(day: day)),
+    );
+  }
+
+  /// Handler para deletar slot
+  Future<void> _onDeleteTimeSlot(
+    DeleteTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(AvailabilityLoadingState(message: 'Removendo horário...'));
+
+    final artistId = await _getCurrentUserId();
+    if (artistId == null) {
+      emit(AvailabilityErrorState(message: 'Usuário não autenticado'));
+      return;
+    }
+
+    final result = await deleteTimeSlot(artistId, event.dto);
+
+    result.fold(
+      (failure) => emit(AvailabilityErrorState(message: failure.message)),
+      (day) => emit(TimeSlotDeletedState(day: day)),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Handler de Controle
+  // ══════════════════════════════════════════════════════════════════════════
 
   /// Handler para resetar estado
-  void _onResetState(
-    ResetAvailabilityStateEvent event,
+  void _onReset(
+    ResetAvailabilityEvent event,
     Emitter<AvailabilityState> emit,
   ) {
     emit(AvailabilityInitialState());

@@ -1,11 +1,11 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/get_groups_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/get_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/add_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/update_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/delete_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/presentation/bloc/events/groups_events.dart';
-import 'package:app/features/profile/artists/groups/presentation/bloc/states/groups_states.dart';
+import 'package:app/features/profile/groups/domain/usecases/get_groups_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/get_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/add_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/update_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/delete_group_usecase.dart';
+import 'package:app/features/profile/groups/presentation/bloc/events/groups_events.dart';
+import 'package:app/features/profile/groups/presentation/bloc/states/groups_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {

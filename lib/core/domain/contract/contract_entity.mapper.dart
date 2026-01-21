@@ -16,6 +16,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       MapperContainer.globals.use(_instance = ContractEntityMapper._());
       AddressInfoEntityMapper.ensureInitialized();
       ContractorTypeEnumMapper.ensureInitialized();
+      AvailabilityDayEntityMapper.ensureInitialized();
       EventTypeEntityMapper.ensureInitialized();
       ContractStatusEnumMapper.ensureInitialized();
       RatingEntityMapper.ensureInitialized();
@@ -99,8 +100,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
   );
   static AvailabilityDayEntity? _$availabilitySnapshot(ContractEntity v) =>
       v.availabilitySnapshot;
-  static const Field<ContractEntity, AvailabilityDayEntity> _f$availabilitySnapshot =
-      Field('availabilitySnapshot', _$availabilitySnapshot, opt: true);
+  static const Field<ContractEntity, AvailabilityDayEntity>
+  _f$availabilitySnapshot = Field(
+    'availabilitySnapshot',
+    _$availabilitySnapshot,
+    opt: true,
+  );
   static EventTypeEntity? _$eventType(ContractEntity v) => v.eventType;
   static const Field<ContractEntity, EventTypeEntity> _f$eventType = Field(
     'eventType',
@@ -353,6 +358,12 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
   get address;
+  AvailabilityDayEntityCopyWith<
+    $R,
+    AvailabilityDayEntity,
+    AvailabilityDayEntity
+  >?
+  get availabilitySnapshot;
   EventTypeEntityCopyWith<$R, EventTypeEntity, EventTypeEntity>? get eventType;
   RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByClient;
   RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByArtist;
@@ -408,6 +419,15 @@ class _ContractEntityCopyWithImpl<$R, $Out>
   AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
   get address => $value.address.copyWith.$chain((v) => call(address: v));
   @override
+  AvailabilityDayEntityCopyWith<
+    $R,
+    AvailabilityDayEntity,
+    AvailabilityDayEntity
+  >?
+  get availabilitySnapshot => $value.availabilitySnapshot?.copyWith.$chain(
+    (v) => call(availabilitySnapshot: v),
+  );
+  @override
   EventTypeEntityCopyWith<$R, EventTypeEntity, EventTypeEntity>?
   get eventType => $value.eventType?.copyWith.$chain((v) => call(eventType: v));
   @override
@@ -432,7 +452,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? nameClient = $none,
     Object? clientRating = $none,
     Object? clientRatingCount = $none,
-    AvailabilityDayEntity? availabilitySnapshot,
+    Object? availabilitySnapshot = $none,
     Object? eventType = $none,
     ContractStatusEnum? status,
     double? value,
@@ -467,7 +487,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (nameClient != $none) #nameClient: nameClient,
       if (clientRating != $none) #clientRating: clientRating,
       if (clientRatingCount != $none) #clientRatingCount: clientRatingCount,
-      if (availabilitySnapshot != null)
+      if (availabilitySnapshot != $none)
         #availabilitySnapshot: availabilitySnapshot,
       if (eventType != $none) #eventType: eventType,
       if (status != null) #status: status,

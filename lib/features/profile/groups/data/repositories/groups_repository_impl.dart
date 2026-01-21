@@ -1,9 +1,9 @@
 import 'package:app/core/domain/artist/artist_groups/group_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/profile/artists/groups/data/datasources/groups_local_datasource.dart';
-import 'package:app/features/profile/artists/groups/data/datasources/groups_remote_datasource.dart';
-import 'package:app/features/profile/artists/groups/domain/repositories/groups_repository.dart';
+import 'package:app/features/profile/groups/data/datasources/groups_local_datasource.dart';
+import 'package:app/features/profile/groups/data/datasources/groups_remote_datasource.dart';
+import 'package:app/features/profile/groups/domain/repositories/groups_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// Implementação do Repository de Groups

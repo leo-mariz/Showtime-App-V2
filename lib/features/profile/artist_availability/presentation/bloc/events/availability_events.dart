@@ -3,33 +3,72 @@ import 'package:app/features/profile/artist_availability/domain/dtos/availabilit
 /// Eventos base para Availability
 abstract class AvailabilityEvent {}
 
-/// Evento para buscar disponibilidades
-class GetAvailabilityEvent extends AvailabilityEvent {
-  final GetAvailabilityDto dto;
-  
-  GetAvailabilityEvent(this.dto);
+// ════════════════════════════════════════════════════════════════════════════
+// Eventos de Consulta
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Evento para buscar todas as disponibilidades
+class GetAllAvailabilitiesEvent extends AvailabilityEvent {
+  final bool forceRemote;
+
+  GetAllAvailabilitiesEvent({
+    this.forceRemote = false,
+  });
 }
 
-/// Evento para criar disponibilidade
-class CreateAvailabilityEvent extends AvailabilityEvent {
-  final CreateAvailabilityDto dto;
-  
-  CreateAvailabilityEvent(this.dto);
+/// Evento para buscar disponibilidade de um dia específico
+class GetAvailabilityByDateEvent extends AvailabilityEvent {
+  final GetAvailabilityByDateDto dto;
+
+  GetAvailabilityByDateEvent(this.dto);
 }
 
-/// Evento para atualizar disponibilidade
-class UpdateAvailabilityEvent extends AvailabilityEvent {
-  final UpdateAvailabilityDto dto;
-  
-  UpdateAvailabilityEvent(this.dto);
+// ════════════════════════════════════════════════════════════════════════════
+// Eventos de Disponibilidade do Dia
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Evento para ativar/desativar disponibilidade
+class ToggleAvailabilityStatusEvent extends AvailabilityEvent {
+  final ToggleAvailabilityStatusDto dto;
+
+  ToggleAvailabilityStatusEvent(this.dto);
 }
 
-/// Evento para deletar disponibilidade
-class DeleteAvailabilityEvent extends AvailabilityEvent {
-  final DeleteAvailabilityDto dto;
-  
-  DeleteAvailabilityEvent(this.dto);
+/// Evento para atualizar endereço e raio
+class UpdateAddressRadiusEvent extends AvailabilityEvent {
+  final UpdateAddressRadiusDto dto;
+
+  UpdateAddressRadiusEvent(this.dto);
 }
 
-/// Evento para resetar estado
-class ResetAvailabilityStateEvent extends AvailabilityEvent {}
+// ════════════════════════════════════════════════════════════════════════════
+// Eventos de Slots
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Evento para adicionar slot de horário
+class AddTimeSlotEvent extends AvailabilityEvent {
+  final SlotOperationDto dto;
+
+  AddTimeSlotEvent(this.dto);
+}
+
+/// Evento para atualizar slot de horário
+class UpdateTimeSlotEvent extends AvailabilityEvent {
+  final SlotOperationDto dto;
+
+  UpdateTimeSlotEvent(this.dto);
+}
+
+/// Evento para deletar slot de horário
+class DeleteTimeSlotEvent extends AvailabilityEvent {
+  final SlotOperationDto dto;
+
+  DeleteTimeSlotEvent(this.dto);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Eventos de Controle
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Evento para resetar o estado
+class ResetAvailabilityEvent extends AvailabilityEvent {}

@@ -31,7 +31,6 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: RegisterDataAreaRoute.page, path: '/register-data-area'),
     AutoRoute(page: ProfessionalInfoRoute.page, path: '/professional-info'),
     AutoRoute(page: PresentationsRoute.page, path: '/presentations'),
-    AutoRoute(page: AvailabilityManagementRoute.page, path: '/availability'),
     AutoRoute(page: DocumentsRoute.page, path: '/documents'),
     AutoRoute(page: BankAccountRoute.page, path: '/bank-account'),
     AutoRoute(page: GroupsRoute.page, path: '/groups'),

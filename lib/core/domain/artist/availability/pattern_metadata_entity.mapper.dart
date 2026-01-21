@@ -59,6 +59,8 @@ class PatternMetadataMapper extends ClassMapperBase<PatternMetadata> {
     #updatedAt: _f$updatedAt,
   };
 
+  @override
+  final MappingHook hook = const TimestampHook();
   static PatternMetadata _instantiate(DecodingData data) {
     return PatternMetadata(
       patternId: data.dec(_f$patternId),
@@ -254,6 +256,8 @@ class RecurrenceSettingsMapper extends ClassMapperBase<RecurrenceSettings> {
     #originalAddressId: _f$originalAddressId,
   };
 
+  @override
+  final MappingHook hook = const TimestampHook();
   static RecurrenceSettings _instantiate(DecodingData data) {
     return RecurrenceSettings(
       weekdays: data.dec(_f$weekdays),

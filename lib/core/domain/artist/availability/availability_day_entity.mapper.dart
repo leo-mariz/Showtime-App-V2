@@ -15,8 +15,7 @@ class AvailabilityDayEntityMapper
   static AvailabilityDayEntityMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = AvailabilityDayEntityMapper._());
-      PatternMetadataMapper.ensureInitialized();
-      AddressAvailabilityEntityMapper.ensureInitialized();
+      AvailabilityEntryMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -35,25 +34,10 @@ class AvailabilityDayEntityMapper
     'date',
     _$date,
   );
-  static PatternMetadata? _$generatedFrom(AvailabilityDayEntity v) =>
-      v.generatedFrom;
-  static const Field<AvailabilityDayEntity, PatternMetadata> _f$generatedFrom =
-      Field('generatedFrom', _$generatedFrom, opt: true);
-  static bool _$isOverridden(AvailabilityDayEntity v) => v.isOverridden;
-  static const Field<AvailabilityDayEntity, bool> _f$isOverridden = Field(
-    'isOverridden',
-    _$isOverridden,
-    opt: true,
-    def: false,
-  );
-  static Map<String, dynamic>? _$overrides(AvailabilityDayEntity v) =>
-      v.overrides;
-  static const Field<AvailabilityDayEntity, Map<String, dynamic>> _f$overrides =
-      Field('overrides', _$overrides, opt: true);
-  static List<AddressAvailabilityEntity> _$addresses(AvailabilityDayEntity v) =>
-      v.addresses;
-  static const Field<AvailabilityDayEntity, List<AddressAvailabilityEntity>>
-  _f$addresses = Field('addresses', _$addresses);
+  static List<AvailabilityEntry> _$availabilities(AvailabilityDayEntity v) =>
+      v.availabilities;
+  static const Field<AvailabilityDayEntity, List<AvailabilityEntry>>
+  _f$availabilities = Field('availabilities', _$availabilities);
   static DateTime _$createdAt(AvailabilityDayEntity v) => v.createdAt;
   static const Field<AvailabilityDayEntity, DateTime> _f$createdAt = Field(
     'createdAt',
@@ -65,29 +49,34 @@ class AvailabilityDayEntityMapper
     _$updatedAt,
     opt: true,
   );
+  static bool _$isActive(AvailabilityDayEntity v) => v.isActive;
+  static const Field<AvailabilityDayEntity, bool> _f$isActive = Field(
+    'isActive',
+    _$isActive,
+    opt: true,
+    def: true,
+  );
 
   @override
   final MappableFields<AvailabilityDayEntity> fields = const {
     #id: _f$id,
     #date: _f$date,
-    #generatedFrom: _f$generatedFrom,
-    #isOverridden: _f$isOverridden,
-    #overrides: _f$overrides,
-    #addresses: _f$addresses,
+    #availabilities: _f$availabilities,
     #createdAt: _f$createdAt,
     #updatedAt: _f$updatedAt,
+    #isActive: _f$isActive,
   };
 
+  @override
+  final MappingHook hook = const TimestampHook();
   static AvailabilityDayEntity _instantiate(DecodingData data) {
     return AvailabilityDayEntity(
       id: data.dec(_f$id),
       date: data.dec(_f$date),
-      generatedFrom: data.dec(_f$generatedFrom),
-      isOverridden: data.dec(_f$isOverridden),
-      overrides: data.dec(_f$overrides),
-      addresses: data.dec(_f$addresses),
+      availabilities: data.dec(_f$availabilities),
       createdAt: data.dec(_f$createdAt),
       updatedAt: data.dec(_f$updatedAt),
+      isActive: data.dec(_f$isActive),
     );
   }
 
@@ -161,29 +150,19 @@ abstract class AvailabilityDayEntityCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
-  PatternMetadataCopyWith<$R, PatternMetadata, PatternMetadata>?
-  get generatedFrom;
-  MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>?
-  get overrides;
   ListCopyWith<
     $R,
-    AddressAvailabilityEntity,
-    AddressAvailabilityEntityCopyWith<
-      $R,
-      AddressAvailabilityEntity,
-      AddressAvailabilityEntity
-    >
+    AvailabilityEntry,
+    AvailabilityEntryCopyWith<$R, AvailabilityEntry, AvailabilityEntry>
   >
-  get addresses;
+  get availabilities;
   $R call({
     String? id,
     DateTime? date,
-    PatternMetadata? generatedFrom,
-    bool? isOverridden,
-    Map<String, dynamic>? overrides,
-    List<AddressAvailabilityEntity>? addresses,
+    List<AvailabilityEntry>? availabilities,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isActive,
   });
   AvailabilityDayEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -199,65 +178,42 @@ class _AvailabilityDayEntityCopyWithImpl<$R, $Out>
   late final ClassMapperBase<AvailabilityDayEntity> $mapper =
       AvailabilityDayEntityMapper.ensureInitialized();
   @override
-  PatternMetadataCopyWith<$R, PatternMetadata, PatternMetadata>?
-  get generatedFrom =>
-      $value.generatedFrom?.copyWith.$chain((v) => call(generatedFrom: v));
-  @override
-  MapCopyWith<$R, String, dynamic, ObjectCopyWith<$R, dynamic, dynamic>>?
-  get overrides => $value.overrides != null
-      ? MapCopyWith(
-          $value.overrides!,
-          (v, t) => ObjectCopyWith(v, $identity, t),
-          (v) => call(overrides: v),
-        )
-      : null;
-  @override
   ListCopyWith<
     $R,
-    AddressAvailabilityEntity,
-    AddressAvailabilityEntityCopyWith<
-      $R,
-      AddressAvailabilityEntity,
-      AddressAvailabilityEntity
-    >
+    AvailabilityEntry,
+    AvailabilityEntryCopyWith<$R, AvailabilityEntry, AvailabilityEntry>
   >
-  get addresses => ListCopyWith(
-    $value.addresses,
+  get availabilities => ListCopyWith(
+    $value.availabilities,
     (v, t) => v.copyWith.$chain(t),
-    (v) => call(addresses: v),
+    (v) => call(availabilities: v),
   );
   @override
   $R call({
     Object? id = $none,
     DateTime? date,
-    Object? generatedFrom = $none,
-    bool? isOverridden,
-    Object? overrides = $none,
-    List<AddressAvailabilityEntity>? addresses,
+    List<AvailabilityEntry>? availabilities,
     DateTime? createdAt,
     Object? updatedAt = $none,
+    bool? isActive,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
       if (date != null) #date: date,
-      if (generatedFrom != $none) #generatedFrom: generatedFrom,
-      if (isOverridden != null) #isOverridden: isOverridden,
-      if (overrides != $none) #overrides: overrides,
-      if (addresses != null) #addresses: addresses,
+      if (availabilities != null) #availabilities: availabilities,
       if (createdAt != null) #createdAt: createdAt,
       if (updatedAt != $none) #updatedAt: updatedAt,
+      if (isActive != null) #isActive: isActive,
     }),
   );
   @override
   AvailabilityDayEntity $make(CopyWithData data) => AvailabilityDayEntity(
     id: data.get(#id, or: $value.id),
     date: data.get(#date, or: $value.date),
-    generatedFrom: data.get(#generatedFrom, or: $value.generatedFrom),
-    isOverridden: data.get(#isOverridden, or: $value.isOverridden),
-    overrides: data.get(#overrides, or: $value.overrides),
-    addresses: data.get(#addresses, or: $value.addresses),
+    availabilities: data.get(#availabilities, or: $value.availabilities),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     updatedAt: data.get(#updatedAt, or: $value.updatedAt),
+    isActive: data.get(#isActive, or: $value.isActive),
   );
 
   @override

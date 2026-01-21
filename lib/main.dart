@@ -13,17 +13,17 @@ import 'package:app/features/favorites/data/datasources/favorite_remote_datasour
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
 import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
 import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
-import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
+// import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
-import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
-import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
-import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
-import 'package:app/features/explore/domain/repositories/explore_repository.dart';
-import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
-import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
-import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
-import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+// import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
+// import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
+// import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
+// import 'package:app/features/explore/domain/repositories/explore_repository.dart';
+// import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
+// import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
+// import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
+// import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
 import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
@@ -57,10 +57,13 @@ import 'package:app/features/profile/artist_availability/data/datasources/availa
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
 import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/create_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/delete_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/update_availability_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/add_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/delete_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_by_date_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/toggle_availability_status_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/update_address_and_radius_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/update_time_slot_usecase.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
@@ -92,16 +95,16 @@ import 'package:app/features/profile/artists/domain/usecases/check_artist_comple
 import 'package:app/features/profile/artists/domain/usecases/get_artist_completeness_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_incomplete_sections_usecase.dart';
-import 'package:app/features/profile/artists/groups/data/datasources/groups_local_datasource.dart';
-import 'package:app/features/profile/artists/groups/data/datasources/groups_remote_datasource.dart';
-import 'package:app/features/profile/artists/groups/data/repositories/groups_repository_impl.dart';
-import 'package:app/features/profile/artists/groups/domain/repositories/groups_repository.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/add_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/delete_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/get_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/get_groups_usecase.dart';
-import 'package:app/features/profile/artists/groups/domain/usecases/update_group_usecase.dart';
-import 'package:app/features/profile/artists/groups/presentation/bloc/groups_bloc.dart';
+import 'package:app/features/profile/groups/data/datasources/groups_local_datasource.dart';
+import 'package:app/features/profile/groups/data/datasources/groups_remote_datasource.dart';
+import 'package:app/features/profile/groups/data/repositories/groups_repository_impl.dart';
+import 'package:app/features/profile/groups/domain/repositories/groups_repository.dart';
+import 'package:app/features/profile/groups/domain/usecases/add_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/delete_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/get_group_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/get_groups_usecase.dart';
+import 'package:app/features/profile/groups/domain/usecases/update_group_usecase.dart';
+import 'package:app/features/profile/groups/presentation/bloc/groups_bloc.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
 import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
@@ -529,21 +532,51 @@ AvailabilityBloc _createAvailabilityBloc(
   GetUserUidUseCase getUserUidUseCase,
   SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
-  // Criar UseCase para calcular Geohash
+  // Criar Use Cases de Consulta
+  final getAllAvailabilitiesUseCase = GetAllAvailabilitiesUseCase(
+    repository: availabilityRepository,
+  );
   
-  // Criar UseCases
-  final getAvailabilityUseCase = GetAvailabilityUseCase(repository: availabilityRepository);
-  final createAvailabilityUseCase = CreateAvailabilityUseCase(repository: availabilityRepository);
-  final updateAvailabilityUseCase = UpdateAvailabilityUseCase(repository: availabilityRepository);
-  final deleteAvailabilityUseCase = DeleteAvailabilityUseCase(repository: availabilityRepository);
+  final getAvailabilityByDateUseCase = GetAvailabilityByDateUseCase(
+    repository: availabilityRepository,
+  );
 
+  // Criar Use Cases de Disponibilidade do Dia
+  final toggleAvailabilityStatusUseCase = ToggleAvailabilityStatusUseCase(
+    repository: availabilityRepository,
+    getByDate: getAvailabilityByDateUseCase,
+  );
+
+  final updateAddressRadiusUseCase = UpdateAddressAndRadiusUseCase(
+    repository: availabilityRepository,
+    getByDate: getAvailabilityByDateUseCase,
+  );
+
+  // Criar Use Cases de Slots
+  final addTimeSlotUseCase = AddTimeSlotUseCase(
+    repository: availabilityRepository,
+    getByDate: getAvailabilityByDateUseCase,
+  );
+
+  final updateTimeSlotUseCase = UpdateTimeSlotUseCase(
+    repository: availabilityRepository,
+    getByDate: getAvailabilityByDateUseCase,
+  );
+
+  final deleteTimeSlotUseCase = DeleteTimeSlotUseCase(
+    repository: availabilityRepository,
+    getByDate: getAvailabilityByDateUseCase,
+  );
 
   // Criar e retornar AvailabilityBloc
   return AvailabilityBloc(
-    getAvailabilityUseCase: getAvailabilityUseCase,
-    createAvailabilityUseCase: createAvailabilityUseCase,
-    updateAvailabilityUseCase: updateAvailabilityUseCase,
-    deleteAvailabilityUseCase: deleteAvailabilityUseCase,
+    getAllAvailabilities: getAllAvailabilitiesUseCase,
+    getAvailabilityByDate: getAvailabilityByDateUseCase,
+    toggleAvailabilityStatus: toggleAvailabilityStatusUseCase,
+    updateAddressRadius: updateAddressRadiusUseCase,
+    addTimeSlot: addTimeSlotUseCase,
+    updateTimeSlot: updateTimeSlotUseCase,
+    deleteTimeSlot: deleteTimeSlotUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }

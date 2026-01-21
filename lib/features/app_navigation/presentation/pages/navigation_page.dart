@@ -2,9 +2,10 @@ import 'package:app/features/app_navigation/presentation/widgets/bottom_navigati
 import 'package:app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:app/features/artist_dashboard/presentation/screens/artist_dashboard_screen.dart';
 import 'package:app/features/contracts/presentation/screens/artists/artist_contract_screen.dart';
-import 'package:app/features/explore/presentation/screens/explore_screen.dart';
-import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';
+// import 'package:app/features/explore/presentation/screens/explore_screen.dart';
+// import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:app/features/contracts/presentation/screens/clients/client_contracts_screen.dart';
+import 'package:app/features/profile/artist_availability/presentation/screens/availability_calendar_screen.dart';
 import 'package:app/features/profile/artists/presentation/screens/artist_profile_screen.dart';
 import 'package:app/features/profile/clients/presentation/screens/client_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,7 @@ class _NavigationPageState extends State<NavigationPage> {
   List<Widget> get _artistPages => [
     ArtistDashboardScreen(),
     ArtistContractsScreen(),
+    AvailabilityCalendarScreen(),
     ChatScreen(),
     ArtistProfileScreen(),
   ];
@@ -88,8 +90,12 @@ class _NavigationPageState extends State<NavigationPage> {
       label: 'Dashboard',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.event),
-      label: 'Apresentações',
+      icon: Icon(Icons.mic),
+      label: 'Shows',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.calendar_today),
+      label: 'Calendário',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.message_rounded),

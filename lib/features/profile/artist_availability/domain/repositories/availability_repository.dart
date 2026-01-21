@@ -14,9 +14,21 @@ abstract class IAvailabilityRepository {
   /// 
   /// Retorna Right(days) em caso de sucesso
   /// Retorna Left(Failure) em caso de erro
-  Future<Either<Failure, List<AvailabilityDayEntity>>> getAvailability({
+  Future<Either<Failure, List<AvailabilityDayEntity>>> getAvailabilities({
     required String artistId,
     bool forceRemote = false,
+  });
+
+  /// Busca uma disponibilidade de um artista
+  /// 
+  /// [artistId]: ID do artista
+  /// [dayId]: ID do dia a buscar
+  /// 
+  /// Retorna Right(day) em caso de sucesso
+  /// Retorna Left(Failure) em caso de erro
+  Future<Either<Failure, AvailabilityDayEntity>> getAvailability({
+    required String artistId,
+    required String dayId,
   });
   
   /// Cria uma nova disponibilidade

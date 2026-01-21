@@ -1,3 +1,4 @@
+import 'package:app/core/utils/timestamp_hook.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
 part 'pattern_metadata_entity.mapper.dart';
@@ -5,7 +6,7 @@ part 'pattern_metadata_entity.mapper.dart';
 /// Metadata sobre o padrão de recorrência que gerou este dia
 /// 
 /// Permite rastrear e editar múltiplos dias de uma vez
-@MappableClass()
+@MappableClass(hook: TimestampHook())
 class PatternMetadata with PatternMetadataMappable {
   /// ID único do padrão (todos os dias gerados do mesmo padrão têm o mesmo ID)
   final String patternId;
@@ -32,7 +33,7 @@ class PatternMetadata with PatternMetadataMappable {
 }
 
 /// Configurações de recorrência original
-@MappableClass()
+@MappableClass(hook: TimestampHook())
 class RecurrenceSettings with RecurrenceSettingsMappable {
   /// Dias da semana (MO, TU, WE, TH, FR, SA, SU)
   final List<String>? weekdays;

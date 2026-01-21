@@ -20,28 +20,44 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
   });
   
   @override
-  Future<Either<Failure, List<AvailabilityDayEntity>>> getAvailability({
+  Future<Either<Failure, List<AvailabilityDayEntity>>> getAvailabilities({
     required String artistId,
     bool forceRemote = false,
   }) async {
-    try {
+    try {      
       // Se não forçar remote, tenta buscar do cache primeiro
       if (!forceRemote) {
-        final cachedDays = await localDataSource.getAvailability(artistId);
+        final cachedDays = await localDataSource.getAvailabilities(artistId);
         if (cachedDays.isNotEmpty) {
           return Right(cachedDays);
         }
       }
       
       // Buscar do remote
-      final remoteDays = await remoteDataSource.getAvailability(artistId);
-      
-      // Cachear todos os dias
+      final remoteDays = await remoteDataSource.getAvailabilities(artistId);
       for (final day in remoteDays) {
         await localDataSource.cacheAvailability(artistId, day);
       }
       
       return Right(remoteDays);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AvailabilityDayEntity>> getAvailability({
+    required String artistId,
+    required String dayId,
+  }) async {
+    try {
+      final day = await localDataSource.getAvailability(artistId, dayId);
+      if (day.documentId == dayId) {
+        return Right(day);
+      }
+      final remoteDay = await remoteDataSource.getAvailability(artistId, dayId);
+      await localDataSource.cacheAvailability(artistId, remoteDay);
+      return Right(remoteDay);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

@@ -1,6 +1,6 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:app/core/domain/artist/availability/address_availability_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
 import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
 import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/utils/slot_manager.dart';
@@ -80,20 +80,22 @@ class AvailabilityDayGenerator {
         sourcePatternId: patternId,
       );
       
-      // Criar disponibilidade do endereço
-      final addressAvailability = AddressAvailabilityEntity(
+      // Criar entry de disponibilidade (estrutura simplificada)
+      final availabilityEntry = AvailabilityEntry(
+        availabilityId: SlotManager.generateSlotId(),
+        generatedFrom: patternMetadata,
         addressId: addressId,
         raioAtuacao: raioAtuacao,
         endereco: endereco,
         slots: [slot],
+        isManualOverride: false,
+        createdAt: now,
       );
       
-      // Criar documento do dia
+      // Criar documento do dia com a nova estrutura
       final day = AvailabilityDayEntity(
         date: currentDate,
-        generatedFrom: patternMetadata,
-        isOverridden: false,
-        addresses: [addressAvailability],
+        availabilities: [availabilityEntry],
         createdAt: now,
       );
       
@@ -126,24 +128,29 @@ class AvailabilityDayGenerator {
       valorHora: valorHora,
     );
     
-    // Criar disponibilidade do endereço
-    final addressAvailability = AddressAvailabilityEntity(
+    // Criar metadata para criação manual
+    final manualMetadata = PatternMetadata(
+      patternId: SlotManager.generatePatternId(),
+      creationType: 'manual',
+      createdAt: now,
+    );
+    
+    // Criar entry de disponibilidade (estrutura simplificada)
+    final availabilityEntry = AvailabilityEntry(
+      availabilityId: SlotManager.generateSlotId(),
+      generatedFrom: manualMetadata,
       addressId: addressId,
       raioAtuacao: raioAtuacao,
       endereco: endereco,
       slots: [slot],
+      isManualOverride: false,
+      createdAt: now,
     );
     
-    // Criar documento do dia (sem pattern metadata)
+    // Criar documento do dia com a nova estrutura
     return AvailabilityDayEntity(
       date: DateTime(date.year, date.month, date.day),
-      generatedFrom: PatternMetadata(
-        patternId: SlotManager.generatePatternId(),
-        creationType: 'manual',
-        createdAt: now,
-      ),
-      isOverridden: false,
-      addresses: [addressAvailability],
+      availabilities: [availabilityEntry],
       createdAt: now,
     );
   }

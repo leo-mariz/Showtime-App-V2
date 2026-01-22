@@ -111,16 +111,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final cleanCep = zipCode.replaceAll(RegExp(r'[^\d]'), '');
     
     if (cleanCep.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Digite um CEP')),
-      );
+      context.showError('Digite um CEP');
       return;
     }
 
     if (cleanCep.length != 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('CEP deve conter 8 dígitos')),
-      );
+      context.showError('CEP deve conter 8 dígitos');
       return;
     }
 

@@ -1,4 +1,6 @@
 import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
 
 /// Eventos base para Availability
 abstract class AvailabilityEvent {}
@@ -64,6 +66,24 @@ class DeleteTimeSlotEvent extends AvailabilityEvent {
   final SlotOperationDto dto;
 
   DeleteTimeSlotEvent(this.dto);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Eventos de Períodos
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Evento para abrir um período de disponibilidade
+class OpenPeriodEvent extends AvailabilityEvent {
+  final OpenPeriodDto dto;
+
+  OpenPeriodEvent(this.dto);
+}
+
+/// Evento para fechar/bloquear um período de disponibilidade
+class ClosePeriodEvent extends AvailabilityEvent {
+  final ClosePeriodDto dto;
+
+  ClosePeriodEvent(this.dto);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

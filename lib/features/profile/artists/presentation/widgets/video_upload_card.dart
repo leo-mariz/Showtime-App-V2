@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/selection_modal.dart';
@@ -195,9 +196,7 @@ class _VideoUploadCardState extends State<VideoUploadCard> {
           _isLoadingThumbnail = false;
           _lastProcessedFile = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao selecionar vídeo: $e')),
-        );
+        context.showError('Erro ao selecionar vídeo: $e');
       }
     }
   }

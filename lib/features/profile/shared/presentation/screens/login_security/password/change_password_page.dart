@@ -1,4 +1,5 @@
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/password_field.dart';
@@ -29,15 +30,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   void _onChangePassword() {
     if (newPasswordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A nova senha deve ter pelo menos 6 caracteres')));
+      context.showError('A nova senha deve ter pelo menos 6 caracteres');
       return;
     }
     if (newPasswordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('As senhas não coincidem')));
+      context.showError('As senhas não coincidem');
       return;
     }
     if (!RegExp(r'[a-z]').hasMatch(newPasswordController.text) || !RegExp(r'[0-9]').hasMatch(newPasswordController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('A senha deve conter letras e números')));
+      context.showError('A senha deve conter letras e números');
       return;
     }
 
@@ -51,9 +52,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         isLoading = false;
       });
       _clearFields();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Senha alterada com sucesso!')),
-      );
+      context.showSuccess('Senha alterada com sucesso!');
     });
   }
 

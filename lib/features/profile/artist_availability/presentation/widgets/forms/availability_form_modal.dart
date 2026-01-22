@@ -2,9 +2,6 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
-import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
-import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
@@ -13,11 +10,13 @@ import 'package:app/core/shared/widgets/price_per_hour_input.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
+import 'package:app/features/profile/artist_availability/presentation/widgets/forms/period_confirmation_dialog.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/radius_map_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
 
 
 
@@ -26,23 +25,28 @@ class AvailabilityFormModal extends StatefulWidget {
   final DateTime? initialDate;
   final DateTime? initialStartDate; // Para seleção de período
   final DateTime? initialEndDate; // Para seleção de período
+  final Function(OpenPeriodDto)? onOpenPeriod; // Callback para abrir período
+  final Function(ClosePeriodDto)? onClosePeriod; // Callback para fechar período
 
   const AvailabilityFormModal({
     super.key,
     this.initialDate,
     this.initialStartDate,
     this.initialEndDate,
+    this.onOpenPeriod,
+    this.onClosePeriod,
   });
 
   /// Exibe o modal de disponibilidade
-  /// Retorna a lista de [AvailabilityDayEntity] criadas, ou null se cancelado
-  static Future<List<AvailabilityDayEntity>?> show({
+  static Future<void> show({
     required BuildContext context,
     DateTime? initialDate,
     DateTime? initialStartDate,
     DateTime? initialEndDate,
+    Function(OpenPeriodDto)? onOpenPeriod,
+    Function(ClosePeriodDto)? onClosePeriod,
   }) {
-    return showModalBottomSheet<List<AvailabilityDayEntity>>(
+    return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -50,6 +54,8 @@ class AvailabilityFormModal extends StatefulWidget {
         initialDate: initialDate,
         initialStartDate: initialStartDate,
         initialEndDate: initialEndDate,
+        onOpenPeriod: onOpenPeriod,
+        onClosePeriod: onClosePeriod,
       ),
     );
   }
@@ -72,8 +78,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
 
   // Estados
   bool _isBlocking = false; // Modo Abrir/Fechar
-  bool _allHours = true; // Todos os horários (apenas para modo Fechar)
-  bool _allDays = true; // Todos os dias (apenas para modo Abrir)
+  bool _allHours = true; 
+  bool _allDays = true; 
   DateTime? _startDate;
   DateTime? _endDate;
   TimeOfDay? _startTime;
@@ -273,88 +279,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     }
   }
 
-  /// Gera a lista de dias com disponibilidade baseado nas configurações
-  List<AvailabilityDayEntity> _generateAvailabilityDays() {
-    final days = <AvailabilityDayEntity>[];
-    final now = DateTime.now();
-    
-    // Gera IDs únicos
-    const uuid = Uuid();
-    final patternId = uuid.v4();
-    
-    // Cria o metadata do padrão
-    final patternMetadata = PatternMetadata(
-      patternId: patternId,
-      creationType: 'recurring_pattern',
-      recurrence: RecurrenceSettings(
-        weekdays: _allDays ? null : _selectedWeekdays,
-        originalStartDate: _startDate!,
-        originalEndDate: _endDate!,
-        originalStartTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
-        originalEndTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
-        originalValorHora: double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0,
-        originalAddressId: _selectedAddress!.uid ?? '',
-      ),
-      createdAt: now,
-    );
-    
-    // Itera sobre o período selecionado
-    DateTime currentDate = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
-    final endDate = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
-    
-    while (!currentDate.isAfter(endDate)) {
-      // Verifica se deve incluir este dia
-      bool shouldInclude = false;
-      
-      if (_allDays) {
-        shouldInclude = true;
-      } else {
-        // Mapeia dia da semana: 1=Segunda, 7=Domingo
-        final weekdayCode = WeekdayConstants.codes[currentDate.weekday - 1];
-        shouldInclude = _selectedWeekdays.contains(weekdayCode);
-      }
-      
-      if (shouldInclude) {
-        // Cria o slot de tempo
-        final timeSlot = TimeSlot(
-          slotId: uuid.v4(),
-          startTime: '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}',
-          endTime: '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}',
-          status: 'available',
-          valorHora: double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0,
-          sourcePatternId: patternId,
-        );
-        
-        // Cria a entry de disponibilidade (estrutura simplificada)
-        final availabilityEntry = AvailabilityEntry(
-          availabilityId: uuid.v4(),
-          generatedFrom: patternMetadata,
-          addressId: _selectedAddress!.uid ?? '',
-          raioAtuacao: _radiusKm,
-          endereco: _selectedAddress!,
-          slots: [timeSlot],
-          isManualOverride: false,
-          createdAt: now,
-        );
-        
-        // Cria a entidade do dia com a nova estrutura
-        final dayEntity = AvailabilityDayEntity(
-          date: currentDate,
-          availabilities: [availabilityEntry],
-          createdAt: now,
-        );
-        
-        days.add(dayEntity);
-      }
-      
-      // Avança para o próximo dia
-      currentDate = currentDate.add(const Duration(days: 1));
-    }
-    
-    return days;
-  }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -365,16 +291,48 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     }
 
     if (_isBlocking) {
+      // ════════════════════════════════════════════════════════════════
+      // MODO FECHAR PERÍODO
+      // ════════════════════════════════════════════════════════════════
+      
       // Validações para modo Fechar
       if (!_allHours && (_startTime == null || _endTime == null)) {
         context.showError('Selecione os horários');
         return;
       }
       
-      // TODO: Implementar lógica de bloqueio de período
-      context.showError('Funcionalidade de bloqueio em desenvolvimento');
-      return;
+      // Criar DTO para fechar período
+      final closeDto = ClosePeriodDto(
+        startDate: _startDate!,
+        endDate: _endDate!,
+        startTime: _allHours 
+            ? const TimeOfDay(hour: 0, minute: 0)  // Todos os horários
+            : _startTime!,
+        endTime: _allHours 
+            ? const TimeOfDay(hour: 23, minute: 59)  // Todos os horários
+            : _endTime!,
+        weekdays: _allDays ? null : _selectedWeekdays,
+        blockReason: 'Bloqueio manual', // TODO: Permitir usuário informar motivo
+      );
+      
+      // Mostrar dialog de confirmação
+      final confirmed = await PeriodConfirmationDialog.showClosePeriod(
+        context: context,
+        dto: closeDto,
+      );
+      
+      // Se confirmado, chamar callback e fechar modal
+      if (confirmed == true && widget.onClosePeriod != null) {
+        widget.onClosePeriod!(closeDto);
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
     } else {
+      // ════════════════════════════════════════════════════════════════
+      // MODO ABRIR PERÍODO
+      // ════════════════════════════════════════════════════════════════
+      
       // Validações para modo Abrir
       if (_startTime == null || _endTime == null) {
         context.showError('Selecione os horários');
@@ -400,16 +358,32 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
         return;
       }
       
-      // Gera os dias com disponibilidade
-      final availabilityDays = _generateAvailabilityDays();
+      // Criar DTO para abrir período
+      final openDto = OpenPeriodDto(
+        startDate: _startDate!,
+        endDate: _endDate!,
+        startTime: _startTime!,
+        endTime: _endTime!,
+        pricePerHour: value,
+        addressId: _selectedAddress!.uid ?? '',
+        raioAtuacao: _radiusKm,
+        endereco: _selectedAddress!,
+        weekdays: _allDays ? null : _selectedWeekdays,
+      );
       
-      if (availabilityDays.isEmpty) {
-        context.showError('Nenhum dia foi gerado. Verifique as configurações.');
-        return;
+      // Mostrar dialog de confirmação
+      final confirmed = await PeriodConfirmationDialog.showOpenPeriod(
+        context: context,
+        dto: openDto,
+      );
+      
+      // Se confirmado, chamar callback e fechar modal
+      if (confirmed == true && widget.onOpenPeriod != null) {
+        widget.onOpenPeriod!(openDto);
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
-      
-      // Retorna a lista de dias para a screen
-      Navigator.of(context).pop(availabilityDays);
     }
   }
 

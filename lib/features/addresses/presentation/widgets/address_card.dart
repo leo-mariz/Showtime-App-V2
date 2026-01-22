@@ -1,7 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
+import 'package:app/core/shared/widgets/options_modal.dart';
 import 'package:flutter/material.dart';
 
 class AddressCard extends StatelessWidget {
@@ -29,96 +29,15 @@ class AddressCard extends StatelessWidget {
   void _showOptionsModal(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final surfaceContainerHighest = colorScheme.surfaceContainerHighest;
-    final onPrimary = colorScheme.onPrimary;
-    final onPrimaryContainer = colorScheme.onPrimaryContainer;
-    final primaryContainer = colorScheme.primaryContainer;
     final onError = colorScheme.onError;
     final error = colorScheme.error;
-    showModalBottomSheet(
+    OptionsModal.show(
       context: context,
-      backgroundColor: surfaceContainerHighest,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: surfaceContainerHighest,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(DSSize.width(20)),
-            topRight: Radius.circular(DSSize.width(20)),
-          ),
-        ),
-        padding: EdgeInsets.all(DSSize.width(16)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: DSSize.width(40),
-              height: DSSize.height(4),
-              margin: EdgeInsets.only(bottom: DSSize.height(16)),
-              decoration: BoxDecoration(
-                color: onPrimary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(DSSize.width(2)),
-              ),
-            ),
-            // Título do endereço
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: onPrimary,
-              ),
-            ),
-            DSSizedBoxSpacing.vertical(24),
-            // Botões Excluir e Editar lado a lado
-            Row(
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    label: 'Excluir',
-                    icon: Icons.delete_forever,
-                    iconOnLeft: true,
-                    iconColor: onError,
-                    backgroundColor: error.withOpacity(0.8),
-                    textColor: onError,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onDelete();
-                    },
-                  ),
-                ),
-                DSSizedBoxSpacing.horizontal(12),
-                Expanded(
-                  child: CustomButton(
-                    label: 'Editar',
-                    icon: Icons.edit,
-                    iconOnLeft: true,
-                    iconColor: primaryContainer,
-                    backgroundColor: onPrimaryContainer.withOpacity(0.8),
-                    textColor: primaryContainer,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onEdit();
-                    },
-                  ),
-                ),
-              ],
-            ),
-            DSSizedBoxSpacing.vertical(12),
-            // Botão Cancelar
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                child: Text('Cancelar', style: textTheme.bodyMedium?.copyWith(
-                  color: onPrimary,
-                )),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            DSSizedBoxSpacing.vertical(8),
-          ],
-        ),
-      ),
+      title: 'Opções',
+      actions: [
+        OptionsModalAction(label: 'Editar', icon: Icons.edit, onPressed: onEdit),
+        OptionsModalAction(label: 'Excluir', icon: Icons.delete, backgroundColor: error, textColor: onError, iconColor: onError, onPressed: onDelete),
+      ],
     );
   }
 

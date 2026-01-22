@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/price_per_hour_input.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
@@ -151,11 +152,7 @@ class _EditSlotModalState extends State<EditSlotModal> {
     final endMinutes = _endTime.hour * 60 + _endTime.minute;
 
     if (endMinutes <= startMinutes) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Horário de fim deve ser maior que horário de início'),
-        ),
-      );
+      context.showError('Horário de fim deve ser maior que horário de início');
       return;
     }
 

@@ -1,22 +1,43 @@
 import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/shared/widgets/confirmation_dialog.dart';
+import 'package:app/core/shared/widgets/options_modal.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/edit_address_radius_modal.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/edit_slot_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Bottom sheet de edição de dia (estilo Airbnb)
+/// Enum para ações do slot
+enum SlotAction { edit, delete }
+
+/// Bottom sheet de edição de dia
 /// 
-/// UI mockada baseada nas imagens fornecidas
+/// Exibe disponibilidades reais e permite edição
 class DayEditBottomSheet extends StatefulWidget {
   final DateTime selectedDate;
+  final AvailabilityDayEntity? availability; // Disponibilidade do dia (pode ser null)
   final VoidCallback onClose;
+  final Function(bool isActive)? onToggleStatus; // Callback para ativar/desativar
+  final VoidCallback? onAddAvailability; // Callback para adicionar disponibilidade ao dia
+  final Function(AddressInfoEntity address, double radius)? onUpdateAddressRadius; // Callback para atualizar endereço e raio
+  final Function(String startTime, String endTime, double pricePerHour)? onAddSlot; // Callback para adicionar slot
+  final Function(String slotId, String? startTime, String? endTime, double? pricePerHour)? onUpdateSlot; // Callback para atualizar slot
+  final Function(String slotId)? onDeleteSlot; // Callback para deletar slot
 
   const DayEditBottomSheet({
     super.key,
     required this.selectedDate,
+    this.availability,
     required this.onClose,
+    this.onToggleStatus,
+    this.onAddAvailability,
+    this.onUpdateAddressRadius,
+    this.onAddSlot,
+    this.onUpdateSlot,
+    this.onDeleteSlot,
   });
 
   @override
@@ -24,7 +45,6 @@ class DayEditBottomSheet extends StatefulWidget {
 }
 
 class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTickerProviderStateMixin {
-  bool _isAvailable = true;
   late TabController _tabController;
 
   @override
@@ -32,6 +52,16 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
+  
+  /// Verifica se o dia tem disponibilidade ativa
+  bool get _hasAvailability => widget.availability != null;
+  
+  /// Verifica se a disponibilidade está ativa
+  bool get _isActive => widget.availability?.isActive ?? false;
+  
+  /// Obtém a lista de entries de disponibilidade
+  List<dynamic> get _availabilityEntries => 
+      widget.availability?.availabilities ?? [];
 
   @override
   void dispose() {
@@ -226,18 +256,21 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           // Switch customizado com ícones
           Center(
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isAvailable = !_isAvailable;
-                });
-              },
+              onTap: _hasAvailability
+                  ? () {
+                      // Chamar callback para toggle
+                      if (widget.onToggleStatus != null) {
+                        widget.onToggleStatus!(!_isActive);
+                      }
+                    }
+                  : null, // Desabilitar se não tem disponibilidade
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: DSSize.width(80),
                 height: DSSize.height(36),
                 padding: EdgeInsets.all(DSSize.width(2)),
                 decoration: BoxDecoration(
-                  color: _isAvailable 
+                  color: _isActive 
                       ? colorScheme.surfaceContainerHighest
                       : colorScheme.error.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(DSSize.width(18)),
@@ -254,7 +287,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                           child: Icon(
                             Icons.close,
                             size: DSSize.width(16),
-                            color: _isAvailable
+                            color: _isActive
                                 ? colorScheme.primaryContainer.withOpacity(0.5)
                                 : colorScheme.error,
                           ),
@@ -263,7 +296,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                           child: Icon(
                             Icons.check,
                             size: DSSize.width(16),
-                            color: _isAvailable
+                            color: _isActive
                                 ? colorScheme.primaryContainer
                                 : colorScheme.onSurface.withOpacity(0.3),
                           ),
@@ -273,7 +306,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                     // Thumb (bolinha) animada
                     AnimatedAlign(
                       duration: const Duration(milliseconds: 200),
-                      alignment: _isAvailable 
+                      alignment: _isActive 
                           ? Alignment.centerRight 
                           : Alignment.centerLeft,
                       child: Container(
@@ -292,9 +325,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                         ),
                         child: Center(
                           child: Icon(
-                            _isAvailable ? Icons.check : Icons.close,
+                            _isActive ? Icons.check : Icons.close,
                             size: DSSize.width(18),
-                            color: _isAvailable
+                            color: _isActive
                                 ? colorScheme.onPrimaryContainer
                                 : colorScheme.error,
                           ),
@@ -313,14 +346,16 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
 
   /// Card de Disponibilidade (endereço + raio + slots)
   Widget _buildAvailabilityCard(ColorScheme colorScheme) {
-    // Dados mockados
-    final mockAddress = 'Centro';
-    final mockRadius = 5.0;
-    final mockSlots = [
-      {'startTime': '09:00', 'endTime': '12:00', 'price': 150.0},
-      {'startTime': '14:00', 'endTime': '18:00', 'price': 200.0},
-      {'startTime': '19:00', 'endTime': '23:00', 'price': 250.0},
-    ];
+    // Se não tem disponibilidade, mostrar mensagem
+    if (!_hasAvailability || _availabilityEntries.isEmpty) {
+      return _buildEmptyAvailabilityCard(colorScheme);
+    }
+    
+    // Pegar a primeira (e única) entry
+    final entry = _availabilityEntries.first;
+    final address = entry.endereco?.title ?? 'Sem endereço';
+    final radius = entry.raioAtuacao;
+    final slots = entry.slots;
 
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
@@ -341,36 +376,56 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
             Row(
               children: [
                 // Endereço
-                Icon(
-                  Icons.location_on,
-                  size: DSSize.width(18),
-                  color: colorScheme.onPrimaryContainer,
-                ),
-                SizedBox(width: DSSize.width(6)),
-                Text(
-                  mockAddress,
-                  style: TextStyle(
-                    fontSize: calculateFontSize(15),
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                
-                SizedBox(width: DSSize.width(12)),
-                
-                // Raio
-                Icon(
-                  Icons.radio_button_checked,
-                  size: DSSize.width(14),
-                  color: colorScheme.onTertiaryContainer,
-                ),
-                SizedBox(width: DSSize.width(4)),
-                Text(
-                  '${mockRadius.toStringAsFixed(0)} km',
-                  style: TextStyle(
-                    fontSize: calculateFontSize(12),
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: DSSize.width(18),
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          SizedBox(width: DSSize.width(6)),
+                          Flexible(
+                            child: Text(
+                              address,
+                              style: TextStyle(
+                                fontSize: calculateFontSize(15),
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Raio
+                          Icon(
+                            Icons.radio_button_checked,
+                            size: DSSize.width(18),
+                            color: colorScheme.onTertiaryContainer,
+                          ),
+                          SizedBox(width: DSSize.width(4)),
+                          Text(
+                            '${radius.toStringAsFixed(0)} km',
+                            style: TextStyle(
+                              fontSize: calculateFontSize(12),
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 
@@ -379,32 +434,19 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                 // Ícone de edição
                 GestureDetector(
                   onTap: () async {
-                    // Mock de endereço atual (substituir por dados reais)
-                    final currentAddress = AddressInfoEntity(
-                      uid: '1',
-                      title: mockAddress,
-                      zipCode: '01000-000',
-                      street: 'Rua Exemplo',
-                      number: '123',
-                      district: 'Centro',
-                      city: 'São Paulo',
-                      state: 'SP',
-                      latitude: -23.550520,
-                      longitude: -46.633308,
-                      isPrimary: false,
-                    );
-
+                    if (entry.endereco == null) return;
+                    
                     final result = await EditAddressRadiusModal.show(
                       context: context,
-                      initialAddress: currentAddress,
-                      initialRadius: mockRadius,
+                      initialAddress: entry.endereco!,
+                      initialRadius: radius,
                     );
 
-                    if (result != null) {
-                      // TODO: Atualizar o endereço e raio com os novos dados
-                      print('Endereço atualizado:');
-                      print('  Endereço: ${result['address'].title}');
-                      print('  Raio: ${result['radiusKm']} km');
+                    if (result != null && widget.onUpdateAddressRadius != null) {
+                      widget.onUpdateAddressRadius!(
+                        result['address'] as AddressInfoEntity,
+                        result['radiusKm'] as double,
+                      );
                     }
                   },
                   child: Container(
@@ -433,16 +475,34 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
             
             SizedBox(height: DSSize.height(8)),
             
-            // Lista de slots
-            ...mockSlots.map((slot) => Padding(
-              padding: EdgeInsets.only(bottom: DSSize.height(8)),
-              child: _buildTimeSlotCard(
-                colorScheme,
-                startTime: slot['startTime'] as String,
-                endTime: slot['endTime'] as String,
-                price: slot['price'] as double,
+            // Lista de slots (dados reais)
+            if (slots.isNotEmpty)
+              ...slots.map((slot) => Padding(
+                padding: EdgeInsets.only(bottom: DSSize.height(8)),
+                child: _buildTimeSlotCard(
+                  colorScheme,
+                  slotId: slot.slotId,
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                  price: slot.valorHora,
+                ),
+              )),
+            
+            // Mensagem se não há slots
+            if (slots.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: DSSize.height(16)),
+                child: Center(
+                  child: Text(
+                    'Nenhum horário cadastrado',
+                    style: TextStyle(
+                      fontSize: calculateFontSize(13),
+                      color: colorScheme.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
               ),
-            )),
             
             // Botão de adicionar novo slot
             SizedBox(height: DSSize.height(8)),
@@ -453,6 +513,63 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     );
   }
 
+  /// Exibe o modal de opções do slot (Editar/Excluir)
+  Future<void> _showSlotOptionsModal({
+    required String slotId,
+    required String startTime,
+    required String endTime,
+    required double price,
+  }) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onError = colorScheme.onError;
+    final error = colorScheme.error;
+    await OptionsModal.show(
+      context: context,
+      title: 'Opções',
+      actions: [
+        OptionsModalAction(label: 'Editar', icon: Icons.edit, onPressed: () => _showEditSlotModal(context, slotId, startTime, endTime, price)),
+        OptionsModalAction(label: 'Excluir', icon: Icons.delete, backgroundColor: error, textColor: onError, iconColor: onError, onPressed: () => _showDeleteSlotModal(context, slotId, startTime, endTime, price)),
+      ],
+    );
+  }
+
+  Future<void> _showEditSlotModal(BuildContext context, String slotId, String startTime, String endTime, double price) async {    // Abrir modal de edição
+      final result = await EditSlotModal.show(
+        context: context,
+        startTime: startTime,
+        endTime: endTime,
+        pricePerHour: price,
+      );
+
+      if (result != null && widget.onUpdateSlot != null) {
+        widget.onUpdateSlot!(
+          slotId,
+          result['startTime'] as String?,
+          result['endTime'] as String?,
+          result['pricePerHour'] as double?,
+        );
+      }
+  }
+
+
+  Future<void> _showDeleteSlotModal(BuildContext context, String slotId, String startTime, String endTime, double price) async {
+    final confirmed = await ConfirmationDialog.show(
+            context: context,
+            title: 'Confirmar exclusão',
+            message: 'Deseja realmente excluir o horário $startTime - $endTime?',
+            confirmText: 'Excluir',
+            cancelText: 'Cancelar',
+            confirmButtonColor: Theme.of(context).colorScheme.error,
+            confirmButtonTextColor: Theme.of(context).colorScheme.onError,
+          );
+
+      // Só excluir se o usuário confirmou
+      if (confirmed == true && widget.onDeleteSlot != null) {
+        widget.onDeleteSlot!(slotId);
+      }
+    }
+
   /// Botão de adicionar novo slot
   Widget _buildAddSlotButton(ColorScheme colorScheme) {
     return GestureDetector(
@@ -462,12 +579,12 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           // Sem parâmetros = modo criar
         );
 
-        if (result != null) {
-          // TODO: Adicionar novo slot
-          print('Novo slot criado:');
-          print('  Início: ${result['startTime']}');
-          print('  Fim: ${result['endTime']}');
-          print('  Valor/h: ${result['pricePerHour']}');
+        if (result != null && widget.onAddSlot != null) {
+          widget.onAddSlot!(
+            result['startTime'] as String,
+            result['endTime'] as String,
+            result['pricePerHour'] as double,
+          );
         }
       },
       child: Container(
@@ -510,6 +627,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   /// Card de slot de tempo
   Widget _buildTimeSlotCard(
     ColorScheme colorScheme, {
+    required String slotId,
     required String startTime,
     required String endTime,
     required double price,
@@ -536,9 +654,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  Icons.access_time,
+                  Icons.check_circle,
                   size: DSSize.width(14),
-                  color: colorScheme.onPrimaryContainer,
+                  color: colorScheme.onSecondaryContainer,
                 ),
               ),
               
@@ -581,42 +699,112 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           ),
         ),
         
-        // Ícone de edição no canto superior direito
+        // Menu de opções (3 pontinhos) no canto superior direito
         Positioned(
           top: DSSize.height(6),
           right: DSSize.width(6),
           child: GestureDetector(
-            onTap: () async {
-              final result = await EditSlotModal.show(
-                context: context,
-                startTime: startTime,
-                endTime: endTime,
-                pricePerHour: price,
-              );
-
-              if (result != null) {
-                // TODO: Atualizar o slot com os novos dados
-                print('Slot atualizado:');
-                print('  Início: ${result['startTime']}');
-                print('  Fim: ${result['endTime']}');
-                print('  Valor/h: ${result['pricePerHour']}');
-              }
-            },
+            onTap: () => _showSlotOptionsModal(
+              slotId: slotId,
+              startTime: startTime,
+              endTime: endTime,
+              price: price,
+            ),
             child: Container(
-              padding: EdgeInsets.all(DSSize.width(5)),
+              padding: EdgeInsets.all(DSSize.width(6)),
               decoration: BoxDecoration(
-                color: colorScheme.onPrimaryContainer,
+                color: colorScheme.onPrimaryContainer.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.edit,
-                size: DSSize.width(12),
-                color: colorScheme.primaryContainer,
+                Icons.more_vert,
+                size: DSSize.width(16),
+                color: colorScheme.onPrimaryContainer,
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  /// Card vazio quando não há disponibilidade
+  Widget _buildEmptyAvailabilityCard(ColorScheme colorScheme) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      padding: EdgeInsets.all(DSSize.width(24)),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(DSSize.width(12)),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.event_busy,
+              size: DSSize.width(48),
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            SizedBox(height: DSSize.height(16)),
+            Text(
+              'Sem disponibilidade',
+              style: TextStyle(
+                fontSize: calculateFontSize(16),
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: DSSize.height(8)),
+            Text(
+              'Adicione disponibilidade para este dia',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: calculateFontSize(13),
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
+            
+            // Botão para adicionar disponibilidade
+            DSSizedBoxSpacing.vertical(16),
+            GestureDetector(
+              onTap: widget.onAddAvailability,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: DSSize.width(20),
+                  vertical: DSSize.height(12),
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.onPrimaryContainer,
+                  borderRadius: BorderRadius.circular(DSSize.width(12)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      size: DSSize.width(16),
+                      color: colorScheme.primaryContainer,
+                    ),
+                    DSSizedBoxSpacing.horizontal(8),
+                    Text(
+                      'Adicionar',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

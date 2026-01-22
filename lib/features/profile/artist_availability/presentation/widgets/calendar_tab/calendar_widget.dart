@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -13,6 +14,7 @@ import 'package:intl/intl.dart';
 /// - Seleção com fundo escuro
 /// - Seleção de período (long press + arrastar)
 class CalendarWidget extends StatefulWidget {
+  final List<AvailabilityDayEntity> availabilities; // Dados reais de disponibilidade
   final DateTime? selectedDay;
   final List<DateTime>? selectedDays; // Para seleção múltipla persistente
   final void Function(DateTime day)? onDaySelected; // Seleção única
@@ -21,6 +23,7 @@ class CalendarWidget extends StatefulWidget {
 
   const CalendarWidget({
     super.key,
+    this.availabilities = const [],
     this.selectedDay,
     this.selectedDays,
     this.onDaySelected,
@@ -42,6 +45,9 @@ class CalendarWidgetState extends State<CalendarWidget> {
   DateTime? _selectionStart;
   DateTime? _selectionEnd;
   final Map<DateTime, GlobalKey> _dayKeys = {};
+  
+  // Cache de disponibilidades por data (para lookup rápido)
+  late Map<String, AvailabilityDayEntity> _availabilityMap;
 
   @override
   void initState() {
@@ -55,6 +61,70 @@ class CalendarWidgetState extends State<CalendarWidget> {
     // Até exatamente 1 ano a partir de hoje
     _endDate = today.add(const Duration(days: 365));
     
+    // Criar mapa de disponibilidades por data
+    _buildAvailabilityMap();
+  }
+  
+  @override
+  void didUpdateWidget(CalendarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Atualizar mapa quando availabilities mudam
+    if (oldWidget.availabilities != widget.availabilities) {
+      _buildAvailabilityMap();
+    }
+  }
+  
+  /// Constrói mapa de disponibilidades indexado por data (YYYY-MM-DD)
+  void _buildAvailabilityMap() {
+    _availabilityMap = {};
+    for (final availability in widget.availabilities) {
+      final dateKey = _getDateKey(availability.date);
+      _availabilityMap[dateKey] = availability;
+    }
+  }
+  
+  /// Retorna chave de data no formato YYYY-MM-DD
+  String _getDateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+  
+  /// Obtém disponibilidade para um dia específico
+  AvailabilityDayEntity? _getAvailabilityForDay(DateTime day) {
+    final dateKey = _getDateKey(day);
+    return _availabilityMap[dateKey];
+  }
+  
+  /// Verifica se o dia tem disponibilidade ativa
+  bool _hasAvailability(DateTime day) {
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) return false;
+    
+    // Verificar se está ativo e tem slots
+    return availability.isActive && 
+           availability.availabilities.isNotEmpty &&
+           availability.availabilities.any((entry) => entry.slots.isNotEmpty);
+  }
+  
+  /// Conta quantidade de slots disponíveis no dia
+  int _getAvailableSlotsCount(DateTime day) {
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) return 0;
+    
+    // Contar total de slots em todas as entries
+    int totalSlots = 0;
+    for (final entry in availability.availabilities) {
+      totalSlots += entry.slots.where((slot) => slot.status == 'available').length;
+    }
+    return totalSlots;
+  }
+  
+  /// Verifica se a disponibilidade está desativada
+  bool _isAvailabilityInactive(DateTime day) {
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) return false;
+    
+    // Tem disponibilidade mas está inativa
+    return !availability.isActive && availability.availabilities.isNotEmpty;
   }
 
   @override
@@ -433,9 +503,10 @@ class CalendarWidgetState extends State<CalendarWidget> {
       _dayKeys[normalizedDay] = GlobalKey();
     }
     
-    // Dados mockados para visualização
-    final hasAvailability = day.day % 3 != 0; // Mock: 2/3 dos dias têm disponibilidade
-    final slotsCount = hasAvailability ? (day.day % 4) : 0;
+    // Dados reais de disponibilidade
+    final hasAvailability = _hasAvailability(day);
+    final slotsCount = _getAvailableSlotsCount(day);
+    final isInactive = _isAvailabilityInactive(day);
     
     return GestureDetector(
       onTap: () {
@@ -586,7 +657,21 @@ class CalendarWidgetState extends State<CalendarWidget> {
                   
                   
                   // Informações de disponibilidade
-                  if (hasAvailability && !isPast) ...[    
+                  if (isInactive && !isPast) ...[
+                    // Disponibilidade desativada
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.close,
+                          size: DSSize.width(16),
+                          color: colorScheme.error,
+                        ),
+                      ],
+                    ),
+                  ] else if (hasAvailability && !isPast) ...[    
+                    // Disponibilidade ativa com slots
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -594,9 +679,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
                         Icon(
                           Icons.check_circle, 
                           size: DSSize.width(12), 
-                          color: isSelected
-                              ? colorScheme.primaryContainer.withOpacity(0.7)
-                              : colorScheme.onSecondaryContainer,
+                          color: colorScheme.onSecondaryContainer,
                         ),
                         DSSizedBoxSpacing.horizontal(4),
 
@@ -630,11 +713,9 @@ class CalendarWidgetState extends State<CalendarWidget> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.lock_outline,
+                          Icons.circle_outlined,
                           size: DSSize.width(14),
-                          color: isSelected
-                              ? colorScheme.primaryContainer.withOpacity(0.7)
-                              : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          color: colorScheme.onTertiaryContainer,
                         ),
                       ],
                     ),
@@ -642,9 +723,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
                   
                   // TODO: Adicionar indicador de shows quando houver integração
                   // Exemplo: if (hasShows) ... Icon(Icons.mic, ...) + Text('$showsCount')
-                  
-                  // TODO: Adicionar indicador de disponibilidade desativada
-                  // Exemplo: if (isDisabled) ... Icon(Icons.close, ...)
                   
                   // Espaçador para manter altura consistente
                   if (!hasAvailability && !isPast) ...[

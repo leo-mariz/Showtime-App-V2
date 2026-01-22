@@ -116,9 +116,7 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
       _inviteInvitedBy.remove(group.uid);
       _myGroups.add(group);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Convite para ${group.groupName} aceito!')),
-    );
+    context.showSuccess('Convite para ${group.groupName} aceito!');
     // TODO: Implementar aceitação via Bloc/Repository
   }
 
@@ -127,9 +125,7 @@ class _GroupsScreenState extends State<GroupsScreen> with SingleTickerProviderSt
       _pendingInvites.remove(group);
       _inviteInvitedBy.remove(group.uid);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Convite para ${group.groupName} recusado.')),
-    );
+    context.showError('Convite para ${group.groupName} recusado.');
     // TODO: Implementar recusa via Bloc/Repository
   }
 

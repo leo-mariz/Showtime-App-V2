@@ -1,4 +1,5 @@
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/password_field.dart';
@@ -56,9 +57,7 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
       setState(() {
         isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Conta excluída com sucesso!')),
-      );
+      context.showSuccess('Conta excluída com sucesso!');
       // TODO: Navegar para tela inicial quando implementar
       // AutoRouter.of(context).pushAndClearStack(const InitialRoute());
     });

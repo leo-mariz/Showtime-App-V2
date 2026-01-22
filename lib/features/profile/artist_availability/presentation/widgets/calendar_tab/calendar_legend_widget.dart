@@ -8,6 +8,11 @@ class CalendarLegendWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final onSecondaryContainer = colorScheme.onSecondaryContainer;
+    final onTertiaryContainer = colorScheme.onTertiaryContainer;
+    final error = colorScheme.error;
     return Wrap(
       spacing: 16,
       runSpacing: 8,
@@ -15,7 +20,7 @@ class CalendarLegendWidget extends StatelessWidget {
       children: [
         _buildLegendItem(
           icon: Icons.check_circle,
-          color: Colors.green.shade400,
+          color: onSecondaryContainer,
           label: 'Disponível',
         ),
         _buildLegendItem(
@@ -25,13 +30,13 @@ class CalendarLegendWidget extends StatelessWidget {
         ),
         _buildLegendItem(
           icon: Icons.access_time,
-          color: Colors.orange.shade400,
-          label: 'Parcial',
+          color: onTertiaryContainer,
+          label: 'Sem disponibilidade cadastrada',
         ),
         _buildLegendItem(
           icon: Icons.block,
-          color: Colors.red.shade400,
-          label: 'Bloqueado',
+          color: error,
+          label: 'Disponibilidade desativada',
         ),
       ],
     );

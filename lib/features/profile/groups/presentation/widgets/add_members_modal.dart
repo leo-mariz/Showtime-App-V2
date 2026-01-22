@@ -87,9 +87,7 @@ class _AddMembersModalState extends State<AddMembersModal> {
     widget.onSendInvites(_addedEmails);
     if (mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_addedEmails.length} convite${_addedEmails.length > 1 ? 's' : ''} enviado${_addedEmails.length > 1 ? 's' : ''}!')),
-      );
+      context.showSuccess('${_addedEmails.length} convite${_addedEmails.length > 1 ? 's' : ''} enviado${_addedEmails.length > 1 ? 's' : ''}!');
     }
   }
 

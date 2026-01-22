@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:flutter/material.dart';
@@ -35,11 +36,7 @@ class PeriodFilterSection extends StatelessWidget {
     if (picked != null) {
       // Validar que a data inicial não seja posterior à data final
       if (endDate != null && picked.isAfter(endDate!)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('A data inicial não pode ser posterior à data final'),
-          ),
-        );
+        context.showError('A data inicial não pode ser posterior à data final');
         return;
       }
 
@@ -47,11 +44,7 @@ class PeriodFilterSection extends StatelessWidget {
       if (endDate != null) {
         final difference = endDate!.difference(picked);
         if (difference.inDays > 90) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('O período não pode exceder 3 meses'),
-            ),
-          );
+          context.showError('O período não pode exceder 3 meses');
           return;
         }
       }
@@ -71,11 +64,7 @@ class PeriodFilterSection extends StatelessWidget {
     if (picked != null) {
       // Validar que a data final não seja anterior à data inicial
       if (startDate != null && picked.isBefore(startDate!)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('A data final não pode ser anterior à data inicial'),
-          ),
-        );
+        context.showError('A data final não pode ser anterior à data inicial');
         return;
       }
 
@@ -83,11 +72,7 @@ class PeriodFilterSection extends StatelessWidget {
       if (startDate != null) {
         final difference = picked.difference(startDate!);
         if (difference.inDays > 90) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('O período não pode exceder 3 meses'),
-            ),
-          );
+          context.showError('O período não pode exceder 3 meses');
           return;
         }
       }

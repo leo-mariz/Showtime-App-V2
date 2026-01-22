@@ -572,11 +572,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
 
   void _handlePayment(BuildContext context) {
     if (_contract.linkPayment == null || _contract.linkPayment!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Link de pagamento não disponível. Entre em contato com o suporte.'),
-        ),
-      );
+      context.showError('Link de pagamento não disponível. Entre em contato com o suporte.');
       return;
     }
 

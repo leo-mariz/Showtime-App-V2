@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
@@ -127,12 +128,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
           BlocListener<ArtistDashboardBloc, ArtistDashboardState>(
             listener: (context, state) {
               if (state is GetArtistDashboardStatsFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erro ao carregar estatísticas: ${state.error}'),
-                    backgroundColor: colorScheme.error,
-                  ),
-                );
+                context.showError('Erro ao carregar estatísticas: ${state.error}');
               }
             },
           ),

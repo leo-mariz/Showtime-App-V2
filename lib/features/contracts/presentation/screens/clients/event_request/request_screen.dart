@@ -14,7 +14,6 @@ import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/core/users/presentation/bloc/events/users_events.dart';
 import 'package:app/core/users/presentation/bloc/states/users_states.dart';
-import 'package:app/core/utils/availability_validator.dart';
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
 import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';

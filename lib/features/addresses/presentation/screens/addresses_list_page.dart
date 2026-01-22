@@ -1,6 +1,7 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/features/addresses/presentation/widgets/address_card.dart';
@@ -18,28 +19,7 @@ class AddressesListPage extends StatefulWidget {
 
 class AddressesListPageState extends State<AddressesListPage> {
   // Mock data
-  List<AddressInfoEntity> _addresses = [
-    AddressInfoEntity(
-      title: 'Casa',
-      zipCode: '01310-100',
-      street: 'Avenida Paulista',
-      number: '1578',
-      district: 'Bela Vista',
-      city: 'São Paulo',
-      state: 'SP',
-      isPrimary: true,
-    ),
-    AddressInfoEntity(
-      title: 'Trabalho',
-      zipCode: '04547-130',
-      street: 'Rua Funchal',
-      number: '263',
-      district: 'Vila Olímpia',
-      city: 'São Paulo',
-      state: 'SP',
-      isPrimary: false,
-    ),
-  ];
+  List<AddressInfoEntity> _addresses = [];
 
 
   void _deleteAddress(String addressTitle) {
@@ -60,9 +40,7 @@ class AddressesListPageState extends State<AddressesListPage> {
                   _addresses.removeWhere((addr) => addr.title == addressTitle);
                 });
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Endereço excluído com sucesso')),
-                );
+                context.showSuccess('Endereço excluído com sucesso');
               },
               child: Text('Excluir', style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ),

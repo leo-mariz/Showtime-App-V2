@@ -181,9 +181,7 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao selecionar arquivo: $e')),
-        );
+        context.showError('Erro ao selecionar arquivo: $e');
       }
     }
   }
@@ -570,9 +568,7 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao selecionar arquivo: $e')),
-        );
+        context.showError('Erro ao selecionar arquivo: $e');
       }
     }
   }
@@ -988,9 +984,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
       }
     } catch (e) {
       if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao selecionar arquivo: $e')),
-        );
+        context.showError('Erro ao selecionar arquivo: $e');
       }
     }
   }
@@ -1300,9 +1294,7 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
       }
     } catch (e) {
       if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao selecionar arquivo: $e')),
-        );
+        context.showError('Erro ao selecionar arquivo: $e');
       }
     }
   }

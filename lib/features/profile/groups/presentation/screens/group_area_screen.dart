@@ -80,14 +80,10 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     name: currentGroup.groupName ?? 'Grupo',
                     imageUrl: currentGroup.profilePicture,
                     onProfilePictureTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                     onEditName: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
 
@@ -101,9 +97,7 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     iconColor: onPrimaryContainer,
                     onTap: () {
                       // TODO: Navegar para dados profissionais do grupo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
 
@@ -117,9 +111,7 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     iconColor: onPrimaryContainer,
                     onTap: () {
                       // TODO: Navegar para apresentações do grupo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                        context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
 
@@ -133,9 +125,7 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     iconColor: onPrimaryContainer,
                     onTap: () {
                       // TODO: Navegar para disponibilidade do grupo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
 
@@ -149,9 +139,7 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     iconColor: onPrimaryContainer,
                     onTap: () {
                       // TODO: Navegar para visualização da página do grupo
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
 
@@ -165,9 +153,7 @@ class _GroupAreaScreenState extends State<GroupAreaScreen> {
                     iconColor: onPrimaryContainer,
                     onTap: () {
                       // TODO: Navegar para gestão de integrantes
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Funcionalidade em desenvolvimento')),
-                      );
+                      context.showError('Funcionalidade em desenvolvimento');
                     },
                   ),
                 ],

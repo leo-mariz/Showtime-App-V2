@@ -23,6 +23,8 @@ class ConfirmationDialog extends StatelessWidget {
   final VoidCallback? onCancel;
   final bool barrierDismissible;
   final Color? confirmButtonColor;
+  final Color? confirmButtonTextColor;
+  final Color? cancelButtonTextColor;
   final Color? cancelButtonColor;
 
   const ConfirmationDialog({
@@ -35,7 +37,9 @@ class ConfirmationDialog extends StatelessWidget {
     this.onCancel,
     this.barrierDismissible = true,
     this.confirmButtonColor,
+    this.confirmButtonTextColor,
     this.cancelButtonColor,
+    this.cancelButtonTextColor,
   });
 
   /// Método estático para exibir o diálogo de confirmação
@@ -49,7 +53,9 @@ class ConfirmationDialog extends StatelessWidget {
     String cancelText = 'Cancelar',
     bool barrierDismissible = true,
     Color? confirmButtonColor,
+    Color? confirmButtonTextColor,
     Color? cancelButtonColor,
+    Color? cancelButtonTextColor,
   }) {
     return showDialog<bool>(
       context: context,
@@ -60,6 +66,8 @@ class ConfirmationDialog extends StatelessWidget {
         confirmText: confirmText,
         cancelText: cancelText,
         confirmButtonColor: confirmButtonColor,
+        confirmButtonTextColor: confirmButtonTextColor,
+        cancelButtonTextColor: cancelButtonTextColor,
         cancelButtonColor: cancelButtonColor,
         onConfirm: () => Navigator.of(context).pop(true),
         onCancel: () => Navigator.of(context).pop(false),
@@ -94,11 +102,13 @@ class ConfirmationDialog extends StatelessWidget {
         DialogButton.text(
           text: cancelText,
           onPressed: onCancel ?? () => Navigator.of(context).pop(false),
+          foregroundColor: cancelButtonTextColor ?? colorScheme.onPrimary,
         ),
         DialogButton.primary(
           text: confirmText,
           backgroundColor: confirmButtonColor ?? colorScheme.onPrimaryContainer,
           onPressed: onConfirm ?? () => Navigator.of(context).pop(true),
+          textColor: confirmButtonTextColor ?? colorScheme.onPrimaryContainer,
         ),
       ],
       actionsAlignment: MainAxisAlignment.end,

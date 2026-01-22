@@ -57,13 +57,15 @@ import 'package:app/features/profile/artist_availability/data/datasources/availa
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
 import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/add_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/delete_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/add_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/delete_time_slot_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_availability_by_date_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/toggle_availability_status_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/update_address_and_radius_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/update_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/toggle_availability_status_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_address_and_radius_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_time_slot_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
@@ -568,6 +570,15 @@ AvailabilityBloc _createAvailabilityBloc(
     getByDate: getAvailabilityByDateUseCase,
   );
 
+  // Criar Use Cases de Períodos
+  final openPeriodUseCase = OpenPeriodUseCase(
+    repository: availabilityRepository,
+  );
+
+  final closePeriodUseCase = ClosePeriodUseCase(
+    repository: availabilityRepository,
+  );
+
   // Criar e retornar AvailabilityBloc
   return AvailabilityBloc(
     getAllAvailabilities: getAllAvailabilitiesUseCase,
@@ -577,6 +588,8 @@ AvailabilityBloc _createAvailabilityBloc(
     addTimeSlot: addTimeSlotUseCase,
     updateTimeSlot: updateTimeSlotUseCase,
     deleteTimeSlot: deleteTimeSlotUseCase,
+    openPeriod: openPeriodUseCase,
+    closePeriod: closePeriodUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }

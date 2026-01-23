@@ -1,94 +1,102 @@
-import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
+import 'package:equatable/equatable.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/check_overlap_on_day_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
 
-/// Eventos base para Availability
-abstract class AvailabilityEvent {}
+abstract class AvailabilityEvent extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
 
-// ════════════════════════════════════════════════════════════════════════════
-// Eventos de Consulta
-// ════════════════════════════════════════════════════════════════════════════
+/// Estado inicial
+class AvailabilityInitialEvent extends AvailabilityEvent {}
 
-/// Evento para buscar todas as disponibilidades
+// ==================== GET ALL AVAILABILITIES EVENTS ====================
+
+/// Evento para buscar todas as disponibilidades de um artista
 class GetAllAvailabilitiesEvent extends AvailabilityEvent {
   final bool forceRemote;
 
   GetAllAvailabilitiesEvent({
     this.forceRemote = false,
   });
+
+  @override
+  List<Object?> get props => [forceRemote];
 }
 
-/// Evento para buscar disponibilidade de um dia específico
-class GetAvailabilityByDateEvent extends AvailabilityEvent {
-  final GetAvailabilityByDateDto dto;
+// ==================== TOGGLE AVAILABILITY STATUS EVENTS ====================
 
-  GetAvailabilityByDateEvent(this.dto);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Eventos de Disponibilidade do Dia
-// ════════════════════════════════════════════════════════════════════════════
-
-/// Evento para ativar/desativar disponibilidade
+/// Evento para ativar/desativar disponibilidade de um dia
 class ToggleAvailabilityStatusEvent extends AvailabilityEvent {
-  final ToggleAvailabilityStatusDto dto;
+  final DateTime date;
+  final bool isActive;
 
-  ToggleAvailabilityStatusEvent(this.dto);
+  ToggleAvailabilityStatusEvent({
+    required this.date,
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [date, isActive];
 }
 
-/// Evento para atualizar endereço e raio
-class UpdateAddressRadiusEvent extends AvailabilityEvent {
-  final UpdateAddressRadiusDto dto;
+// ==================== CHECK OVERLAP ON DAY EVENTS ====================
 
-  UpdateAddressRadiusEvent(this.dto);
+/// Evento para verificar overlaps em um único dia
+class GetOrganizedDayAfterVerificationEvent extends AvailabilityEvent {
+  final DateTime date;
+  final CheckOverlapOnDayDto dto;
+
+  GetOrganizedDayAfterVerificationEvent({
+    required this.date,
+    required this.dto,
+  });
+
+  @override
+  List<Object?> get props => [date, dto];
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// Eventos de Slots
-// ════════════════════════════════════════════════════════════════════════════
+// ==================== CHECK OVERLAPS ON PERIOD EVENTS ====================
 
-/// Evento para adicionar slot de horário
-class AddTimeSlotEvent extends AvailabilityEvent {
-  final SlotOperationDto dto;
+/// Evento para verificar overlaps em um período (múltiplos dias)
+class GetOrganizedAvailabilitiesAfterVerificationEvent extends AvailabilityEvent {
+  final CheckOverlapsDto dto;
+  final bool isClose;
 
-  AddTimeSlotEvent(this.dto);
+  GetOrganizedAvailabilitiesAfterVerificationEvent({
+    required this.dto,
+    required this.isClose,
+  });
+
+  @override
+  List<Object?> get props => [dto, isClose];
 }
 
-/// Evento para atualizar slot de horário
-class UpdateTimeSlotEvent extends AvailabilityEvent {
-  final SlotOperationDto dto;
-
-  UpdateTimeSlotEvent(this.dto);
-}
-
-/// Evento para deletar slot de horário
-class DeleteTimeSlotEvent extends AvailabilityEvent {
-  final SlotOperationDto dto;
-
-  DeleteTimeSlotEvent(this.dto);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Eventos de Períodos
-// ════════════════════════════════════════════════════════════════════════════
+// ==================== OPEN PERIOD EVENTS ====================
 
 /// Evento para abrir um período de disponibilidade
 class OpenPeriodEvent extends AvailabilityEvent {
   final OpenPeriodDto dto;
 
-  OpenPeriodEvent(this.dto);
+  OpenPeriodEvent({
+    required this.dto,
+  });
+
+  @override
+  List<Object?> get props => [dto];
 }
 
-/// Evento para fechar/bloquear um período de disponibilidade
+// ==================== CLOSE PERIOD EVENTS ====================
+
+/// Evento para fechar um período de disponibilidade
 class ClosePeriodEvent extends AvailabilityEvent {
-  final ClosePeriodDto dto;
+  final OpenPeriodDto dto;
 
-  ClosePeriodEvent(this.dto);
+  ClosePeriodEvent({
+    required this.dto,
+  });
+
+  @override
+  List<Object?> get props => [dto];
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// Eventos de Controle
-// ════════════════════════════════════════════════════════════════════════════
-
-/// Evento para resetar o estado
-class ResetAvailabilityEvent extends AvailabilityEvent {}

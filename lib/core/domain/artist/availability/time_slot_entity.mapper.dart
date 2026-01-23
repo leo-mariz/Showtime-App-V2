@@ -14,6 +14,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
   static TimeSlotMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = TimeSlotMapper._());
+      TimeSlotStatusEnumMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -30,24 +31,21 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
   );
   static String _$endTime(TimeSlot v) => v.endTime;
   static const Field<TimeSlot, String> _f$endTime = Field('endTime', _$endTime);
-  static String _$status(TimeSlot v) => v.status;
-  static const Field<TimeSlot, String> _f$status = Field('status', _$status);
+  static TimeSlotStatusEnum _$status(TimeSlot v) => v.status;
+  static const Field<TimeSlot, TimeSlotStatusEnum> _f$status = Field(
+    'status',
+    _$status,
+  );
   static double? _$valorHora(TimeSlot v) => v.valorHora;
   static const Field<TimeSlot, double> _f$valorHora = Field(
     'valorHora',
     _$valorHora,
     opt: true,
   );
-  static String? _$blockReason(TimeSlot v) => v.blockReason;
-  static const Field<TimeSlot, String> _f$blockReason = Field(
-    'blockReason',
-    _$blockReason,
-    opt: true,
-  );
-  static String? _$bookingId(TimeSlot v) => v.bookingId;
-  static const Field<TimeSlot, String> _f$bookingId = Field(
-    'bookingId',
-    _$bookingId,
+  static String? _$contractId(TimeSlot v) => v.contractId;
+  static const Field<TimeSlot, String> _f$contractId = Field(
+    'contractId',
+    _$contractId,
     opt: true,
   );
   static String? _$sourcePatternId(TimeSlot v) => v.sourcePatternId;
@@ -64,8 +62,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
     #endTime: _f$endTime,
     #status: _f$status,
     #valorHora: _f$valorHora,
-    #blockReason: _f$blockReason,
-    #bookingId: _f$bookingId,
+    #contractId: _f$contractId,
     #sourcePatternId: _f$sourcePatternId,
   };
 
@@ -76,8 +73,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
       endTime: data.dec(_f$endTime),
       status: data.dec(_f$status),
       valorHora: data.dec(_f$valorHora),
-      blockReason: data.dec(_f$blockReason),
-      bookingId: data.dec(_f$bookingId),
+      contractId: data.dec(_f$contractId),
       sourcePatternId: data.dec(_f$sourcePatternId),
     );
   }
@@ -143,10 +139,9 @@ abstract class TimeSlotCopyWith<$R, $In extends TimeSlot, $Out>
     String? slotId,
     String? startTime,
     String? endTime,
-    String? status,
+    TimeSlotStatusEnum? status,
     double? valorHora,
-    String? blockReason,
-    String? bookingId,
+    String? contractId,
     String? sourcePatternId,
   });
   TimeSlotCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
@@ -165,10 +160,9 @@ class _TimeSlotCopyWithImpl<$R, $Out>
     String? slotId,
     String? startTime,
     String? endTime,
-    String? status,
+    TimeSlotStatusEnum? status,
     Object? valorHora = $none,
-    Object? blockReason = $none,
-    Object? bookingId = $none,
+    Object? contractId = $none,
     Object? sourcePatternId = $none,
   }) => $apply(
     FieldCopyWithData({
@@ -177,8 +171,7 @@ class _TimeSlotCopyWithImpl<$R, $Out>
       if (endTime != null) #endTime: endTime,
       if (status != null) #status: status,
       if (valorHora != $none) #valorHora: valorHora,
-      if (blockReason != $none) #blockReason: blockReason,
-      if (bookingId != $none) #bookingId: bookingId,
+      if (contractId != $none) #contractId: contractId,
       if (sourcePatternId != $none) #sourcePatternId: sourcePatternId,
     }),
   );
@@ -189,8 +182,7 @@ class _TimeSlotCopyWithImpl<$R, $Out>
     endTime: data.get(#endTime, or: $value.endTime),
     status: data.get(#status, or: $value.status),
     valorHora: data.get(#valorHora, or: $value.valorHora),
-    blockReason: data.get(#blockReason, or: $value.blockReason),
-    bookingId: data.get(#bookingId, or: $value.bookingId),
+    contractId: data.get(#contractId, or: $value.contractId),
     sourcePatternId: data.get(#sourcePatternId, or: $value.sourcePatternId),
   );
 

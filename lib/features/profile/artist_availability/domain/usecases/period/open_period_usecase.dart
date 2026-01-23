@@ -1,62 +1,38 @@
-import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
 import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
-import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/availability_helpers.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/entities/open_period_result.dart';
-import 'package:app/features/profile/artist_availability/domain/entities/slot_overlap_info.dart';
-import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/create_availability_day_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
+import 'package:dartz/dartz.dart';
 
 /// Use Case para abrir um período de disponibilidade
 /// 
-/// Cria disponibilidades para múltiplos dias com patternData (PatternMetadata)
-/// permitindo rastrear e editar múltiplos dias de uma vez.
-/// 
-/// **Fluxo:**
-/// 1. Gera datas válidas usando `generateValidDates`
-/// 2. Para cada data:
-///    - Busca disponibilidade do dia
-///    - Se não tiver slots -> Adiciona o slot do dto
-///    - Se tiver slots -> Verifica se algum sobrepõe o horário do dto
-///      - Se não sobrepõe -> Adiciona o slot ao dia
-///      - Se sobrepõe -> Guarda em dicionário e pula sem adicionar
-/// 3. Retorna resultado com dias criados e informações de overlaps
-/// 
-/// **Exemplo:**
-/// ```dart
-/// final dto = OpenPeriodDto(
-///   startDate: DateTime(2026, 1, 1),
-///   endDate: DateTime(2026, 1, 31),
-///   startTime: TimeOfDay(hour: 14, minute: 0),
-///   endTime: TimeOfDay(hour: 22, minute: 0),
-///   pricePerHour: 300.0,
-///   addressId: 'address-123',
-///   raioAtuacao: 50.0,
-///   endereco: addressInfo,
-///   weekdays: ['MO', 'TU', 'WE', 'TH', 'FR'], // Apenas dias úteis
-/// );
-/// 
-/// final result = await openPeriodUseCase(artistId, dto);
-/// ```
+/// Gera todas as datas do patternMetadata e para cada data:
+/// - Se não existe em dayOverlapInfos: cria usando baseAvailabilityDay
+/// - Se existe em dayOverlapInfos: atualiza usando informações do DayOverlapInfo
 class OpenPeriodUseCase {
-  final IAvailabilityRepository _repository;
+  final CreateAvailabilityDayUseCase createAvailabilityDayUseCase;
+  final UpdateAvailabilityDayUseCase updateAvailabilityDayUseCase;
 
   OpenPeriodUseCase({
-    required IAvailabilityRepository repository,
-  }) : _repository = repository;
+    required this.createAvailabilityDayUseCase,
+    required this.updateAvailabilityDayUseCase,
+  });
 
-  /// Abre período de disponibilidade
+  /// Abre o período de disponibilidade
+  /// 
+  /// **Parâmetros:**
+  /// - `artistId`: ID do artista
+  /// - `dto`: DTO com modelo base e informações de overlaps
   /// 
   /// **Retorna:**
-  /// - `Right(OpenPeriodResult)` com dias criados e informações de overlaps
+  /// - `Right(List<AvailabilityDayEntity>)` com os dias criados/atualizados
   /// - `Left(Failure)` se houver erro
-  Future<Either<Failure, OpenPeriodResult>> call(
+  Future<Either<Failure, List<AvailabilityDayEntity>>> call(
     String artistId,
     OpenPeriodDto dto,
   ) async {
@@ -66,299 +42,174 @@ class OpenPeriodUseCase {
       }
 
       // ════════════════════════════════════════════════════════════════
-      // 1. Gerar patternId único
+      // 1. Gerar datas válidas do patternMetadata
       // ════════════════════════════════════════════════════════════════
-      const uuid = Uuid();
-      final patternId = uuid.v4();
-      final now = DateTime.now();
-
-      // ════════════════════════════════════════════════════════════════
-      // 2. Criar PatternMetadata
-      // ════════════════════════════════════════════════════════════════
-      final patternMetadata = PatternMetadata(
-        patternId: patternId,
-        creationType: dto.weekdays != null ? 'recurring_pattern' : 'date_range',
-        recurrence: RecurrenceSettings(
-          weekdays: dto.weekdays,
-          originalStartDate: dto.startDate,
-          originalEndDate: dto.endDate,
-          originalStartTime: dto.formattedStartTime,
-          originalEndTime: dto.formattedEndTime,
-          originalValorHora: dto.pricePerHour,
-          originalAddressId: dto.addressId,
-        ),
-        createdAt: now,
-      );
-
-      // ════════════════════════════════════════════════════════════════
-      // 3. Gerar datas válidas usando helper
-      // ════════════════════════════════════════════════════════════════
-      final validDates = AvailabilityHelpers.generateValidDates(
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        weekdays: dto.weekdays,
-      );
-
-      // ════════════════════════════════════════════════════════════════
-      // 4. Processar cada data válida
-      // ════════════════════════════════════════════════════════════════
-      final daysToCreate = <AvailabilityDayEntity>[];
-      final daysToUpdate = <AvailabilityDayEntity>[];
-      final overlapsByDay = <String, Map<String, SlotOverlapInfo>>{};
-
-      for (final date in validDates) {
-        final dayId = _formatDate(date);
-        print('[OpenPeriod] 📅 Processando dia: $dayId');
-
-        // ════════════════════════════════════════════════════════════
-        // 4.1. Buscar disponibilidade do dia
-        // ════════════════════════════════════════════════════════════
-        final availabilityResult = await _repository.getAvailability(
-          artistId: artistId,
-          dayId: dayId,
+      final patternMetadata = dto.baseAvailabilityDay.patternMetadata;
+      if (patternMetadata == null || patternMetadata.isEmpty) {
+        return const Left(
+          ValidationFailure('patternMetadata é obrigatório no baseAvailabilityDay'),
         );
+      }
 
-        await availabilityResult.fold(
-          (failure) async {
-            // Se o dia não existe, criar novo dia com o slot
-            print('[OpenPeriod] ⚠️ Dia $dayId não encontrado. Criando novo dia.');
-            final newDay = _createNewDay(
-              date: date,
-              dto: dto,
-              patternId: patternId,
-              patternMetadata: patternMetadata,
-              now: now,
-              uuid: uuid,
-            );
-            daysToCreate.add(newDay);
-          },
-          (existingDay) async {
-            // ════════════════════════════════════════════════════════
-            // 4.2. Verificar se existem slots
-            // ════════════════════════════════════════════════════════
-            if (existingDay.availabilities.isEmpty) {
-              // Não tem slots, adicionar o slot do dto
-              print('[OpenPeriod] ✅ Dia $dayId sem slots. Adicionando novo slot.');
-              final updatedDay = _addSlotToDay(
-                existingDay: existingDay,
-                dto: dto,
-                patternId: patternId,
-                patternMetadata: patternMetadata,
-                now: now,
-                uuid: uuid,
-              );
-              daysToUpdate.add(updatedDay);
-            } else {
-              // Tem slots, verificar se algum sobrepõe
-              print('[OpenPeriod] 🔍 Dia $dayId tem slots. Verificando overlaps...');
-              
-              final dayOverlaps = <String, SlotOverlapInfo>{};
-              bool hasOverlap = false;
-              
-              for (final availability in existingDay.availabilities) {
-                for (final slot in availability.slots) {
-                  // Converter strings de horário para TimeOfDay
-                  final slotStartTime = _parseTimeString(slot.startTime);
-                  final slotEndTime = _parseTimeString(slot.endTime);
+      // Usar o primeiro patternMetadata para gerar as datas
+      final firstPattern = patternMetadata.first;
+      if (firstPattern.recurrence == null) {
+        return const Left(
+          ValidationFailure('recurrence é obrigatório no patternMetadata'),
+        );
+      }
 
-                  // Verificar se há sobreposição
-                  final overlapType = AvailabilityHelpers.validateTimeSlotOverlap(
-                    newStart: dto.startTime,
-                    newEnd: dto.endTime,
-                    existingStart: slotStartTime,
-                    existingEnd: slotEndTime,
-                  );
+      final validDates = _generateValidDatesFromPattern(firstPattern);
 
-                  if (overlapType != null) {
-                    // Há overlap, guardar no dicionário com informações completas
-                    hasOverlap = true;
-                    dayOverlaps[slot.slotId] = SlotOverlapInfo(
-                      slot: slot,
-                      overlapType: overlapType,
-                    );
-                    print('[OpenPeriod] ⚠️ Overlap detectado: slot ${slot.slotId} -> $overlapType');
-                  }
-                }
-              }
-
-              if (hasOverlap) {
-                // Há overlaps, não adicionar o slot e guardar no dicionário
-                print('[OpenPeriod] ❌ Dia $dayId tem overlaps. Não adicionando slot.');
-                overlapsByDay[dayId] = dayOverlaps;
-              } else {
-                // Não há overlaps, adicionar o slot ao dia
-                print('[OpenPeriod] ✅ Dia $dayId sem overlaps. Adicionando novo slot.');
-                final updatedDay = _addSlotToDay(
-                  existingDay: existingDay,
-                  dto: dto,
-                  patternId: patternId,
-                  patternMetadata: patternMetadata,
-                  now: now,
-                  uuid: uuid,
-                );
-                daysToUpdate.add(updatedDay);
-              }
-            }
-          },
+      if (validDates.isEmpty) {
+        return const Left(
+          ValidationFailure('Nenhuma data válida encontrada no padrão'),
         );
       }
 
       // ════════════════════════════════════════════════════════════════
-      // 5. Salvar todos os dias no repositório
+      // 2. Criar mapa de overlaps por data para busca rápida
+      // ════════════════════════════════════════════════════════════════
+      final overlapMap = <DateTime, DayOverlapInfo>{};
+      for (final overlapInfo in dto.dayOverlapInfos) {
+        // Normalizar a data (remover hora) para comparação
+        final normalizedDate = DateTime(
+          overlapInfo.date.year,
+          overlapInfo.date.month,
+          overlapInfo.date.day,
+        );
+        overlapMap[normalizedDate] = overlapInfo;
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // 2.1. Criar mapa de dias com slots reservados para busca rápida
+      // ════════════════════════════════════════════════════════════════
+      final bookedSlotMap = <DateTime, AvailabilityDayEntity>{};
+      for (final dayEntity in dto.daysWithBookedSlot) {
+        // Normalizar a data (remover hora) para comparação
+        final normalizedDate = DateTime(
+          dayEntity.date.year,
+          dayEntity.date.month,
+          dayEntity.date.day,
+        );
+        bookedSlotMap[normalizedDate] = dayEntity;
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // 3. Processar cada data
       // ════════════════════════════════════════════════════════════════
       final createdDays = <AvailabilityDayEntity>[];
 
-      // Criar novos dias
-      for (final day in daysToCreate) {
-        final result = await _repository.createAvailability(
-          artistId: artistId,
-          day: day,
+      for (final date in validDates) {
+        // Normalizar a data para comparação
+        final normalizedDate = DateTime(
+          date.year,
+          date.month,
+          date.day,
         );
 
-        result.fold(
-          (failure) => throw failure,
-          (createdDay) => createdDays.add(createdDay),
-        );
-      }
+        // ════════════════════════════════════════════════════════════
+        // 3.0. Verificar se o dia tem slot reservado - se sim, pular
+        // ════════════════════════════════════════════════════════════
+        if (bookedSlotMap.containsKey(normalizedDate)) {
+          // Dia tem slot reservado, não modificar
+          continue;
+        }
 
-      // Atualizar dias existentes
-      for (final day in daysToUpdate) {
-        final result = await _repository.updateAvailability(
-          artistId: artistId,
-          day: day,
-        );
+        final overlapInfo = overlapMap[normalizedDate];
 
-        result.fold(
-          (failure) => throw failure,
-          (updatedDay) => createdDays.add(updatedDay),
-        );
+        if (overlapInfo == null) {
+          // ════════════════════════════════════════════════════════════
+          // 3.1. Data não tem overlap - criar usando modelo base
+          // ════════════════════════════════════════════════════════════
+          final newDay = dto.baseAvailabilityDay.copyWith(
+            date: normalizedDate,
+            updatedAt: DateTime.now(),
+            isActive: true,
+          );
+
+          final createResult = await createAvailabilityDayUseCase(
+            artistId,
+            newDay,
+          );
+
+          createResult.fold(
+            (failure) => throw failure,
+            (createdDay) => createdDays.add(createdDay),
+          );
+        } else {
+          // ════════════════════════════════════════════════════════════
+          // 3.2. Data tem overlap - criar usando informações do overlap
+          // ════════════════════════════════════════════════════════════
+          final updatedDay = _createDayFromOverlapInfo(
+            baseDay: dto.baseAvailabilityDay,
+            overlapInfo: overlapInfo,
+            date: normalizedDate,
+          );
+
+          final updateResult = await updateAvailabilityDayUseCase(
+            artistId,
+            updatedDay,
+          );
+
+          updateResult.fold(
+            (failure) => throw failure,
+            (updatedDayEntity) => createdDays.add(updatedDayEntity),
+          );
+        }
       }
 
       // ════════════════════════════════════════════════════════════════
-      // 6. Retornar resultado com informações de overlaps
+      // 4. Retornar lista de dias criados/atualizados
       // ════════════════════════════════════════════════════════════════
-      if (overlapsByDay.isEmpty) {
-        return Right(OpenPeriodResult.noOverlaps(createdDays));
-      } else {
-        return Right(OpenPeriodResult.withOverlaps(createdDays, overlapsByDay));
-      }
+      return Right(createdDays);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
   }
 
-  /// Cria um novo dia com o slot do DTO
-  AvailabilityDayEntity _createNewDay({
-    required DateTime date,
-    required OpenPeriodDto dto,
-    required String patternId,
-    required PatternMetadata patternMetadata,
-    required DateTime now,
-    required Uuid uuid,
-  }) {
-    final timeSlot = TimeSlot(
-      slotId: uuid.v4(),
-      startTime: dto.formattedStartTime,
-      endTime: dto.formattedEndTime,
-      status: 'available',
-      valorHora: dto.pricePerHour,
-      sourcePatternId: patternId,
-    );
-
-    final availabilityEntry = AvailabilityEntry(
-      availabilityId: uuid.v4(),
-      generatedFrom: patternMetadata,
-      addressId: dto.addressId,
-      raioAtuacao: dto.raioAtuacao,
-      endereco: dto.endereco,
-      slots: [timeSlot],
-      isManualOverride: false,
-      createdAt: now,
-    );
-
-    return AvailabilityDayEntity(
-      date: date,
-      availabilities: [availabilityEntry],
-      createdAt: now,
-      isActive: true,
-    );
-  }
-
-  /// Adiciona o slot do DTO a um dia existente
-  AvailabilityDayEntity _addSlotToDay({
-    required AvailabilityDayEntity existingDay,
-    required OpenPeriodDto dto,
-    required String patternId,
-    required PatternMetadata patternMetadata,
-    required DateTime now,
-    required Uuid uuid,
-  }) {
-    final timeSlot = TimeSlot(
-      slotId: uuid.v4(),
-      startTime: dto.formattedStartTime,
-      endTime: dto.formattedEndTime,
-      status: 'available',
-      valorHora: dto.pricePerHour,
-      sourcePatternId: patternId,
-    );
-
-    // Verificar se já existe uma availability com o mesmo patternId
-    final existingEntryIndex = existingDay.availabilities.indexWhere(
-      (entry) => entry.generatedFrom?.patternId == patternId,
-    );
-
-    if (existingEntryIndex != -1) {
-      // Adicionar slot à availability existente
-      final existingEntry = existingDay.availabilities[existingEntryIndex];
-      final updatedSlots = [...existingEntry.slots, timeSlot];
-      
-      final updatedEntry = existingEntry.copyWith(
-        slots: updatedSlots,
-        updatedAt: now,
-      );
-
-      final updatedAvailabilities = List<AvailabilityEntry>.from(
-        existingDay.availabilities,
-      );
-      updatedAvailabilities[existingEntryIndex] = updatedEntry;
-
-      return existingDay.copyWith(
-        availabilities: updatedAvailabilities,
-        updatedAt: now,
-      );
-    } else {
-      // Criar nova availability
-      final newEntry = AvailabilityEntry(
-        availabilityId: uuid.v4(),
-        generatedFrom: patternMetadata,
-        addressId: dto.addressId,
-        raioAtuacao: dto.raioAtuacao,
-        endereco: dto.endereco,
-        slots: [timeSlot],
-        isManualOverride: false,
-        createdAt: now,
-      );
-
-      return existingDay.copyWith(
-        availabilities: [...existingDay.availabilities, newEntry],
-        updatedAt: now,
-      );
+  /// Gera datas válidas a partir do patternMetadata
+  List<DateTime> _generateValidDatesFromPattern(
+    PatternMetadata patternMetadata,
+  ) {
+    if (patternMetadata.recurrence == null) {
+      return [];
     }
+
+    final recurrence = patternMetadata.recurrence!;
+    return AvailabilityHelpers.generateValidDates(
+      startDate: recurrence.originalStartDate,
+      endDate: recurrence.originalEndDate,
+      weekdays: recurrence.weekdays,
+    );
   }
 
-  /// Formata DateTime para string "YYYY-MM-DD"
-  String _formatDate(DateTime date) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
-  }
+  /// Cria um AvailabilityDayEntity a partir das informações de overlap
+  AvailabilityDayEntity _createDayFromOverlapInfo({
+    required AvailabilityDayEntity baseDay,
+    required DayOverlapInfo overlapInfo,
+    required DateTime date,
+  }) {
+    // Usar novos slots se disponíveis, senão usar slots antigos
+    final slots = overlapInfo.newTimeSlots ?? overlapInfo.oldTimeSlots ?? [];
 
-  /// Converte string "HH:mm" para TimeOfDay
-  TimeOfDay _parseTimeString(String timeString) {
-    final parts = timeString.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
+    // Usar novo endereço se disponível, senão usar endereço antigo ou base
+    final endereco = overlapInfo.newAddress ??
+        overlapInfo.oldAddress ??
+        baseDay.endereco;
+
+    // Usar novo raio se disponível, senão usar raio antigo ou base
+    final raioAtuacao = overlapInfo.newRadius ??
+        overlapInfo.oldRadius ??
+        baseDay.raioAtuacao;
+
+    return baseDay.copyWith(
+      date: date,
+      slots: slots,
+      endereco: endereco,
+      raioAtuacao: raioAtuacao,
+      updatedAt: DateTime.now(),
+      isActive: true,
     );
   }
 }

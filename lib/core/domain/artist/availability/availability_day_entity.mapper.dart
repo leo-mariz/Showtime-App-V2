@@ -15,7 +15,9 @@ class AvailabilityDayEntityMapper
   static AvailabilityDayEntityMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = AvailabilityDayEntityMapper._());
-      AvailabilityEntryMapper.ensureInitialized();
+      TimeSlotMapper.ensureInitialized();
+      AddressInfoEntityMapper.ensureInitialized();
+      PatternMetadataMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -34,14 +36,29 @@ class AvailabilityDayEntityMapper
     'date',
     _$date,
   );
-  static List<AvailabilityEntry> _$availabilities(AvailabilityDayEntity v) =>
-      v.availabilities;
-  static const Field<AvailabilityDayEntity, List<AvailabilityEntry>>
-  _f$availabilities = Field('availabilities', _$availabilities);
-  static DateTime _$createdAt(AvailabilityDayEntity v) => v.createdAt;
+  static List<TimeSlot> _$slots(AvailabilityDayEntity v) => v.slots;
+  static const Field<AvailabilityDayEntity, List<TimeSlot>> _f$slots = Field(
+    'slots',
+    _$slots,
+  );
+  static double _$raioAtuacao(AvailabilityDayEntity v) => v.raioAtuacao;
+  static const Field<AvailabilityDayEntity, double> _f$raioAtuacao = Field(
+    'raioAtuacao',
+    _$raioAtuacao,
+  );
+  static AddressInfoEntity _$endereco(AvailabilityDayEntity v) => v.endereco;
+  static const Field<AvailabilityDayEntity, AddressInfoEntity> _f$endereco =
+      Field('endereco', _$endereco);
+  static bool _$isManualOverride(AvailabilityDayEntity v) => v.isManualOverride;
+  static const Field<AvailabilityDayEntity, bool> _f$isManualOverride = Field(
+    'isManualOverride',
+    _$isManualOverride,
+  );
+  static DateTime? _$createdAt(AvailabilityDayEntity v) => v.createdAt;
   static const Field<AvailabilityDayEntity, DateTime> _f$createdAt = Field(
     'createdAt',
     _$createdAt,
+    opt: true,
   );
   static DateTime? _$updatedAt(AvailabilityDayEntity v) => v.updatedAt;
   static const Field<AvailabilityDayEntity, DateTime> _f$updatedAt = Field(
@@ -56,15 +73,23 @@ class AvailabilityDayEntityMapper
     opt: true,
     def: true,
   );
+  static List<PatternMetadata>? _$patternMetadata(AvailabilityDayEntity v) =>
+      v.patternMetadata;
+  static const Field<AvailabilityDayEntity, List<PatternMetadata>>
+  _f$patternMetadata = Field('patternMetadata', _$patternMetadata, opt: true);
 
   @override
   final MappableFields<AvailabilityDayEntity> fields = const {
     #id: _f$id,
     #date: _f$date,
-    #availabilities: _f$availabilities,
+    #slots: _f$slots,
+    #raioAtuacao: _f$raioAtuacao,
+    #endereco: _f$endereco,
+    #isManualOverride: _f$isManualOverride,
     #createdAt: _f$createdAt,
     #updatedAt: _f$updatedAt,
     #isActive: _f$isActive,
+    #patternMetadata: _f$patternMetadata,
   };
 
   @override
@@ -73,10 +98,14 @@ class AvailabilityDayEntityMapper
     return AvailabilityDayEntity(
       id: data.dec(_f$id),
       date: data.dec(_f$date),
-      availabilities: data.dec(_f$availabilities),
+      slots: data.dec(_f$slots),
+      raioAtuacao: data.dec(_f$raioAtuacao),
+      endereco: data.dec(_f$endereco),
+      isManualOverride: data.dec(_f$isManualOverride),
       createdAt: data.dec(_f$createdAt),
       updatedAt: data.dec(_f$updatedAt),
       isActive: data.dec(_f$isActive),
+      patternMetadata: data.dec(_f$patternMetadata),
     );
   }
 
@@ -150,19 +179,27 @@ abstract class AvailabilityDayEntityCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>
+  get slots;
+  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
+  get endereco;
   ListCopyWith<
     $R,
-    AvailabilityEntry,
-    AvailabilityEntryCopyWith<$R, AvailabilityEntry, AvailabilityEntry>
-  >
-  get availabilities;
+    PatternMetadata,
+    PatternMetadataCopyWith<$R, PatternMetadata, PatternMetadata>
+  >?
+  get patternMetadata;
   $R call({
     String? id,
     DateTime? date,
-    List<AvailabilityEntry>? availabilities,
+    List<TimeSlot>? slots,
+    double? raioAtuacao,
+    AddressInfoEntity? endereco,
+    bool? isManualOverride,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    List<PatternMetadata>? patternMetadata,
   });
   AvailabilityDayEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -178,42 +215,66 @@ class _AvailabilityDayEntityCopyWithImpl<$R, $Out>
   late final ClassMapperBase<AvailabilityDayEntity> $mapper =
       AvailabilityDayEntityMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>
+  get slots => ListCopyWith(
+    $value.slots,
+    (v, t) => v.copyWith.$chain(t),
+    (v) => call(slots: v),
+  );
+  @override
+  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
+  get endereco => $value.endereco.copyWith.$chain((v) => call(endereco: v));
+  @override
   ListCopyWith<
     $R,
-    AvailabilityEntry,
-    AvailabilityEntryCopyWith<$R, AvailabilityEntry, AvailabilityEntry>
-  >
-  get availabilities => ListCopyWith(
-    $value.availabilities,
-    (v, t) => v.copyWith.$chain(t),
-    (v) => call(availabilities: v),
-  );
+    PatternMetadata,
+    PatternMetadataCopyWith<$R, PatternMetadata, PatternMetadata>
+  >?
+  get patternMetadata => $value.patternMetadata != null
+      ? ListCopyWith(
+          $value.patternMetadata!,
+          (v, t) => v.copyWith.$chain(t),
+          (v) => call(patternMetadata: v),
+        )
+      : null;
   @override
   $R call({
     Object? id = $none,
     DateTime? date,
-    List<AvailabilityEntry>? availabilities,
-    DateTime? createdAt,
+    List<TimeSlot>? slots,
+    double? raioAtuacao,
+    AddressInfoEntity? endereco,
+    bool? isManualOverride,
+    Object? createdAt = $none,
     Object? updatedAt = $none,
     bool? isActive,
+    Object? patternMetadata = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
       if (date != null) #date: date,
-      if (availabilities != null) #availabilities: availabilities,
-      if (createdAt != null) #createdAt: createdAt,
+      if (slots != null) #slots: slots,
+      if (raioAtuacao != null) #raioAtuacao: raioAtuacao,
+      if (endereco != null) #endereco: endereco,
+      if (isManualOverride != null) #isManualOverride: isManualOverride,
+      if (createdAt != $none) #createdAt: createdAt,
       if (updatedAt != $none) #updatedAt: updatedAt,
       if (isActive != null) #isActive: isActive,
+      if (patternMetadata != $none) #patternMetadata: patternMetadata,
     }),
   );
   @override
   AvailabilityDayEntity $make(CopyWithData data) => AvailabilityDayEntity(
     id: data.get(#id, or: $value.id),
     date: data.get(#date, or: $value.date),
-    availabilities: data.get(#availabilities, or: $value.availabilities),
+    slots: data.get(#slots, or: $value.slots),
+    raioAtuacao: data.get(#raioAtuacao, or: $value.raioAtuacao),
+    endereco: data.get(#endereco, or: $value.endereco),
+    isManualOverride: data.get(#isManualOverride, or: $value.isManualOverride),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     updatedAt: data.get(#updatedAt, or: $value.updatedAt),
     isActive: data.get(#isActive, or: $value.isActive),
+    patternMetadata: data.get(#patternMetadata, or: $value.patternMetadata),
   );
 
   @override

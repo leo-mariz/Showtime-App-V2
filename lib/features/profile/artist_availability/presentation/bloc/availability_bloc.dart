@@ -1,404 +1,226 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/add_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/delete_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/toggle_availability_status_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/update_address_and_radius_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/update_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/toggle_availability_status_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_day_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
 
-/// BLoC para gerenciar disponibilidade do artista
+/// Bloc para gerenciar estado da feature de disponibilidade do artista
 /// 
-/// Gerencia todas as operações relacionadas à disponibilidade:
-/// - Consulta (GetAll, GetByDate)
-/// - Toggle de status (ativar/desativar)
-/// - Endereço e raio
-/// - Slots de horário (Add, Update, Delete)
-/// - Períodos (Open, Close)
+/// Gerencia usecases de validação, consulta e manipulação de disponibilidades
 class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
-  // Use Cases
-  final GetAllAvailabilitiesUseCase getAllAvailabilities;
-  final GetAvailabilityByDateUseCase getAvailabilityByDate;
-  final ToggleAvailabilityStatusUseCase toggleAvailabilityStatus;
-  final UpdateAddressAndRadiusUseCase updateAddressRadius;
-  final AddTimeSlotUseCase addTimeSlot;
-  final UpdateTimeSlotUseCase updateTimeSlot;
-  final DeleteTimeSlotUseCase deleteTimeSlot;
-  final OpenPeriodUseCase openPeriod;
-  final ClosePeriodUseCase closePeriod;
-  
-  // Authentication
   final GetUserUidUseCase getUserUidUseCase;
+  final GetAllAvailabilitiesUseCase getAllAvailabilitiesUseCase;
+  final ToggleAvailabilityStatusUseCase toggleAvailabilityStatusUseCase;
+  final GetOrganizedDayAfterVerificationUseCase getOrganizedDayAfterVerificationUseCase;
+  final GetOrganizedAvailabilitesAfterVerificationUseCase getOrganizedAvailabilitiesAfterVerificationUseCase;
+  final OpenPeriodUseCase openPeriodUseCase;
+  final ClosePeriodUseCase closePeriodUseCase;
 
   AvailabilityBloc({
-    required this.getAllAvailabilities,
-    required this.getAvailabilityByDate,
-    required this.toggleAvailabilityStatus,
-    required this.updateAddressRadius,
-    required this.addTimeSlot,
-    required this.updateTimeSlot,
-    required this.deleteTimeSlot,
-    required this.openPeriod,
-    required this.closePeriod,
     required this.getUserUidUseCase,
-  }) : super(AvailabilityInitialState()) {
-    // Registrar handlers
-    on<GetAllAvailabilitiesEvent>(_onGetAllAvailabilities);
-    on<GetAvailabilityByDateEvent>(_onGetAvailabilityByDate);
-    on<ToggleAvailabilityStatusEvent>(_onToggleAvailabilityStatus);
-    on<UpdateAddressRadiusEvent>(_onUpdateAddressRadius);
-    on<AddTimeSlotEvent>(_onAddTimeSlot);
-    on<UpdateTimeSlotEvent>(_onUpdateTimeSlot);
-    on<DeleteTimeSlotEvent>(_onDeleteTimeSlot);
-    on<OpenPeriodEvent>(_onOpenPeriod);
-    on<ClosePeriodEvent>(_onClosePeriod);
-    on<ResetAvailabilityEvent>(_onReset);
+    required this.getAllAvailabilitiesUseCase,
+    required this.toggleAvailabilityStatusUseCase,
+    required this.getOrganizedDayAfterVerificationUseCase,
+    required this.getOrganizedAvailabilitiesAfterVerificationUseCase,
+    required this.openPeriodUseCase,
+    required this.closePeriodUseCase,
+  }) : super(AvailabilityInitial()) {
+    on<AvailabilityInitialEvent>(_onAvailabilityInitialEvent);
+    on<GetAllAvailabilitiesEvent>(_onGetAllAvailabilitiesEvent);
+    on<ToggleAvailabilityStatusEvent>(_onToggleAvailabilityStatusEvent);
+    on<GetOrganizedDayAfterVerificationEvent>(_onGetOrganizedDayAfterVerificationEvent);
+    on<GetOrganizedAvailabilitiesAfterVerificationEvent>(_onGetOrganizedAvailabilitiesAfterVerificationEvent);
+    on<OpenPeriodEvent>(_onOpenPeriodEvent);
+    on<ClosePeriodEvent>(_onClosePeriodEvent);
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Helper: Obter ID do usuário atual
-  // ══════════════════════════════════════════════════════════════════════════
+  // ==================== INITIAL ====================
+
+  void _onAvailabilityInitialEvent(
+    AvailabilityInitialEvent event,
+    Emitter<AvailabilityState> emit,
+  ) {
+    emit(AvailabilityInitial());
+  }
+
+  // ==================== HELPERS ====================
 
   Future<String?> _getCurrentUserId() async {
-    final result = await getUserUidUseCase();
+    final result = await getUserUidUseCase.call();
     return result.fold(
-      (failure) => null,
+      (_) => null,
       (uid) => uid,
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Handlers de Consulta
-  // ══════════════════════════════════════════════════════════════════════════
+  // ==================== GET ALL AVAILABILITIES ====================
 
-  /// Handler para buscar todas as disponibilidades
-  Future<void> _onGetAllAvailabilities(
+  Future<void> _onGetAllAvailabilitiesEvent(
     GetAllAvailabilitiesEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    print('[AvailabilityBloc] 🔄 Iniciando GetAllAvailabilities. forceRemote: ${event.forceRemote}');
-    emit(GetAllAvailabilitiesLoadingState(message: 'Carregando disponibilidades...'));
+    emit(GetAllAvailabilitiesLoading());
+    final uid = await _getCurrentUserId();
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      print('[AvailabilityBloc] ❌ Usuário não autenticado');
-      emit(GetAllAvailabilitiesErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
-
-    print('[AvailabilityBloc] 🔍 Buscando disponibilidades. ArtistId: $artistId');
-    final result = await getAllAvailabilities(artistId, event.forceRemote);
+    final result = await getAllAvailabilitiesUseCase(
+      uid!,
+      event.forceRemote,
+    );
 
     result.fold(
       (failure) {
-        print('[AvailabilityBloc] ❌ Erro ao buscar disponibilidades: ${failure.message}');
-        print('[AvailabilityBloc] ❌ Tipo de erro: ${failure.runtimeType}');
-        emit(GetAllAvailabilitiesErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(GetAllAvailabilitiesFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (days) {
-        print('[AvailabilityBloc] ✅ Disponibilidades carregadas. Total de dias: ${days.length}');
-        emit(AllAvailabilitiesLoadedState(days: days));
+      (availabilities) {
+        emit(GetAllAvailabilitiesSuccess(availabilities: availabilities));
       },
     );
   }
 
-  /// Handler para buscar disponibilidade de um dia
-  Future<void> _onGetAvailabilityByDate(
-    GetAvailabilityByDateEvent event,
-    Emitter<AvailabilityState> emit,
-  ) async {
-    emit(GetAvailabilityByDateLoadingState());
+  // ==================== TOGGLE AVAILABILITY STATUS ====================
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(GetAvailabilityByDateErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
-
-    final result = await getAvailabilityByDate(artistId, event.dto);
-
-    result.fold(
-      (failure) {
-        emit(GetAvailabilityByDateErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
-      },
-      (day) => emit(AvailabilityDayLoadedState(day: day)),
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Handlers de Disponibilidade do Dia
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Handler para ativar/desativar disponibilidade
-  Future<void> _onToggleAvailabilityStatus(
+  Future<void> _onToggleAvailabilityStatusEvent(
     ToggleAvailabilityStatusEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(ToggleAvailabilityStatusLoadingState());
+    emit(ToggleAvailabilityStatusLoading());
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(ToggleAvailabilityStatusErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
+    final uid = await _getCurrentUserId();
 
-    final result = await toggleAvailabilityStatus(artistId, event.dto);
+    final result = await toggleAvailabilityStatusUseCase(
+      uid!,
+      event.date,
+      event.isActive,
+    );
 
     result.fold(
       (failure) {
-        emit(ToggleAvailabilityStatusErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(ToggleAvailabilityStatusFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (_) {
-        final message = event.dto.isActive
-            ? 'Disponibilidade ativada com sucesso'
-            : 'Disponibilidade desativada com sucesso';
-        emit(ToggleAvailabilityStatusSuccessState(message: message));
-        emit(AvailabilityInitialState());
+      (availability) {
+        emit(ToggleAvailabilityStatusSuccess(availability: availability));
+        emit(AvailabilityInitial());
       },
     );
   }
 
-  /// Handler para atualizar endereço e raio
-  Future<void> _onUpdateAddressRadius(
-    UpdateAddressRadiusEvent event,
+  // ==================== CHECK OVERLAP ON DAY ====================
+
+  Future<void> _onGetOrganizedDayAfterVerificationEvent(
+    GetOrganizedDayAfterVerificationEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(UpdateAddressRadiusLoadingState());
+    emit(GetOrganizedDayAfterVerificationLoading());
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(UpdateAddressRadiusErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
+    final uid = await _getCurrentUserId();
 
-    final result = await updateAddressRadius(artistId, event.dto);
+    final result = await getOrganizedDayAfterVerificationUseCase(
+      uid!,
+      event.date,
+      event.dto,
+      false,
+    );
 
     result.fold(
       (failure) {
-        emit(UpdateAddressRadiusErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(GetOrganizedDayAfterVerificationFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (_) {
-        emit(UpdateAddressRadiusSuccessState(
-          message: 'Endereço e raio atualizados com sucesso',
-        ));
-        emit(AvailabilityInitialState());
+      (dayResult) {
+        emit(GetOrganizedDayAfterVerificationSuccess(result: dayResult));
       },
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // Handlers de Slots
-  // ══════════════════════════════════════════════════════════════════════════
+  // ==================== CHECK OVERLAPS ON PERIOD ====================
 
-  /// Handler para adicionar slot
-  Future<void> _onAddTimeSlot(
-    AddTimeSlotEvent event,
+  Future<void> _onGetOrganizedAvailabilitiesAfterVerificationEvent(
+    GetOrganizedAvailabilitiesAfterVerificationEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(AddTimeSlotLoadingState());
+    emit(GetOrganizedAvailabilitiesAfterVerificationLoading());
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(AddTimeSlotErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
+    final uid = await _getCurrentUserId();
 
-    final result = await addTimeSlot(artistId, event.dto);
+    final result = await getOrganizedAvailabilitiesAfterVerificationUseCase(
+      uid!,
+      event.dto,
+      event.isClose,
+    );
 
     result.fold(
       (failure) {
-        emit(AddTimeSlotErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(GetOrganizedAvailabilitiesAfterVerificationFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (addTimeSlotResult) {
-        if (addTimeSlotResult.hasOverlapSlots) {
-          final overlapsCount = addTimeSlotResult.totalOverlapsCount;
-          emit(AddTimeSlotErrorState(
-            message: 'Este horário se sobrepõe a $overlapsCount slot(s) existente(s).',
-          ));
+      (periodResult) {
+        if (event.isClose) {
+          emit(CloseOrganizedAvailabilitiesSuccess(result: periodResult));
         } else {
-          emit(AddTimeSlotSuccessState(
-            message: 'Horário adicionado com sucesso',
-          ));
+          emit(OpenOrganizedAvailabilitiesSuccess(result: periodResult));
         }
-        emit(AvailabilityInitialState());
       },
     );
   }
 
-  /// Handler para atualizar slot
-  Future<void> _onUpdateTimeSlot(
-    UpdateTimeSlotEvent event,
-    Emitter<AvailabilityState> emit,
-  ) async {
-    emit(UpdateTimeSlotLoadingState());
+  // ==================== OPEN PERIOD ====================
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(UpdateTimeSlotErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
-
-    final result = await updateTimeSlot(artistId, event.dto);
-
-    result.fold(
-      (failure) {
-        emit(UpdateTimeSlotErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
-      },
-      (updateTimeSlotResult) {
-        if (updateTimeSlotResult.hasOverlapSlots) {
-          final overlapsCount = updateTimeSlotResult.totalOverlapsCount;
-          emit(UpdateTimeSlotErrorState(
-            message: 'Este horário se sobrepõe a $overlapsCount slot(s) existente(s).',
-          ));
-        } else {
-          emit(UpdateTimeSlotSuccessState(
-            message: 'Horário atualizado com sucesso',
-          ));
-        }
-        emit(AvailabilityInitialState());
-      },
-    );
-  }
-
-  /// Handler para deletar slot
-  Future<void> _onDeleteTimeSlot(
-    DeleteTimeSlotEvent event,
-    Emitter<AvailabilityState> emit,
-  ) async {
-    emit(DeleteTimeSlotLoadingState());
-
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(DeleteTimeSlotErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
-
-    final result = await deleteTimeSlot(artistId, event.dto);
-
-    result.fold(
-      (failure) {
-        emit(DeleteTimeSlotErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
-      },
-      (_) {
-        emit(DeleteTimeSlotSuccessState(
-          message: 'Horário removido com sucesso',
-        ));
-        emit(AvailabilityInitialState());
-      },
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Handlers de Períodos
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Handler para abrir período de disponibilidade
-  Future<void> _onOpenPeriod(
+  Future<void> _onOpenPeriodEvent(
     OpenPeriodEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(OpenPeriodLoadingState(
-      message: 'Criando disponibilidades para o período...',
-    ));
+    emit(OpenPeriodLoading());
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(OpenPeriodErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
+    final uid = await _getCurrentUserId();
 
-    final result = await openPeriod(artistId, event.dto);
+    final result = await openPeriodUseCase(
+      uid!,
+      event.dto,
+    );
 
     result.fold(
       (failure) {
-        emit(OpenPeriodErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(OpenPeriodFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (openPeriodResult) {
-        final daysCount = openPeriodResult.daysCreatedCount;
-        String message = 'Período aberto com sucesso! $daysCount dia(s) criado(s).';
-        
-        if (openPeriodResult.hasOverlapSlots) {
-          final overlapsCount = openPeriodResult.totalOverlapsCount;
-          final daysWithOverlaps = openPeriodResult.daysWithOverlapsCount;
-          message += ' $overlapsCount slot(s) com sobreposição em $daysWithOverlaps dia(s) não foram adicionados.';
-        }
-        
-        emit(OpenPeriodSuccessState(message: message));
-        emit(AvailabilityInitialState());
+      (days) {
+        emit(OpenPeriodSuccess(days: days));
+        emit(AvailabilityInitial());
       },
     );
   }
 
-  /// Handler para fechar/bloquear período de disponibilidade
-  Future<void> _onClosePeriod(
+  // ==================== CLOSE PERIOD ====================
+
+  Future<void> _onClosePeriodEvent(
     ClosePeriodEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
-    emit(ClosePeriodLoadingState(
-      message: 'Bloqueando período de disponibilidade...',
-    ));
+    emit(ClosePeriodLoading());
 
-    final artistId = await _getCurrentUserId();
-    if (artistId == null) {
-      emit(ClosePeriodErrorState(message: 'Usuário não autenticado'));
-      emit(AvailabilityInitialState());
-      return;
-    }
+    final uid = await _getCurrentUserId();
 
-    print('[AvailabilityBloc] 🚀 Iniciando closePeriod. ArtistId: $artistId');
-    print('[AvailabilityBloc] 📅 Período: ${event.dto.startDate} até ${event.dto.endDate}');
-    print('[AvailabilityBloc] ⏰ Horário: ${event.dto.formattedStartTime} - ${event.dto.formattedEndTime}');
-    
-    final result = await closePeriod(artistId, event.dto);
+    final result = await closePeriodUseCase(
+      uid!,
+      event.dto,
+    );
 
     result.fold(
       (failure) {
-        print('[AvailabilityBloc] ❌ Erro no closePeriod: ${failure.message}');
-        print('[AvailabilityBloc] ❌ Tipo de erro: ${failure.runtimeType}');
-        emit(ClosePeriodErrorState(message: failure.message));
-        emit(AvailabilityInitialState());
+        emit(ClosePeriodFailure(error: failure.message));
+        emit(AvailabilityInitial());
       },
-      (updatedDays) {
-        print('[AvailabilityBloc] ✅ closePeriod concluído. Dias atualizados: ${updatedDays.length}');
-        final daysCount = updatedDays.length;
-        emit(ClosePeriodSuccessState(
-          message: 'Período bloqueado com sucesso! $daysCount dia(s) atualizado(s).',
-        ));
-        emit(AvailabilityInitialState());
+      (days) {
+        emit(ClosePeriodSuccess(days: days));
+        emit(AvailabilityInitial());
       },
     );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // Handler de Controle
-  // ══════════════════════════════════════════════════════════════════════════
-
-  /// Handler para resetar estado
-  void _onReset(
-    ResetAvailabilityEvent event,
-    Emitter<AvailabilityState> emit,
-  ) {
-    emit(AvailabilityInitialState());
   }
 }

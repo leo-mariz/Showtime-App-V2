@@ -2,14 +2,17 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/organized_availabilities_after_verification_result_entity.dart.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/calendar_widget.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/day_edit_bottom_sheet.dart';
+import 'package:app/features/profile/artist_availability/presentation/widgets/forms/availability_confirmation_dialog.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/forms/availability_form_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +31,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   List<DateTime>? _selectedDays; // Para seleção de período
   final GlobalKey<CalendarWidgetState> _calendarKey = GlobalKey<CalendarWidgetState>();
   List<AvailabilityDayEntity> _availabilities = []; // Cache local dos dados
+  CheckOverlapsDto? _lastCheckOverlapsDto; // Guarda o DTO original para criar OpenPeriodDto
 
   @override
   void initState() {
@@ -43,6 +47,48 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     );
   }
 
+  /// Atualiza o cache local de disponibilidades com novos/atualizados dias
+  /// 
+  /// Substitui ou adiciona os dias na lista local, mantendo os demais intactos
+  void _updateAvailabilitiesCache(List<AvailabilityDayEntity> updatedDays) {
+    setState(() {
+      // Criar um mapa das novas disponibilidades por data
+      final updatedMap = <String, AvailabilityDayEntity>{};
+      for (final day in updatedDays) {
+        final dateKey = _getDateKey(day.date);
+        updatedMap[dateKey] = day;
+      }
+
+      // Atualizar ou adicionar os dias no cache local
+      final updatedList = <AvailabilityDayEntity>[];
+      final processedDates = <String>{};
+
+      // Primeiro, adicionar todos os dias existentes (exceto os que foram atualizados)
+      for (final existingDay in _availabilities) {
+        final dateKey = _getDateKey(existingDay.date);
+        if (updatedMap.containsKey(dateKey)) {
+          // Substituir pelo dia atualizado
+          updatedList.add(updatedMap[dateKey]!);
+          processedDates.add(dateKey);
+        } else {
+          // Manter o dia existente
+          updatedList.add(existingDay);
+          processedDates.add(dateKey);
+        }
+      }
+
+      // Depois, adicionar os novos dias que não existiam antes
+      for (final newDay in updatedDays) {
+        final dateKey = _getDateKey(newDay.date);
+        if (!processedDates.contains(dateKey)) {
+          updatedList.add(newDay);
+        }
+      }
+
+      _availabilities = updatedList;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -53,92 +99,70 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
         // ════════════════════════════════════════════════════════════════
         // SUCESSO Toggle Status
         // ════════════════════════════════════════════════════════════════
-        if (state is ToggleAvailabilityStatusSuccessState) {
-          context.showSuccess(state.message);
+        if (state is ToggleAvailabilityStatusSuccess) {
+          context.showSuccess('Status atualizado com sucesso');
           _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is ToggleAvailabilityStatusErrorState) {
-          context.showError(state.message);
+        } else if (state is ToggleAvailabilityStatusFailure) {
+          context.showError(state.error);
         }
         
         // ════════════════════════════════════════════════════════════════
-        // SUCESSO Update Address/Radius
+        // SUCESSO/ERRO Get Organized Availabilities After Verification
         // ════════════════════════════════════════════════════════════════
-        else if (state is UpdateAddressRadiusSuccessState) {
-          context.showSuccess(state.message);
-          _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is UpdateAddressRadiusErrorState) {
-          context.showError(state.message);
-        }
-        
-        // ════════════════════════════════════════════════════════════════
-        // SUCESSO Add Slot
-        // ════════════════════════════════════════════════════════════════
-        else if (state is AddTimeSlotSuccessState) {
-          context.showSuccess(state.message);
-          _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is AddTimeSlotErrorState) {
-          context.showError(state.message);
+        if (state is OpenOrganizedAvailabilitiesSuccess) {
+          _handleOrganizedAvailabilitiesResult(
+            state.result,
+            originalDto: _lastCheckOverlapsDto!,
+            isClose: false,
+          );
+        } else if (state is CloseOrganizedAvailabilitiesSuccess) {
+          _handleOrganizedAvailabilitiesResult(
+            state.result,
+            originalDto: _lastCheckOverlapsDto!,
+            isClose: true,
+          );
+        } else if (state is GetOrganizedAvailabilitiesAfterVerificationFailure) {
+          context.showError(state.error);
         }
         
         // ════════════════════════════════════════════════════════════════
-        // SUCESSO Update Slot
+        // SUCESSO/ERRO Open Period
         // ════════════════════════════════════════════════════════════════
-        else if (state is UpdateTimeSlotSuccessState) {
-          context.showSuccess(state.message);
+        if (state is OpenPeriodSuccess) {
+          // Atualizar cache local imediatamente com os dias criados/atualizados
+          _updateAvailabilitiesCache(state.days);
+          // Recarregar do servidor para garantir sincronização
           _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is UpdateTimeSlotErrorState) {
-          context.showError(state.message);
+          context.showSuccess('Período aberto com sucesso');
+        } else if (state is OpenPeriodFailure) {
+          context.showError(state.error);
         }
         
         // ════════════════════════════════════════════════════════════════
-        // SUCESSO Delete Slot
+        // SUCESSO/ERRO Close Period
         // ════════════════════════════════════════════════════════════════
-        else if (state is DeleteTimeSlotSuccessState) {
-          context.showSuccess(state.message);
+        if (state is ClosePeriodSuccess) {
+          // Atualizar cache local imediatamente com os dias atualizados
+          _updateAvailabilitiesCache(state.days);
+          // Recarregar do servidor para garantir sincronização
           _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is DeleteTimeSlotErrorState) {
-          context.showError(state.message);
-        }
-        
-        // ════════════════════════════════════════════════════════════════
-        // SUCESSO Open Period
-        // ════════════════════════════════════════════════════════════════
-        else if (state is OpenPeriodSuccessState) {
-          context.showSuccess(state.message);
-          _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is OpenPeriodErrorState) {
-          context.showError(state.message);
-        }
-        
-        // ════════════════════════════════════════════════════════════════
-        // SUCESSO Close Period
-        // ════════════════════════════════════════════════════════════════
-        else if (state is ClosePeriodSuccessState) {
-          context.showSuccess(state.message);
-          _loadAvailabilities(forceRemote: true);
-        }
-        else if (state is ClosePeriodErrorState) {
-          context.showError(state.message);
-        }
-        
-        // ════════════════════════════════════════════════════════════════
-        // ERRO GetAll
-        // ════════════════════════════════════════════════════════════════
-        else if (state is GetAllAvailabilitiesErrorState) {
-          context.showError(state.message);
+          context.showSuccess('Período fechado com sucesso');
+        } else if (state is ClosePeriodFailure) {
+          context.showError(state.error);
         }
       },
       child: BlocBuilder<AvailabilityBloc, AvailabilityState>(
         builder: (context, state) {
           // Atualizar cache local quando dados são carregados
-          if (state is AllAvailabilitiesLoadedState) {
-            _availabilities = state.days;
+          if (state is GetAllAvailabilitiesSuccess) {
+            // Usar WidgetsBinding para atualizar após o frame atual
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _availabilities != state.availabilities) {
+                setState(() {
+                  _availabilities = state.availabilities;
+                });
+              }
+            });
           }
 
           return Scaffold(
@@ -179,7 +203,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
                           ),
                         ],
                         
-                        const Spacer(),
+                        const Spacer(), 
                         
                         // Botão de informações (legenda)
                         IconButton(
@@ -250,22 +274,12 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     // ════════════════════════════════════════════════════════════════
     // LOADING
     // ════════════════════════════════════════════════════════════════
-    if (state is GetAllAvailabilitiesLoadingState) {
+    if (state is GetAllAvailabilitiesLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: colorScheme.primary),
-            if (state.message != null) ...[
-              SizedBox(height: DSSize.height(16)),
-              Text(
-                state.message!,
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: DSSize.width(14),
-                ),
-              ),
-            ],
+            CustomLoadingIndicator(),
           ],
         ),
       );
@@ -274,7 +288,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     // ════════════════════════════════════════════════════════════════
     // DADOS CARREGADOS → Renderizar calendário
     // ════════════════════════════════════════════════════════════════
-    if (state is AllAvailabilitiesLoadedState || _availabilities.isNotEmpty) {
+    if (state is GetAllAvailabilitiesSuccess || _availabilities.isNotEmpty) {
       return CalendarWidget(
         key: _calendarKey,
         availabilities: _availabilities, // Passar dados reais
@@ -395,10 +409,8 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     // Criar DTO e disparar evento
     context.read<AvailabilityBloc>().add(
       ToggleAvailabilityStatusEvent(
-        ToggleAvailabilityStatusDto(
-          date: day,
-          isActive: isActive,
-        ),
+        date: day,
+        isActive: isActive,
       ),
     );
     
@@ -424,20 +436,20 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     double radius,
   ) {
     // Disparar evento para atualizar endereço e raio
-    context.read<AvailabilityBloc>().add(
-      UpdateAddressRadiusEvent(
-        UpdateAddressRadiusDto(
-          date: day,
-          addressRadius: AddressRadiusDto(
-            addressId: address.uid ?? '',
-            raioAtuacao: radius,
-            endereco: address,
-          ),
-        ),
-      ),
-    );
+    // context.read<AvailabilityBloc>().add(
+    //   UpdateAvailabilityAddressRadiusEvent(
+    //     UpdateAddressRadiusDto(
+    //       date: day,
+    //       addressRadius: AddressRadiusDto(
+    //         addressId: address.uid ?? '',
+    //         raioAtuacao: radius,
+    //         endereco: address,
+    //       ),
+    //     ),
+    //   ),
+    // );
     
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
   }
 
   /// Callback para adicionar novo slot de horário
@@ -447,19 +459,19 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     String endTime,
     double pricePerHour,
   ) {
-    // Disparar evento para adicionar slot
-    context.read<AvailabilityBloc>().add(
-      AddTimeSlotEvent(
-        SlotOperationDto.add(
-          date: day,
-          startTime: startTime,
-          endTime: endTime,
-          valorHora: pricePerHour,
-        ),
-      ),
-    );
+    // // Disparar evento para adicionar slot
+    // context.read<AvailabilityBloc>().add(
+    //   AddTimeSlotEvent(
+    //     SlotOperationDto.add(
+    //       date: day,
+    //       startTime: startTime,
+    //       endTime: endTime,
+    //       valorHora: pricePerHour,
+    //     ),
+    //   ),
+    // );
     
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
   }
 
   /// Callback para atualizar slot de horário existente
@@ -471,19 +483,19 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     double? pricePerHour,
   ) {
     // Disparar evento para atualizar slot
-    context.read<AvailabilityBloc>().add(
-      UpdateTimeSlotEvent(
-        SlotOperationDto.update(
-          date: day,
-          slotId: slotId,
-          startTime: startTime,
-          endTime: endTime,
-          valorHora: pricePerHour,
-        ),
-      ),
-    );
+    // context.read<AvailabilityBloc>().add(
+    //   UpdateTimeSlotEvent(
+    //     SlotOperationDto.update(
+    //       date: day,
+    //       slotId: slotId,
+    //       startTime: startTime,
+    //       endTime: endTime,
+    //       valorHora: pricePerHour,
+    //     ),
+    //   ),
+    // );
     
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
   }
 
   /// Callback para deletar slot de horário
@@ -492,17 +504,17 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     String slotId,
   ) {
     // Disparar evento para deletar slot
-    context.read<AvailabilityBloc>().add(
-      DeleteTimeSlotEvent(
-        SlotOperationDto.delete(
-          date: day,
-          slotId: slotId,
-          deleteIfEmpty: true, // Deletar dia se ficar sem slots
-        ),
-      ),
-    );
+    // context.read<AvailabilityBloc>().add(
+    //   DeleteTimeSlotEvent(
+    //     SlotOperationDto.delete(
+    //       date: day,
+    //       slotId: slotId,
+    //       deleteIfEmpty: true, // Deletar dia se ficar sem slots
+    //     ),
+    //   ),
+    // );
     
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
   }
 
   /// Abre o modal de disponibilidade com datas específicas
@@ -514,8 +526,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
       context: context,
       initialStartDate: initialStartDate,
       initialEndDate: initialEndDate,
-      onOpenPeriod: _onOpenPeriod,
-      onClosePeriod: _onClosePeriod,
+      onSave: _onSavePeriod,
     );
   }
 
@@ -548,17 +559,135 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   // Callbacks de Períodos
   // ════════════════════════════════════════════════════════════════════════════
 
-  /// Callback para abrir período de disponibilidade
-  void _onOpenPeriod(OpenPeriodDto dto) {
+  /// Callback para salvar período (chamado pelo modal)
+  /// 
+  /// Recebe CheckOverlapsDto e isClose do modal e dispara o evento
+  /// para verificar overlaps antes de criar/atualizar disponibilidades
+  void _onSavePeriod(CheckOverlapsDto dto, bool isClose) {
+    // Guardar o DTO original para usar depois na criação do OpenPeriodDto
+    _lastCheckOverlapsDto = dto;
+    
+    debugPrint('🟢 [CALENDAR_SCREEN] _onSavePeriod chamado - isClose: $isClose');
+    debugPrint('🟢 [CALENDAR_SCREEN] PatternId: ${dto.patternMetadata?.patternId}');
+    debugPrint('🟢 [CALENDAR_SCREEN] StartTime: ${dto.startTime}');
+    debugPrint('🟢 [CALENDAR_SCREEN] EndTime: ${dto.endTime}');
+    
     context.read<AvailabilityBloc>().add(
-      OpenPeriodEvent(dto),
+      GetOrganizedAvailabilitiesAfterVerificationEvent(
+        dto: dto,
+        isClose: isClose,
+      ),
     );
   }
 
-  /// Callback para fechar/bloquear período de disponibilidade
-  void _onClosePeriod(ClosePeriodDto dto) {
-    context.read<AvailabilityBloc>().add(
-      ClosePeriodEvent(dto),
+  /// Trata o resultado da verificação de overlaps
+  /// 
+  /// Mostra dialog de confirmação se houver overlaps ou shows,
+  /// ou processa diretamente se não houver conflitos
+  Future<void> _handleOrganizedAvailabilitiesResult(
+    OrganizedAvailabilitiesAfterVerificationResult result,
+    {required CheckOverlapsDto originalDto, required bool isClose}
+  ) async {
+    final daysWithOverlap = result.daysWithOverlap;
+    final daysWithBookedSlot = result.daysWithBookedSlot;
+    final daysWithoutOverlap = result.daysWithoutOverlap;
+
+    debugPrint('🟡 [CALENDAR_SCREEN] _handleOrganizedAvailabilitiesResult - isClose: $isClose');
+    debugPrint('🟡 [CALENDAR_SCREEN] daysWithOverlap: ${daysWithOverlap.length}');
+    debugPrint('🟡 [CALENDAR_SCREEN] daysWithBookedSlot: ${daysWithBookedSlot.length}');
+    debugPrint('🟡 [CALENDAR_SCREEN] daysWithoutOverlap: ${daysWithoutOverlap.length}');
+    
+    // Log detalhado dos dias com overlap
+    for (var i = 0; i < daysWithOverlap.length; i++) {
+      final overlap = daysWithOverlap[i];
+      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - Date: ${overlap.date}, hasOverlap: ${overlap.hasOverlap}');
+      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - OldSlots: ${overlap.oldTimeSlots?.length ?? 0}');
+      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - NewSlots: ${overlap.newTimeSlots?.length ?? 0}');
+      if (overlap.newTimeSlots != null) {
+        for (var j = 0; j < overlap.newTimeSlots!.length; j++) {
+          final slot = overlap.newTimeSlots![j];
+          debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - NewSlot[$j]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
+        }
+      }
+    }
+
+    // Se há overlaps ou shows, mostrar dialog de confirmação
+
+    final confirmed = await AvailabilityConfirmationDialog.show(
+      context: context,
+      title: isClose ? 'Confirmar fechamento de período' : 'Confirmar abertura de período',
+      isClose: isClose,
+      checkOverlapsDto: originalDto,
+      daysWithOverlap: daysWithOverlap,
+      daysWithBookedSlot: daysWithBookedSlot,
+      daysWithoutOverlap: daysWithoutOverlap,
+      confirmText: 'Confirmar',
+      cancelText: 'Cancelar',
+    );
+
+    if (confirmed == true) {
+      // Criar OpenPeriodDto e chamar evento de abrir/fechar período
+      final openPeriodDto = _createOpenPeriodDto(
+        originalDto: originalDto,
+        daysWithOverlap: daysWithOverlap,
+        daysWithBookedSlot: daysWithBookedSlot,
+        daysWithoutOverlap: daysWithoutOverlap,
+      );
+
+      debugPrint('🟠 [CALENDAR_SCREEN] Criando OpenPeriodDto para ${isClose ? "FECHAR" : "ABRIR"}');
+      debugPrint('🟠 [CALENDAR_SCREEN] dayOverlapInfos: ${openPeriodDto.dayOverlapInfos.length}');
+      debugPrint('🟠 [CALENDAR_SCREEN] daysWithBookedSlot: ${openPeriodDto.daysWithBookedSlot.length}');
+
+      if (isClose) {
+        debugPrint('🔴 [CALENDAR_SCREEN] Disparando ClosePeriodEvent');
+        context.read<AvailabilityBloc>().add(
+          ClosePeriodEvent(dto: openPeriodDto),
+        );
+      } else {
+        debugPrint('🟢 [CALENDAR_SCREEN] Disparando OpenPeriodEvent');
+        context.read<AvailabilityBloc>().add(
+          OpenPeriodEvent(dto: openPeriodDto),
+        );
+      }
+    
+    
+    }
+  }
+
+  /// Cria OpenPeriodDto a partir do resultado da verificação
+  OpenPeriodDto _createOpenPeriodDto({
+    required CheckOverlapsDto originalDto,
+    required List<DayOverlapInfo> daysWithOverlap,
+    required List<AvailabilityDayEntity> daysWithBookedSlot,
+    required List<AvailabilityDayEntity> daysWithoutOverlap,
+  }) {
+    // Criar baseAvailabilityDay a partir do CheckOverlapsDto
+    final baseAvailabilityDay = AvailabilityDayEntity(
+      date: originalDto.patternMetadata?.recurrence?.originalStartDate ?? DateTime.now(),
+      slots: [], // Será preenchido pelo usecase baseado no patternMetadata
+      raioAtuacao: originalDto.raioAtuacao ?? 0.0,
+      endereco: originalDto.endereco ?? AddressInfoEntity(
+        uid: '',
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        latitude: 0.0,
+        longitude: 0.0,
+      ),
+      isManualOverride: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      isActive: true,
+      patternMetadata: originalDto.patternMetadata != null
+          ? [originalDto.patternMetadata!]
+          : null,
+    );
+
+    return OpenPeriodDto(
+      baseAvailabilityDay: baseAvailabilityDay,
+      dayOverlapInfos: daysWithOverlap,
+      daysWithBookedSlot: daysWithBookedSlot,
     );
   }
 

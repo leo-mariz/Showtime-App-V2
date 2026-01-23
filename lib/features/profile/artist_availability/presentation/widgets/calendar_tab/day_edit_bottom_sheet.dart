@@ -59,9 +59,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   /// Verifica se a disponibilidade está ativa
   bool get _isActive => widget.availability?.isActive ?? false;
   
-  /// Obtém a lista de entries de disponibilidade
-  List<dynamic> get _availabilityEntries => 
-      widget.availability?.availabilities ?? [];
+  /// Obtém a lista de slots de disponibilidade
+  List<dynamic> get _availabilitySlots => 
+      widget.availability?.slots ?? [];
 
   @override
   void dispose() {
@@ -347,15 +347,17 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   /// Card de Disponibilidade (endereço + raio + slots)
   Widget _buildAvailabilityCard(ColorScheme colorScheme) {
     // Se não tem disponibilidade, mostrar mensagem
-    if (!_hasAvailability || _availabilityEntries.isEmpty) {
+    if (!_hasAvailability || _availabilitySlots.isEmpty) {
       return _buildEmptyAvailabilityCard(colorScheme);
     }
     
-    // Pegar a primeira (e única) entry
-    final entry = _availabilityEntries.first;
-    final address = entry.endereco?.title ?? 'Sem endereço';
-    final radius = entry.raioAtuacao;
-    final slots = entry.slots;
+    // Acessar propriedades diretamente do AvailabilityDayEntity
+    final availability = widget.availability!;
+    final address = availability.endereco.title.isNotEmpty 
+        ? availability.endereco.title 
+        : (availability.endereco.street ?? 'Sem endereço');
+    final radius = availability.raioAtuacao;
+    final slots = availability.slots;
 
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
@@ -434,11 +436,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                 // Ícone de edição
                 GestureDetector(
                   onTap: () async {
-                    if (entry.endereco == null) return;
-                    
                     final result = await EditAddressRadiusModal.show(
                       context: context,
-                      initialAddress: entry.endereco!,
+                      initialAddress: availability.endereco,
                       initialRadius: radius,
                     );
 
@@ -484,7 +484,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                   slotId: slot.slotId,
                   startTime: slot.startTime,
                   endTime: slot.endTime,
-                  price: slot.valorHora,
+                  price: slot.valorHora ?? 0.0,
                 ),
               )),
             

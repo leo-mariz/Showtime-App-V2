@@ -1,9 +1,8 @@
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// Use Case para deletar slot de horário
@@ -12,33 +11,29 @@ import 'package:dartz/dartz.dart';
 /// Se for o último slot, o comportamento padrão é deixar o dia vazio
 /// (não deleta o documento).
 class DeleteTimeSlotUseCase {
-  final IAvailabilityRepository repository;
   final GetAvailabilityByDateUseCase getByDate;
+  final UpdateAvailabilityDayUseCase updateAvailabilityDay;
 
   DeleteTimeSlotUseCase({
-    required this.repository,
+    required this.updateAvailabilityDay,
     required this.getByDate,
   });
 
   Future<Either<Failure, AvailabilityDayEntity>> call(
     String artistId,
-    SlotOperationDto dto,
+    DateTime date,
+    String slotId,
   ) async {
     try {
       if (artistId.isEmpty) {
         return const Left(ValidationFailure('ID do artista é obrigatório'));
       }
 
-      final slot = dto.slot;
-
-      if (slot.slotId == null || slot.slotId!.isEmpty) {
-        return const Left(ValidationFailure('ID do slot é obrigatório'));
-      }
-
       // Buscar disponibilidade do dia
       final getDayResult = await getByDate(
         artistId,
-        GetAvailabilityByDateDto(date: dto.date, forceRemote: true),
+        date,
+        forceRemote: true,
       );
 
       return getDayResult.fold(
@@ -50,14 +45,11 @@ class DeleteTimeSlotUseCase {
             );
           }
 
-          if (dayEntity.availabilities.isEmpty) {
-            return const Left(ValidationFailure('Dia sem disponibilidades'));
-          }
+          bool isActive = dayEntity.isActive;
 
-          // Procurar e remover slot da primeira entry
-          final firstEntry = dayEntity.availabilities.first;
-          final slotIndex = firstEntry.slots.indexWhere(
-            (s) => s.slotId == slot.slotId,
+          // Procurar e remover slot
+          final slotIndex = dayEntity.slots.indexWhere(
+            (s) => s.slotId == slotId,
           );
 
           if (slotIndex == -1) {
@@ -65,13 +57,13 @@ class DeleteTimeSlotUseCase {
           }
 
           // Criar lista atualizada de slots (removendo o slot)
-          final updatedSlots = List.of(firstEntry.slots)..removeAt(slotIndex);
+          final updatedSlots = List.of(dayEntity.slots)..removeAt(slotIndex);
 
           // Se não restaram slots e deleteIfEmpty = true, deletar o dia
-          if (updatedSlots.isEmpty && dto.deleteIfEmpty) {
-            final deleteResult = await repository.deleteAvailability(
-              artistId: artistId,
-              dayId: dayEntity.documentId,
+          if (updatedSlots.isEmpty) {
+            final deleteResult = await updateAvailabilityDay.call(
+              artistId,
+              dayEntity,
             );
             
             return deleteResult.fold(
@@ -80,26 +72,21 @@ class DeleteTimeSlotUseCase {
             );
           }
 
-          // Atualizar entry com slots restantes
-          final updatedEntry = firstEntry.copyWith(
-            slots: updatedSlots,
-          );
+          if (updatedSlots.isEmpty) {
+            isActive = false;
+          }
 
-          // Criar lista atualizada de availabilities
-          final updatedAvailabilities = [
-            updatedEntry,
-            ...dayEntity.availabilities.skip(1),
-          ];
-
+          // Atualizar dia com slots restantes
           final updatedDay = dayEntity.copyWith(
-            availabilities: updatedAvailabilities,
+            slots: updatedSlots,
             updatedAt: DateTime.now(),
+            isActive: isActive,
           );
 
           // Atualizar no repositório
-          return repository.updateAvailability(
-            artistId: artistId,
-            day: updatedDay,
+          return  updateAvailabilityDay.call(
+            artistId,
+            updatedDay,
           );
         },
       );

@@ -1,170 +1,171 @@
+import 'package:equatable/equatable.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/check_overlap_on_day_result.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/organized_availabilities_after_verification_result_entity.dart.dart';
 
-/// Estados base para Availability
-abstract class AvailabilityState {}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados Iniciais e de Controle
-// ════════════════════════════════════════════════════════════════════════════
-
-class AvailabilityInitialState extends AvailabilityState {}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Consulta (GetAll)
-// ════════════════════════════════════════════════════════════════════════════
-
-/// Loading ao buscar todas as disponibilidades
-class GetAllAvailabilitiesLoadingState extends AvailabilityState {
-  final String? message;
-  GetAllAvailabilitiesLoadingState({this.message});
+abstract class AvailabilityState extends Equatable {
+  @override
+  List<Object?> get props => [];
 }
 
-/// Sucesso ao buscar todas as disponibilidades
-/// ÚNICO estado que retorna dados para renderizar na UI
-class AllAvailabilitiesLoadedState extends AvailabilityState {
+/// Estado inicial
+class AvailabilityInitial extends AvailabilityState {}
+
+// ==================== GET ALL AVAILABILITIES STATES ====================
+
+/// Estado de carregamento para buscar todas as disponibilidades
+class GetAllAvailabilitiesLoading extends AvailabilityState {}
+
+/// Estado de sucesso para buscar todas as disponibilidades
+class GetAllAvailabilitiesSuccess extends AvailabilityState {
+  final List<AvailabilityDayEntity> availabilities;
+
+  GetAllAvailabilitiesSuccess({required this.availabilities});
+
+  @override
+  List<Object?> get props => [availabilities];
+}
+
+/// Estado de falha para buscar todas as disponibilidades
+class GetAllAvailabilitiesFailure extends AvailabilityState {
+  final String error;
+
+  GetAllAvailabilitiesFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== TOGGLE AVAILABILITY STATUS STATES ====================
+
+/// Estado de carregamento para alternar status de disponibilidade
+class ToggleAvailabilityStatusLoading extends AvailabilityState {}
+
+/// Estado de sucesso para alternar status de disponibilidade
+class ToggleAvailabilityStatusSuccess extends AvailabilityState {
+  final AvailabilityDayEntity availability;
+
+  ToggleAvailabilityStatusSuccess({required this.availability});
+
+  @override
+  List<Object?> get props => [availability];
+}
+
+/// Estado de falha para alternar status de disponibilidade
+class ToggleAvailabilityStatusFailure extends AvailabilityState {
+  final String error;
+
+  ToggleAvailabilityStatusFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== CHECK OVERLAP ON DAY STATES ====================
+
+/// Estado de carregamento para verificação de overlaps em um dia
+class GetOrganizedDayAfterVerificationLoading extends AvailabilityState {}
+
+/// Estado de sucesso para verificação de overlaps em um dia
+class GetOrganizedDayAfterVerificationSuccess extends AvailabilityState {
+  final OrganizedDayAfterVerificationResult result;
+
+  GetOrganizedDayAfterVerificationSuccess({required this.result});
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// Estado de falha para verificação de overlaps em um dia
+class GetOrganizedDayAfterVerificationFailure extends AvailabilityState {
+  final String error;
+
+  GetOrganizedDayAfterVerificationFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== CHECK OVERLAPS ON PERIOD STATES ====================
+
+/// Estado de carregamento para verificação de overlaps em um período
+class GetOrganizedAvailabilitiesAfterVerificationLoading extends AvailabilityState {}
+
+/// Estado de sucesso para verificação de overlaps em um período
+class OpenOrganizedAvailabilitiesSuccess extends AvailabilityState {
+  final OrganizedAvailabilitiesAfterVerificationResult result;
+
+  OpenOrganizedAvailabilitiesSuccess({required this.result });
+
+  @override
+  List<Object?> get props => [result];
+}
+
+class CloseOrganizedAvailabilitiesSuccess extends AvailabilityState {
+  final OrganizedAvailabilitiesAfterVerificationResult result;
+
+  CloseOrganizedAvailabilitiesSuccess({required this.result});
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// Estado de falha para verificação de overlaps em um período
+class GetOrganizedAvailabilitiesAfterVerificationFailure extends AvailabilityState {
+  final String error;
+
+  GetOrganizedAvailabilitiesAfterVerificationFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== OPEN PERIOD STATES ====================
+
+/// Estado de carregamento para abrir período
+class OpenPeriodLoading extends AvailabilityState {}
+
+/// Estado de sucesso para abrir período
+class OpenPeriodSuccess extends AvailabilityState {
   final List<AvailabilityDayEntity> days;
-  AllAvailabilitiesLoadedState({required this.days});
+
+  OpenPeriodSuccess({required this.days});
+
+  @override
+  List<Object?> get props => [days];
 }
 
-/// Erro ao buscar todas as disponibilidades
-class GetAllAvailabilitiesErrorState extends AvailabilityState {
-  final String message;
-  GetAllAvailabilitiesErrorState({required this.message});
+/// Estado de falha para abrir período
+class OpenPeriodFailure extends AvailabilityState {
+  final String error;
+
+  OpenPeriodFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Consulta (GetByDate)
-// ════════════════════════════════════════════════════════════════════════════
+// ==================== CLOSE PERIOD STATES ====================
 
-/// Loading ao buscar disponibilidade de um dia
-class GetAvailabilityByDateLoadingState extends AvailabilityState {}
+/// Estado de carregamento para fechar período
+class ClosePeriodLoading extends AvailabilityState {}
 
-/// Sucesso ao buscar disponibilidade de um dia
-class AvailabilityDayLoadedState extends AvailabilityState {
-  final AvailabilityDayEntity? day;
-  AvailabilityDayLoadedState({this.day});
+/// Estado de sucesso para fechar período
+class ClosePeriodSuccess extends AvailabilityState {
+  final List<AvailabilityDayEntity> days;
+
+  ClosePeriodSuccess({required this.days});
+
+  @override
+  List<Object?> get props => [days];
 }
 
-/// Erro ao buscar disponibilidade de um dia
-class GetAvailabilityByDateErrorState extends AvailabilityState {
-  final String message;
-  GetAvailabilityByDateErrorState({required this.message});
-}
+/// Estado de falha para fechar período
+class ClosePeriodFailure extends AvailabilityState {
+  final String error;
 
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Toggle Status
-// ════════════════════════════════════════════════════════════════════════════
+  ClosePeriodFailure({required this.error});
 
-class ToggleAvailabilityStatusLoadingState extends AvailabilityState {}
-
-class ToggleAvailabilityStatusSuccessState extends AvailabilityState {
-  final String message;
-  ToggleAvailabilityStatusSuccessState({required this.message});
-}
-
-class ToggleAvailabilityStatusErrorState extends AvailabilityState {
-  final String message;
-  ToggleAvailabilityStatusErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Update Address Radius
-// ════════════════════════════════════════════════════════════════════════════
-
-class UpdateAddressRadiusLoadingState extends AvailabilityState {}
-
-class UpdateAddressRadiusSuccessState extends AvailabilityState {
-  final String message;
-  UpdateAddressRadiusSuccessState({required this.message});
-}
-
-class UpdateAddressRadiusErrorState extends AvailabilityState {
-  final String message;
-  UpdateAddressRadiusErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Add Time Slot
-// ════════════════════════════════════════════════════════════════════════════
-
-class AddTimeSlotLoadingState extends AvailabilityState {}
-
-class AddTimeSlotSuccessState extends AvailabilityState {
-  final String message;
-  AddTimeSlotSuccessState({required this.message});
-}
-
-class AddTimeSlotErrorState extends AvailabilityState {
-  final String message;
-  AddTimeSlotErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Update Time Slot
-// ════════════════════════════════════════════════════════════════════════════
-
-class UpdateTimeSlotLoadingState extends AvailabilityState {}
-
-class UpdateTimeSlotSuccessState extends AvailabilityState {
-  final String message;
-  UpdateTimeSlotSuccessState({required this.message});
-}
-
-class UpdateTimeSlotErrorState extends AvailabilityState {
-  final String message;
-  UpdateTimeSlotErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Delete Time Slot
-// ════════════════════════════════════════════════════════════════════════════
-
-class DeleteTimeSlotLoadingState extends AvailabilityState {}
-
-class DeleteTimeSlotSuccessState extends AvailabilityState {
-  final String message;
-  DeleteTimeSlotSuccessState({required this.message});
-}
-
-class DeleteTimeSlotErrorState extends AvailabilityState {
-  final String message;
-  DeleteTimeSlotErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Open Period
-// ════════════════════════════════════════════════════════════════════════════
-
-class OpenPeriodLoadingState extends AvailabilityState {
-  final String? message;
-  OpenPeriodLoadingState({this.message});
-}
-
-class OpenPeriodSuccessState extends AvailabilityState {
-  final String message;
-  OpenPeriodSuccessState({required this.message});
-}
-
-class OpenPeriodErrorState extends AvailabilityState {
-  final String message;
-  OpenPeriodErrorState({required this.message});
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Estados de Close Period
-// ════════════════════════════════════════════════════════════════════════════
-
-class ClosePeriodLoadingState extends AvailabilityState {
-  final String? message;
-  ClosePeriodLoadingState({this.message});
-}
-
-class ClosePeriodSuccessState extends AvailabilityState {
-  final String message;
-  ClosePeriodSuccessState({required this.message});
-}
-
-class ClosePeriodErrorState extends AvailabilityState {
-  final String message;
-  ClosePeriodErrorState({required this.message});
+  @override
+  List<Object?> get props => [error];
 }

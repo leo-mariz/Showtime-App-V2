@@ -1,225 +1,169 @@
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/errors/failure.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/material.dart';
 
-import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
-import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
-import 'package:app/core/errors/error_handler.dart';
-import 'package:app/core/errors/failure.dart';
-import 'package:app/core/utils/availability_helpers.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
-
-/// Use Case para fechar/bloquear um período de disponibilidade
+/// Use Case para fechar um período de disponibilidade
 /// 
-/// Percorre os dias do período, identifica slots sobrepostos,
-/// ajusta os slots existentes usando helpers de validação e geração de slots,
-/// removendo os horários que estão sendo fechados.
-/// 
-/// **Fluxo:**
-/// 1. Recebe o período a ser fechado
-/// 2. Verifica as datas válidas usando `generateValidDates`
-/// 3. Para cada data:
-///    3.1. Para cada slot:
-///         - Há overlap?
-///           - Sim -> Passa os horários para o `generateNewSlots`. 
-///                    Substitui o slot do dia (que é sobreposto) pelos slots novos gerados.
-///                    Salva a disponibilidade do dia atualizada
-///           - Não -> Não fazer nada, pois não tem horários ali a serem fechados
-/// 
-/// **Exemplo:**
-/// ```dart
-/// final dto = ClosePeriodDto(
-///   startDate: DateTime(2026, 1, 15),
-///   endDate: DateTime(2026, 1, 20),
-///   startTime: TimeOfDay(hour: 16, minute: 0),
-///   endTime: TimeOfDay(hour: 20, minute: 0),
-///   blockReason: 'Férias',
-/// );
-/// 
-/// final result = await closePeriodUseCase(artistId, dto);
-/// ```
+/// Recebe um OpenPeriodDto e atualiza cada dia usando as informações
+/// de DayOverlapInfo. Dias com slots reservados são ignorados.
 class ClosePeriodUseCase {
-  final IAvailabilityRepository _repository;
+  final UpdateAvailabilityDayUseCase updateAvailabilityDayUseCase;
 
   ClosePeriodUseCase({
-    required IAvailabilityRepository repository,
-  }) : _repository = repository;
+    required this.updateAvailabilityDayUseCase,
+  });
 
-  /// Fecha/bloqueia período de disponibilidade
+  /// Fecha o período de disponibilidade
+  /// 
+  /// **Parâmetros:**
+  /// - `artistId`: ID do artista
+  /// - `dto`: DTO com informações de overlaps para cada dia
   /// 
   /// **Retorna:**
-  /// - `Right(List<AvailabilityDayEntity>)` com todos os dias atualizados
+  /// - `Right(List<AvailabilityDayEntity>)` com os dias atualizados
   /// - `Left(Failure)` se houver erro
   Future<Either<Failure, List<AvailabilityDayEntity>>> call(
     String artistId,
-    ClosePeriodDto dto,
+    OpenPeriodDto dto,
   ) async {
     try {
+      debugPrint('⚫ [CLOSE_PERIOD] Iniciando fechamento de período');
+      debugPrint('⚫ [CLOSE_PERIOD] ArtistId: $artistId');
+      debugPrint('⚫ [CLOSE_PERIOD] dayOverlapInfos: ${dto.dayOverlapInfos.length}');
+      debugPrint('⚫ [CLOSE_PERIOD] daysWithBookedSlot: ${dto.daysWithBookedSlot.length}');
+      
       if (artistId.isEmpty) {
         return const Left(ValidationFailure('ID do artista é obrigatório'));
       }
 
       // ════════════════════════════════════════════════════════════════
-      // 1. Verificar as datas válidas usando generateValidDates
+      // 1. Criar mapa de dias com slots reservados para busca rápida
       // ════════════════════════════════════════════════════════════════
-      final validDates = AvailabilityHelpers.generateValidDates(
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        weekdays: dto.weekdays, // ClosePeriod não tem filtro de weekdays, processa todos os dias
-      );
+      final bookedSlotMap = <DateTime, AvailabilityDayEntity>{};
+      for (final dayEntity in dto.daysWithBookedSlot) {
+        // Normalizar a data (remover hora) para comparação
+        final normalizedDate = DateTime(
+          dayEntity.date.year,
+          dayEntity.date.month,
+          dayEntity.date.day,
+        );
+        bookedSlotMap[normalizedDate] = dayEntity;
+        debugPrint('⚫ [CLOSE_PERIOD] Dia com booked slot: ${normalizedDate.toString().split(' ')[0]}');
+      }
 
+      // ════════════════════════════════════════════════════════════════
+      // 2. Processar cada DayOverlapInfo e atualizar o dia
+      // ════════════════════════════════════════════════════════════════
       final updatedDays = <AvailabilityDayEntity>[];
 
-      // ════════════════════════════════════════════════════════════════
-      // 2. Para cada data válida
-      // ════════════════════════════════════════════════════════════════
-      for (final date in validDates) {
-        final dayId = _formatDate(date);
-        print('[ClosePeriod] 📅 Processando dia: $dayId');
-
-        // ════════════════════════════════════════════════════════════
-        // 2.1. Buscar disponibilidade do dia
-        // ════════════════════════════════════════════════════════════
-        print('[ClosePeriod] 🔍 Buscando disponibilidade para dia: $dayId');
-        final availabilityResult = await _repository.getAvailability(
-          artistId: artistId,
-          dayId: dayId,
+      for (var i = 0; i < dto.dayOverlapInfos.length; i++) {
+        final overlapInfo = dto.dayOverlapInfos[i];
+        // Normalizar a data para comparação
+        final normalizedDate = DateTime(
+          overlapInfo.date.year,
+          overlapInfo.date.month,
+          overlapInfo.date.day,
         );
 
-        await availabilityResult.fold(
-          (failure) async {
-            // Se o dia não existe, não fazer nada (não tem horários a serem fechados)
-            print('[ClosePeriod] ⚠️ Dia $dayId não encontrado. Não há horários a serem fechados.');
+        debugPrint('⚫ [CLOSE_PERIOD] Processando overlap[$i] - Date: ${normalizedDate.toString().split(' ')[0]}');
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - hasOverlap: ${overlapInfo.hasOverlap}');
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - OldSlots: ${overlapInfo.oldTimeSlots?.length ?? 0}');
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - NewSlots: ${overlapInfo.newTimeSlots?.length ?? 0}');
+
+        // ════════════════════════════════════════════════════════════
+        // 2.1. Verificar se o dia tem slot reservado - se sim, pular
+        // ════════════════════════════════════════════════════════════
+        if (bookedSlotMap.containsKey(normalizedDate)) {
+          debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - PULANDO (tem booked slot)');
+          // Dia tem slot reservado, não modificar
+          continue;
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 2.2. Criar AvailabilityDayEntity a partir do DayOverlapInfo
+        // ════════════════════════════════════════════════════════════
+        final updatedDay = _createDayFromOverlapInfo(
+          baseDay: dto.baseAvailabilityDay,
+          overlapInfo: overlapInfo,
+          date: normalizedDate,
+        );
+
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Dia criado com ${updatedDay.slots.length} slots');
+        for (var j = 0; j < updatedDay.slots.length; j++) {
+          final slot = updatedDay.slots[j];
+          debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Slot[$j]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 2.3. Atualizar o dia usando o usecase
+        // ════════════════════════════════════════════════════════════
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Chamando updateAvailabilityDayUseCase');
+        final updateResult = await updateAvailabilityDayUseCase(
+          artistId,
+          updatedDay,
+        );
+
+        updateResult.fold(
+          (failure) {
+            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - ERRO ao atualizar: ${failure.message}');
+            throw failure;
           },
-          (availabilityDay) async {
-            print('[ClosePeriod] ✅ Disponibilidade encontrada. Availabilities: ${availabilityDay.availabilities.length}');
-            
-            // ════════════════════════════════════════════════════════
-            // 2.2. Se dia não tem availabilities, não fazer nada
-            // ════════════════════════════════════════════════════════
-            if (availabilityDay.availabilities.isEmpty) {
-              print('[ClosePeriod] ⚠️ Dia $dayId sem availabilities. Não há horários a serem fechados.');
-              return;
-            }
-
-            // ════════════════════════════════════════════════════════
-            // 3. Para cada availability do dia
-            // ════════════════════════════════════════════════════════
-            final updatedAvailabilities = <AvailabilityEntry>[];
-            bool hasChanges = false;
-
-            for (final availability in availabilityDay.availabilities) {
-              print('[ClosePeriod] 🔄 Processando availability: ${availability.availabilityId}');
-              
-              // ════════════════════════════════════════════════════
-              // 3.1. Para cada slot
-              // ════════════════════════════════════════════════════
-              final adjustedSlots = <TimeSlot>[];
-
-              for (final slot in availability.slots) {
-                // Converter strings de horário para TimeOfDay
-                final slotStartTime = _parseTimeString(slot.startTime);
-                final slotEndTime = _parseTimeString(slot.endTime);
-
-                // Verificar se há sobreposição
-                final overlapType = AvailabilityHelpers.validateTimeSlotOverlap(
-                  newStart: dto.startTime,
-                  newEnd: dto.endTime,
-                  existingStart: slotStartTime,
-                  existingEnd: slotEndTime,
-                );
-
-                if (overlapType == null) {
-                  // Não há overlap -> Não fazer nada, pois não tem horários ali a serem fechados
-                  adjustedSlots.add(slot);
-                } else {
-                  // Há overlap -> Passa os horários para o generateNewSlots
-                  // Substitui o slot do dia (que é sobreposto) pelos slots novos gerados
-                  print('[ClosePeriod] 🔧 Overlap detectado no slot ${slot.slotId} (tipo: $overlapType). Gerando novos slots...');
-                  hasChanges = true;
-                  
-                  final newSlots = AvailabilityHelpers.generateNewSlots(
-                    existingSlot: slot,
-                    newStart: dto.startTime,
-                    newEnd: dto.endTime,
-                    overlapType: overlapType,
-                  );
-                  
-                  adjustedSlots.addAll(newSlots);
-                  print('[ClosePeriod] ✅ Slot ${slot.slotId} substituído por ${newSlots.length} novo(s) slot(s)');
-                }
-              }
-
-              // ════════════════════════════════════════════════════
-              // Atualizar availability com slots ajustados
-              // ════════════════════════════════════════════════════
-              // Ordenar slots por horário (caso ainda não estejam ordenados)
-              adjustedSlots.sort((a, b) {
-                final aTime = _parseTimeString(a.startTime);
-                final bTime = _parseTimeString(b.startTime);
-                return (aTime.hour * 60 + aTime.minute)
-                    .compareTo(bTime.hour * 60 + bTime.minute);
-              });
-
-              final updatedAvailability = availability.copyWith(
-                slots: adjustedSlots,
-                updatedAt: DateTime.now(),
-              );
-
-              updatedAvailabilities.add(updatedAvailability);
-            }
-
-            // ════════════════════════════════════════════════════════
-            // 3.2. Se houve mudanças, salvar a disponibilidade do dia atualizada
-            // ════════════════════════════════════════════════════════
-            if (hasChanges) {
-              final updatedDay = availabilityDay.copyWith(
-                availabilities: updatedAvailabilities,
-                updatedAt: DateTime.now(),
-              );
-
-              final saveResult = await _repository.updateAvailability(
-                artistId: artistId,
-                day: updatedDay,
-              );
-
-              saveResult.fold(
-                (failure) {
-                  print('[ClosePeriod] ❌ Erro ao salvar dia $dayId: ${failure.message}');
-                  throw failure;
-                },
-                (savedDay) {
-                  print('[ClosePeriod] ✅ Dia $dayId salvo com sucesso');
-                  updatedDays.add(savedDay);
-                },
-              );
-            } else {
-              print('[ClosePeriod] ℹ️ Dia $dayId não teve mudanças. Nenhum slot foi ajustado.');
-            }
+          (updatedDayEntity) {
+            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Sucesso! Dia atualizado com ${updatedDayEntity.slots.length} slots');
+            updatedDays.add(updatedDayEntity);
           },
         );
       }
 
+      // ════════════════════════════════════════════════════════════════
+      // 3. Retornar lista de dias atualizados
+      // ════════════════════════════════════════════════════════════════
+      debugPrint('⚫ [CLOSE_PERIOD] Finalizado - Total de dias atualizados: ${updatedDays.length}');
       return Right(updatedDays);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
   }
 
-  /// Formata DateTime para string "YYYY-MM-DD"
-  String _formatDate(DateTime date) {
-    return '${date.year.toString().padLeft(4, '0')}-'
-        '${date.month.toString().padLeft(2, '0')}-'
-        '${date.day.toString().padLeft(2, '0')}';
-  }
+  /// Cria um AvailabilityDayEntity a partir das informações de overlap
+  AvailabilityDayEntity _createDayFromOverlapInfo({
+    required AvailabilityDayEntity baseDay,
+    required DayOverlapInfo overlapInfo,
+    required DateTime date,
+  }) {
+    // Usar novos slots se disponíveis, senão usar slots antigos
+    final slots = overlapInfo.newTimeSlots ?? overlapInfo.oldTimeSlots ?? [];
 
-  /// Converte string "HH:mm" para TimeOfDay
-  TimeOfDay _parseTimeString(String timeString) {
-    final parts = timeString.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
+    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Date: ${date.toString().split(' ')[0]}');
+    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Usando newTimeSlots: ${overlapInfo.newTimeSlots != null}');
+    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Total de slots: ${slots.length}');
+
+    // Usar novo endereço se disponível, senão usar endereço antigo ou base
+    final endereco = overlapInfo.newAddress ??
+        overlapInfo.oldAddress ??
+        baseDay.endereco;
+
+    // Usar novo raio se disponível, senão usar raio antigo ou base
+    final raioAtuacao = overlapInfo.newRadius ??
+        overlapInfo.oldRadius ??
+        baseDay.raioAtuacao;
+
+    final createdDay = baseDay.copyWith(
+      date: date,
+      slots: slots,
+      endereco: endereco,
+      raioAtuacao: raioAtuacao,
+      updatedAt: DateTime.now(),
+      isActive: true,
     );
+    
+    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Dia criado com ${createdDay.slots.length} slots');
+    
+    return createdDay;
   }
 }

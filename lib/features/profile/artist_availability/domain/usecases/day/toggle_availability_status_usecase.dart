@@ -1,9 +1,8 @@
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/availability_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// Use Case para ativar/desativar disponibilidade de um dia
@@ -11,17 +10,18 @@ import 'package:dartz/dartz.dart';
 /// Permite alternar o status de ativo/inativo de toda a disponibilidade
 /// de um dia específico sem deletar os dados.
 class ToggleAvailabilityStatusUseCase {
-  final IAvailabilityRepository repository;
+  final UpdateAvailabilityDayUseCase updateAvailabilityDay;
   final GetAvailabilityByDateUseCase getByDate;
 
   ToggleAvailabilityStatusUseCase({
-    required this.repository,
+    required this.updateAvailabilityDay,
     required this.getByDate,
   });
 
   Future<Either<Failure, AvailabilityDayEntity>> call(
     String artistId,
-    ToggleAvailabilityStatusDto dto,
+    DateTime date,
+    bool isActive,
   ) async {
     try {
       if (artistId.isEmpty) {
@@ -31,7 +31,8 @@ class ToggleAvailabilityStatusUseCase {
       // Buscar disponibilidade do dia
       final getDayResult = await getByDate(
         artistId,
-        GetAvailabilityByDateDto(date: dto.date, forceRemote: true),
+        date,
+        forceRemote: true,
       );
 
       return getDayResult.fold(
@@ -45,13 +46,13 @@ class ToggleAvailabilityStatusUseCase {
 
           // Atualizar status
           final updatedDay = dayEntity.copyWith(
-            isActive: dto.isActive,
+            isActive: isActive,
           );
 
           // Atualizar no repositório
-          return repository.updateAvailability(
-            artistId: artistId,
-            day: updatedDay,
+          return updateAvailabilityDay.call(
+            artistId,
+            updatedDay,
           );
         },
       );

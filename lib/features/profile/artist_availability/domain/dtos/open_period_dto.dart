@@ -1,58 +1,23 @@
-import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:flutter/material.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
 
 /// DTO para abrir um período de disponibilidade
+/// 
+/// Recebe um modelo base de AvailabilityDayEntity e uma lista de DayOverlapInfo
+/// para processar cada data do padrão de recorrência.
 class OpenPeriodDto {
-  /// Data de início do período
-  final DateTime startDate;
+  /// Modelo base de disponibilidade (será usado para criar dias sem overlap)
+  final AvailabilityDayEntity baseAvailabilityDay;
 
-  /// Data de fim do período
-  final DateTime endDate;
+  /// Lista de informações de overlaps para dias específicos
+  final List<DayOverlapInfo> dayOverlapInfos;
 
-  /// Horário de início (ex: 14:00)
-  final TimeOfDay startTime;
-
-  /// Horário de fim (ex: 22:00)
-  final TimeOfDay endTime;
-
-  /// Valor por hora
-  final double pricePerHour;
-
-  /// ID do endereço
-  final String addressId;
-
-  /// Raio de atuação em km
-  final double raioAtuacao;
-
-  /// Informações completas do endereço
-  final AddressInfoEntity endereco;
-
-  /// Dias da semana específicos (opcional)
-  /// Se null, cria para todos os dias do período
-  /// Ex: ['MO', 'TU', 'WE'] para segunda, terça e quarta
-  final List<String>? weekdays;
+  /// Lista de dias com slots reservados (não serão modificados)
+  final List<AvailabilityDayEntity> daysWithBookedSlot;
 
   const OpenPeriodDto({
-    required this.startDate,
-    required this.endDate,
-    required this.startTime,
-    required this.endTime,
-    required this.pricePerHour,
-    required this.addressId,
-    required this.raioAtuacao,
-    required this.endereco,
-    this.weekdays,
+    required this.baseAvailabilityDay,
+    required this.dayOverlapInfos,
+    this.daysWithBookedSlot = const [],
   });
-
-  /// Formata horário para string "HH:mm"
-  String get formattedStartTime {
-    return '${startTime.hour.toString().padLeft(2, '0')}:'
-        '${startTime.minute.toString().padLeft(2, '0')}';
-  }
-
-  /// Formata horário para string "HH:mm"
-  String get formattedEndTime {
-    return '${endTime.hour.toString().padLeft(2, '0')}:'
-        '${endTime.minute.toString().padLeft(2, '0')}';
-  }
 }

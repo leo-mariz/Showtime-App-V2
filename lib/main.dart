@@ -57,15 +57,15 @@ import 'package:app/features/profile/artist_availability/data/datasources/availa
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
 import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/add_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/delete_time_slot_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/day/toggle_availability_status_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/update_address_and_radius_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/update_time_slot_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/create_availability_day_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_day_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
 import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
@@ -534,7 +534,9 @@ AvailabilityBloc _createAvailabilityBloc(
   GetUserUidUseCase getUserUidUseCase,
   SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
+  // ════════════════════════════════════════════════════════════════
   // Criar Use Cases de Consulta
+  // ════════════════════════════════════════════════════════════════
   final getAllAvailabilitiesUseCase = GetAllAvailabilitiesUseCase(
     repository: availabilityRepository,
   );
@@ -543,54 +545,56 @@ AvailabilityBloc _createAvailabilityBloc(
     repository: availabilityRepository,
   );
 
+  // ════════════════════════════════════════════════════════════════
   // Criar Use Cases de Disponibilidade do Dia
+  // ════════════════════════════════════════════════════════════════
+  final updateAvailabilityDayUseCase = UpdateAvailabilityDayUseCase(
+    repository: availabilityRepository,
+  );
+
   final toggleAvailabilityStatusUseCase = ToggleAvailabilityStatusUseCase(
-    repository: availabilityRepository,
+    updateAvailabilityDay: updateAvailabilityDayUseCase,
     getByDate: getAvailabilityByDateUseCase,
   );
 
-  final updateAddressRadiusUseCase = UpdateAddressAndRadiusUseCase(
-    repository: availabilityRepository,
-    getByDate: getAvailabilityByDateUseCase,
+  // ════════════════════════════════════════════════════════════════
+  // Criar Use Cases de Validação
+  // ════════════════════════════════════════════════════════════════
+  final getOrganizedDayAfterVerificationUseCase = GetOrganizedDayAfterVerificationUseCase(
+    getAvailabilityByDateUseCase: getAvailabilityByDateUseCase,
   );
 
-  // Criar Use Cases de Slots
-  final addTimeSlotUseCase = AddTimeSlotUseCase(
-    repository: availabilityRepository,
-    getByDate: getAvailabilityByDateUseCase,
+  final getOrganizedAvailabilitiesAfterVerificationUseCase = GetOrganizedAvailabilitesAfterVerificationUseCase(
+    getOrganizedDayAfterVerificationUseCase: getOrganizedDayAfterVerificationUseCase,
   );
 
-  final updateTimeSlotUseCase = UpdateTimeSlotUseCase(
-    repository: availabilityRepository,
-    getByDate: getAvailabilityByDateUseCase,
-  );
-
-  final deleteTimeSlotUseCase = DeleteTimeSlotUseCase(
-    repository: availabilityRepository,
-    getByDate: getAvailabilityByDateUseCase,
-  );
-
+  // ════════════════════════════════════════════════════════════════
   // Criar Use Cases de Períodos
-  final openPeriodUseCase = OpenPeriodUseCase(
+  // ════════════════════════════════════════════════════════════════
+  final createAvailabilityDayUseCase = CreateAvailabilityDayUseCase(
     repository: availabilityRepository,
+  );
+
+  final openPeriodUseCase = OpenPeriodUseCase(
+    createAvailabilityDayUseCase: createAvailabilityDayUseCase,
+    updateAvailabilityDayUseCase: updateAvailabilityDayUseCase,
   );
 
   final closePeriodUseCase = ClosePeriodUseCase(
-    repository: availabilityRepository,
+    updateAvailabilityDayUseCase: updateAvailabilityDayUseCase,
   );
 
+  // ════════════════════════════════════════════════════════════════
   // Criar e retornar AvailabilityBloc
+  // ════════════════════════════════════════════════════════════════
   return AvailabilityBloc(
-    getAllAvailabilities: getAllAvailabilitiesUseCase,
-    getAvailabilityByDate: getAvailabilityByDateUseCase,
-    toggleAvailabilityStatus: toggleAvailabilityStatusUseCase,
-    updateAddressRadius: updateAddressRadiusUseCase,
-    addTimeSlot: addTimeSlotUseCase,
-    updateTimeSlot: updateTimeSlotUseCase,
-    deleteTimeSlot: deleteTimeSlotUseCase,
-    openPeriod: openPeriodUseCase,
-    closePeriod: closePeriodUseCase,
     getUserUidUseCase: getUserUidUseCase,
+    getAllAvailabilitiesUseCase: getAllAvailabilitiesUseCase,
+    toggleAvailabilityStatusUseCase: toggleAvailabilityStatusUseCase,
+    getOrganizedDayAfterVerificationUseCase: getOrganizedDayAfterVerificationUseCase,
+    getOrganizedAvailabilitiesAfterVerificationUseCase: getOrganizedAvailabilitiesAfterVerificationUseCase,
+    openPeriodUseCase: openPeriodUseCase,
+    closePeriodUseCase: closePeriodUseCase,
   );
 }
 

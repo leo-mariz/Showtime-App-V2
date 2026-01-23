@@ -2,6 +2,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
@@ -10,13 +11,12 @@ import 'package:app/core/shared/widgets/price_per_hour_input.dart';
 import 'package:app/core/shared/widgets/selectable_row.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/close_period_dto.dart';
-import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
-import 'package:app/features/profile/artist_availability/presentation/widgets/forms/period_confirmation_dialog.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/radius_map_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 
 
@@ -25,16 +25,14 @@ class AvailabilityFormModal extends StatefulWidget {
   final DateTime? initialDate;
   final DateTime? initialStartDate; // Para seleção de período
   final DateTime? initialEndDate; // Para seleção de período
-  final Function(OpenPeriodDto)? onOpenPeriod; // Callback para abrir período
-  final Function(ClosePeriodDto)? onClosePeriod; // Callback para fechar período
+  final Function(CheckOverlapsDto, bool)? onSave; // Callback com CheckOverlapsDto e isClose
 
   const AvailabilityFormModal({
     super.key,
     this.initialDate,
     this.initialStartDate,
     this.initialEndDate,
-    this.onOpenPeriod,
-    this.onClosePeriod,
+    this.onSave,
   });
 
   /// Exibe o modal de disponibilidade
@@ -43,8 +41,7 @@ class AvailabilityFormModal extends StatefulWidget {
     DateTime? initialDate,
     DateTime? initialStartDate,
     DateTime? initialEndDate,
-    Function(OpenPeriodDto)? onOpenPeriod,
-    Function(ClosePeriodDto)? onClosePeriod,
+    Function(CheckOverlapsDto, bool)? onSave,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -54,8 +51,7 @@ class AvailabilityFormModal extends StatefulWidget {
         initialDate: initialDate,
         initialStartDate: initialStartDate,
         initialEndDate: initialEndDate,
-        onOpenPeriod: onOpenPeriod,
-        onClosePeriod: onClosePeriod,
+        onSave: onSave,
       ),
     );
   }
@@ -300,34 +296,6 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
         context.showError('Selecione os horários');
         return;
       }
-      
-      // Criar DTO para fechar período
-      final closeDto = ClosePeriodDto(
-        startDate: _startDate!,
-        endDate: _endDate!,
-        startTime: _allHours 
-            ? const TimeOfDay(hour: 0, minute: 0)  // Todos os horários
-            : _startTime!,
-        endTime: _allHours 
-            ? const TimeOfDay(hour: 23, minute: 59)  // Todos os horários
-            : _endTime!,
-        weekdays: _allDays ? null : _selectedWeekdays,
-        blockReason: 'Bloqueio manual', // TODO: Permitir usuário informar motivo
-      );
-      
-      // Mostrar dialog de confirmação
-      final confirmed = await PeriodConfirmationDialog.showClosePeriod(
-        context: context,
-        dto: closeDto,
-      );
-      
-      // Se confirmado, chamar callback e fechar modal
-      if (confirmed == true && widget.onClosePeriod != null) {
-        widget.onClosePeriod!(closeDto);
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      }
     } else {
       // ════════════════════════════════════════════════════════════════
       // MODO ABRIR PERÍODO
@@ -357,33 +325,85 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
         context.showError('Digite um valor válido');
         return;
       }
-      
-      // Criar DTO para abrir período
-      final openDto = OpenPeriodDto(
-        startDate: _startDate!,
-        endDate: _endDate!,
-        startTime: _startTime!,
-        endTime: _endTime!,
-        pricePerHour: value,
-        addressId: _selectedAddress!.uid ?? '',
-        raioAtuacao: _radiusKm,
-        endereco: _selectedAddress!,
-        weekdays: _allDays ? null : _selectedWeekdays,
-      );
-      
-      // Mostrar dialog de confirmação
-      final confirmed = await PeriodConfirmationDialog.showOpenPeriod(
-        context: context,
-        dto: openDto,
-      );
-      
-      // Se confirmado, chamar callback e fechar modal
-      if (confirmed == true && widget.onOpenPeriod != null) {
-        widget.onOpenPeriod!(openDto);
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // Criar PatternMetadata
+    // ════════════════════════════════════════════════════════════════
+    const uuid = Uuid();
+    final patternId = uuid.v4();
+    final now = DateTime.now();
+
+    // Preparar horários para o PatternMetadata
+    final startTimeForPattern = _isBlocking && _allHours
+        ? const TimeOfDay(hour: 0, minute: 0)
+        : (_startTime ?? const TimeOfDay(hour: 9, minute: 0));
+    
+    final endTimeForPattern = _isBlocking && _allHours
+        ? const TimeOfDay(hour: 23, minute: 59)
+        : (_endTime ?? const TimeOfDay(hour: 18, minute: 0));
+
+    // Criar RecurrenceSettings
+    final recurrence = RecurrenceSettings(
+      weekdays: _allDays ? null : (_selectedWeekdays.isEmpty ? null : _selectedWeekdays),
+      originalStartDate: _startDate!,
+      originalEndDate: _endDate!,
+      originalStartTime: '${startTimeForPattern.hour.toString().padLeft(2, '0')}:${startTimeForPattern.minute.toString().padLeft(2, '0')}',
+      originalEndTime: '${endTimeForPattern.hour.toString().padLeft(2, '0')}:${endTimeForPattern.minute.toString().padLeft(2, '0')}',
+      originalValorHora: _isBlocking ? 0.0 : (double.tryParse(_valueController.text.replaceAll(',', '.')) ?? 0.0),
+      originalAddressId: _selectedAddress?.uid ?? '',
+    );
+
+    // Criar PatternMetadata
+    final patternMetadata = PatternMetadata(
+      patternId: patternId,
+      creationType: _isBlocking ? 'close_period' : 'recurring_pattern',
+      recurrence: recurrence,
+      createdAt: now,
+    );
+
+    // ════════════════════════════════════════════════════════════════
+    // Criar CheckOverlapsDto
+    // ════════════════════════════════════════════════════════════════
+    final checkOverlapsDto = CheckOverlapsDto(
+      patternMetadata: patternMetadata,
+      endereco: _isBlocking ? null : _selectedAddress,
+      raioAtuacao: _isBlocking ? null : _radiusKm,
+      valorHora: _isBlocking ? null : (double.tryParse(_valueController.text.replaceAll(',', '.'))),
+      startTime: _isBlocking && _allHours
+          ? null
+          : '${startTimeForPattern.hour.toString().padLeft(2, '0')}:${startTimeForPattern.minute.toString().padLeft(2, '0')}',
+      endTime: _isBlocking && _allHours
+          ? null
+          : '${endTimeForPattern.hour.toString().padLeft(2, '0')}:${endTimeForPattern.minute.toString().padLeft(2, '0')}',
+    );
+
+    // ════════════════════════════════════════════════════════════════
+    // LOG: Dados do formulário
+    // ════════════════════════════════════════════════════════════════
+    debugPrint('🔵 [FORM] Salvando período - isBlocking: $_isBlocking');
+    debugPrint('🔵 [FORM] PatternId: ${patternMetadata.patternId}');
+    debugPrint('🔵 [FORM] StartDate: ${_startDate}');
+    debugPrint('🔵 [FORM] EndDate: ${_endDate}');
+    debugPrint('🔵 [FORM] StartTime: ${checkOverlapsDto.startTime}');
+    debugPrint('🔵 [FORM] EndTime: ${checkOverlapsDto.endTime}');
+    debugPrint('🔵 [FORM] AllHours: $_allHours');
+    debugPrint('🔵 [FORM] AllDays: $_allDays');
+    debugPrint('🔵 [FORM] Weekdays: ${recurrence.weekdays}');
+    debugPrint('🔵 [FORM] ValorHora: ${checkOverlapsDto.valorHora}');
+    debugPrint('🔵 [FORM] Endereco: ${checkOverlapsDto.endereco?.title ?? "null"}');
+    debugPrint('🔵 [FORM] RaioAtuacao: ${checkOverlapsDto.raioAtuacao}');
+
+    // ════════════════════════════════════════════════════════════════
+    // Chamar callback com CheckOverlapsDto e isClose
+    // ════════════════════════════════════════════════════════════════
+    if (widget.onSave != null) {
+      widget.onSave!(checkOverlapsDto, _isBlocking);
+    }
+
+    // Fechar modal após chamar callback
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -715,7 +735,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                           
                           Expanded(
                             child: CustomButton(
-                              label: _isBlocking ? 'Fechar Período' : 'Abrir Disponibilidade',
+                              label: 'Salvar',
                               onPressed: _onSave,
                             ),
                           ),

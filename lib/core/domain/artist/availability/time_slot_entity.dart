@@ -1,3 +1,4 @@
+import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
 part 'time_slot_entity.mapper.dart';
@@ -16,17 +17,14 @@ class TimeSlot with TimeSlotMappable {
   /// Horário de fim (formato: "HH:mm")
   final String endTime;
   
-  /// Status do slot: available, blocked, booked
-  final String status;
+  /// Status do slot: available, booked
+  final TimeSlotStatusEnum status;
   
   /// Valor por hora (apenas se status = available)
   final double? valorHora;
   
-  /// Motivo do bloqueio (apenas se status = blocked)
-  final String? blockReason;
-  
   /// ID da reserva (apenas se status = booked)
-  final String? bookingId;
+  final String? contractId;
   
   /// ID do padrão que gerou este slot (se foi gerado de um padrão)
   final String? sourcePatternId;
@@ -37,8 +35,7 @@ class TimeSlot with TimeSlotMappable {
     required this.endTime,
     required this.status,
     this.valorHora,
-    this.blockReason,
-    this.bookingId,
+    this.contractId,
     this.sourcePatternId,
   });
   
@@ -52,11 +49,8 @@ class TimeSlot with TimeSlotMappable {
   }
   
   /// Verifica se o slot está disponível para reserva
-  bool get isAvailable => status == 'available';
-  
-  /// Verifica se o slot está bloqueado
-  bool get isBlocked => status == 'blocked';
+  bool get isAvailable => status == TimeSlotStatusEnum.available;
   
   /// Verifica se o slot está reservado
-  bool get isBooked => status == 'booked';
+  bool get isBooked => status == TimeSlotStatusEnum.booked;
 }

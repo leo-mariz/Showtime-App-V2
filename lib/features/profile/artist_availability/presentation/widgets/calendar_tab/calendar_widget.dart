@@ -2,6 +2,7 @@ import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -101,8 +102,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
     
     // Verificar se está ativo e tem slots
     return availability.isActive && 
-           availability.availabilities.isNotEmpty &&
-           availability.availabilities.any((entry) => entry.slots.isNotEmpty);
+           availability.slots.isNotEmpty;
   }
   
   /// Conta quantidade de slots disponíveis no dia
@@ -110,12 +110,10 @@ class CalendarWidgetState extends State<CalendarWidget> {
     final availability = _getAvailabilityForDay(day);
     if (availability == null) return 0;
     
-    // Contar total de slots em todas as entries
-    int totalSlots = 0;
-    for (final entry in availability.availabilities) {
-      totalSlots += entry.slots.where((slot) => slot.status == 'available').length;
-    }
-    return totalSlots;
+    // Contar total de slots disponíveis
+    return availability.slots
+        .where((slot) => slot.status == TimeSlotStatusEnum.available)
+        .length;
   }
   
   /// Verifica se a disponibilidade está desativada
@@ -124,7 +122,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
     if (availability == null) return false;
     
     // Tem disponibilidade mas está inativa
-    return !availability.isActive && availability.availabilities.isNotEmpty;
+    return !availability.isActive && availability.slots.isNotEmpty;
   }
 
   @override

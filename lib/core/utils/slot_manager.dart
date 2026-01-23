@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
+import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:uuid/uuid.dart';
 
 /// Gerenciador de slots de tempo
@@ -26,23 +27,26 @@ class SlotManager {
   
   /// Bloqueia um período específico, quebrando slots existentes se necessário
   /// 
+  /// Quando um slot é bloqueado, ele é removido da lista (não criamos slots bloqueados).
+  /// Apenas mantemos as partes antes e depois do bloqueio se tiverem duração suficiente.
+  /// 
   /// [existingSlots]: Lista de slots existentes
   /// [blockStart]: Horário de início do bloqueio (HH:mm)
   /// [blockEnd]: Horário de fim do bloqueio (HH:mm)
-  /// [blockReason]: Motivo do bloqueio (opcional)
+  /// [blockReason]: Motivo do bloqueio (opcional, mantido para compatibilidade)
   /// 
-  /// Retorna nova lista de slots com o bloqueio aplicado
+  /// Retorna nova lista de slots com o bloqueio aplicado (slots bloqueados são removidos)
   static List<TimeSlot> blockTimeRange({
     required List<TimeSlot> existingSlots,
     required String blockStart,
     required String blockEnd,
-    String? blockReason,
+    String? blockReason, // Mantido para compatibilidade, mas não usado
   }) {
     final newSlots = <TimeSlot>[];
     
     for (final slot in existingSlots) {
       // Ignorar slots que não estão disponíveis
-      if (slot.status != 'available') {
+      if (!slot.isAvailable) {
         newSlots.add(slot);
         continue;
       }
@@ -81,43 +85,39 @@ class SlotManager {
   /// [existingSlots]: Lista de slots existentes
   /// [blockStart]: Horário de início do bloqueio a remover
   /// [blockEnd]: Horário de fim do bloqueio a remover
-  /// [newStatus]: Novo status do slot (default: 'available')
-  /// [valorHora]: Valor por hora (necessário se newStatus = 'available')
+  /// [newStatus]: Novo status do slot (default: available)
+  /// [valorHora]: Valor por hora (necessário se newStatus = available)
   /// 
   /// Retorna nova lista de slots com o bloqueio removido
   static List<TimeSlot> unblockTimeRange({
     required List<TimeSlot> existingSlots,
     required String blockStart,
     required String blockEnd,
-    String newStatus = 'available',
+    TimeSlotStatusEnum newStatus = TimeSlotStatusEnum.available,
     double? valorHora,
     String? sourcePatternId,
   }) {
     final newSlots = <TimeSlot>[];
     
     for (final slot in existingSlots) {
-      final slotStartMin = timeToMinutes(slot.startTime);
-      final slotEndMin = timeToMinutes(slot.endTime);
-      final blockStartMin = timeToMinutes(blockStart);
-      final blockEndMin = timeToMinutes(blockEnd);
+      // Verificar se o slot está dentro do período bloqueado
+      final intersection = _calculateIntersection(
+        slotStart: slot.startTime,
+        slotEnd: slot.endTime,
+        blockStart: blockStart,
+        blockEnd: blockEnd,
+      );
       
-      // Se o slot está completamente dentro do bloqueio a remover
-      if (slotStartMin >= blockStartMin && slotEndMin <= blockEndMin) {
-        // Converter para novo status
-        if (slot.status == 'blocked') {
-          newSlots.add(TimeSlot(
-            slotId: slot.slotId,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            status: newStatus,
-            valorHora: valorHora,
-            sourcePatternId: sourcePatternId,
-          ));
-        } else {
-          newSlots.add(slot);
-        }
-      } else {
+      if (intersection.type == IntersectionType.none) {
+        // Slot não está no período bloqueado, manter como está
         newSlots.add(slot);
+      } else {
+        // Slot está no período bloqueado, substituir por slot disponível
+        newSlots.add(slot.copyWith(
+          status: newStatus,
+          valorHora: valorHora ?? slot.valorHora,
+          sourcePatternId: sourcePatternId ?? slot.sourcePatternId,
+        ));
       }
     }
     
@@ -144,7 +144,6 @@ class SlotManager {
       final canMerge = last.endTime == current.startTime &&
           last.status == current.status &&
           last.valorHora == current.valorHora &&
-          last.blockReason == current.blockReason &&
           last.sourcePatternId == current.sourcePatternId;
       
       if (canMerge) {
@@ -161,11 +160,14 @@ class SlotManager {
   }
   
   /// Divide um slot baseado na interseção com um bloqueio
+  /// 
+  /// Quando um slot é bloqueado, ele é removido (não criamos um slot com status "blocked").
+  /// Apenas mantemos as partes antes e depois do bloqueio se tiverem duração suficiente.
   static List<TimeSlot> _splitSlotForBlock({
     required TimeSlot originalSlot,
     required String blockStart,
     required String blockEnd,
-    String? blockReason,
+    String? blockReason, // Mantido para compatibilidade, mas não usado
   }) {
     final slots = <TimeSlot>[];
     
@@ -182,24 +184,15 @@ class SlotManager {
           slotId: '${originalSlot.slotId}_before',
           startTime: originalSlot.startTime,
           endTime: blockStart,
-          status: 'available',
+          status: TimeSlotStatusEnum.available,
           valorHora: originalSlot.valorHora,
           sourcePatternId: originalSlot.sourcePatternId,
         ));
       }
     }
     
-    // Slot BLOQUEADO (interseção)
-    final blockedStart = minutesToTime(max(slotStartMin, blockStartMin));
-    final blockedEnd = minutesToTime(min(slotEndMin, blockEndMin));
-    slots.add(TimeSlot(
-      slotId: '${originalSlot.slotId}_blocked',
-      startTime: blockedStart,
-      endTime: blockedEnd,
-      status: 'blocked',
-      blockReason: blockReason,
-      sourcePatternId: originalSlot.sourcePatternId,
-    ));
+    // Slot BLOQUEADO: não criamos um slot bloqueado, apenas removemos essa parte
+    // (o slot bloqueado não é adicionado à lista)
     
     // Slot DEPOIS do bloqueio (se existir espaço suficiente)
     if (slotEndMin > blockEndMin) {
@@ -209,7 +202,7 @@ class SlotManager {
           slotId: '${originalSlot.slotId}_after',
           startTime: blockEnd,
           endTime: originalSlot.endTime,
-          status: 'available',
+          status: TimeSlotStatusEnum.available,
           valorHora: originalSlot.valorHora,
           sourcePatternId: originalSlot.sourcePatternId,
         ));
@@ -277,7 +270,7 @@ class SlotManager {
     
     // Verificar se há slots disponíveis para bloquear
     final hasAvailableSlots = existingSlots.any((slot) {
-      if (slot.status != 'available') return false;
+      if (!slot.isAvailable) return false;
       return _calculateIntersection(
         slotStart: slot.startTime,
         slotEnd: slot.endTime,
@@ -305,7 +298,7 @@ class SlotManager {
     final blockEndMin = timeToMinutes(blockEnd);
     
     for (final slot in existingSlots) {
-      if (slot.status != 'available') continue;
+      if (!slot.isAvailable) continue;
       
       final slotStartMin = timeToMinutes(slot.startTime);
       final slotEndMin = timeToMinutes(slot.endTime);

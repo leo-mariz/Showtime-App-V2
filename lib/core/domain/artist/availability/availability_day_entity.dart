@@ -1,5 +1,7 @@
+import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_entry_entity.dart';
+import 'package:app/core/domain/artist/availability/pattern_metadata_entity.dart';
+import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/utils/timestamp_hook.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
@@ -24,10 +26,21 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   /// - De um padrão de recorrência diferente
   /// - Em endereços diferentes
   /// - Com horários e valores diferentes
-  final List<AvailabilityEntry> availabilities;
+  final List<TimeSlot> slots;
+
+  final List<PatternMetadata>? patternMetadata;
+
+  /// Raio de atuação em km a partir do endereço base
+  final double raioAtuacao;
+  
+  /// Informações completas do endereço base
+  final AddressInfoEntity endereco;
+
+  /// Indica se a disponibilidade foi editada manualmente
+  final bool isManualOverride;
   
   /// Data de criação do documento
-  final DateTime createdAt;
+  final DateTime? createdAt;
   
   /// Última atualização do documento
   final DateTime? updatedAt;
@@ -38,10 +51,14 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   const AvailabilityDayEntity({
     this.id,
     required this.date,
-    required this.availabilities,
-    required this.createdAt,
+    required this.slots,
+    required this.raioAtuacao,
+    required this.endereco,
+    required this.isManualOverride,
+    this.createdAt,
     this.updatedAt,
     this.isActive = true,
+    this.patternMetadata,
   });
   
   /// Retorna o ID do documento (YYYY-MM-DD)
@@ -54,17 +71,17 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   
   /// Verifica se tem alguma disponibilidade neste dia
   bool get hasAvailability => 
-      availabilities.any((av) => av.hasAvailableSlots);
+      slots.any((slot) => slot.valorHora != null);
   
   /// Retorna todas as availabilities com slots disponíveis
-  List<AvailabilityEntry> get availableEntries => 
-      availabilities.where((av) => av.hasAvailableSlots).toList();
+  List<TimeSlot> get availableSlots => 
+      slots.where((slot) => slot.valorHora != null).toList();
   
   /// Retorna lista de IDs de padrões presentes neste dia
   List<String> get patternIds => 
-      availabilities
-          .where((av) => av.isFromPattern)
-          .map((av) => av.patternId!)
+      slots
+          .where((slot) => slot.sourcePatternId != null)
+          .map((slot) => slot.sourcePatternId!)
           .toSet()
           .toList();
   
@@ -73,12 +90,12 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
       patternIds.contains(patternId);
   
   /// Retorna availabilities de um padrão específico
-  List<AvailabilityEntry> getEntriesByPattern(String patternId) =>
-      availabilities.where((av) => av.patternId == patternId).toList();
+  List<TimeSlot> getSlotsByPattern(String patternId) =>
+      slots.where((slot) => slot.sourcePatternId == patternId).toList();
   
   /// Verifica se tem availabilities que podem ser editadas via padrão
   bool get hasEditableViaPattern =>
-      availabilities.any((av) => av.canUpdateViaPattern);
+      slots.any((slot) => slot.sourcePatternId != null);
 }
 
 /// Extension para referências do Firestore e cache

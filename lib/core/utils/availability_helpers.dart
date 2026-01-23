@@ -233,9 +233,8 @@ class AvailabilityHelpers {
             endTime: existingSlot.endTime,
             status: existingSlot.status,
             valorHora: existingSlot.valorHora,
+            contractId: existingSlot.contractId,
             sourcePatternId: existingSlot.sourcePatternId,
-            blockReason: existingSlot.blockReason,
-            bookingId: existingSlot.bookingId,
           ),
         ];
 

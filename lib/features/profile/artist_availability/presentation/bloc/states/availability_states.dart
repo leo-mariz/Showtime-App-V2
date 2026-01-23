@@ -169,3 +169,103 @@ class ClosePeriodFailure extends AvailabilityState {
   @override
   List<Object?> get props => [error];
 }
+
+// ==================== DELETE TIME SLOT STATES ====================
+
+/// Estado de carregamento para deletar slot
+class DeleteTimeSlotLoading extends AvailabilityState {}
+
+/// Estado de sucesso para deletar slot
+class DeleteTimeSlotSuccess extends AvailabilityState {
+  final AvailabilityDayEntity availability;
+
+  DeleteTimeSlotSuccess({required this.availability});
+
+  @override
+  List<Object?> get props => [availability];
+}
+
+/// Estado de falha para deletar slot
+class DeleteTimeSlotFailure extends AvailabilityState {
+  final String error;
+
+  DeleteTimeSlotFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== UPDATE TIME SLOT STATES ====================
+
+/// Estado de carregamento para atualizar slot
+class UpdateTimeSlotLoading extends AvailabilityState {}
+
+/// Estado de sucesso para atualizar slot
+class UpdateTimeSlotSuccess extends AvailabilityState {
+  final AvailabilityDayEntity availability;
+
+  UpdateTimeSlotSuccess({required this.availability});
+
+  @override
+  List<Object?> get props => [availability];
+}
+
+/// Estado de falha para atualizar slot
+class UpdateTimeSlotFailure extends AvailabilityState {
+  final String error;
+
+  UpdateTimeSlotFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== UPDATE ADDRESS AND RADIUS STATES ====================
+
+/// Estado de carregamento para atualizar endereço e raio
+class UpdateAddressAndRadiusLoading extends AvailabilityState {}
+
+/// Estado de sucesso para atualizar endereço e raio
+class UpdateAddressAndRadiusSuccess extends AvailabilityState {
+  final AvailabilityDayEntity availability;
+
+  UpdateAddressAndRadiusSuccess({required this.availability});
+
+  @override
+  List<Object?> get props => [availability];
+}
+
+/// Estado de falha para atualizar endereço e raio
+class UpdateAddressAndRadiusFailure extends AvailabilityState {
+  final String error;
+
+  UpdateAddressAndRadiusFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== ADD TIME SLOT STATES ====================
+
+/// Estado de carregamento para adicionar slot
+class AddTimeSlotLoading extends AvailabilityState {}
+
+/// Estado de sucesso para adicionar slot
+class AddTimeSlotSuccess extends AvailabilityState {
+  final AvailabilityDayEntity availability;
+
+  AddTimeSlotSuccess({required this.availability});
+
+  @override
+  List<Object?> get props => [availability];
+}
+
+/// Estado de falha para adicionar slot
+class AddTimeSlotFailure extends AvailabilityState {
+  final String error;
+
+  AddTimeSlotFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}

@@ -94,9 +94,7 @@ class GetOrganizedAvailabilitesAfterVerificationUseCase {
                 debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - Adicionando a daysWithoutOverlap');
                 daysWithoutOverlap.add(dayResult.dayEntity!);
               }
-            } else {
-              debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - Dia não existe');
-            }
+            } 
             // Se dayEntity é null, o dia não existe e não adiciona a nenhuma lista
           },
         );

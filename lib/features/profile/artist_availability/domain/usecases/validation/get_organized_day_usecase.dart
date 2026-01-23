@@ -67,7 +67,7 @@ class GetOrganizedDayAfterVerificationUseCase {
           final isAddressDifferent = dto.endereco != null
               ? _isAddressDifferent(
                   newAddress: dto.endereco!,
-                  oldAddress: dayEntity.endereco,
+                  oldAddress: dayEntity.endereco!,
                 )
               : false;
 
@@ -76,86 +76,97 @@ class GetOrganizedDayAfterVerificationUseCase {
               : false;
 
           // ════════════════════════════════════════════════════════════
-          // 3. Processar slots existentes (se startTime e endTime foram fornecidos)
+          // 3. Processar slots existentes
           // ════════════════════════════════════════════════════════════
           bool hasOverlap = false;
           List<TimeSlot> newSlotsList = [];
 
+          // Determinar horários do novo slot
+          // Se startTime/endTime são null, significa "Todos os horários" (00:00-23:59)
+          final String effectiveStartTime;
+          final String effectiveEndTime;
+          
           if (dto.startTime != null && dto.endTime != null) {
-            final newStartTime = _parseTimeString(dto.startTime!);
-            final newEndTime = _parseTimeString(dto.endTime!);
+            effectiveStartTime = dto.startTime!;
+            effectiveEndTime = dto.endTime!;
+          } else {
+            // "Todos os horários" = 00:00 até 23:59
+            effectiveStartTime = '00:00';
+            effectiveEndTime = '23:59';
+            debugPrint('🔴 [GET_ORGANIZED_DAY] Horários null detectados - tratando como "Todos os horários" (00:00-23:59)');
+          }
 
-            debugPrint('🔴 [GET_ORGANIZED_DAY] Processando dia: ${date.toString().split(' ')[0]} - isClose: $isClose');
-            debugPrint('🔴 [GET_ORGANIZED_DAY] Novo horário: ${dto.startTime} - ${dto.endTime}');
-            debugPrint('🔴 [GET_ORGANIZED_DAY] Slots existentes: ${dayEntity.slots.length}');
+          final newStartTime = _parseTimeString(effectiveStartTime);
+          final newEndTime = _parseTimeString(effectiveEndTime);
 
-            for (var i = 0; i < dayEntity.slots.length; i++) {
-              final slot = dayEntity.slots[i];
-              final slotStartTime = _parseTimeString(slot.startTime);
-              final slotEndTime = _parseTimeString(slot.endTime);
+          debugPrint('🔴 [GET_ORGANIZED_DAY] Processando dia: ${date.toString().split(' ')[0]} - isClose: $isClose');
+          debugPrint('🔴 [GET_ORGANIZED_DAY] Novo horário: $effectiveStartTime - $effectiveEndTime');
+          debugPrint('🔴 [GET_ORGANIZED_DAY] Slots existentes: ${dayEntity.slots?.length ?? 0}');
 
-              debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
+          // Processar cada slot existente
+          for (var i = 0; i < dayEntity.slots!.length; i++) {
+            final slot = dayEntity.slots![i];
+            final slotStartTime = _parseTimeString(slot.startTime);
+            final slotEndTime = _parseTimeString(slot.endTime);
 
-              final overlapType = AvailabilityHelpers.validateTimeSlotOverlap(
-                newStart: newStartTime,
-                newEnd: newEndTime,
-                existingStart: slotStartTime,
-                existingEnd: slotEndTime,
-              );
+            debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
 
-              if (overlapType == null) {
-                // Não há overlap, adiciona o slot existente
-                debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Sem overlap, mantendo slot');
-                newSlotsList.add(slot);
-              } else {
-                // Há overlap, gera novos slots
-                debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - OVERLAP detectado: $overlapType');
-                hasOverlap = true;
-                if (slot.status == TimeSlotStatusEnum.available) {
-                  debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Status AVAILABLE, gerando novos slots');
-                  final generatedSlots = AvailabilityHelpers.generateNewSlots(
-                    existingSlot: slot,
-                    newStart: newStartTime,
-                    newEnd: newEndTime,
-                    overlapType: overlapType,
-                  );
-                  debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Gerados ${generatedSlots.length} novos slots');
-                  for (var j = 0; j < generatedSlots.length; j++) {
-                    final genSlot = generatedSlots[j];
-                    debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - NovoSlot[$j]: ${genSlot.startTime}-${genSlot.endTime}, status: ${genSlot.status}, valorHora: ${genSlot.valorHora}');
-                  }
-                  newSlotsList.addAll(generatedSlots);
-                } else if (slot.status == TimeSlotStatusEnum.booked) {
-                  debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Status BOOKED, retornando withBookedSlot');
-                  return Right(OrganizedDayAfterVerificationResult.withBookedSlot(dayEntity));
+            final overlapType = AvailabilityHelpers.validateTimeSlotOverlap(
+              newStart: newStartTime,
+              newEnd: newEndTime,
+              existingStart: slotStartTime,
+              existingEnd: slotEndTime,
+            );
+
+            if (overlapType == null) {
+              // Não há overlap, adiciona o slot existente
+              debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Sem overlap, mantendo slot');
+              newSlotsList.add(slot);
+            } else {
+              // Há overlap, gera novos slots
+              debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - OVERLAP detectado: $overlapType');
+              hasOverlap = true;
+              if (slot.status == TimeSlotStatusEnum.available) {
+                debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Status AVAILABLE, gerando novos slots');
+                final generatedSlots = AvailabilityHelpers.generateNewSlots(
+                  existingSlot: slot,
+                  newStart: newStartTime,
+                  newEnd: newEndTime,
+                  overlapType: overlapType,
+                );
+                debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Gerados ${generatedSlots.length} novos slots');
+                for (var j = 0; j < generatedSlots.length; j++) {
+                  final genSlot = generatedSlots[j];
+                  debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - NovoSlot[$j]: ${genSlot.startTime}-${genSlot.endTime}, status: ${genSlot.status}, valorHora: ${genSlot.valorHora}');
                 }
+                newSlotsList.addAll(generatedSlots);
+              } else if (slot.status == TimeSlotStatusEnum.booked) {
+                debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - Status BOOKED, retornando withBookedSlot');
+                return Right(OrganizedDayAfterVerificationResult.withBookedSlot(dayEntity));
               }
             }
-
-            // ════════════════════════════════════════════════════════
-            // 4. Adicionar o slot novo (se valorHora foi fornecido)
-            // ════════════════════════════════════════════════════════
-            if (dto.valorHora != null && !isClose) {
-              debugPrint('🔴 [GET_ORGANIZED_DAY] Adicionando novo slot (não é close)');
-              const uuid = Uuid();
-              final newSlot = TimeSlot(
-                slotId: uuid.v4(),
-                startTime: dto.startTime!,
-                endTime: dto.endTime!,
-                status: TimeSlotStatusEnum.available,
-                valorHora: dto.valorHora,
-                sourcePatternId: dto.patternId, // Pode ser null para slots manuais
-              );
-              newSlotsList.add(newSlot);
-            } else {
-              debugPrint('🔴 [GET_ORGANIZED_DAY] NÃO adicionando novo slot - valorHora: ${dto.valorHora}, isClose: $isClose');
-            }
-            
-            debugPrint('🔴 [GET_ORGANIZED_DAY] Total de slots após processamento: ${newSlotsList.length}'); 
-          } else {
-            // Se não há horários, manter slots existentes
-            newSlotsList.addAll(dayEntity.slots);
           }
+
+          // ════════════════════════════════════════════════════════
+          // 4. Adicionar o slot novo (apenas se não for close e valorHora foi fornecido)
+          // ════════════════════════════════════════════════════════
+          if (dto.valorHora != null && !isClose) {
+            debugPrint('🔴 [GET_ORGANIZED_DAY] Adicionando novo slot (não é close)');
+            const uuid = Uuid();
+            final newSlot = TimeSlot(
+              slotId: uuid.v4(),
+              startTime: effectiveStartTime,
+              endTime: effectiveEndTime,
+              status: TimeSlotStatusEnum.available,
+              valorHora: dto.valorHora,
+              sourcePatternId: dto.patternId, // Pode ser null para slots manuais
+            );
+            newSlotsList.add(newSlot);
+          } else {
+            debugPrint('🔴 [GET_ORGANIZED_DAY] NÃO adicionando novo slot - valorHora: ${dto.valorHora}, isClose: $isClose');
+          }
+          
+          debugPrint('🔴 [GET_ORGANIZED_DAY] Total de slots após processamento: ${newSlotsList.length}');
 
           // ════════════════════════════════════════════════════════════
           // 5. Classificar o resultado

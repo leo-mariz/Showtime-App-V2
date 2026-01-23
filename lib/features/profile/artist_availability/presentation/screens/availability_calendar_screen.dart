@@ -5,6 +5,7 @@ import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
+import 'package:app/features/profile/artist_availability/domain/entities/check_overlap_on_day_result.dart';
 import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
 import 'package:app/features/profile/artist_availability/domain/entities/organized_availabilities_after_verification_result_entity.dart.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
@@ -14,6 +15,7 @@ import 'package:app/features/profile/artist_availability/presentation/widgets/ca
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/day_edit_bottom_sheet.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/forms/availability_confirmation_dialog.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/forms/availability_form_modal.dart';
+import 'package:app/features/profile/artist_availability/domain/dtos/check_overlap_on_day_dto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -32,6 +34,11 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   final GlobalKey<CalendarWidgetState> _calendarKey = GlobalKey<CalendarWidgetState>();
   List<AvailabilityDayEntity> _availabilities = []; // Cache local dos dados
   CheckOverlapsDto? _lastCheckOverlapsDto; // Guarda o DTO original para criar OpenPeriodDto
+  
+  // Variáveis para guardar contexto de operação de slot (add/update)
+  String? _pendingSlotOperation; // 'add' ou 'update'
+  String? _pendingSlotId; // Para update
+  DateTime? _pendingSlotDate;
 
   @override
   void initState() {
@@ -107,6 +114,15 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
         }
         
         // ════════════════════════════════════════════════════════════════
+        // SUCESSO/ERRO Get Organized Day After Verification (para slots)
+        // ════════════════════════════════════════════════════════════════
+        if (state is GetOrganizedDayAfterVerificationSuccess) {
+          _handleOrganizedDayResult(state.result);
+        } else if (state is GetOrganizedDayAfterVerificationFailure) {
+          context.showError(state.error);
+        }
+        
+        // ════════════════════════════════════════════════════════════════
         // SUCESSO/ERRO Get Organized Availabilities After Verification
         // ════════════════════════════════════════════════════════════════
         if (state is OpenOrganizedAvailabilitiesSuccess) {
@@ -122,6 +138,26 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
             isClose: true,
           );
         } else if (state is GetOrganizedAvailabilitiesAfterVerificationFailure) {
+          context.showError(state.error);
+        }
+        
+        // ════════════════════════════════════════════════════════════════
+        // SUCESSO Add/Update/Delete Time Slot
+        // ════════════════════════════════════════════════════════════════
+        if (state is AddTimeSlotSuccess || 
+            state is UpdateTimeSlotSuccess || 
+            state is DeleteTimeSlotSuccess ||
+            state is UpdateAddressAndRadiusSuccess) {
+          context.showSuccess('Alteração realizada com sucesso');
+          _loadAvailabilities(forceRemote: true);
+          Navigator.of(context).pop(); // Fechar bottom sheet se estiver aberto
+        } else if (state is AddTimeSlotFailure) {
+          context.showError(state.error);
+        } else if (state is UpdateTimeSlotFailure) {
+          context.showError(state.error);
+        } else if (state is DeleteTimeSlotFailure) {
+          context.showError(state.error);
+        } else if (state is UpdateAddressAndRadiusFailure) {
           context.showError(state.error);
         }
         
@@ -406,12 +442,15 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     // Só permite toggle se já existe disponibilidade
     if (availability == null) return;
     
-    // Criar DTO e disparar evento
+    // Criar entidade atualizada apenas com isActive
+    final updatedDay = availability.copyWith(
+      isActive: isActive,
+      updatedAt: DateTime.now(),
+    );
+    
+    // Disparar evento diretamente
     context.read<AvailabilityBloc>().add(
-      ToggleAvailabilityStatusEvent(
-        date: day,
-        isActive: isActive,
-      ),
+      ToggleAvailabilityDayEvent(dayEntity: updatedDay),
     );
     
     Navigator.of(context).pop();
@@ -435,21 +474,26 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     AddressInfoEntity address,
     double radius,
   ) {
-    // Disparar evento para atualizar endereço e raio
-    // context.read<AvailabilityBloc>().add(
-    //   UpdateAvailabilityAddressRadiusEvent(
-    //     UpdateAddressRadiusDto(
-    //       date: day,
-    //       addressRadius: AddressRadiusDto(
-    //         addressId: address.uid ?? '',
-    //         raioAtuacao: radius,
-    //         endereco: address,
-    //       ),
-    //     ),
-    //   ),
-    // );
+    // Buscar disponibilidade atual do dia
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) {
+      context.showError('Dia não encontrado');
+      return;
+    }
     
-    // Navigator.of(context).pop();
+    // Criar entidade atualizada com novo endereço e raio
+    final updatedDay = availability.copyWith(
+      endereco: address,
+      raioAtuacao: radius,
+      updatedAt: DateTime.now(),
+    );
+    
+    // Disparar evento diretamente
+    context.read<AvailabilityBloc>().add(
+      UpdateAddressAndRadiusEvent(dayEntity: updatedDay),
+    );
+    
+    Navigator.of(context).pop();
   }
 
   /// Callback para adicionar novo slot de horário
@@ -459,19 +503,30 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     String endTime,
     double pricePerHour,
   ) {
-    // // Disparar evento para adicionar slot
-    // context.read<AvailabilityBloc>().add(
-    //   AddTimeSlotEvent(
-    //     SlotOperationDto.add(
-    //       date: day,
-    //       startTime: startTime,
-    //       endTime: endTime,
-    //       valorHora: pricePerHour,
-    //     ),
-    //   ),
-    // );
+    // Buscar disponibilidade atual do dia
+    final availability = _getAvailabilityForDay(day);
     
-    // Navigator.of(context).pop();
+    // Criar DTO para verificação de overlap
+    final dto = CheckOverlapOnDayDto(
+      startTime: startTime,
+      endTime: endTime,
+      valorHora: pricePerHour,
+      endereco: availability?.endereco,
+      raioAtuacao: availability?.raioAtuacao,
+    );
+    
+    // Guardar contexto da operação
+    _pendingSlotOperation = 'add';
+    _pendingSlotDate = day;
+    _pendingSlotId = null;
+    
+    // Disparar evento para verificar overlaps
+    context.read<AvailabilityBloc>().add(
+      GetOrganizedDayAfterVerificationEvent(
+        date: day,
+        dto: dto,
+      ),
+    );
   }
 
   /// Callback para atualizar slot de horário existente
@@ -482,20 +537,49 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     String? endTime,
     double? pricePerHour,
   ) {
-    // Disparar evento para atualizar slot
-    // context.read<AvailabilityBloc>().add(
-    //   UpdateTimeSlotEvent(
-    //     SlotOperationDto.update(
-    //       date: day,
-    //       slotId: slotId,
-    //       startTime: startTime,
-    //       endTime: endTime,
-    //       valorHora: pricePerHour,
-    //     ),
-    //   ),
-    // );
+    // Buscar disponibilidade atual do dia
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) {
+      context.showError('Dia não encontrado');
+      return;
+    }
     
-    // Navigator.of(context).pop();
+    // Buscar slot atual para pegar valores padrão
+    final currentSlot = availability.slots?.firstWhere(
+      (slot) => slot.slotId == slotId,
+    );
+    
+    if (currentSlot == null) {
+      context.showError('Slot não encontrado');
+      return;
+    }
+    
+    // Usar valores fornecidos ou manter os atuais
+    final finalStartTime = startTime ?? currentSlot.startTime;
+    final finalEndTime = endTime ?? currentSlot.endTime;
+    final finalPricePerHour = pricePerHour ?? currentSlot.valorHora ?? 0.0;
+    
+    // Criar DTO para verificação de overlap
+    final dto = CheckOverlapOnDayDto(
+      startTime: finalStartTime,
+      endTime: finalEndTime,
+      valorHora: finalPricePerHour,
+      endereco: availability.endereco,
+      raioAtuacao: availability.raioAtuacao,
+    );
+    
+    // Guardar contexto da operação
+    _pendingSlotOperation = 'update';
+    _pendingSlotDate = day;
+    _pendingSlotId = slotId;
+    
+    // Disparar evento para verificar overlaps
+    context.read<AvailabilityBloc>().add(
+      GetOrganizedDayAfterVerificationEvent(
+        date: day,
+        dto: dto,
+      ),
+    );
   }
 
   /// Callback para deletar slot de horário
@@ -652,6 +736,134 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     
     
     }
+  }
+
+  /// Trata o resultado da verificação de overlap de um único dia (para add/update slot)
+  Future<void> _handleOrganizedDayResult(
+    OrganizedDayAfterVerificationResult result,
+  ) async {
+    if (_pendingSlotOperation == null || _pendingSlotDate == null) {
+      return; // Sem operação pendente
+    }
+
+    final day = _pendingSlotDate!;
+    final operation = _pendingSlotOperation!;
+
+    // Se há slot reservado, não pode alterar
+    if (result.hasBookedSlot) {
+      context.showError('Não é possível alterar este dia pois há shows marcados');
+      _clearPendingOperation();
+      return;
+    }
+
+    // Se não há mudanças, apenas confirmar e aplicar
+    if (!result.hasChanges && result.dayEntity != null) {
+      final confirmed = await _showSimpleConfirmationDialog(
+        title: operation == 'add' 
+            ? 'Confirmar adição de horário' 
+            : 'Confirmar atualização de horário',
+        message: 'Deseja confirmar esta alteração?',
+      );
+
+      if (confirmed == true) {
+        _applySlotOperation(result.dayEntity!);
+      }
+      _clearPendingOperation();
+      return;
+    }
+
+    // Se há mudanças (overlaps), mostrar dialog detalhado
+    if (result.hasChanges && result.overlapInfo != null) {
+      final overlapInfo = result.overlapInfo!;
+      final daysWithOverlap = [overlapInfo];
+      final daysWithBookedSlot = <AvailabilityDayEntity>[];
+      final daysWithoutOverlap = <AvailabilityDayEntity>[];
+
+      final confirmed = await AvailabilityConfirmationDialog.show(
+        context: context,
+        title: operation == 'add' 
+            ? 'Confirmar adição de horário' 
+            : 'Confirmar atualização de horário',
+        isClose: false,
+        checkOverlapsDto: null, // Não temos CheckOverlapsDto para slot único
+        daysWithOverlap: daysWithOverlap,
+        daysWithBookedSlot: daysWithBookedSlot,
+        daysWithoutOverlap: daysWithoutOverlap,
+        confirmText: 'Confirmar',
+        cancelText: 'Cancelar',
+      );
+
+      if (confirmed == true) {
+        // Criar entidade a partir do overlapInfo
+        final availability = _getAvailabilityForDay(day);
+        if (availability != null) {
+          final updatedDay = availability.copyWith(
+            slots: overlapInfo.newTimeSlots ?? [],
+            endereco: overlapInfo.newAddress ?? availability.endereco,
+            raioAtuacao: overlapInfo.newRadius ?? availability.raioAtuacao,
+            updatedAt: DateTime.now(),
+          );
+          _applySlotOperation(updatedDay);
+        }
+      }
+      _clearPendingOperation();
+      return;
+    }
+
+    // Dia não encontrado - não deveria acontecer, mas tratar
+    if (result.dayEntity == null) {
+      context.showError('Dia não encontrado');
+      _clearPendingOperation();
+      return;
+    }
+
+    _clearPendingOperation();
+  }
+
+  /// Aplica a operação de slot (add ou update) após confirmação
+  void _applySlotOperation(AvailabilityDayEntity dayEntity) {
+    if (_pendingSlotOperation == null) return;
+
+    if (_pendingSlotOperation == 'add') {
+      context.read<AvailabilityBloc>().add(
+        AddTimeSlotEvent(dayEntity: dayEntity),
+      );
+    } else if (_pendingSlotOperation == 'update') {
+      context.read<AvailabilityBloc>().add(
+        UpdateTimeSlotEvent(dayEntity: dayEntity),
+      );
+    }
+  }
+
+  /// Limpa a operação pendente
+  void _clearPendingOperation() {
+    _pendingSlotOperation = null;
+    _pendingSlotDate = null;
+    _pendingSlotId = null;
+  }
+
+  /// Mostra dialog simples de confirmação
+  Future<bool?> _showSimpleConfirmationDialog({
+    required String title,
+    required String message,
+  }) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Cria OpenPeriodDto a partir do resultado da verificação

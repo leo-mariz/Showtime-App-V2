@@ -36,19 +36,21 @@ class AvailabilityDayEntityMapper
     'date',
     _$date,
   );
-  static List<TimeSlot> _$slots(AvailabilityDayEntity v) => v.slots;
+  static List<TimeSlot>? _$slots(AvailabilityDayEntity v) => v.slots;
   static const Field<AvailabilityDayEntity, List<TimeSlot>> _f$slots = Field(
     'slots',
     _$slots,
+    opt: true,
   );
-  static double _$raioAtuacao(AvailabilityDayEntity v) => v.raioAtuacao;
+  static double? _$raioAtuacao(AvailabilityDayEntity v) => v.raioAtuacao;
   static const Field<AvailabilityDayEntity, double> _f$raioAtuacao = Field(
     'raioAtuacao',
     _$raioAtuacao,
+    opt: true,
   );
-  static AddressInfoEntity _$endereco(AvailabilityDayEntity v) => v.endereco;
+  static AddressInfoEntity? _$endereco(AvailabilityDayEntity v) => v.endereco;
   static const Field<AvailabilityDayEntity, AddressInfoEntity> _f$endereco =
-      Field('endereco', _$endereco);
+      Field('endereco', _$endereco, opt: true);
   static bool _$isManualOverride(AvailabilityDayEntity v) => v.isManualOverride;
   static const Field<AvailabilityDayEntity, bool> _f$isManualOverride = Field(
     'isManualOverride',
@@ -179,9 +181,9 @@ abstract class AvailabilityDayEntityCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
-  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>
+  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>?
   get slots;
-  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
+  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>?
   get endereco;
   ListCopyWith<
     $R,
@@ -215,15 +217,17 @@ class _AvailabilityDayEntityCopyWithImpl<$R, $Out>
   late final ClassMapperBase<AvailabilityDayEntity> $mapper =
       AvailabilityDayEntityMapper.ensureInitialized();
   @override
-  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>
-  get slots => ListCopyWith(
-    $value.slots,
-    (v, t) => v.copyWith.$chain(t),
-    (v) => call(slots: v),
-  );
+  ListCopyWith<$R, TimeSlot, TimeSlotCopyWith<$R, TimeSlot, TimeSlot>>?
+  get slots => $value.slots != null
+      ? ListCopyWith(
+          $value.slots!,
+          (v, t) => v.copyWith.$chain(t),
+          (v) => call(slots: v),
+        )
+      : null;
   @override
-  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>
-  get endereco => $value.endereco.copyWith.$chain((v) => call(endereco: v));
+  AddressInfoEntityCopyWith<$R, AddressInfoEntity, AddressInfoEntity>?
+  get endereco => $value.endereco?.copyWith.$chain((v) => call(endereco: v));
   @override
   ListCopyWith<
     $R,
@@ -241,9 +245,9 @@ class _AvailabilityDayEntityCopyWithImpl<$R, $Out>
   $R call({
     Object? id = $none,
     DateTime? date,
-    List<TimeSlot>? slots,
-    double? raioAtuacao,
-    AddressInfoEntity? endereco,
+    Object? slots = $none,
+    Object? raioAtuacao = $none,
+    Object? endereco = $none,
     bool? isManualOverride,
     Object? createdAt = $none,
     Object? updatedAt = $none,
@@ -253,9 +257,9 @@ class _AvailabilityDayEntityCopyWithImpl<$R, $Out>
     FieldCopyWithData({
       if (id != $none) #id: id,
       if (date != null) #date: date,
-      if (slots != null) #slots: slots,
-      if (raioAtuacao != null) #raioAtuacao: raioAtuacao,
-      if (endereco != null) #endereco: endereco,
+      if (slots != $none) #slots: slots,
+      if (raioAtuacao != $none) #raioAtuacao: raioAtuacao,
+      if (endereco != $none) #endereco: endereco,
       if (isManualOverride != null) #isManualOverride: isManualOverride,
       if (createdAt != $none) #createdAt: createdAt,
       if (updatedAt != $none) #updatedAt: updatedAt,

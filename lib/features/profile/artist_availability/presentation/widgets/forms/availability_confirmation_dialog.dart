@@ -88,7 +88,6 @@ class AvailabilityConfirmationDialog extends StatelessWidget {
     final startDate = DateFormat('dd/MM/yyyy', 'pt_BR').format(recurrence.originalStartDate);
     final endDate = DateFormat('dd/MM/yyyy', 'pt_BR').format(recurrence.originalEndDate);
     
-    final hasConflict = daysWithOverlap.isNotEmpty || daysWithBookedSlot.isNotEmpty;
     final action = isClose ? 'FECHAR' : 'ABRIR';
     
     return RichText(
@@ -99,14 +98,14 @@ class AvailabilityConfirmationDialog extends StatelessWidget {
         children: [
           // Primeira linha com ação em negrito
           TextSpan(
-            text: hasConflict ? 'Ao ' : 'Confirmar ',
+            text: 'Confirmar ',
           ),
           TextSpan(
             text: action,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           TextSpan(
-            text: ' o período de:\n',
+            text: ' no período de:\n',
           ),
           // Informações do período
           TextSpan(text: '• Data inicial: $startDate\n'),
@@ -261,6 +260,15 @@ class AvailabilityConfirmationDialog extends StatelessWidget {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    // Filtrar apenas overlaps que têm slots antigos (disponibilidade "real")
+    final overlapsWithSlots = daysWithOverlap.where((overlap) {
+      return overlap.oldTimeSlots != null && overlap.oldTimeSlots!.isNotEmpty;
+    }).toList();
+
+    if (overlapsWithSlots.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,7 +279,7 @@ class AvailabilityConfirmationDialog extends StatelessWidget {
           ),
         ),
         DSSizedBoxSpacing.vertical(4),
-        ...daysWithOverlap.map((overlap) => _buildOverlapItem(
+        ...overlapsWithSlots.map((overlap) => _buildOverlapItem(
               context,
               theme,
               colorScheme,
@@ -553,8 +561,11 @@ class _ExpandableOverlapItemState extends State<_ExpandableOverlapItem>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Informações de endereço e raio (se houver mudança)
-                    if (widget.overlap.isAddressDifferent || widget.overlap.isRadiusDifferent) ...[
+                    // Informações de endereço e raio (se houver mudança E houver slots antigos)
+                    // Só mostramos endereço/raio se houver uma disponibilidade "real" (com slots)
+                    if ((widget.overlap.isAddressDifferent || widget.overlap.isRadiusDifferent) &&
+                        widget.overlap.oldTimeSlots != null &&
+                        widget.overlap.oldTimeSlots!.isNotEmpty) ...[
                       if (widget.overlap.isAddressDifferent) ...[
                         Text(
                           'Endereço:',

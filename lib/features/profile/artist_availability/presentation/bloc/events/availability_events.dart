@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/check_overlap_on_day_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
@@ -99,4 +100,66 @@ class ClosePeriodEvent extends AvailabilityEvent {
 
   @override
   List<Object?> get props => [dto];
+}
+
+// ==================== UPDATE AVAILABILITY DAY EVENTS ====================
+
+/// Evento para atualizar disponibilidade de um dia (toggle isActive)
+class ToggleAvailabilityDayEvent extends AvailabilityEvent {
+  final AvailabilityDayEntity dayEntity;
+
+  ToggleAvailabilityDayEvent({
+    required this.dayEntity,
+  });
+
+  @override
+  List<Object?> get props => [dayEntity];
+}
+
+/// Evento para adicionar um slot a um dia
+class AddTimeSlotEvent extends AvailabilityEvent {
+  final AvailabilityDayEntity dayEntity;
+
+  AddTimeSlotEvent({
+    required this.dayEntity,
+  });
+
+  @override
+  List<Object?> get props => [dayEntity];
+}
+
+/// Evento para atualizar um slot existente
+class UpdateTimeSlotEvent extends AvailabilityEvent {
+  final AvailabilityDayEntity dayEntity;
+
+  UpdateTimeSlotEvent({
+    required this.dayEntity,
+  });
+
+  @override
+  List<Object?> get props => [dayEntity];
+}
+
+/// Evento para deletar um slot
+class DeleteTimeSlotEvent extends AvailabilityEvent {
+  final AvailabilityDayEntity dayEntity;
+
+  DeleteTimeSlotEvent({
+    required this.dayEntity,
+  });
+
+  @override
+  List<Object?> get props => [dayEntity];
+}
+
+/// Evento para atualizar endereço e raio de atuação
+class UpdateAddressAndRadiusEvent extends AvailabilityEvent {
+  final AvailabilityDayEntity dayEntity;
+
+  UpdateAddressAndRadiusEvent({
+    required this.dayEntity,
+  });
+
+  @override
+  List<Object?> get props => [dayEntity];
 }

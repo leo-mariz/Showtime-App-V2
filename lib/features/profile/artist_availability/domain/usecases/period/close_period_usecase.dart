@@ -93,9 +93,9 @@ class ClosePeriodUseCase {
           date: normalizedDate,
         );
 
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Dia criado com ${updatedDay.slots.length} slots');
-        for (var j = 0; j < updatedDay.slots.length; j++) {
-          final slot = updatedDay.slots[j];
+        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Dia criado com ${updatedDay.slots?.length ?? 0} slots');
+        for (var j = 0; j < updatedDay.slots!.length; j++) {
+          final slot = updatedDay.slots![j];
           debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Slot[$j]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
         }
 
@@ -114,7 +114,7 @@ class ClosePeriodUseCase {
             throw failure;
           },
           (updatedDayEntity) {
-            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Sucesso! Dia atualizado com ${updatedDayEntity.slots.length} slots');
+            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Sucesso! Dia atualizado com ${updatedDayEntity.slots?.length ?? 0} slots');
             updatedDays.add(updatedDayEntity);
           },
         );
@@ -162,7 +162,7 @@ class ClosePeriodUseCase {
       isActive: true,
     );
     
-    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Dia criado com ${createdDay.slots.length} slots');
+    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Dia criado com ${createdDay.slots?.length ?? 0} slots');
     
     return createdDay;
   }

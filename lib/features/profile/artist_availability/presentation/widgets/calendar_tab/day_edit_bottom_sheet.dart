@@ -353,9 +353,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     
     // Acessar propriedades diretamente do AvailabilityDayEntity
     final availability = widget.availability!;
-    final address = availability.endereco.title.isNotEmpty 
-        ? availability.endereco.title 
-        : (availability.endereco.street ?? 'Sem endereço');
+    final address = availability.endereco?.title.isNotEmpty ?? false 
+        ? availability.endereco?.title 
+        : (availability.endereco?.street ?? 'Sem endereço');
     final radius = availability.raioAtuacao;
     final slots = availability.slots;
 
@@ -394,7 +394,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                           SizedBox(width: DSSize.width(6)),
                           Flexible(
                             child: Text(
-                              address,
+                              address ?? 'Sem endereço',
                               style: TextStyle(
                                 fontSize: calculateFontSize(15),
                                 fontWeight: FontWeight.bold,
@@ -418,7 +418,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                           ),
                           SizedBox(width: DSSize.width(4)),
                           Text(
-                            '${radius.toStringAsFixed(0)} km',
+                            '${radius?.toStringAsFixed(0) ?? '0'} km',
                             style: TextStyle(
                               fontSize: calculateFontSize(12),
                               fontWeight: FontWeight.w500,
@@ -439,7 +439,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                     final result = await EditAddressRadiusModal.show(
                       context: context,
                       initialAddress: availability.endereco,
-                      initialRadius: radius,
+                      initialRadius: radius ?? 0,
                     );
 
                     if (result != null && widget.onUpdateAddressRadius != null) {
@@ -476,8 +476,8 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
             SizedBox(height: DSSize.height(8)),
             
             // Lista de slots (dados reais)
-            if (slots.isNotEmpty)
-              ...slots.map((slot) => Padding(
+            if (slots?.isNotEmpty ?? false)
+              ...slots!.map((slot) => Padding(
                 padding: EdgeInsets.only(bottom: DSSize.height(8)),
                 child: _buildTimeSlotCard(
                   colorScheme,
@@ -489,7 +489,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
               )),
             
             // Mensagem se não há slots
-            if (slots.isEmpty)
+            if (slots?.isEmpty ?? true)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: DSSize.height(16)),
                 child: Center(

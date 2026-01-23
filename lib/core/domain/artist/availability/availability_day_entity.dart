@@ -26,15 +26,15 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   /// - De um padrão de recorrência diferente
   /// - Em endereços diferentes
   /// - Com horários e valores diferentes
-  final List<TimeSlot> slots;
+  final List<TimeSlot>? slots;
 
   final List<PatternMetadata>? patternMetadata;
 
   /// Raio de atuação em km a partir do endereço base
-  final double raioAtuacao;
+  final double? raioAtuacao;
   
   /// Informações completas do endereço base
-  final AddressInfoEntity endereco;
+  final AddressInfoEntity? endereco;
 
   /// Indica se a disponibilidade foi editada manualmente
   final bool isManualOverride;
@@ -51,9 +51,9 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   const AvailabilityDayEntity({
     this.id,
     required this.date,
-    required this.slots,
-    required this.raioAtuacao,
-    required this.endereco,
+    this.slots,
+    this.raioAtuacao,
+    this.endereco,
     required this.isManualOverride,
     this.createdAt,
     this.updatedAt,
@@ -71,19 +71,19 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   
   /// Verifica se tem alguma disponibilidade neste dia
   bool get hasAvailability => 
-      slots.any((slot) => slot.valorHora != null);
+      slots?.any((slot) => slot.valorHora != null) ?? false;
   
   /// Retorna todas as availabilities com slots disponíveis
   List<TimeSlot> get availableSlots => 
-      slots.where((slot) => slot.valorHora != null).toList();
+      slots?.where((slot) => slot.valorHora != null).toList() ?? [];
   
   /// Retorna lista de IDs de padrões presentes neste dia
   List<String> get patternIds => 
       slots
-          .where((slot) => slot.sourcePatternId != null)
+          ?.where((slot) => slot.sourcePatternId != null)
           .map((slot) => slot.sourcePatternId!)
           .toSet()
-          .toList();
+          .toList() ?? [];
   
   /// Verifica se tem alguma availability de um padrão específico
   bool hasPattern(String patternId) =>
@@ -91,11 +91,11 @@ class AvailabilityDayEntity with AvailabilityDayEntityMappable {
   
   /// Retorna availabilities de um padrão específico
   List<TimeSlot> getSlotsByPattern(String patternId) =>
-      slots.where((slot) => slot.sourcePatternId == patternId).toList();
+      slots?.where((slot) => slot.sourcePatternId == patternId).toList() ?? [];
   
   /// Verifica se tem availabilities que podem ser editadas via padrão
   bool get hasEditableViaPattern =>
-      slots.any((slot) => slot.sourcePatternId != null);
+      slots?.any((slot) => slot.sourcePatternId != null) ?? false;
 }
 
 /// Extension para referências do Firestore e cache

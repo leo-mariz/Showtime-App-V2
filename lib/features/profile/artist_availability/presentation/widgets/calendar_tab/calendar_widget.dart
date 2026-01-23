@@ -102,7 +102,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
     
     // Verificar se está ativo e tem slots
     return availability.isActive && 
-           availability.slots.isNotEmpty;
+           availability.slots!.isNotEmpty;
   }
   
   /// Conta quantidade de slots disponíveis no dia
@@ -112,8 +112,8 @@ class CalendarWidgetState extends State<CalendarWidget> {
     
     // Contar total de slots disponíveis
     return availability.slots
-        .where((slot) => slot.status == TimeSlotStatusEnum.available)
-        .length;
+        ?.where((slot) => slot.status == TimeSlotStatusEnum.available)
+        .length ?? 0;
   }
   
   /// Verifica se a disponibilidade está desativada
@@ -122,7 +122,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
     if (availability == null) return false;
     
     // Tem disponibilidade mas está inativa
-    return !availability.isActive && availability.slots.isNotEmpty;
+    return !availability.isActive && availability.slots!.isNotEmpty;
   }
 
   @override

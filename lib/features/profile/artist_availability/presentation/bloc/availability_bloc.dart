@@ -3,11 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/states/availability_states.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/toggle_availability_status_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_day_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
 import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
+import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
 
 /// Bloc para gerenciar estado da feature de disponibilidade do artista
 /// 
@@ -15,28 +15,32 @@ import 'package:app/features/profile/artist_availability/domain/usecases/period/
 class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
   final GetUserUidUseCase getUserUidUseCase;
   final GetAllAvailabilitiesUseCase getAllAvailabilitiesUseCase;
-  final ToggleAvailabilityStatusUseCase toggleAvailabilityStatusUseCase;
   final GetOrganizedDayAfterVerificationUseCase getOrganizedDayAfterVerificationUseCase;
   final GetOrganizedAvailabilitesAfterVerificationUseCase getOrganizedAvailabilitiesAfterVerificationUseCase;
   final OpenPeriodUseCase openPeriodUseCase;
   final ClosePeriodUseCase closePeriodUseCase;
+  final UpdateAvailabilityDayUseCase updateAvailabilityDayUseCase;
 
   AvailabilityBloc({
     required this.getUserUidUseCase,
     required this.getAllAvailabilitiesUseCase,
-    required this.toggleAvailabilityStatusUseCase,
     required this.getOrganizedDayAfterVerificationUseCase,
     required this.getOrganizedAvailabilitiesAfterVerificationUseCase,
     required this.openPeriodUseCase,
     required this.closePeriodUseCase,
+    required this.updateAvailabilityDayUseCase,
   }) : super(AvailabilityInitial()) {
     on<AvailabilityInitialEvent>(_onAvailabilityInitialEvent);
     on<GetAllAvailabilitiesEvent>(_onGetAllAvailabilitiesEvent);
-    on<ToggleAvailabilityStatusEvent>(_onToggleAvailabilityStatusEvent);
     on<GetOrganizedDayAfterVerificationEvent>(_onGetOrganizedDayAfterVerificationEvent);
     on<GetOrganizedAvailabilitiesAfterVerificationEvent>(_onGetOrganizedAvailabilitiesAfterVerificationEvent);
     on<OpenPeriodEvent>(_onOpenPeriodEvent);
     on<ClosePeriodEvent>(_onClosePeriodEvent);
+    on<ToggleAvailabilityDayEvent>(_onToggleAvailabilityDayEvent);
+    on<AddTimeSlotEvent>(_onAddTimeSlotEvent);
+    on<UpdateTimeSlotEvent>(_onUpdateTimeSlotEvent);
+    on<DeleteTimeSlotEvent>(_onDeleteTimeSlotEvent);
+    on<UpdateAddressAndRadiusEvent>(_onUpdateAddressAndRadiusEvent);
   }
 
   // ==================== INITIAL ====================
@@ -79,34 +83,6 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       },
       (availabilities) {
         emit(GetAllAvailabilitiesSuccess(availabilities: availabilities));
-      },
-    );
-  }
-
-  // ==================== TOGGLE AVAILABILITY STATUS ====================
-
-  Future<void> _onToggleAvailabilityStatusEvent(
-    ToggleAvailabilityStatusEvent event,
-    Emitter<AvailabilityState> emit,
-  ) async {
-    emit(ToggleAvailabilityStatusLoading());
-
-    final uid = await _getCurrentUserId();
-
-    final result = await toggleAvailabilityStatusUseCase(
-      uid!,
-      event.date,
-      event.isActive,
-    );
-
-    result.fold(
-      (failure) {
-        emit(ToggleAvailabilityStatusFailure(error: failure.message));
-        emit(AvailabilityInitial());
-      },
-      (availability) {
-        emit(ToggleAvailabilityStatusSuccess(availability: availability));
-        emit(AvailabilityInitial());
       },
     );
   }
@@ -219,6 +195,151 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
       },
       (days) {
         emit(ClosePeriodSuccess(days: days));
+        emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== TOGGLE AVAILABILITY DAY ====================
+
+  Future<void> _onToggleAvailabilityDayEvent(
+    ToggleAvailabilityDayEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(ToggleAvailabilityStatusLoading());
+
+    final uid = await _getCurrentUserId();
+    if (uid == null) {
+      emit(ToggleAvailabilityStatusFailure(error: 'Usuário não autenticado'));
+      emit(AvailabilityInitial());
+      return;
+    }
+
+    final result = await updateAvailabilityDayUseCase(uid, event.dayEntity);
+
+    result.fold(
+      (failure) {
+        emit(ToggleAvailabilityStatusFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (updatedAvailability) {
+        emit(ToggleAvailabilityStatusSuccess(availability: updatedAvailability));
+        emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== ADD TIME SLOT ====================
+
+  Future<void> _onAddTimeSlotEvent(
+    AddTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(AddTimeSlotLoading());
+
+    final uid = await _getCurrentUserId();
+    if (uid == null) {
+      emit(AddTimeSlotFailure(error: 'Usuário não autenticado'));
+      emit(AvailabilityInitial());
+      return;
+    }
+
+    final result = await updateAvailabilityDayUseCase(uid, event.dayEntity);
+
+    result.fold(
+      (failure) {
+        emit(AddTimeSlotFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (updatedAvailability) {
+        emit(AddTimeSlotSuccess(availability: updatedAvailability));
+        emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== UPDATE TIME SLOT ====================
+
+  Future<void> _onUpdateTimeSlotEvent(
+    UpdateTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(UpdateTimeSlotLoading());
+
+    final uid = await _getCurrentUserId();
+    if (uid == null) {
+      emit(UpdateTimeSlotFailure(error: 'Usuário não autenticado'));
+      emit(AvailabilityInitial());
+      return;
+    }
+
+    final result = await updateAvailabilityDayUseCase(uid, event.dayEntity);
+
+    result.fold(
+      (failure) {
+        emit(UpdateTimeSlotFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (updatedAvailability) {
+        emit(UpdateTimeSlotSuccess(availability: updatedAvailability));
+        emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== DELETE TIME SLOT ====================
+
+  Future<void> _onDeleteTimeSlotEvent(
+    DeleteTimeSlotEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(DeleteTimeSlotLoading());
+
+    final uid = await _getCurrentUserId();
+    if (uid == null) {
+      emit(DeleteTimeSlotFailure(error: 'Usuário não autenticado'));
+      emit(AvailabilityInitial());
+      return;
+    }
+
+    final result = await updateAvailabilityDayUseCase(uid, event.dayEntity);
+
+    result.fold(
+      (failure) {
+        emit(DeleteTimeSlotFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (updatedAvailability) {
+        emit(DeleteTimeSlotSuccess(availability: updatedAvailability));
+        emit(AvailabilityInitial());
+      },
+    );
+  }
+
+  // ==================== UPDATE ADDRESS AND RADIUS ====================
+
+  Future<void> _onUpdateAddressAndRadiusEvent(
+    UpdateAddressAndRadiusEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(UpdateAddressAndRadiusLoading());
+
+    final uid = await _getCurrentUserId();
+    if (uid == null) {
+      emit(UpdateAddressAndRadiusFailure(error: 'Usuário não autenticado'));
+      emit(AvailabilityInitial());
+      return;
+    }
+
+    final result = await updateAvailabilityDayUseCase(uid, event.dayEntity);
+
+    result.fold(
+      (failure) {
+        emit(UpdateAddressAndRadiusFailure(error: failure.message));
+        emit(AvailabilityInitial());
+      },
+      (updatedAvailability) {
+        emit(UpdateAddressAndRadiusSuccess(availability: updatedAvailability));
         emit(AvailabilityInitial());
       },
     );

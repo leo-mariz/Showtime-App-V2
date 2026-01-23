@@ -106,6 +106,15 @@ class GetOrganizedDayAfterVerificationUseCase {
           // Processar cada slot existente
           for (var i = 0; i < dayEntity.slots!.length; i++) {
             final slot = dayEntity.slots![i];
+            
+            // ════════════════════════════════════════════════════════════
+            // Se estamos atualizando um slot, ignorar ele mesmo na comparação
+            // ════════════════════════════════════════════════════════════
+            if (dto.slotId != null && slot.slotId == dto.slotId) {
+              debugPrint('🔴 [GET_ORGANIZED_DAY] Slot[$i] - IGNORANDO (é o slot sendo atualizado: ${slot.slotId})');
+              continue; // Pular este slot, não comparar com ele mesmo
+            }
+            
             final slotStartTime = _parseTimeString(slot.startTime);
             final slotEndTime = _parseTimeString(slot.endTime);
 
@@ -148,13 +157,17 @@ class GetOrganizedDayAfterVerificationUseCase {
           }
 
           // ════════════════════════════════════════════════════════
-          // 4. Adicionar o slot novo (apenas se não for close e valorHora foi fornecido)
+          // 4. Adicionar o slot novo ou atualizado (apenas se não for close e valorHora foi fornecido)
           // ════════════════════════════════════════════════════════
           if (dto.valorHora != null && !isClose) {
-            debugPrint('🔴 [GET_ORGANIZED_DAY] Adicionando novo slot (não é close)');
-            const uuid = Uuid();
+            // Se estamos atualizando um slot existente, usar o mesmo slotId
+            // Caso contrário, criar um novo slot com novo ID
+            final slotId = dto.slotId ?? const Uuid().v4();
+            
+            debugPrint('🔴 [GET_ORGANIZED_DAY] Adicionando slot ${dto.slotId != null ? "(atualizado)" : "(novo)"} - slotId: $slotId');
+            
             final newSlot = TimeSlot(
-              slotId: uuid.v4(),
+              slotId: slotId,
               startTime: effectiveStartTime,
               endTime: effectiveEndTime,
               status: TimeSlotStatusEnum.available,

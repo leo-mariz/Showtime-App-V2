@@ -143,6 +143,15 @@ class ClosePeriodUseCase {
     debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Usando newTimeSlots: ${overlapInfo.newTimeSlots != null}');
     debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Total de slots: ${slots.length}');
 
+    // ════════════════════════════════════════════════════════════════
+    // REGRA: Se não houver slots, o dia DEVE estar inativo
+    // ════════════════════════════════════════════════════════════════
+    final isActive = slots.isNotEmpty ? baseDay.isActive : false;
+    
+    if (slots.isEmpty) {
+      debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Sem slots, forçando isActive = false');
+    }
+
     // Usar novo endereço se disponível, senão usar endereço antigo ou base
     final endereco = overlapInfo.newAddress ??
         overlapInfo.oldAddress ??
@@ -159,7 +168,7 @@ class ClosePeriodUseCase {
       endereco: endereco,
       raioAtuacao: raioAtuacao,
       updatedAt: DateTime.now(),
-      isActive: true,
+      isActive: isActive,
     );
     
     debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Dia criado com ${createdDay.slots?.length ?? 0} slots');

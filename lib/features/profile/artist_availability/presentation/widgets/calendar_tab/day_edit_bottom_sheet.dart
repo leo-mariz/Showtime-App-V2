@@ -257,14 +257,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           // Switch customizado com ícones
           Center(
             child: GestureDetector(
-              onTap: _hasAvailability
-                  ? () {
-                      // Chamar callback para toggle
-                      if (widget.onToggleStatus != null) {
-                        widget.onToggleStatus!(!_isActive);
-                      }
-                    }
-                  : null, // Desabilitar se não tem disponibilidade
+              onTap: () => widget.onToggleStatus?.call(!_isActive),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: DSSize.width(80),

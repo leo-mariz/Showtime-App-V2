@@ -3,6 +3,7 @@ import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
+import 'package:app/core/shared/widgets/dialog_button.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/open_period_dto.dart';
 import 'package:app/features/profile/artist_availability/domain/entities/check_overlap_on_day_result.dart';
@@ -39,6 +40,9 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   String? _pendingSlotOperation; // 'add' ou 'update'
   String? _pendingSlotId; // Para update
   DateTime? _pendingSlotDate;
+  String? _pendingSlotStartTime; // Horário de início do slot pendente
+  String? _pendingSlotEndTime; // Horário de fim do slot pendente
+  double? _pendingSlotPricePerHour; // Valor por hora do slot pendente
 
   @override
   void initState() {
@@ -447,8 +451,16 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     bool isActive,
   ) {
     // Só permite toggle se já existe disponibilidade
-    if (availability == null) return;
-    
+    if (availability == null) {
+      context.showError('Dia não pode ser ativado sem intervalos disponíveis');
+      return;
+    }
+
+    if (availability.slots!.isEmpty && isActive) {
+      context.showError('Dia não pode ser ativado sem intervalos disponíveis');
+      return;
+    }
+
     // Criar entidade atualizada apenas com isActive
     final updatedDay = availability.copyWith(
       isActive: isActive,
@@ -525,6 +537,9 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     _pendingSlotOperation = 'add';
     _pendingSlotDate = day;
     _pendingSlotId = null;
+    _pendingSlotStartTime = startTime;
+    _pendingSlotEndTime = endTime;
+    _pendingSlotPricePerHour = pricePerHour;
     
     // Disparar evento para verificar overlaps
     context.read<AvailabilityBloc>().add(
@@ -572,12 +587,16 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
       valorHora: finalPricePerHour,
       endereco: availability.endereco,
       raioAtuacao: availability.raioAtuacao,
+      slotId: slotId, // Passar o slotId para ignorar este slot na verificação
     );
     
     // Guardar contexto da operação
     _pendingSlotOperation = 'update';
     _pendingSlotDate = day;
     _pendingSlotId = slotId;
+    _pendingSlotStartTime = finalStartTime;
+    _pendingSlotEndTime = finalEndTime;
+    _pendingSlotPricePerHour = finalPricePerHour;
     
     // Disparar evento para verificar overlaps
     context.read<AvailabilityBloc>().add(
@@ -780,11 +799,27 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
 
     // Se não há mudanças, apenas confirmar e aplicar
     if (!result.hasChanges && result.dayEntity != null) {
+      // Montar mensagem com o intervalo e valor do slot
+      String message;
+      if (_pendingSlotStartTime != null && _pendingSlotEndTime != null) {
+        final intervalText = '$_pendingSlotStartTime - $_pendingSlotEndTime';
+        final priceText = _pendingSlotPricePerHour != null
+            ? ' (R\$ ${_pendingSlotPricePerHour!.toStringAsFixed(0)}/hora)'
+            : '';
+        message = operation == 'add'
+            ? 'Deseja adicionar o intervalo $intervalText$priceText?'
+            : 'Deseja atualizar o intervalo para $intervalText$priceText?';
+      } else {
+        message = operation == 'add'
+            ? 'Deseja adicionar este horário?'
+            : 'Deseja atualizar este horário?';
+      }
+
       final confirmed = await _showSimpleConfirmationDialog(
         title: operation == 'add' 
             ? 'Confirmar adição de horário' 
             : 'Confirmar atualização de horário',
-        message: 'Deseja confirmar esta alteração?',
+        message: message,
       );
 
       if (confirmed == true) {
@@ -862,6 +897,9 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     _pendingSlotOperation = null;
     _pendingSlotDate = null;
     _pendingSlotId = null;
+    _pendingSlotStartTime = null;
+    _pendingSlotEndTime = null;
+    _pendingSlotPricePerHour = null;
   }
 
   /// Mostra dialog simples de confirmação
@@ -869,19 +907,24 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     required String title,
     required String message,
   }) async {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: Text(title, style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimaryContainer)),
+        content: Text(message, style: textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimary)),
         actions: [
-          TextButton(
+          DialogButton.text(
+            text: 'Cancelar',
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+            foregroundColor: colorScheme.onPrimary,
           ),
-          TextButton(
+          DialogButton.primary(
+            text: 'Confirmar',
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirmar'),
+            backgroundColor: colorScheme.onPrimaryContainer,
+            foregroundColor: colorScheme.primaryContainer,
           ),
         ],
       ),

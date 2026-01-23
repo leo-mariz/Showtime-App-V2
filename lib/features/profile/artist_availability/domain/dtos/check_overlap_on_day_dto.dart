@@ -11,6 +11,9 @@ class CheckOverlapOnDayDto {
   /// Valor por hora do slot
   final double? valorHora;
 
+  /// ID do slot
+  final String? slotId;
+
   /// Horário de início (formato: "HH:mm")
   final String? startTime;
 
@@ -24,6 +27,7 @@ class CheckOverlapOnDayDto {
     this.endereco,
     this.raioAtuacao,
     this.valorHora,
+    this.slotId,
     this.startTime,
     this.endTime,
     this.patternId,

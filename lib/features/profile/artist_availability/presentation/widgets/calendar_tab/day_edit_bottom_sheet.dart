@@ -3,6 +3,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/options_modal.dart';
 import 'package:app/features/profile/artist_availability/presentation/widgets/calendar_tab/edit_address_radius_modal.dart';
@@ -475,9 +476,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
             
             SizedBox(height: DSSize.height(8)),
             
-            // Lista de slots (dados reais)
+            // Lista de slots (dados reais) - ordenados por horário de início
             if (slots?.isNotEmpty ?? false)
-              ...slots!.map((slot) => Padding(
+              ..._sortSlotsByStartTime(slots!).map((slot) => Padding(
                 padding: EdgeInsets.only(bottom: DSSize.height(8)),
                 child: _buildTimeSlotCard(
                   colorScheme,
@@ -980,5 +981,19 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
         ),
       ),
     );
+  }
+
+  /// Ordena slots por horário de início (startTime)
+  List<TimeSlot> _sortSlotsByStartTime(List<TimeSlot> slots) {
+    final sorted = List<TimeSlot>.from(slots);
+    sorted.sort((a, b) {
+      // Comparar horários no formato "HH:mm"
+      final aParts = a.startTime.split(':');
+      final bParts = b.startTime.split(':');
+      final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+      final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+      return aMinutes.compareTo(bMinutes);
+    });
+    return sorted;
   }
 }

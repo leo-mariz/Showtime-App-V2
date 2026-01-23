@@ -146,11 +146,18 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
         // ════════════════════════════════════════════════════════════════
         if (state is AddTimeSlotSuccess || 
             state is UpdateTimeSlotSuccess || 
-            state is DeleteTimeSlotSuccess ||
-            state is UpdateAddressAndRadiusSuccess) {
+            state is DeleteTimeSlotSuccess) {
           context.showSuccess('Alteração realizada com sucesso');
           _loadAvailabilities(forceRemote: true);
-          Navigator.of(context).pop(); // Fechar bottom sheet se estiver aberto
+          // Fechar bottom sheet se estiver aberto
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        } else if (state is UpdateAddressAndRadiusSuccess) {
+          context.showSuccess('Endereço e raio atualizados com sucesso');
+          _loadAvailabilities(forceRemote: true);
+          // Não fechar o bottom sheet automaticamente para update de endereço/raio
+          // O usuário pode querer continuar editando
         } else if (state is AddTimeSlotFailure) {
           context.showError(state.error);
         } else if (state is UpdateTimeSlotFailure) {
@@ -489,11 +496,10 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     );
     
     // Disparar evento diretamente
+    // O bottom sheet será fechado quando o estado de sucesso for emitido
     context.read<AvailabilityBloc>().add(
       UpdateAddressAndRadiusEvent(dayEntity: updatedDay),
     );
-    
-    Navigator.of(context).pop();
   }
 
   /// Callback para adicionar novo slot de horário
@@ -587,18 +593,34 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     DateTime day,
     String slotId,
   ) {
-    // Disparar evento para deletar slot
-    // context.read<AvailabilityBloc>().add(
-    //   DeleteTimeSlotEvent(
-    //     SlotOperationDto.delete(
-    //       date: day,
-    //       slotId: slotId,
-    //       deleteIfEmpty: true, // Deletar dia se ficar sem slots
-    //     ),
-    //   ),
-    // );
+    // Buscar disponibilidade atual do dia
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) {
+      context.showError('Dia não encontrado');
+      return;
+    }
+
+    // Remover slot da lista
+    final currentSlots = availability.slots ?? [];
+    final updatedSlots = currentSlots.where((slot) => slot.slotId != slotId).toList();
+
+    // Se não há mais slots, desativar o dia
+    final isActive = updatedSlots.isNotEmpty ? availability.isActive : false;
+
+    // Criar entidade atualizada sem o slot deletado
+    final updatedDay = availability.copyWith(
+      slots: updatedSlots,
+      isActive: isActive,
+      updatedAt: DateTime.now(),
+    );
+
+    // Disparar evento diretamente
+    context.read<AvailabilityBloc>().add(
+      DeleteTimeSlotEvent(dayEntity: updatedDay),
+    );
     
-    // Navigator.of(context).pop();
+    // Fechar o bottom sheet após deletar
+    Navigator.of(context).pop();
   }
 
   /// Abre o modal de disponibilidade com datas específicas

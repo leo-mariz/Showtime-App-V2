@@ -200,43 +200,68 @@ class AvailabilityHelpers {
         // Ajustar início do slot existente
         // Novo:      [13:00 ████████████ 19:00]
         // Existente:        [16:00 ████ 20:00] → [19:00 ████ 20:00]
-        return [
-          existingSlot.copyWith(
-            startTime: _formatTimeOfDay(newEnd),
-          ),
-        ];
+        final adjustedStart = _formatTimeOfDay(newEnd);
+        // Só retornar se houver duração válida (startTime != endTime)
+        if (adjustedStart != existingSlot.endTime) {
+          return [
+            existingSlot.copyWith(
+              startTime: adjustedStart,
+            ),
+          ];
+        }
+        // Se não há duração válida, remover o slot
+        return [];
 
       case OverlapType.partialAfter:
         // Ajustar final do slot existente
         // Novo:              [13:00 ████████████ 19:00]
         // Existente: [10:00 ████ 15:00] → [10:00 ████ 13:00]
-        return [
-          existingSlot.copyWith(
-            endTime: _formatTimeOfDay(newStart),
-          ),
-        ];
+        final adjustedEnd = _formatTimeOfDay(newStart);
+        // Só retornar se houver duração válida (startTime != endTime)
+        if (existingSlot.startTime != adjustedEnd) {
+          return [
+            existingSlot.copyWith(
+              endTime: adjustedEnd,
+            ),
+          ];
+        }
+        // Se não há duração válida, remover o slot
+        return [];
 
       case OverlapType.contains:
         // Dividir slot existente em dois
         // Novo:        [13:00 ████ 19:00]
         // Existente: [10:00 ████████████████ 22:00]
         // Resultado: [10:00 ████ 13:00] + [19:00 ████ 22:00]
-        return [
-          // Primeira parte (antes do novo slot)
-          existingSlot.copyWith(
-            endTime: _formatTimeOfDay(newStart),
-          ),
-          // Segunda parte (depois do novo slot)
-          TimeSlot(
-            slotId: uuid.v4(),
-            startTime: _formatTimeOfDay(newEnd),
-            endTime: existingSlot.endTime,
-            status: existingSlot.status,
-            valorHora: existingSlot.valorHora,
-            contractId: existingSlot.contractId,
-            sourcePatternId: existingSlot.sourcePatternId,
-          ),
-        ];
+        final result = <TimeSlot>[];
+        
+        // Primeira parte (antes do novo slot) - só adiciona se houver duração válida
+        final firstPartEnd = _formatTimeOfDay(newStart);
+        if (existingSlot.startTime != firstPartEnd) {
+          result.add(
+            existingSlot.copyWith(
+              endTime: firstPartEnd,
+            ),
+          );
+        }
+        
+        // Segunda parte (depois do novo slot) - só adiciona se houver duração válida
+        final secondPartStart = _formatTimeOfDay(newEnd);
+        if (secondPartStart != existingSlot.endTime) {
+          result.add(
+            TimeSlot(
+              slotId: uuid.v4(),
+              startTime: secondPartStart,
+              endTime: existingSlot.endTime,
+              status: existingSlot.status,
+              valorHora: existingSlot.valorHora,
+              contractId: existingSlot.contractId,
+              sourcePatternId: existingSlot.sourcePatternId,
+            ),
+          );
+        }
+        
+        return result;
 
       case OverlapType.contained:
         // Remover slot existente completamente

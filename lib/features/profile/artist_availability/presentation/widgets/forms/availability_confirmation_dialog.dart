@@ -4,6 +4,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/dialog_button.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/features/profile/artist_availability/domain/entities/day_overlap_info.dart';
 import 'package:app/features/profile/artist_availability/domain/dtos/check_overlaps_dto.dart';
 
@@ -645,7 +646,7 @@ class _ExpandableOverlapItemState extends State<_ExpandableOverlapItem>
                           color: widget.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      ...widget.overlap.oldTimeSlots!.map((slot) => Padding(
+                      ..._sortSlotsByStartTime(widget.overlap.oldTimeSlots!).map((slot) => Padding(
                             padding: EdgeInsets.only(
                               left: DSSize.width(8),
                               top: DSSize.height(4),
@@ -668,7 +669,7 @@ class _ExpandableOverlapItemState extends State<_ExpandableOverlapItem>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      ...widget.overlap.newTimeSlots!.map((slot) => Padding(
+                      ..._sortSlotsByStartTime(widget.overlap.newTimeSlots!).map((slot) => Padding(
                             padding: EdgeInsets.only(
                               left: DSSize.width(8),
                               top: DSSize.height(4),
@@ -688,5 +689,19 @@ class _ExpandableOverlapItemState extends State<_ExpandableOverlapItem>
         ],
       ),
     );
+  }
+
+  /// Ordena slots por horário de início (startTime)
+  List<TimeSlot> _sortSlotsByStartTime(List<TimeSlot> slots) {
+    final sorted = List<TimeSlot>.from(slots);
+    sorted.sort((a, b) {
+      // Comparar horários no formato "HH:mm"
+      final aParts = a.startTime.split(':');
+      final bParts = b.startTime.split(':');
+      final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+      final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+      return aMinutes.compareTo(bMinutes);
+    });
+    return sorted;
   }
 }

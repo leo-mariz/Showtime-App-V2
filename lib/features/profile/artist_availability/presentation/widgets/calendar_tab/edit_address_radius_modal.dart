@@ -75,6 +75,17 @@ class _EditAddressRadiusModalState extends State<EditAddressRadiusModal> {
     }
   }
 
+  /// Verifica se houve mudanças nos campos
+  bool _hasChanges() {
+    // Comparar endereço (usando operador == do dart_mappable)
+    final addressChanged = _selectedAddress != widget.initialAddress;
+    
+    // Comparar raio (com tolerância para ponto flutuante)
+    final radiusChanged = (_radiusKm - widget.initialRadius).abs() > 0.01;
+    
+    return addressChanged || radiusChanged;
+  }
+
   void _onSave() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -243,19 +254,11 @@ class _EditAddressRadiusModalState extends State<EditAddressRadiusModal> {
                 // Botões
                 Row(
                   children: [
-                    Expanded(
-                      child: CustomButton(
-                        label: 'Cancelar',
-                        onPressed: () => Navigator.of(context).pop(),
-                        backgroundColor: Colors.transparent,
-                        textColor: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    DSSizedBoxSpacing.horizontal(12),
+                    
                     Expanded(
                       child: CustomButton(
                         label: 'Salvar',
-                        onPressed: _onSave,
+                        onPressed: _hasChanges() ? _onSave : null,
                         backgroundColor: colorScheme.onPrimaryContainer,
                       ),
                     ),

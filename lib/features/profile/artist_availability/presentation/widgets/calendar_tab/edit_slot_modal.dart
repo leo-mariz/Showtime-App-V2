@@ -142,6 +142,31 @@ class _EditSlotModalState extends State<EditSlotModal> {
     }
   }
 
+  /// Verifica se houve mudanças nos campos
+  bool _hasChanges() {
+    // Em modo criar, sempre há mudanças (está criando algo novo)
+    if (widget.isCreateMode) {
+      return true;
+    }
+
+    // Em modo editar, comparar com valores iniciais
+    // Comparar horário de início
+    final currentStartTimeString =
+        '${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}';
+    final startTimeChanged = currentStartTimeString != widget.startTime;
+
+    // Comparar horário de fim
+    final currentEndTimeString =
+        '${_endTime.hour.toString().padLeft(2, '0')}:${_endTime.minute.toString().padLeft(2, '0')}';
+    final endTimeChanged = currentEndTimeString != widget.endTime;
+
+    // Comparar preço
+    final currentPrice = double.tryParse(_priceController.text.replaceAll(',', '.')) ?? 0.0;
+    final priceChanged = (currentPrice - (widget.pricePerHour ?? 0.0)).abs() > 0.01;
+
+    return startTimeChanged || endTimeChanged || priceChanged;
+  }
+
   void _onSave() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -250,17 +275,8 @@ class _EditSlotModalState extends State<EditSlotModal> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        label: 'Cancelar',
-                        onPressed: () => Navigator.of(context).pop(),
-                        backgroundColor: Colors.transparent,
-                        textColor: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    DSSizedBoxSpacing.horizontal(12),
-                    Expanded(
-                      child: CustomButton(
                         label: 'Salvar',
-                        onPressed: _onSave,
+                        onPressed: _hasChanges() ? _onSave : null,
                         backgroundColor: colorScheme.onPrimaryContainer,
                       ),
                     ),

@@ -4,17 +4,20 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-// import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
-// import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
 import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/tabs_section.dart';
+import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
+import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
+import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
+import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
+import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_availability_calendar.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -28,7 +31,6 @@ class ArtistProfileScreen extends StatefulWidget {
   final bool viewOnly;
   final DateTime? selectedDate;
   final AddressInfoEntity? selectedAddress;
-  // final AvailabilityEntity? availability;
 
   const ArtistProfileScreen({
     super.key,
@@ -37,7 +39,6 @@ class ArtistProfileScreen extends StatefulWidget {
     this.viewOnly = false,
     this.selectedDate,
     this.selectedAddress,
-    // this.availability,
   });
 
   @override
@@ -45,18 +46,84 @@ class ArtistProfileScreen extends StatefulWidget {
 }
 
 class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
+  AddressInfoEntity? _selectedAddress;
+
   @override
   void initState() {
     super.initState();
-    // Buscar disponibilidades ao carregar a tela
+    
+    // Se veio com endereço selecionado, usar ele
     if (widget.selectedAddress != null) {
+      _selectedAddress = widget.selectedAddress;
+      _loadAvailabilities();
+    } else {
+      // Buscar endereços do AddressesBloc
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final addressesState = context.read<AddressesBloc>().state;
+        if (addressesState is! GetAddressesSuccess) {
+          context.read<AddressesBloc>().add(GetAddressesEvent());
+        } else {
+          _getPrimaryAddressFromState(addressesState);
+        }
+      });
+    }
+  }
+
+  /// Obtém endereço primário do estado do AddressesBloc
+  void _getPrimaryAddressFromState(GetAddressesSuccess state) {
+    if (state.addresses.isEmpty) {
+      return;
+    }
+
+    AddressInfoEntity primaryAddress;
+    try {
+      primaryAddress = state.addresses.firstWhere(
+        (address) => address.isPrimary,
+      );
+    } catch (e) {
+      primaryAddress = state.addresses.first;
+    }
+
+    if (_selectedAddress == null && mounted) {
+      setState(() {
+        _selectedAddress = primaryAddress;
+      });
+      _loadAvailabilities();
+    }
+  }
+
+  /// Carrega disponibilidades para o endereço selecionado
+  void _loadAvailabilities() {
+    if (_selectedAddress != null && widget.artist.uid != null) {
       context.read<ExploreBloc>().add(
         GetArtistAllAvailabilitiesEvent(
           artistId: widget.artist.uid!,
-          userAddress: widget.selectedAddress,
+          userAddress: _selectedAddress,
         ),
       );
     }
+  }
+
+  /// Abre modal de seleção de endereço
+  void _onAddressSelected() async {
+    final selectedAddress = await AddressesModal.show(
+      context: context,
+      selectedAddress: _selectedAddress,
+    );
+
+    if (selectedAddress != null && selectedAddress != _selectedAddress) {
+      setState(() {
+        _selectedAddress = selectedAddress;
+      });
+      _loadAvailabilities();
+    }
+  }
+
+  String get _currentAddressDisplay {
+    if (_selectedAddress == null) {
+      return 'Selecione um endereço';
+    }
+    return _selectedAddress!.title;
   }
 
   void _onVideoTap(String videoUrl) {
@@ -100,15 +167,19 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
   void _onRequestPressed(BuildContext context) {
     final router = context.router;
     
-    if (widget.selectedAddress == null) {
-      // TODO: Mostrar erro ou selecionar endereço
+    if (_selectedAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione um endereço antes de solicitar'),
+        ),
+      );
       return;
     }
 
     router.push(
       RequestRoute(
         selectedDate: widget.selectedDate ?? DateTime.now(),
-        selectedAddress: widget.selectedAddress!,
+        selectedAddress: _selectedAddress!,
         artist: widget.artist,
       ),
     );
@@ -253,62 +324,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                       TabsSection(
                         artist: widget.artist,
                         onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
-                        calendarTab: widget.selectedAddress != null
-                            ? BlocBuilder<ExploreBloc, ExploreState>(
-                                builder: (context, state) {
-                                  if (state is GetArtistAllAvailabilitiesLoading) {
-                                    return Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(DSSize.width(24)),
-                                        child: CircularProgressIndicator(
-                                          color: colorScheme.primary,
-                                        ),
-                                      ),
-                                    );
-                                  }
-
-                                  if (state is GetArtistAllAvailabilitiesFailure) {
-                                    return Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(DSSize.width(16)),
-                                        child: Text(
-                                          'Erro ao carregar disponibilidades: ${state.error}',
-                                          style: textTheme.bodyMedium?.copyWith(
-                                            color: colorScheme.error,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    );
-                                  }
-
-                                  if (state is GetArtistsWithAvailabilitiesSuccess) {
-                                    return SingleChildScrollView(
-                                      child: ArtistAvailabilityCalendar(
-                                        availabilities: state.availabilities ?? [],
-                                        selectedDate: widget.selectedDate,
-                                        onDateSelected: (date) {
-                                          // TODO: Navegar para tela de solicitação ou atualizar estado
-                                        },
-                                      ),
-                                    );
-                                  }
-
-                                  return Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(DSSize.width(16)),
-                                      child: Text(
-                                        'Nenhuma disponibilidade encontrada',
-                                        style: textTheme.bodyMedium?.copyWith(
-                                          color: colorScheme.onSurfaceVariant.withOpacity(0.6),
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              )
-                            : null,
+                        calendarTab: _buildCalendarTab(colorScheme, textTheme),
                       ),
 
                       DSSizedBoxSpacing.vertical(100), // Espaço para o footer
@@ -330,6 +346,198 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Constrói a tab do calendário com seletor de endereço
+  Widget _buildCalendarTab(ColorScheme colorScheme, TextTheme textTheme) {
+    return BlocListener<AddressesBloc, AddressesState>(
+      listener: (context, state) {
+        if (state is GetAddressesSuccess && _selectedAddress == null) {
+          _getPrimaryAddressFromState(state);
+        }
+      },
+      child: Column(
+        children: [
+          // Seletor de endereço
+          Padding(
+            padding: EdgeInsets.only(
+              top: DSSize.height(16),
+              left: DSSize.width(16),
+              right: DSSize.width(16),
+              bottom: DSSize.height(8),
+            ),
+            child: AddressSelector(
+              currentAddress: _currentAddressDisplay,
+              onAddressTap: _onAddressSelected,
+            ),
+          ),
+
+          // Calendário com diferentes estados
+          Expanded(
+            child: _selectedAddress == null
+                ? _buildNoAddressState(colorScheme, textTheme)
+                : _buildCalendarContent(colorScheme, textTheme),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Estado quando não há endereço selecionado
+  Widget _buildNoAddressState(ColorScheme colorScheme, TextTheme textTheme) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(DSSize.width(32)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.location_off_outlined,
+              size: DSSize.width(64),
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
+            DSSizedBoxSpacing.vertical(16),
+            Text(
+              'Selecione um endereço',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            DSSizedBoxSpacing.vertical(8),
+            Text(
+              'Para visualizar as disponibilidades do artista, selecione um endereço acima',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Conteúdo do calendário baseado no estado do ExploreBloc
+  Widget _buildCalendarContent(ColorScheme colorScheme, TextTheme textTheme) {
+    return BlocBuilder<ExploreBloc, ExploreState>(
+      builder: (context, state) {
+        if (state is GetArtistAllAvailabilitiesLoading) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(DSSize.width(24)),
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
+              ),
+            ),
+          );
+        }
+
+        if (state is GetArtistAllAvailabilitiesFailure) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(DSSize.width(24)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: DSSize.width(48),
+                    color: colorScheme.error,
+                  ),
+                  DSSizedBoxSpacing.vertical(16),
+                  Text(
+                    'Erro ao carregar disponibilidades',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colorScheme.error,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  DSSizedBoxSpacing.vertical(8),
+                  Text(
+                    state.error,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (state is GetArtistsWithAvailabilitiesSuccess) {
+          final availabilities = state.availabilities ?? [];
+          
+          if (availabilities.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(DSSize.width(32)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_busy_outlined,
+                      size: DSSize.width(64),
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                    DSSizedBoxSpacing.vertical(16),
+                    Text(
+                      'Artista não atende neste endereço',
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    DSSizedBoxSpacing.vertical(8),
+                    Text(
+                      'Este artista não possui disponibilidades para o endereço selecionado. Tente selecionar outro endereço.',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            child: ArtistAvailabilityCalendar(
+              availabilities: availabilities,
+              selectedDate: widget.selectedDate,
+              onDateSelected: (date) {
+                // Navegar para tela de solicitação com data selecionada
+                if (_selectedAddress != null) {
+                  context.router.push(
+                    RequestRoute(
+                      selectedDate: date,
+                      selectedAddress: _selectedAddress!,
+                      artist: widget.artist,
+                    ),
+                  );
+                }
+              },
+            ),
+          );
+        }
+
+        return Center(
+          child: Padding(
+            padding: EdgeInsets.all(DSSize.width(32)),
+            child: Text(
+              'Selecione um endereço para ver as disponibilidades',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      },
     );
   }
 }

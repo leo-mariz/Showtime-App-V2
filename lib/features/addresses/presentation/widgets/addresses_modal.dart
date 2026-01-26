@@ -105,6 +105,7 @@ class _AddressesModalState extends State<AddressesModal> {
     final surface = colorScheme.surface;
     final onPrimary = colorScheme.onPrimary;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final surfaceContainerHighest = colorScheme.surfaceContainerHighest;
 
     return BlocListener<AddressesBloc, AddressesState>(
       listener: (context, state) {
@@ -150,37 +151,30 @@ class _AddressesModalState extends State<AddressesModal> {
               return 0;
             });
 
-            return Container(
-              decoration: BoxDecoration(
-              borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(DSSize.width(20)),
-              topRight: Radius.circular(DSSize.width(20)),
-                ),
-              ),
-            child: Stack(
+            return Stack(
               children: [
                 // Gradiente transparente no topo
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.transparent,
-                          surface,
-                          surface,
-                        ],
-                        stops: const [0.0, 0.08, 0.08, 1.0],
-                      ),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(DSSize.width(20)),
-                        topRight: Radius.circular(DSSize.width(20)),
-                      ),
-                    ),
-                  ),
-                ),
+                // Positioned.fill(
+                //   child: Container(
+                //     decoration: BoxDecoration(
+                //       gradient: LinearGradient(
+                //         begin: Alignment.topCenter,
+                //         end: Alignment.bottomCenter,
+                //         colors: [
+                //           Colors.transparent,
+                //           Colors.transparent,
+                //           surface,
+                //           surface,
+                //         ],
+                //         stops: const [0.0, 0.08, 0.08, 1.0],
+                //       ),
+                //       borderRadius: BorderRadius.only(
+                //         topLeft: Radius.circular(DSSize.width(20)),
+                //         topRight: Radius.circular(DSSize.width(20)),
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 // Conteúdo do modal com fundo sólido a partir do handle
                 DraggableScrollableSheet(
                   initialChildSize: 0.9,
@@ -198,7 +192,7 @@ class _AddressesModalState extends State<AddressesModal> {
                       child: Column(
                         children: [
                           // Espaço transparente acima do handle
-                          SizedBox(height: DSSize.height(12)),
+                          SizedBox(height: DSSize.height(8)),
                           // Handle bar
                           Container(
                             width: DSSize.width(40),
@@ -306,7 +300,7 @@ class _AddressesModalState extends State<AddressesModal> {
                   },
                 ),
               ],
-            ),
+            
           );
         },
       ),

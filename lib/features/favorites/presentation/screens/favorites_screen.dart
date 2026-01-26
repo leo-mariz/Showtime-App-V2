@@ -335,6 +335,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     final router = AutoRouter.of(context);
     final artistId = artist.uid ?? '';
     final isFavorite = _favoriteArtistIds.contains(artistId);
+    
 
     router.push(
       ArtistProfileRoute(

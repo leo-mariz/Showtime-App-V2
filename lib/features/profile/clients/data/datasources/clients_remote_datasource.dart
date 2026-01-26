@@ -96,6 +96,7 @@ class ClientsRemoteDataSourceImpl implements IClientsRemoteDataSource {
       );
 
       // Remove o uid do map antes de salvar (já está no documento)
+      client.uid = uid;
       final clientMap = client.toMap();
       await documentReference.set(clientMap);
     } on FirebaseException catch (e, stackTrace) {
@@ -140,7 +141,6 @@ class ClientsRemoteDataSourceImpl implements IClientsRemoteDataSource {
 
       // Remove o uid do map antes de atualizar (já está no documento)
       final clientMap = client.toMap();
-      clientMap.remove('uid');
 
       await documentReference.update(clientMap);
     } on FirebaseException catch (e, stackTrace) {

@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
@@ -275,10 +276,8 @@ class ArtistAvailabilityCalendar extends StatelessWidget {
                                       child: Text(
                                         'R\$ ${NumberFormat('#,##0', 'pt_BR').format(averagePrice)}',
                                         style: textTheme.bodySmall?.copyWith(
-                                          color: isSelected
-                                              ? colorScheme.onPrimaryContainer
-                                              : colorScheme.primary,
-                                          fontSize: 9,
+                                          color:colorScheme.onPrimaryContainer,
+                                          fontSize: calculateFontSize(9),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),

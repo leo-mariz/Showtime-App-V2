@@ -15,6 +15,7 @@ class CustomCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
   final BorderRadius? customBorderRadius;
+  final BorderSide? borderSide;
 
   const CustomCard({
     super.key,
@@ -26,6 +27,7 @@ class CustomCard extends StatelessWidget {
     this.padding,
     this.onTap,
     this.customBorderRadius,
+    this.borderSide,
   });
 
   @override
@@ -60,6 +62,7 @@ class CustomCard extends StatelessWidget {
       margin: margin,
       shape: RoundedRectangleBorder(
         borderRadius: defaultBorderRadius,
+        side: borderSide ?? BorderSide.none,
       ),
       child: cardContent,
     );

@@ -50,83 +50,90 @@ class AddressCard extends StatelessWidget {
 
     return Stack(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            border: isSelected
-                ? Border.all(
-                    color: onPrimaryContainer,
-                    width: 1,
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(DSSize.width(16)),
+        CustomCard(
+          padding: EdgeInsets.symmetric(
+            horizontal: DSSize.width(12),
+            vertical: DSSize.height(16),
           ),
-          child: CustomCard(
-            padding: EdgeInsets.all(DSSize.width(8)),
-            customBorderRadius: BorderRadius.circular(DSSize.width(8)),
-            child: Row(
-              // crossAxisAlignment: CrossAxisAlignment.center,
+          customBorderRadius: BorderRadius.circular(DSSize.width(16)),
+          borderSide: isSelected
+              ? BorderSide(
+                  color: onPrimaryContainer,
+                  width: 2,
+                )
+              : null,
+          child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Ícone de localização (esquerda, centralizado verticalmente)
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: DSSize.width(32),
-                      color: onPrimaryContainer,
-                    ),
-                    DSSizedBoxSpacing.horizontal(16),
-                    // Conteúdo do endereço
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: onPrimary,
-                          ),
-                        ),
-                        // Rua
-                        Text(
-                          street,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: onPrimary.withOpacity(0.8),
-                          ),
-                        ),
-                        // Bairro
-                        Text(
-                          district,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: onPrimary.withOpacity(0.8),
-                          ),
-                        ),
-                        // Número / Complemento
-                        Text(
-                          complement != null && complement!.isNotEmpty
-                              ? '$number / $complement'
-                              : number,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: onPrimary.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                // Ícone de localização (esquerda)
+                Icon(
+                  Icons.location_on,
+                  size: DSSize.width(32),
+                  color: onPrimaryContainer,
                 ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    icon: Icon(Icons.more_vert, color: onPrimaryContainer),
-                    onPressed: () => _showOptionsModal(context),
-                    iconSize: DSSize.width(24),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                DSSizedBoxSpacing.horizontal(16),
+                
+                // Conteúdo do endereço (flexível para ocupar espaço disponível)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Título
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: onPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Rua
+                      Text(
+                        street,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: onPrimary.withOpacity(0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Bairro
+                      Text(
+                        district,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: onPrimary.withOpacity(0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Número / Complemento
+                      Text(
+                        complement != null && complement!.isNotEmpty
+                            ? '$number / $complement'
+                            : number,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: onPrimary.withOpacity(0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
+                ),
+                
+                DSSizedBoxSpacing.horizontal(8),
+                
+                // Botão de opções
+                IconButton(
+                  icon: Icon(Icons.more_vert, color: onPrimaryContainer),
+                  onPressed: () => _showOptionsModal(context),
+                  iconSize: DSSize.width(24),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
-          ),
         ),
         // Ícone de check no canto superior direito quando selecionado
         if (isSelected)

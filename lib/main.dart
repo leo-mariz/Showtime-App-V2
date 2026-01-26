@@ -20,8 +20,7 @@ import 'package:app/features/favorites/data/datasources/favorite_remote_datasour
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
 import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
 import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
-import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
-// import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/get_favorite_artists_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
 // import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
@@ -630,13 +629,11 @@ ExploreBloc _createExploreBloc(
   IExploreRepository exploreRepository,
   CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
   GetUserUidUseCase getUserUidUseCase,
-  IsArtistFavoriteUseCase isArtistFavoriteUseCase,
 ) {
   // Criar UseCase orquestrador de validações (usa helpers internamente)
   final getArtistsWithAvailabilitiesFilteredUseCase = GetArtistsWithAvailabilitiesFilteredUseCase(
     repository: exploreRepository,
     calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
-    isArtistFavoriteUseCase: isArtistFavoriteUseCase,
   );
 
   // Criar UseCase para buscar todas as disponibilidades ativas de um artista
@@ -702,12 +699,14 @@ ContractsBloc _createContractsBloc(
 
 FavoritesBloc _createFavoritesBloc(
   IFavoriteRepository favoriteRepository,
+  IExploreRepository exploreRepository,
   GetUserUidUseCase getUserUidUseCase,
 ) {
   // Criar UseCases
   final addFavoriteUseCase = AddFavoriteUseCase(repository: favoriteRepository);
   final removeFavoriteUseCase = RemoveFavoriteUseCase(repository: favoriteRepository);
-  return FavoritesBloc(getUserUidUseCase: getUserUidUseCase, addFavoriteUseCase: addFavoriteUseCase, removeFavoriteUseCase: removeFavoriteUseCase);
+  final getFavoriteArtistsUseCase = GetFavoriteArtistsUseCase(favoriteRepository: favoriteRepository, exploreRepository: exploreRepository);
+  return FavoritesBloc(getUserUidUseCase: getUserUidUseCase, addFavoriteUseCase: addFavoriteUseCase, removeFavoriteUseCase: removeFavoriteUseCase, getFavoriteArtistsUseCase: getFavoriteArtistsUseCase);
 }
 
 AppListsBloc _createAppListsBloc(
@@ -901,7 +900,6 @@ Future <void> main() async {
   final favoriteLocalDataSource = FavoriteLocalDataSourceImpl(autoCache: localCacheService);
   final favoriteRemoteDataSource = FavoriteRemoteDataSourceImpl(firestore: firestore);
   final favoriteRepository = FavoriteRepositoryImpl(localDataSource: favoriteLocalDataSource, remoteDataSource: favoriteRemoteDataSource);
-  final isArtistFavoriteUseCase = IsArtistFavoriteUseCase(repository: favoriteRepository);
 
   // AppLists
   final appListsLocalDataSource = AppListsLocalDataSourceImpl(autoCacheService: localCacheService);
@@ -990,7 +988,6 @@ Future <void> main() async {
               exploreRepository,
               calculateAddressGeohashUseCase,
               getUserUidUseCase,
-              isArtistFavoriteUseCase,
             ),
           ),
           BlocProvider(
@@ -1004,6 +1001,7 @@ Future <void> main() async {
           BlocProvider(
             create: (context) => _createFavoritesBloc(
               favoriteRepository,
+              exploreRepository,
               getUserUidUseCase,
             ),
           ),

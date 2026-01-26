@@ -6,6 +6,7 @@ import 'package:app/features/contracts/presentation/screens/artists/artist_contr
 // import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:app/features/contracts/presentation/screens/clients/client_contracts_screen.dart';
 import 'package:app/features/explore/presentation/screens/explore_screen.dart';
+import 'package:app/features/favorites/presentation/screens/favorites_screen.dart';
 import 'package:app/features/profile/artist_availability/presentation/screens/availability_calendar_screen.dart';
 import 'package:app/features/profile/artists/presentation/screens/artist_profile_screen.dart';
 import 'package:app/features/profile/clients/presentation/screens/client_profile_screen.dart';
@@ -44,8 +45,7 @@ class _NavigationPageState extends State<NavigationPage> {
   // Páginas para alunos/clientes
   List<Widget> get _clientPages => [
     ExploreScreen(),
-    Placeholder(),
-    // FavoritesScreen(),
+    FavoritesScreen(),
     ClientContractsScreen(),
     ChatScreen(),
     ClientProfileScreen(),

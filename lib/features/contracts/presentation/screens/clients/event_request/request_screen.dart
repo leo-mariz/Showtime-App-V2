@@ -71,6 +71,7 @@ class _RequestScreenState extends State<RequestScreen> {
   bool _isLoadingAvailabilities = false;
 
   // Slot selecionado (para pegar o valor/h correto)
+  // ignore: unused_field
   TimeSlot? _selectedSlot;
   double? _selectedPricePerHour;
 
@@ -149,17 +150,17 @@ class _RequestScreenState extends State<RequestScreen> {
     return '';
   }
 
-  String _getClientUid() {
-    final userBloc = context.read<UsersBloc>();
-    final currentUserState = userBloc.state;
-    if (currentUserState is! GetUserDataSuccess) {
-      userBloc.add(GetUserDataEvent());
-    }
-    if (currentUserState is GetUserDataSuccess) {
-      return currentUserState.user.uid ?? '';
-    }
-    return '';
-  }
+  // String _getClientUid() {
+  //   final userBloc = context.read<UsersBloc>();
+  //   final currentUserState = userBloc.state;
+  //   if (currentUserState is! GetUserDataSuccess) {
+  //     userBloc.add(GetUserDataEvent());
+  //   }
+  //   if (currentUserState is GetUserDataSuccess) {
+  //     return currentUserState.user.uid ?? '';
+  //   }
+  //   return '';
+  // }
 
   double _getClientRating() {
     final currentClientState = context.read<ClientsBloc>().state;
@@ -606,6 +607,7 @@ class _RequestScreenState extends State<RequestScreen> {
     );
 
     // Adicionar evento ao Bloc
+    // ignore: use_build_context_synchronously
     context.read<ContractsBloc>().add(AddContractEvent(contract: contract));
   }
 

@@ -38,6 +38,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   
   // Variáveis para guardar contexto de operação de slot (add/update)
   String? _pendingSlotOperation; // 'add' ou 'update'
+  // ignore: unused_field
   String? _pendingSlotId; // Para update
   DateTime? _pendingSlotDate;
   String? _pendingSlotStartTime; // Horário de início do slot pendente

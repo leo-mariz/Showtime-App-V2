@@ -50,12 +50,8 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   // Tamanho anterior da lista para detectar se é nova busca ou apenas atualização
   int _previousListSize = 0;
   
-  // Mapa para rastrear mudanças locais de favoritos (artistId -> isFavorite)
-  // Isso permite atualização visual imediata antes do ExploreBloc recarregar
-  final Map<String, bool> _localFavoriteUpdates = {};
-  
-  // Rastrear último artista que teve favorito alterado
-  String? _lastFavoriteArtistId;
+  // Set com IDs dos artistas favoritos (sincronizado com FavoritesBloc)
+  Set<String> _favoriteArtistIds = {};
   
   // Query de busca atual
   String _searchQuery = '';
@@ -85,6 +81,9 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
       } else {
         _getPrimaryAddressFromState(addressesState);
       }
+      
+      // Buscar lista de favoritos
+      context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
     });
 
     // Scroll listener para carregar mais ao chegar no fim
@@ -153,12 +152,11 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   }
 
   void _onUpdateArtistFavoriteStatus(String artistId, bool isFavorite) {
-    context.read<ExploreBloc>().add(
-      UpdateArtistFavoriteStatusEvent(
-        artistId: artistId,
-        isFavorite: isFavorite,
-      ),
-    );
+    if (isFavorite) {
+      context.read<FavoritesBloc>().add(RemoveFavoriteEvent(artistId: artistId));
+    } else {
+      context.read<FavoritesBloc>().add(AddFavoriteEvent(artistId: artistId));
+    }
   }
 
   @override
@@ -258,43 +256,29 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
                     }
                   },
                 ),
-                // Escutar FavoritesBloc para feedback de adicionar/remover favoritos
+                // Escutar FavoritesBloc para atualizar lista de IDs e feedback
                 BlocListener<FavoritesBloc, FavoritesState>(
                   listener: (context, state) {
-                    if (state is AddFavoriteSuccess) {
+                    if (state is GetFavoriteArtistsSuccess) {
+                      // Atualizar lista de IDs de favoritos
+                      setState(() {
+                        _favoriteArtistIds = state.artists
+                            .map((artist) => artist.uid ?? '')
+                            .where((id) => id.isNotEmpty)
+                            .toSet();
+                      });
+                    } else if (state is AddFavoriteSuccess) {
                       context.showSuccess('Artista adicionado aos favoritos');
-                      // Atualizar estado local para refletir mudança visual imediatamente
-                      if (_lastFavoriteArtistId != null) {
-                        setState(() {
-                          _localFavoriteUpdates[_lastFavoriteArtistId!] = true;
-                        });
-                        _onUpdateArtistFavoriteStatus(_lastFavoriteArtistId!, true);
-                      }
+                      // Recarregar lista de favoritos para sincronizar
+                      context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
                     } else if (state is AddFavoriteFailure) {
                       context.showError(state.error);
-                      // Reverter mudança local em caso de erro
-                      if (_lastFavoriteArtistId != null) {
-                        setState(() {
-                          _localFavoriteUpdates.remove(_lastFavoriteArtistId);
-                        });
-                      }
                     } else if (state is RemoveFavoriteSuccess) {
                       context.showSuccess('Artista removido dos favoritos');
-                      // Atualizar estado local para refletir mudança visual imediatamente
-                      if (_lastFavoriteArtistId != null) {
-                        setState(() {
-                          _localFavoriteUpdates[_lastFavoriteArtistId!] = false;
-                        });
-                        _onUpdateArtistFavoriteStatus(_lastFavoriteArtistId!, false);
-                      }
+                      // Recarregar lista de favoritos para sincronizar
+                      context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
                     } else if (state is RemoveFavoriteFailure) {
                       context.showError(state.error);
-                      // Reverter mudança local em caso de erro
-                      if (_lastFavoriteArtistId != null) {
-                        setState(() {
-                          _localFavoriteUpdates.remove(_lastFavoriteArtistId);
-                        });
-                      }
                     }
                   },
                 ),
@@ -458,11 +442,9 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
         final artist = artistWithAvailabilities.artist;
         final availabilities = artistWithAvailabilities.availabilities;
         
-        // Verificar se há atualização local de favorito para este artista
+        // Verificar se artista está na lista de favoritos
         final artistId = artist.uid ?? '';
-        final isFavorite = _localFavoriteUpdates.containsKey(artistId)
-            ? _localFavoriteUpdates[artistId]!
-            : artistWithAvailabilities.isFavorite;
+        final isFavorite = _favoriteArtistIds.contains(artistId);
 
         // Obter média dos preços dos slots disponíveis (ou usar hourlyRate do professionalInfo)
         String? pricePerHour;
@@ -574,19 +556,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   }
 
   void _onFavoriteTapped(String artistId, bool isFavorite) {
-    // Armazenar o artistId para atualizar o estado após sucesso
-    _lastFavoriteArtistId = artistId;
-    
-    // Atualizar estado local imediatamente para feedback visual instantâneo
-    setState(() {
-      _localFavoriteUpdates[artistId] = !isFavorite;
-    });
-    
-    if (isFavorite) {
-      context.read<FavoritesBloc>().add(RemoveFavoriteEvent(artistId: artistId));
-    } else {
-      context.read<FavoritesBloc>().add(AddFavoriteEvent(artistId: artistId));
-    }
+    _onUpdateArtistFavoriteStatus(artistId, isFavorite);
   }
 
   void _onRequestTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
@@ -599,6 +569,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
         : null;
 
     // Obter média dos preços dos slots disponíveis ou do professionalInfo
+    // ignore: unused_local_variable
     double pricePerHour = 0.0;
     if (availabilityDay != null) {
       final availableSlots = availabilityDay.availableSlots
@@ -633,9 +604,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   void _onArtistCardTapped(ArtistWithAvailabilitiesEntity artistWithAvailabilities) {
     final router = AutoRouter.of(context);
     final artist = artistWithAvailabilities.artist;
-    final isFavorite = _localFavoriteUpdates.containsKey(artist.uid ?? '')
-        ? _localFavoriteUpdates[artist.uid ?? '']!
-        : artistWithAvailabilities.isFavorite;
+    final isFavorite = _favoriteArtistIds.contains(artist.uid ?? '');
 
     router.push(ArtistProfileRoute(
       artist: artist,

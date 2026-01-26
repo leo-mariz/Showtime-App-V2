@@ -31,3 +31,6 @@ class RemoveFavoriteEvent extends FavoritesEvent {
   List<Object?> get props => [artistId];
 }
 
+// GET FAVORITE ARTISTS EVENTS ====================
+
+class GetFavoriteArtistsEvent extends FavoritesEvent {}

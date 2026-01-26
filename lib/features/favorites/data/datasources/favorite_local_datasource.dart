@@ -24,6 +24,8 @@ abstract class IFavoriteLocalDataSource {
 
   /// Limpa todo o cache de favoritos
   Future<void> clearCache();
+
+  
 }
 
 /// Implementação do datasource local de favoritos

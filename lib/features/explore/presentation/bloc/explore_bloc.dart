@@ -28,7 +28,6 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
       _onGetArtistsWithAvailabilitiesFilteredEvent,
     );
     on<GetArtistAllAvailabilitiesEvent>(_onGetArtistAllAvailabilitiesEvent);
-    on<UpdateArtistFavoriteStatusEvent>(_onUpdateArtistFavoriteStatusEvent);
   }
 
 //   // ==================== HELPERS ====================
@@ -132,36 +131,6 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
         ));
       },
     );
-  }
-
-  // ==================== UPDATE ARTIST FAVORITE STATUS ====================
-
-  Future<void> _onUpdateArtistFavoriteStatusEvent(
-    UpdateArtistFavoriteStatusEvent event,
-    Emitter<ExploreState> emit,
-  ) async {
-    // Só atualizar se já tiver dados carregados
-    if (state is GetArtistsWithAvailabilitiesSuccess) {
-      final currentState = state as GetArtistsWithAvailabilitiesSuccess;
-
-      // Atualizar apenas o isFavorite do artista específico
-      final updatedArtists = currentState.artistsWithAvailabilities.map((artist) {
-        if (artist.artist.uid == event.artistId) {
-          // Criar nova instância com isFavorite atualizado
-          return ArtistWithAvailabilitiesEntity(
-            artist: artist.artist,
-            availabilities: artist.availabilities,
-            isFavorite: event.isFavorite,
-          );
-        }
-        return artist;
-      }).toList();
-
-      // Emitir novo estado com lista atualizada
-      emit(currentState.copyWith(
-        artistsWithAvailabilities: updatedArtists,
-      ));
-    }
   }
 }
 

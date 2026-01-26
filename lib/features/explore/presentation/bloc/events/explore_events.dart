@@ -70,23 +70,3 @@ class GetArtistAllAvailabilitiesEvent extends ExploreEvent {
   List<Object?> get props => [artistId, userAddress, forceRefresh];
 }
 
-// ==================== UPDATE ARTIST FAVORITE STATUS EVENT ====================
-
-/// Evento para atualizar o status de favorito de um artista na lista atual
-/// 
-/// Atualiza apenas o campo isFavorite do artista específico sem recarregar os dados
-/// [artistId]: ID do artista a ser atualizado
-/// [isFavorite]: Novo status de favorito
-class UpdateArtistFavoriteStatusEvent extends ExploreEvent {
-  final String artistId;
-  final bool isFavorite;
-
-  UpdateArtistFavoriteStatusEvent({
-    required this.artistId,
-    required this.isFavorite,
-  });
-
-  @override
-  List<Object?> get props => [artistId, isFavorite];
-}
-

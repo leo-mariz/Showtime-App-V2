@@ -37,22 +37,17 @@ class ArtistWithAvailabilitiesEntityMapper
     List<AvailabilityDayEntity>
   >
   _f$availabilities = Field('availabilities', _$availabilities);
-  static bool _$isFavorite(ArtistWithAvailabilitiesEntity v) => v.isFavorite;
-  static const Field<ArtistWithAvailabilitiesEntity, bool> _f$isFavorite =
-      Field('isFavorite', _$isFavorite, opt: true, def: false);
 
   @override
   final MappableFields<ArtistWithAvailabilitiesEntity> fields = const {
     #artist: _f$artist,
     #availabilities: _f$availabilities,
-    #isFavorite: _f$isFavorite,
   };
 
   static ArtistWithAvailabilitiesEntity _instantiate(DecodingData data) {
     return ArtistWithAvailabilitiesEntity(
       artist: data.dec(_f$artist),
       availabilities: data.dec(_f$availabilities),
-      isFavorite: data.dec(_f$isFavorite),
     );
   }
 
@@ -147,8 +142,7 @@ abstract class ArtistWithAvailabilitiesEntityCopyWith<
   get availabilities;
   $R call({
     ArtistEntity? artist,
-    List<AvailabilityDayEntity>? availabilities,
-    bool? isFavorite,
+    List<AvailabilityDayEntity>? availabilities,  
   });
   ArtistWithAvailabilitiesEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -207,7 +201,6 @@ class _ArtistWithAvailabilitiesEntityCopyWithImpl<$R, $Out>
       ArtistWithAvailabilitiesEntity(
         artist: data.get(#artist, or: $value.artist),
         availabilities: data.get(#availabilities, or: $value.availabilities),
-        isFavorite: data.get(#isFavorite, or: $value.isFavorite),
       );
 
   @override

@@ -8,7 +8,6 @@ import 'package:app/core/utils/geohash_helper.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
-import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Buscar artistas com disponibilidades filtradas por data e localização
@@ -50,12 +49,10 @@ class PagedArtistsResult {
 class GetArtistsWithAvailabilitiesFilteredUseCase {
   final IExploreRepository repository;
   final CalculateAddressGeohashUseCase calculateAddressGeohashUseCase;
-  final IsArtistFavoriteUseCase isArtistFavoriteUseCase;
 
   GetArtistsWithAvailabilitiesFilteredUseCase({
     required this.repository,
     required this.calculateAddressGeohashUseCase,
-    required this.isArtistFavoriteUseCase,
   });
 
   Future<Either<Failure, PagedArtistsResult>> call({
@@ -67,15 +64,6 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     String? userId,
     String? searchQuery,
   }) async {
-    print('🟣 [USECASE] GetArtistsWithAvailabilitiesFiltered - Iniciando busca');
-    print('🟣 [USECASE] Parâmetros:');
-    print('   - selectedDate: $selectedDate');
-    print('   - userAddress: ${userAddress?.title ?? "Nenhum"}');
-    print('   - userAddress lat/lon: ${userAddress?.latitude}/${userAddress?.longitude}');
-    print('   - forceRefresh: $forceRefresh');
-    print('   - startIndex: $startIndex');
-    print('   - pageSize: $pageSize');
-    print('   - searchQuery: ${searchQuery ?? "Nenhuma"}');
     
     try {
       // Validar que selectedDate foi fornecido
@@ -92,43 +80,37 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
       if (userAddress != null &&
           userAddress.latitude != null &&
           userAddress.longitude != null) {
-        print('🟣 [USECASE] Calculando geohash para endereço: ${userAddress.title}');
         final geohashResult = await calculateAddressGeohashUseCase.call(userAddress);
         geohashResult.fold(
           (failure) {
-            print('🔴 [USECASE] Erro ao calcular geohash: ${failure.message}');
           },
           (geohash) {
-            print('🟣 [USECASE] Geohash calculado: $geohash');
             // Calcular range de geohash para filtro
             final range = GeohashHelper.getRange(geohash);
             minGeohash = range['min'];
             maxGeohash = range['max'];
-            print('🟣 [USECASE] Range de geohash: min=$minGeohash, max=$maxGeohash');
           },
         );
       } else {
-        print('🟣 [USECASE] Sem endereço ou coordenadas, não calculando geohash');
       }
 
       // 2. Buscar todos os artistas aprovados e ativos (usa cache)
-      print('🟣 [USECASE] Buscando todos os artistas aprovados e ativos...');
       final artistsResult = await repository.getArtistsForExplore(
         forceRefresh: forceRefresh,
       );
 
       return await artistsResult.fold(
         (failure) {
-          print('🔴 [USECASE] Erro ao buscar artistas: ${failure.message}');
           return Left(failure);
         },
         (artists) async {
-          print('🟣 [USECASE] Total de artistas encontrados: ${artists.length}');
           
           // 3. Para cada artista, buscar disponibilidade do dia específico e aplicar filtros
           // Usando paralelização com batching controlado para otimizar performance
           final filteredArtistsWithAvailabilities = <ArtistWithAvailabilitiesEntity>[];
+          // ignore: unused_local_variable
           int artistsProcessed = 0;
+          // ignore: unused_local_variable
           int artistsWithValidAvailabilities = 0;
 
           // Garantir limites válidos
@@ -149,17 +131,14 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
             
             final batch = artists.skip(i).take(currentBatchSize).toList();
             
-            print('🟣 [USECASE] Processando lote de ${batch.length} artistas (índice $i a ${i + batch.length - 1})');
             
             // Processar lote em paralelo
             final futures = batch.map((artist) async {
               artistsProcessed++;
               
-              print('🟣 [USECASE] Processando artista: ${artist.artistName} (ID: ${artist.uid})');
               
               // Verificar se artista tem UID válido
               if (artist.uid == null || artist.uid!.isEmpty) {
-                print('🟡 [USECASE] Artista ${artist.artistName} sem UID válido, pulando...');
                 return null;
               }
 
@@ -177,13 +156,11 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
 
               // Se não houver disponibilidade para o dia, retornar null
               if (availabilityDay == null || !availabilityDay.hasAvailability) {
-                print('🟡 [USECASE] Artista ${artist.uid} - SEM disponibilidade para o dia $selectedDate');
                 return null;
               }
 
               // Verificar se a disponibilidade está ativa
               if (!availabilityDay.isActive) {
-                print('🟡 [USECASE] Artista ${artist.uid} - Disponibilidade INATIVA para o dia $selectedDate');
                 return null;
               }
 
@@ -194,11 +171,9 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
               ) ?? false;
 
               if (!hasAvailableSlot) {
-                print('🟡 [USECASE] Artista ${artist.uid} - Nenhum slot DISPONÍVEL (todos estão booked) para o dia $selectedDate');
                 return null;
               }
 
-              print('🟣 [USECASE] Artista ${artist.uid} - Tem disponibilidade ATIVA com slots DISPONÍVEIS para o dia');
 
               // Aplicar filtros em memória
               bool isValid = true;
@@ -208,7 +183,6 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
                 final availabilityGeohash = availabilityDay.endereco!.geohash;
                 
                 if (availabilityGeohash == null || availabilityGeohash.isEmpty) {
-                  print('🟡 [USECASE] Artista ${artist.uid} - Disponibilidade sem geohash, REJEITADO');
                   isValid = false;
                 } else {
                   // Truncar ambos os geohashes para a mesma precisão para comparação correta
@@ -220,7 +194,6 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
                                     truncatedAvailabilityGeohash.compareTo(truncatedMaxGeohash) <= 0;
                   
                   if (!isInRange) {
-                    print('🟡 [USECASE] Artista ${artist.uid} - Geohash FORA do range');
                     isValid = false;
                   }
                 }
@@ -245,7 +218,6 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
                 final isWithinRadius = distance <= availabilityDay.raioAtuacao!;
                 
                 if (!isWithinRadius) {
-                  print('🟡 [USECASE] Artista ${artist.uid} - FORA do raio: distância=${distance.toStringAsFixed(2)}km, raio=${availabilityDay.raioAtuacao}km');
                   isValid = false;
                 }
               }
@@ -253,35 +225,18 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
               // Filtro 3: Por busca (nome, talentos, bio)
               if (isValid && searchQuery != null && searchQuery.isNotEmpty) {
                 if (!_matchesSearch(artist, searchQuery)) {
-                  print('🟡 [USECASE] Artista ${artist.uid} - REMOVIDO (não corresponde à busca)');
                   isValid = false;
                 }
               }
 
               // Se passou em todos os filtros, retornar o artista com disponibilidade
               if (isValid) {
-                // Verificar se é favorito (paralelizado)
-                bool isFavorite = false;
-                if (userId != null && userId.isNotEmpty) {
-                  final isFavoriteResult = await isArtistFavoriteUseCase.call(
-                    clientId: userId,
-                    artistId: artist.uid!,
-                    forceRefresh: forceRefresh,
-                  );
-                  isFavorite = isFavoriteResult.fold(
-                    (_) => false,
-                    (fav) => fav,
-                  );
-                }
-
                 final artistWithAvailability = ArtistWithAvailabilitiesEntity(
                   artist: artist,
                   availabilities: [availabilityDay],
-                  isFavorite: isFavorite,
                 );
                 
                 artistsWithValidAvailabilities++;
-                print('🟢 [USECASE] Artista ${artist.uid} - ADICIONADO com disponibilidade válida');
                 return artistWithAvailability;
               }
               
@@ -314,14 +269,6 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
 
           final hasMore = i < artists.length;
           final nextIndex = i;
-          print('🟢 [USECASE] Paginação: retornados=${filteredArtistsWithAvailabilities.length}, nextIndex=$nextIndex, hasMore=$hasMore');
-
-          print('🟢 [USECASE] Processamento concluído!');
-          print('🟢 [USECASE] Estatísticas:');
-          print('   - Artistas processados: $artistsProcessed');
-          print('   - Artistas com disponibilidades válidas: $artistsWithValidAvailabilities');
-          print('   - Total retornado: ${filteredArtistsWithAvailabilities.length}');
-          print('   - ✅ Busca otimizada: apenas 1 read por artista (dia específico)');
 
           return Right(PagedArtistsResult(
             items: filteredArtistsWithAvailabilities,

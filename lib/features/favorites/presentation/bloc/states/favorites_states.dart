@@ -1,3 +1,4 @@
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class FavoritesState extends Equatable {
@@ -33,6 +34,27 @@ class RemoveFavoriteFailure extends FavoritesState {
   final String error;
 
   RemoveFavoriteFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+
+// ==================== GET FAVORITE ARTISTS STATES ====================
+
+class GetFavoriteArtistsLoading extends FavoritesState {}
+class GetFavoriteArtistsSuccess extends FavoritesState {
+  final List<ArtistEntity> artists;
+
+  GetFavoriteArtistsSuccess({required this.artists});
+
+  @override
+  List<Object?> get props => [artists];
+}
+class GetFavoriteArtistsFailure extends FavoritesState {
+  final String error;
+
+  GetFavoriteArtistsFailure({required this.error});
 
   @override
   List<Object?> get props => [error];

@@ -10,12 +10,10 @@ part 'artist_with_availabilities_entity.mapper.dart';
 class ArtistWithAvailabilitiesEntity with ArtistWithAvailabilitiesEntityMappable {
   final ArtistEntity artist;
   final List<AvailabilityDayEntity> availabilities;
-  final bool isFavorite;
 
   ArtistWithAvailabilitiesEntity({
     required this.artist,
     required this.availabilities,
-    this.isFavorite = false,
   });
 
   /// Factory para criar uma instância com lista vazia de disponibilidades
@@ -23,7 +21,6 @@ class ArtistWithAvailabilitiesEntity with ArtistWithAvailabilitiesEntityMappable
     return ArtistWithAvailabilitiesEntity(
       artist: artist,
       availabilities: [],
-      isFavorite: false,
     );
   }
 

@@ -20,6 +20,8 @@ abstract class IFavoriteRemoteDataSource {
   Future<List<FavoriteEntity>> getAllFavorites({
     required String clientId,
   });
+
+  /// Busca um artista favorito de um cliente do Firestore
 }
 
 /// Implementação do datasource remoto de favoritos

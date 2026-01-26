@@ -1,5 +1,6 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/get_favorite_artists_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
@@ -15,14 +16,17 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   final GetUserUidUseCase getUserUidUseCase;
   final AddFavoriteUseCase addFavoriteUseCase;
   final RemoveFavoriteUseCase removeFavoriteUseCase;
+  final GetFavoriteArtistsUseCase getFavoriteArtistsUseCase;
 
   FavoritesBloc({
     required this.getUserUidUseCase,
     required this.addFavoriteUseCase,
     required this.removeFavoriteUseCase,
+    required this.getFavoriteArtistsUseCase,
   }) : super(FavoritesInitial()) {
     on<AddFavoriteEvent>(_onAddFavoriteEvent);
     on<RemoveFavoriteEvent>(_onRemoveFavoriteEvent);
+    on<GetFavoriteArtistsEvent>(_onGetFavoriteArtistsEvent);
   }
 
   // ==================== HELPERS ====================
@@ -106,6 +110,35 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
       (_) {
         emit(RemoveFavoriteSuccess());
         emit(FavoritesInitial());
+      },
+    );
+  }
+
+  // ==================== GET FAVORITE ARTISTS ====================
+
+  Future<void> _onGetFavoriteArtistsEvent(
+    GetFavoriteArtistsEvent event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    emit(GetFavoriteArtistsLoading());
+
+    final clientId = await _getCurrentClientId();
+
+    if (clientId == null || clientId.isEmpty) {
+      emit(GetFavoriteArtistsFailure(error: 'Usuário não autenticado'));
+      emit(FavoritesInitial());
+      return;
+    }
+
+    final result = await getFavoriteArtistsUseCase.call(clientId, forceRefresh: false);
+
+    result.fold(
+      (failure) {
+        emit(GetFavoriteArtistsFailure(error: failure.message));
+        emit(FavoritesInitial());
+      },
+      (artists) {
+        emit(GetFavoriteArtistsSuccess(artists: artists));
       },
     );
   }

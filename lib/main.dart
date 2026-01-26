@@ -8,11 +8,19 @@ import 'package:app/features/addresses/domain/usecases/calculate_address_geohash
 import 'package:app/features/artist_dashboard/presentation/bloc/artist_dashboard_bloc.dart';
 import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
+import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
+import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
+import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
+import 'package:app/features/explore/domain/repositories/explore_repository.dart';
+import 'package:app/features/explore/domain/usecases/get_artist_active_availabilities_usecase.dart';
+import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
+import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
 import 'package:app/features/favorites/data/datasources/favorite_remote_datasource.dart';
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
 import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
 import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
 // import 'package:app/features/favorites/domain/usecases/is_artist_favorite_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
@@ -618,40 +626,31 @@ BankAccountBloc _createBankAccountBloc(
 }
 
 /// Factory function para criar o ExploreBloc com todas as dependências
-// ExploreBloc _createExploreBloc(
-//   IExploreRepository exploreRepository,
-//   CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
-//   IFavoriteRepository favoriteRepository,
-//   GetUserUidUseCase getUserUidUseCase,
-// ) {
-//   // Criar UseCase orquestrador de validações (usa helpers internamente)
-//   final isAvailabilityValidForDateUseCase = IsAvailabilityValidForDateUseCase();
+ExploreBloc _createExploreBloc(
+  IExploreRepository exploreRepository,
+  CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
+  GetUserUidUseCase getUserUidUseCase,
+  IsArtistFavoriteUseCase isArtistFavoriteUseCase,
+) {
+  // Criar UseCase orquestrador de validações (usa helpers internamente)
+  final getArtistsWithAvailabilitiesFilteredUseCase = GetArtistsWithAvailabilitiesFilteredUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+    isArtistFavoriteUseCase: isArtistFavoriteUseCase,
+  );
 
-//   // Criar UseCase para verificar se um artista está nos favoritos
-//   final isArtistFavoriteUseCase = IsArtistFavoriteUseCase(repository: favoriteRepository);
-  
-//   // Criar UseCases principais
-//   final getArtistsWithAvailabilitiesUseCase = GetArtistsWithAvailabilitiesUseCase(
-//     repository: exploreRepository,
-//     isArtistFavoriteUseCase: isArtistFavoriteUseCase,
-//   );
-  
-//   final getArtistsWithAvailabilitiesFilteredUseCase =
-//       GetArtistsWithAvailabilitiesFilteredUseCase(
-//     getArtistsWithAvailabilitiesUseCase: getArtistsWithAvailabilitiesUseCase,
-//     calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
-//     isAvailabilityValidForDateUseCase: isAvailabilityValidForDateUseCase,
-//   );
+  // Criar UseCase para buscar todas as disponibilidades ativas de um artista
+  final getArtistActiveAvailabilitiesUseCase = GetArtistActiveAvailabilitiesUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+  );
 
-//   // Criar e retornar ExploreBloc
-//   return ExploreBloc(
-//     getArtistsWithAvailabilitiesUseCase: getArtistsWithAvailabilitiesUseCase,
-//     getArtistsWithAvailabilitiesFilteredUseCase:
-//         getArtistsWithAvailabilitiesFilteredUseCase,
-//     getUserUidUseCase: getUserUidUseCase,
-        
-//   );
-// }
+  return ExploreBloc(
+    getArtistsWithAvailabilitiesFilteredUseCase: getArtistsWithAvailabilitiesFilteredUseCase,
+    getArtistActiveAvailabilitiesUseCase: getArtistActiveAvailabilitiesUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
 
 /// Factory function para criar o ContractsBloc com todas as dependências
 ContractsBloc _createContractsBloc(
@@ -880,12 +879,12 @@ Future <void> main() async {
   );
 
   // Explore
-  // final exploreLocalDataSource = ExploreLocalDataSourceImpl(autoCacheService: localCacheService);
-  // final exploreRemoteDataSource = ExploreRemoteDataSourceImpl(firestore: firestore);
-  // final exploreRepository = ExploreRepositoryImpl(
-  //   exploreRemoteDataSource: exploreRemoteDataSource,
-  //   exploreLocalDataSource: exploreLocalDataSource,
-  // );
+  final exploreLocalDataSource = ExploreLocalDataSourceImpl(autoCacheService: localCacheService);
+  final exploreRemoteDataSource = ExploreRemoteDataSourceImpl(firestore: firestore);
+  final exploreRepository = ExploreRepositoryImpl(
+    exploreRemoteDataSource: exploreRemoteDataSource,
+    exploreLocalDataSource: exploreLocalDataSource,
+  );
 
   // CalculateAddressGeohashUseCase (compartilhado entre Addresses e Explore)
   final calculateAddressGeohashUseCase = CalculateAddressGeohashUseCase();
@@ -902,6 +901,7 @@ Future <void> main() async {
   final favoriteLocalDataSource = FavoriteLocalDataSourceImpl(autoCache: localCacheService);
   final favoriteRemoteDataSource = FavoriteRemoteDataSourceImpl(firestore: firestore);
   final favoriteRepository = FavoriteRepositoryImpl(localDataSource: favoriteLocalDataSource, remoteDataSource: favoriteRemoteDataSource);
+  final isArtistFavoriteUseCase = IsArtistFavoriteUseCase(repository: favoriteRepository);
 
   // AppLists
   final appListsLocalDataSource = AppListsLocalDataSourceImpl(autoCacheService: localCacheService);
@@ -985,14 +985,14 @@ Future <void> main() async {
               syncArtistCompletenessIfChangedUseCase,
             ),
           ),
-          // BlocProvider(
-          //   create: (context) => _createExploreBloc(
-          //     exploreRepository,
-          //     calculateAddressGeohashUseCase,
-          //     favoriteRepository,
-          //     getUserUidUseCase,
-          //   ),
-          // ),
+          BlocProvider(
+            create: (context) => _createExploreBloc(
+              exploreRepository,
+              calculateAddressGeohashUseCase,
+              getUserUidUseCase,
+              isArtistFavoriteUseCase,
+            ),
+          ),
           BlocProvider(
             create: (context) => _createContractsBloc(
               contractRepository,

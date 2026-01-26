@@ -15,6 +15,7 @@ class WheelPickerDialog extends StatefulWidget {
   final int initialMinutes;
   final WheelPickerType type;
   final Duration? minimumDuration; // Apenas para type.duration
+  final int? minimumTimeInMinutes; // Horário mínimo em minutos (apenas para type.time)
 
   const WheelPickerDialog({
     super.key,
@@ -24,6 +25,7 @@ class WheelPickerDialog extends StatefulWidget {
     required this.initialMinutes,
     required this.type,
     this.minimumDuration,
+    this.minimumTimeInMinutes,
   });
 
   @override
@@ -73,6 +75,10 @@ class _WheelPickerDialogState extends State<WheelPickerDialog> {
   bool _isValid() {
     if (widget.type == WheelPickerType.duration && widget.minimumDuration != null) {
       return _getCurrentDuration() >= widget.minimumDuration!;
+    }
+    if (widget.type == WheelPickerType.time && widget.minimumTimeInMinutes != null) {
+      final currentTimeInMinutes = (_hours * 60) + _minutes;
+      return currentTimeInMinutes >= widget.minimumTimeInMinutes!;
     }
     return true;
   }
@@ -248,6 +254,7 @@ class _WheelPickerDialogState extends State<WheelPickerDialog> {
                 type: DialogButtonType.primary,
                 backgroundColor: colorScheme.onPrimaryContainer,
                 onPressed: _isValid() ? _onConfirm : null,
+                textColor: _isValid() ? colorScheme.primaryContainer : colorScheme.onPrimary.withOpacity(0.6),
               ),
             ),
           ],

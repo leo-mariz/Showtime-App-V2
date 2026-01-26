@@ -4,18 +4,25 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+// import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+// import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
 import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/tabs_section.dart';
+import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
+import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
+import 'package:app/features/explore/presentation/widgets/artist_availability_calendar.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage(deferredLoading: true)
-class ArtistProfileScreen extends StatelessWidget {
+class ArtistProfileScreen extends StatefulWidget {
   final ArtistEntity artist;
   final bool isFavorite;
   final bool viewOnly;
@@ -33,7 +40,26 @@ class ArtistProfileScreen extends StatelessWidget {
     // this.availability,
   });
 
-  void _onVideoTap(BuildContext context, String videoUrl) {
+  @override
+  State<ArtistProfileScreen> createState() => _ArtistProfileScreenState();
+}
+
+class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Buscar disponibilidades ao carregar a tela
+    if (widget.selectedAddress != null) {
+      context.read<ExploreBloc>().add(
+        GetArtistAllAvailabilitiesEvent(
+          artistId: widget.artist.uid!,
+          userAddress: widget.selectedAddress,
+        ),
+      );
+    }
+  }
+
+  void _onVideoTap(String videoUrl) {
     // TODO: Implementar abertura do vídeo em tela cheia
     showDialog(
       context: context,
@@ -74,31 +100,16 @@ class ArtistProfileScreen extends StatelessWidget {
   void _onRequestPressed(BuildContext context) {
     final router = context.router;
     
-    // Calcular preço e duração mínima
-    double pricePerHour = 0.0;
-    // if (availability != null) {
-    //   pricePerHour = availability!.valorShow;
-    // } else if (artist.professionalInfo?.hourlyRate != null) {
-    //   pricePerHour = artist.professionalInfo!.hourlyRate!;
-    // }
-
-    final minimumDuration = artist.professionalInfo?.minimumShowDuration != null
-        ? Duration(minutes: artist.professionalInfo!.minimumShowDuration!)
-        : const Duration(minutes: 30);
-    
-    if (selectedAddress == null) {
+    if (widget.selectedAddress == null) {
       // TODO: Mostrar erro ou selecionar endereço
       return;
     }
 
     router.push(
       RequestRoute(
-        selectedDate: selectedDate ?? DateTime.now(),
-        selectedAddress: selectedAddress!,
-        artist: artist,
-        pricePerHour: pricePerHour,
-        minimumDuration: minimumDuration,
-        // availability: availability,
+        selectedDate: widget.selectedDate ?? DateTime.now(),
+        selectedAddress: widget.selectedAddress!,
+        artist: widget.artist,
       ),
     );
   }
@@ -110,6 +121,7 @@ class ArtistProfileScreen extends StatelessWidget {
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
     final onPrimary = colorScheme.onPrimary;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
+    final artist = widget.artist;
 
     return BasePage(
       horizontalPadding: 0,
@@ -215,7 +227,7 @@ class ArtistProfileScreen extends StatelessWidget {
                           CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
                           const Spacer(),
                           FavoriteButton(
-                            isFavorite: isFavorite,
+                            isFavorite: widget.isFavorite,
                             onTap: () {
                               // TODO: Implementar toggle de favorito
                             },
@@ -237,10 +249,66 @@ class ArtistProfileScreen extends StatelessWidget {
                         DSSizedBoxSpacing.vertical(24),
                       ],
 
-                      // Tabs de Estilos/Talentos
+                      // Tabs de Estilos/Talentos/Calendário
                       TabsSection(
-                        artist: artist,
-                        onVideoTap: (videoUrl) => _onVideoTap(context, videoUrl),
+                        artist: widget.artist,
+                        onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
+                        calendarTab: widget.selectedAddress != null
+                            ? BlocBuilder<ExploreBloc, ExploreState>(
+                                builder: (context, state) {
+                                  if (state is GetArtistAllAvailabilitiesLoading) {
+                                    return Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(DSSize.width(24)),
+                                        child: CircularProgressIndicator(
+                                          color: colorScheme.primary,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  if (state is GetArtistAllAvailabilitiesFailure) {
+                                    return Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(DSSize.width(16)),
+                                        child: Text(
+                                          'Erro ao carregar disponibilidades: ${state.error}',
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            color: colorScheme.error,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  if (state is GetArtistsWithAvailabilitiesSuccess) {
+                                    return SingleChildScrollView(
+                                      child: ArtistAvailabilityCalendar(
+                                        availabilities: state.availabilities ?? [],
+                                        selectedDate: widget.selectedDate,
+                                        onDateSelected: (date) {
+                                          // TODO: Navegar para tela de solicitação ou atualizar estado
+                                        },
+                                      ),
+                                    );
+                                  }
+
+                                  return Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(DSSize.width(16)),
+                                      child: Text(
+                                        'Nenhuma disponibilidade encontrada',
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                            : null,
                       ),
 
                       DSSizedBoxSpacing.vertical(100), // Espaço para o footer

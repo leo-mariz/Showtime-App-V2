@@ -550,8 +550,9 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
       return 'Pagamento recusado';
     } else if (status == ContractStatusEnum.paymentFailed) {
       return 'Pagamento falhou';
+    } else{
+      return "Pendente";
     }
-    return status.name;
   }
 
   void _handleCancelRequest(BuildContext context) async {

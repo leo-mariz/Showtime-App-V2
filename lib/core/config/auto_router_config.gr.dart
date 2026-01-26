@@ -1045,8 +1045,6 @@ class RequestRoute extends _i33.PageRouteInfo<RequestRouteArgs> {
     required DateTime selectedDate,
     required _i35.AddressInfoEntity selectedAddress,
     required _i37.ArtistEntity artist,
-    required double pricePerHour,
-    required Duration minimumDuration,
     List<_i33.PageRouteInfo>? children,
   }) : super(
          RequestRoute.name,
@@ -1055,8 +1053,6 @@ class RequestRoute extends _i33.PageRouteInfo<RequestRouteArgs> {
            selectedDate: selectedDate,
            selectedAddress: selectedAddress,
            artist: artist,
-           pricePerHour: pricePerHour,
-           minimumDuration: minimumDuration,
          ),
          initialChildren: children,
        );
@@ -1074,8 +1070,6 @@ class RequestRoute extends _i33.PageRouteInfo<RequestRouteArgs> {
           selectedDate: args.selectedDate,
           selectedAddress: args.selectedAddress,
           artist: args.artist,
-          pricePerHour: args.pricePerHour,
-          minimumDuration: args.minimumDuration,
         ),
       );
     },
@@ -1088,8 +1082,6 @@ class RequestRouteArgs {
     required this.selectedDate,
     required this.selectedAddress,
     required this.artist,
-    required this.pricePerHour,
-    required this.minimumDuration,
   });
 
   final _i34.Key? key;
@@ -1100,13 +1092,9 @@ class RequestRouteArgs {
 
   final _i37.ArtistEntity artist;
 
-  final double pricePerHour;
-
-  final Duration minimumDuration;
-
   @override
   String toString() {
-    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, pricePerHour: $pricePerHour, minimumDuration: $minimumDuration}';
+    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist}';
   }
 
   @override
@@ -1116,9 +1104,7 @@ class RequestRouteArgs {
     return key == other.key &&
         selectedDate == other.selectedDate &&
         selectedAddress == other.selectedAddress &&
-        artist == other.artist &&
-        pricePerHour == other.pricePerHour &&
-        minimumDuration == other.minimumDuration;
+        artist == other.artist;
   }
 
   @override
@@ -1126,9 +1112,7 @@ class RequestRouteArgs {
       key.hashCode ^
       selectedDate.hashCode ^
       selectedAddress.hashCode ^
-      artist.hashCode ^
-      pricePerHour.hashCode ^
-      minimumDuration.hashCode;
+      artist.hashCode;
 }
 
 /// generated route for

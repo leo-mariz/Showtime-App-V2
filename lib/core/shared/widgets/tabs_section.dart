@@ -4,15 +4,17 @@ import 'package:app/core/shared/widgets/genre_chip.dart';
 import 'package:app/core/shared/widgets/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 
-/// Seção de tabs para Estilos e Talentos
+/// Seção de tabs para Estilos, Talentos e Calendário
 class TabsSection extends StatelessWidget {
   final ArtistEntity artist;
   final Function(String videoUrl)? onVideoTap;
+  final Widget? calendarTab; // Tab customizada para calendário
 
   const TabsSection({
     super.key,
     required this.artist,
     this.onVideoTap,
+    this.calendarTab,
   });
 
   bool get _hasGenres => 
@@ -27,6 +29,9 @@ class TabsSection extends StatelessWidget {
     final List<String> tabs = [];
     tabs.add('Estilos');
     tabs.add('Talentos');
+    if (calendarTab != null) {
+      tabs.add('Calendário');
+    }
 
     return DefaultTabController(
       length: tabs.length,
@@ -45,17 +50,27 @@ class TabsSection extends StatelessWidget {
             tabs: tabs.map((tab) => Tab(text: tab)).toList(),
           ),
           SizedBox(
-            height: _hasTalents ? DSSize.height(220) : DSSize.height(120),
+            height: _calculateTabHeight(),
             child: TabBarView(
               children: [
                 _buildGenresTab(context),
                 _buildTalentsTab(context),
+                if (calendarTab != null) calendarTab!,
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  double _calculateTabHeight() {
+    if (calendarTab != null) {
+      // Altura maior para o calendário
+      return DSSize.height(500);
+    }
+    // Altura padrão para Estilos/Talentos
+    return _hasTalents ? DSSize.height(220) : DSSize.height(120);
   }
 
   Widget _buildGenresTab(BuildContext context) {

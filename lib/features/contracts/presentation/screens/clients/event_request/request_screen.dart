@@ -150,18 +150,6 @@ class _RequestScreenState extends State<RequestScreen> {
     return '';
   }
 
-  // String _getClientUid() {
-  //   final userBloc = context.read<UsersBloc>();
-  //   final currentUserState = userBloc.state;
-  //   if (currentUserState is! GetUserDataSuccess) {
-  //     userBloc.add(GetUserDataEvent());
-  //   }
-  //   if (currentUserState is GetUserDataSuccess) {
-  //     return currentUserState.user.uid ?? '';
-  //   }
-  //   return '';
-  // }
-
   double _getClientRating() {
     final currentClientState = context.read<ClientsBloc>().state;
     if (currentClientState is! GetClientSuccess) {
@@ -547,6 +535,19 @@ class _RequestScreenState extends State<RequestScreen> {
     return null;
   }
 
+  Future<String?> _getClientUid() async {
+    final usersBloc = context.read<UsersBloc>();
+    final currentUserState = usersBloc.state;
+    if (currentUserState is! GetUserDataSuccess) {
+      usersBloc.add(GetUserDataEvent());
+    }
+    if (currentUserState is GetUserDataSuccess) {
+      return currentUserState.user.uid;
+    }
+    return null;
+  }
+
+
   Future<void> _onSubmit() async {
     setState(() {
       _hasAttemptedSubmit = true;
@@ -559,12 +560,7 @@ class _RequestScreenState extends State<RequestScreen> {
     }
 
     // Obter UID do cliente usando UsersBloc
-    final usersBloc = context.read<UsersBloc>();
-    final uidResult = await usersBloc.getUserUidUseCase.call();
-    final clientUid = uidResult.fold(
-      (failure) => null,
-      (uid) => uid,
-    );
+    final clientUid = await _getClientUid();
 
     if (clientUid == null || clientUid.isEmpty) {
       context.showError('Erro ao obter UID do usuário');
@@ -617,6 +613,7 @@ class _RequestScreenState extends State<RequestScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final onPrimary = colorScheme.onPrimary;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
+    final router = AutoRouter.of(context);
 
     return MultiBlocListener(
       listeners: [
@@ -625,12 +622,13 @@ class _RequestScreenState extends State<RequestScreen> {
           listener: (context, state) {
             if (state is AddContractSuccess) {
               context.showSuccess('Solicitação enviada com sucesso!');
-              AutoRouter.of(context).pop();
+              router.maybePop();
             } else if (state is AddContractFailure) {
               context.showError(state.error);
             }
           },
         ),
+        
         // Listener para AppListsBloc - tipos de evento
         BlocListener<AppListsBloc, AppListsState>(
           listener: (context, state) {

@@ -85,9 +85,11 @@ class ConfirmShowUseCase {
         status: ContractStatusEnum.completed,
         keyCode: confirmationCode,
         showConfirmedAt: DateTime.now(),
+        statusChangedAt: DateTime.now(),
       );
 
       // Atualizar contrato usando UpdateContractUseCase
+      // O UpdateContractUseCase já atualiza o índice automaticamente
       final updateResult = await updateContractUseCase.call(updatedContract);
 
       return updateResult.fold(

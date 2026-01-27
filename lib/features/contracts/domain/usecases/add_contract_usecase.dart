@@ -3,6 +3,7 @@ import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Adicionar novo contrato
@@ -14,9 +15,11 @@ import 'package:dartz/dartz.dart';
 /// - Retornar UID do contrato criado
 class AddContractUseCase {
   final IContractRepository repository;
+  final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   AddContractUseCase({
     required this.repository,
+    this.updateContractsIndexUseCase,
   });
 
   /// Combina data (DateTime) e horário (String "HH:mm") em um DateTime completo
@@ -79,7 +82,24 @@ class AddContractUseCase {
 
       return result.fold(
         (failure) => Left(failure),
-        (contractUid) => Right(contractUid),
+        (contractUid) async {
+          // Buscar contrato criado para atualizar índice
+          final getResult = await repository.getContract(contractUid);
+          await getResult.fold(
+            (_) async {},
+            (createdContract) async {
+              // Atualizar índice de contratos (não bloqueia se falhar)
+              if (updateContractsIndexUseCase != null) {
+                await updateContractsIndexUseCase!.call(
+                  contract: createdContract.copyWith(
+                    statusChangedAt: DateTime.now(),
+                  ),
+                );
+              }
+            },
+          );
+          return Right(contractUid);
+        },
       );
     } catch (e) {
       return Left(ErrorHandler.handle(e));

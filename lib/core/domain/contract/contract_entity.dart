@@ -57,6 +57,13 @@ class ContractEntity with ContractEntityMappable {
   final RatingEntity? rateByClient;
   final RatingEntity? rateByArtist;
   
+  // Controle de avaliação do show (futuro)
+  final bool? showRatingRequested;      // Dialog de avaliação foi mostrado?
+  final bool? showRatingSkipped;       // Usuário pulou a avaliação?
+  final bool? showRatingCompleted;     // Avaliação foi feita?
+  final DateTime? showRatingRequestedAt; // Quando foi solicitado
+  final String? showRatingRequestedFor; // 'CLIENT' ou 'ARTIST' (quem deve avaliar)
+  
   // Timestamps
   final DateTime? createdAt;               // Data de criação da solicitação
   final DateTime? acceptedAt;         // Data de aceitação pelo artista
@@ -64,6 +71,7 @@ class ContractEntity with ContractEntityMappable {
   final DateTime? canceledAt;          // Data de cancelamento
   final String? canceledBy;            // Quem cancelou ('CLIENT' ou 'ARTIST')
   final String? cancelReason;          // Motivo do cancelamento
+  final DateTime? statusChangedAt;    // Data da última mudança de status (para rastreamento de notificações)
 
   final bool? isPaying;
   
@@ -94,12 +102,18 @@ class ContractEntity with ContractEntityMappable {
     this.ratingsPublishedAt,
     this.rateByClient,
     this.rateByArtist,
+    this.showRatingRequested,
+    this.showRatingSkipped,
+    this.showRatingCompleted,
+    this.showRatingRequestedAt,
+    this.showRatingRequestedFor,
     DateTime? createdAt,
     this.acceptedAt,
     this.rejectedAt,
     this.canceledAt,
     this.canceledBy,
     this.cancelReason,
+    this.statusChangedAt,
     this.isPaying = false,
   }) : createdAt = createdAt ?? DateTime.now();
   

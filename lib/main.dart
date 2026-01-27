@@ -50,7 +50,9 @@ import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart'
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
 import 'package:app/features/artist_dashboard/domain/usecases/calculate_acceptance_rate_usecase.dart';
 import 'package:app/features/artist_dashboard/domain/usecases/calculate_completed_events_usecase.dart';
 import 'package:app/features/artist_dashboard/domain/usecases/calculate_monthly_earnings_usecase.dart';
@@ -668,18 +670,21 @@ ContractsBloc _createContractsBloc(
   IFirebaseFunctionsService firebaseFunctionsService,
   MercadoPagoService mercadoPagoService,
 ) {
+  // Criar UseCase de atualização de índice (compartilhado)
+  final updateContractsIndexUseCase = UpdateContractsIndexUseCase(repository: contractRepository);
+  
   // Criar UseCases
   final getContractUseCase = GetContractUseCase(repository: contractRepository);
   final getContractsByClientUseCase = GetContractsByClientUseCase(repository: contractRepository);
   final getContractsByArtistUseCase = GetContractsByArtistUseCase(repository: contractRepository);
   final getContractsByGroupUseCase = GetContractsByGroupUseCase(repository: contractRepository);
-  final addContractUseCase = AddContractUseCase(repository: contractRepository);
-  final updateContractUseCase = UpdateContractUseCase(repository: contractRepository);
+  final addContractUseCase = AddContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final updateContractUseCase = UpdateContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
-  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService);
-  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository);
+  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository);
-  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository);
+  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
   final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, contractRepository: contractRepository);
   final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
@@ -831,6 +836,21 @@ UnreadCountBloc _createUnreadCountBloc(
   return UnreadCountBloc(
     getUserUidUseCase: getUserUidUseCase,
     getUnreadCountUseCase: getUnreadCountUseCase,
+  );
+}
+
+/// Factory function para criar o PendingContractsCountBloc com todas as dependências
+/// 
+/// Este BLoC usa um stream otimizado que escuta apenas o documento de índice
+/// user_contracts_index/{userId}, não todos os contratos.
+PendingContractsCountBloc _createPendingContractsCountBloc(
+  IContractRepository contractRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar e retornar PendingContractsCountBloc
+  return PendingContractsCountBloc(
+    getUserUidUseCase: getUserUidUseCase,
+    contractRepository: contractRepository,
   );
 }
 
@@ -1073,6 +1093,12 @@ Future <void> main() async {
               getUserUidUseCase,
               firebaseFunctionsService,
               mercadoPagoService,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createPendingContractsCountBloc(
+              contractRepository,
+              getUserUidUseCase,
             ),
           ),
           BlocProvider(

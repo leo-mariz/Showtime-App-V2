@@ -91,10 +91,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     context.read<MessagesBloc>().add(LoadMessagesEvent(chatId: widget.chatId));
     
     // Marcar mensagens como lidas quando abrir a conversa (após um pequeno delay para garantir que as mensagens foram carregadas)
+    // Só marcar se houver mensagens não lidas para evitar chamadas desnecessárias
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        // ignore: use_build_context_synchronously
-        context.read<MessagesBloc>().add(MarkMessagesAsReadEvent(chatId: widget.chatId));
+      if (mounted && _currentUserId != null) {
+        // Verificar se há mensagens não lidas antes de marcar como lido
+        final unreadCount = widget.chat.getUnreadCountForUser(_currentUserId!);
+        if (unreadCount > 0) {
+          // ignore: use_build_context_synchronously
+          context.read<MessagesBloc>().add(MarkMessagesAsReadEvent(chatId: widget.chatId));
+        }
       }
     });
   }

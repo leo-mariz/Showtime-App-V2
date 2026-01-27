@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Aceitar uma solicitação de contrato
@@ -17,10 +18,12 @@ import 'package:dartz/dartz.dart';
 class AcceptContractUseCase {
   final IContractRepository repository;
   final IFirebaseFunctionsService firebaseFunctionsService;
+  final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   AcceptContractUseCase({
     required this.repository,
     required this.firebaseFunctionsService,
+    this.updateContractsIndexUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -63,6 +66,7 @@ class AcceptContractUseCase {
         status: ContractStatusEnum.paymentPending,
         acceptedAt: DateTime.now(),
         linkPayment: paymentLink,
+        statusChangedAt: DateTime.now(),
       );
 
       // Atualizar contrato
@@ -70,7 +74,16 @@ class AcceptContractUseCase {
 
       return updateResult.fold(
         (failure) => Left(failure),
-        (_) => const Right(null),
+        (_) async {
+          // Atualizar índice de contratos (não bloqueia se falhar)
+          if (updateContractsIndexUseCase != null) {
+            await updateContractsIndexUseCase!.call(
+              contract: updatedContract,
+              oldStatus: contract.status,
+            );
+          }
+          return const Right(null);
+        },
       );
     } catch (e) {
       return Left(ErrorHandler.handle(e));

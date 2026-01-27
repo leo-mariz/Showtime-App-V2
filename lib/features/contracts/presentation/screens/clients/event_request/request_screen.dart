@@ -538,10 +538,12 @@ class _RequestScreenState extends State<RequestScreen> {
   Future<String?> _getClientUid() async {
     final usersBloc = context.read<UsersBloc>();
     final currentUserState = usersBloc.state;
+    print('currentUserState: $currentUserState');
     if (currentUserState is! GetUserDataSuccess) {
       usersBloc.add(GetUserDataEvent());
     }
     if (currentUserState is GetUserDataSuccess) {
+      print('currentUserState.user.uid: ${currentUserState.user.uid}');
       return currentUserState.user.uid;
     }
     return null;
@@ -563,7 +565,6 @@ class _RequestScreenState extends State<RequestScreen> {
     final clientUid = await _getClientUid();
 
     if (clientUid == null || clientUid.isEmpty) {
-      context.showError('Erro ao obter UID do usuário');
       return;
     }
 

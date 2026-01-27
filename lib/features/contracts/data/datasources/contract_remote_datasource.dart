@@ -2,6 +2,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/domain/contract/key_code_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/features/contracts/domain/entities/user_contracts_index_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -57,6 +58,31 @@ abstract class IContractRemoteDataSource {
   /// Salva/atualiza o código de confirmação (keyCode) de um contrato
   /// Lança [ServerException] em caso de erro
   Future<void> setKeyCode(String contractUid, String keyCode);
+
+  // ==================== CONTRACTS INDEX OPERATIONS ====================
+
+  /// Stream do índice de contratos do usuário
+  /// 
+  /// Escuta o documento user_contracts_index/{userId} que contém:
+  /// - Contadores totais por tab
+  /// - Contadores de não vistos por tab
+  /// - Timestamps de última visualização
+  /// 
+  /// Lança [ServerException] em caso de erro
+  Stream<UserContractsIndexEntity> getContractsIndexStream(String userId);
+
+  /// Marca uma tab como vista
+  /// 
+  /// Atualiza o timestamp lastSeenTab{index} no índice
+  /// [isArtist] - Define qual role usar (artista ou cliente) para marcar como visto
+  /// Lança [ServerException] em caso de erro
+  Future<void> markTabAsSeen(String userId, int tabIndex, {bool isArtist = false});
+
+  /// Atualiza o índice de contratos com os valores fornecidos
+  /// 
+  /// [updates] - Map com os campos a serem atualizados
+  /// Lança [ServerException] em caso de erro
+  Future<void> updateContractsIndex(String userId, Map<String, dynamic> updates);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -67,6 +93,40 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
   /// Converte todos os Timestamps do Firestore para DateTime no mapa
   /// Isso é necessário porque o dart_mappable espera DateTime, não Timestamp
+  /// Converte Timestamps do índice de contratos para DateTime
+  Map<String, dynamic> _convertIndexTimestampsToDateTime(Map<String, dynamic> map) {
+    final convertedMap = Map<String, dynamic>.from(map);
+    
+    // Lista de campos que podem ser Timestamp no índice
+    final indexDateFields = [
+      'lastSeenArtistTab0',
+      'lastSeenArtistTab1',
+      'lastSeenArtistTab2',
+      'lastSeenClientTab0',
+      'lastSeenClientTab1',
+      'lastSeenClientTab2',
+      'lastUpdate',
+    ];
+    
+    // Converter campos de data do índice
+    for (final field in indexDateFields) {
+      if (convertedMap.containsKey(field) && convertedMap[field] != null) {
+        if (convertedMap[field] is Timestamp) {
+          convertedMap[field] = (convertedMap[field] as Timestamp).toDate();
+        } else if (convertedMap[field] is String) {
+          // Se for String ISO, tentar converter
+          try {
+            convertedMap[field] = DateTime.parse(convertedMap[field] as String);
+          } catch (e) {
+            debugPrint('⚠️ Erro ao converter $field de String para DateTime: $e');
+          }
+        }
+      }
+    }
+    
+    return convertedMap;
+  }
+
   Map<String, dynamic> _convertTimestampsToDateTime(Map<String, dynamic> map) {
     final convertedMap = Map<String, dynamic>.from(map);
     
@@ -535,6 +595,125 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       
       throw ServerException(
         'Erro inesperado ao salvar código de confirmação',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  // ==================== CONTRACTS INDEX OPERATIONS ====================
+
+  @override
+  Stream<UserContractsIndexEntity> getContractsIndexStream(String userId) {
+    try {
+      return UserContractsIndexEntityReference.firebaseStreamReference(firestore, userId)
+          .map((doc) {
+        if (!doc.exists) {
+          // Retornar entidade padrão se documento não existe
+          debugPrint('📊 [ContractsIndex] Documento não existe para userId: $userId');
+          return UserContractsIndexEntity();
+        }
+        
+        final data = doc.data()!;
+        debugPrint('📊 [ContractsIndex] Dados recebidos: $data');
+        
+        // Converter Timestamps para DateTime antes do mapeamento
+        // O TimestampHook não está funcionando corretamente, então fazemos manualmente
+        final convertedData = _convertIndexTimestampsToDateTime(data);
+        
+        // Tentar mapear mesmo se alguns campos estiverem faltando
+        // O mapper vai usar valores padrão (0) para campos ausentes
+        try {
+          final entity = UserContractsIndexEntityMapper.fromMap(convertedData);
+          debugPrint('📊 [ContractsIndex] Entidade mapeada - Artist Tab0: ${entity.artistTab0Unseen}, Client Tab0: ${entity.clientTab0Unseen}');
+          return entity;
+        } catch (e) {
+          debugPrint('❌ [ContractsIndex] Erro ao mapear: $e');
+          debugPrint('❌ [ContractsIndex] Dados convertidos: $convertedData');
+          // Se falhar o mapeamento, retornar entidade padrão
+          return UserContractsIndexEntity();
+        }
+      });
+    } catch (e) {
+      debugPrint('❌ [ContractsIndex] Erro ao criar stream: $e');
+      throw ServerException('Erro ao criar stream do índice de contratos: $e');
+    }
+  }
+
+  @override
+  Future<void> markTabAsSeen(String userId, int tabIndex, {bool isArtist = false}) async {
+    try {
+      if (tabIndex < 0 || tabIndex > 2) {
+        throw const ValidationException('Índice de tab inválido. Deve ser 0, 1 ou 2');
+      }
+
+      final now = Timestamp.now();
+      final rolePrefix = isArtist ? 'artist' : 'client';
+      final fieldName = 'lastSeen${rolePrefix[0].toUpperCase()}${rolePrefix.substring(1)}Tab$tabIndex';
+      final unseenFieldName = '${rolePrefix}Tab${tabIndex}Unseen';
+
+      // Marcar como visto: atualizar timestamp E zerar contador de não vistos
+      // Quando o usuário vê a tab, todos os contratos que estavam lá são considerados "vistos"
+      await UserContractsIndexEntityReference.firebaseReference(firestore, userId)
+          .set({
+        fieldName: now,
+        unseenFieldName: 0, // Zerar contador de não vistos
+        'lastUpdate': now,
+      }, SetOptions(merge: true));
+      
+      debugPrint('✅ [ContractsIndex] Tab $tabIndex marcada como vista (Role: $rolePrefix) - Unseen zerado');
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao marcar tab como vista no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      
+      throw ServerException(
+        'Erro inesperado ao marcar tab como vista',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> updateContractsIndex(String userId, Map<String, dynamic> updates) async {
+    try {
+      if (userId.isEmpty) {
+        throw const ValidationException('UID do usuário não pode ser vazio');
+      }
+
+      // Converter DateTime para Timestamp se necessário
+      final convertedUpdates = <String, dynamic>{};
+      for (final entry in updates.entries) {
+        if (entry.value is DateTime) {
+          convertedUpdates[entry.key] = Timestamp.fromDate(entry.value as DateTime);
+        } else {
+          convertedUpdates[entry.key] = entry.value;
+        }
+      }
+
+      // Adicionar timestamp de atualização
+      convertedUpdates['lastUpdate'] = Timestamp.now();
+
+      await UserContractsIndexEntityReference.firebaseReference(firestore, userId)
+          .set(convertedUpdates, SetOptions(merge: true));
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao atualizar índice de contratos no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      
+      throw ServerException(
+        'Erro inesperado ao atualizar índice de contratos',
         originalError: e,
         stackTrace: stackTrace,
       );

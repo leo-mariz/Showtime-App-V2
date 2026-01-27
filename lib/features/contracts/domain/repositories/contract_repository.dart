@@ -1,5 +1,6 @@
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/features/contracts/domain/entities/user_contracts_index_entity.dart';
 import 'package:dartz/dartz.dart';
 
 /// Interface do Repository de Contracts
@@ -50,5 +51,26 @@ abstract class IContractRepository {
   
   /// Salva/atualiza o código de confirmação (keyCode) de um contrato
   Future<Either<Failure, void>> setKeyCode(String contractUid, String keyCode);
+
+  // ==================== CONTRACTS INDEX OPERATIONS ====================
+
+  /// Stream do índice de contratos do usuário
+  /// 
+  /// Escuta o documento user_contracts_index/{userId} que contém:
+  /// - Contadores totais por tab
+  /// - Contadores de não vistos por tab
+  /// - Timestamps de última visualização
+  Stream<UserContractsIndexEntity> getContractsIndexStream(String userId);
+
+  /// Marca uma tab como vista
+  /// 
+  /// Atualiza o timestamp lastSeenTab{index} no índice
+  /// [isArtist] - Define qual role usar (artista ou cliente) para marcar como visto
+  Future<Either<Failure, void>> markTabAsSeen(String userId, int tabIndex, {bool isArtist = false});
+
+  /// Atualiza o índice de contratos com os valores fornecidos
+  /// 
+  /// [updates] - Map com os campos a serem atualizados (ex: {'tab0Total': 5, 'tab0Unseen': 2})
+  Future<Either<Failure, void>> updateContractsIndex(String userId, Map<String, dynamic> updates);
 }
 

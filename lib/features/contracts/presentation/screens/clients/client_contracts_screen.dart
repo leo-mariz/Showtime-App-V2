@@ -10,7 +10,10 @@ import 'package:app/core/shared/widgets/card_action_button.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/states/pending_contracts_count_states.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_card.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -37,15 +40,49 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      setState(() {
-        _selectedTabIndex = _tabController.index;
-      });
+      final newIndex = _tabController.index;
+      if (newIndex != _selectedTabIndex) {
+        setState(() {
+          _selectedTabIndex = newIndex;
+        });
+        // Marcar tab como vista quando mudar
+        _markTabAsSeen(newIndex);
+      }
     });
     
     // Buscar contratos ao inicializar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadContracts();
+      // Carregar índice de contratos pendentes (como cliente)
+      context.read<PendingContractsCountBloc>().add(LoadPendingContractsCountEvent(isArtist: false));
+      // Não marcar tab inicial aqui - será marcada automaticamente quando o usuário interagir
+      // ou quando o listener do TabController detectar mudança
     });
+  }
+  
+  void _markTabAsSeen(int tabIndex) {
+    // Verificar se há itens não vistos antes de marcar como vista
+    final contractsCountState = context.read<PendingContractsCountBloc>().state;
+    if (contractsCountState is PendingContractsCountSuccess) {
+      // Obter contador de não vistos para a tab específica
+      int unseenCount = 0;
+      switch (tabIndex) {
+        case 0:
+          unseenCount = contractsCountState.tab0Unseen;
+          break;
+        case 1:
+          unseenCount = contractsCountState.tab1Unseen;
+          break;
+        case 2:
+          unseenCount = contractsCountState.tab2Unseen;
+          break;
+      }
+      
+      // Só marcar como vista se houver itens não vistos
+      if (unseenCount > 0) {
+        context.read<PendingContractsCountBloc>().add(MarkTabAsSeenEvent(tabIndex: tabIndex, isArtist: false));
+      }
+    }
   }
 
   Future<void> _loadContracts({bool forceRefresh = false}) async {
@@ -145,44 +182,142 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
         },
         child: BlocBuilder<ContractsBloc, ContractsState>(
           builder: (context, state) {
-            final filteredContracts = _filteredContracts;
-            return BasePage(
-              showAppBar: true,
-              appBarTitle: 'Solicitações',
-              child: Column(
-                children: [
-                  // Tabs
-                  Container(
-                    height: DSSize.height(36),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(DSSize.width(12)),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        color: colorScheme.onPrimaryContainer,
-                        borderRadius: BorderRadius.circular(DSSize.width(12)),
+            return BlocBuilder<PendingContractsCountBloc, PendingContractsCountState>(
+              builder: (context, contractsCountState) {
+                final filteredContracts = _filteredContracts;
+                
+                // Obter contadores de não vistos
+                int tab0Unseen = 0;
+                int tab1Unseen = 0;
+                int tab2Unseen = 0;
+                
+                if (contractsCountState is PendingContractsCountSuccess) {
+                  tab0Unseen = contractsCountState.tab0Unseen;
+                  tab1Unseen = contractsCountState.tab1Unseen;
+                  tab2Unseen = contractsCountState.tab2Unseen;
+                }
+                
+                return BasePage(
+                  showAppBar: true,
+                  appBarTitle: 'Solicitações',
+                  child: Column(
+                    children: [
+                      // Tabs
+                      Container(
+                        height: DSSize.height(36),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(DSSize.width(12)),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
+                            color: colorScheme.onPrimaryContainer,
+                            borderRadius: BorderRadius.circular(DSSize.width(12)),
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelColor: colorScheme.primaryContainer,
+                          unselectedLabelColor: onSurfaceVariant,
+                          labelStyle: textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onPrimary,
+                          ),
+                          unselectedLabelStyle: textTheme.bodyMedium,
+                          tabAlignment: TabAlignment.fill,
+                          padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
+                          labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
+                          dividerColor: Colors.transparent,
+                          tabs: [
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('Em aberto'),
+                                    if (tab0Unseen > 0) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.error,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          tab0Unseen > 99 ? '99+' : '$tab0Unseen',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onError,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('Confirmadas'),
+                                    if (tab1Unseen > 0) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.error,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          tab1Unseen > 99 ? '99+' : '$tab1Unseen',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onError,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text('Finalizados'),
+                                    if (tab2Unseen > 0) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.error,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Text(
+                                          tab2Unseen > 99 ? '99+' : '$tab2Unseen',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onError,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: colorScheme.primaryContainer,
-                      unselectedLabelColor: onSurfaceVariant,
-                      labelStyle: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onPrimary,
-                      ),
-                      unselectedLabelStyle: textTheme.bodyMedium,
-                      tabAlignment: TabAlignment.fill,
-                      padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
-                      labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
-                      dividerColor: Colors.transparent,
-                      tabs: const [
-                        Tab(text: 'Em aberto'),
-                        Tab(text: 'Confirmadas'),
-                        Tab(text: 'Finalizados'),
-                      ],
-                    ),
-                  ),
 
                   DSSizedBoxSpacing.vertical(24),
 
@@ -208,8 +343,10 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
               ),
             );
           },
-        ),
+        );
+        },
       ),
+    ),
     );
   }
 

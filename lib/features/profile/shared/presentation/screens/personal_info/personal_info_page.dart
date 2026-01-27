@@ -68,10 +68,14 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     DSSizedBoxSpacing.vertical(16),
+                    NonEditableField(
+                      title: 'E-mail',
+                      value: user!.email,
+                    ),
                     if (isCnpj && hasCnpjData)
                       Column(
                         children: [
-                          if (user!.cnpjUser?.companyName != null && 
+                          if (user.cnpjUser?.companyName != null && 
                               user.cnpjUser!.companyName!.isNotEmpty)
                             NonEditableField(
                               title: 'Nome da Empresa',
@@ -100,7 +104,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     if (!isCnpj && hasCpfData)
                       Column(
                         children: [
-                          if (user!.cpfUser?.cpf != null && 
+                          if (user.cpfUser?.cpf != null && 
                               user.cpfUser!.cpf!.isNotEmpty)
                             NonEditableField(
                               title: 'CPF',

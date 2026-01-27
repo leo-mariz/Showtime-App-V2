@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
+import 'package:app/features/contracts/domain/entities/user_contracts_index_entity.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:dartz/dartz.dart';
 
@@ -285,6 +286,35 @@ class ContractRepositoryImpl implements IContractRepository {
         await localDataSource.cacheContractsByGroup(contract.refGroup!, groupContracts);
       }
       
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  // ==================== CONTRACTS INDEX OPERATIONS ====================
+
+  @override
+  Stream<UserContractsIndexEntity> getContractsIndexStream(String userId) {
+    // Stream direto do Firestore para tempo real
+    // Não precisa cache pois é atualizado em tempo real
+    return remoteDataSource.getContractsIndexStream(userId);
+  }
+
+  @override
+  Future<Either<Failure, void>> markTabAsSeen(String userId, int tabIndex, {bool isArtist = false}) async {
+    try {
+      await remoteDataSource.markTabAsSeen(userId, tabIndex, isArtist: isArtist);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateContractsIndex(String userId, Map<String, dynamic> updates) async {
+    try {
+      await remoteDataSource.updateContractsIndex(userId, updates);
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

@@ -175,6 +175,38 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$rateByArtist,
     opt: true,
   );
+  static bool? _$showRatingRequested(ContractEntity v) => v.showRatingRequested;
+  static const Field<ContractEntity, bool> _f$showRatingRequested = Field(
+    'showRatingRequested',
+    _$showRatingRequested,
+    opt: true,
+  );
+  static bool? _$showRatingSkipped(ContractEntity v) => v.showRatingSkipped;
+  static const Field<ContractEntity, bool> _f$showRatingSkipped = Field(
+    'showRatingSkipped',
+    _$showRatingSkipped,
+    opt: true,
+  );
+  static bool? _$showRatingCompleted(ContractEntity v) => v.showRatingCompleted;
+  static const Field<ContractEntity, bool> _f$showRatingCompleted = Field(
+    'showRatingCompleted',
+    _$showRatingCompleted,
+    opt: true,
+  );
+  static DateTime? _$showRatingRequestedAt(ContractEntity v) =>
+      v.showRatingRequestedAt;
+  static const Field<ContractEntity, DateTime> _f$showRatingRequestedAt = Field(
+    'showRatingRequestedAt',
+    _$showRatingRequestedAt,
+    opt: true,
+  );
+  static String? _$showRatingRequestedFor(ContractEntity v) =>
+      v.showRatingRequestedFor;
+  static const Field<ContractEntity, String> _f$showRatingRequestedFor = Field(
+    'showRatingRequestedFor',
+    _$showRatingRequestedFor,
+    opt: true,
+  );
   static DateTime? _$createdAt(ContractEntity v) => v.createdAt;
   static const Field<ContractEntity, DateTime> _f$createdAt = Field(
     'createdAt',
@@ -209,6 +241,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
   static const Field<ContractEntity, String> _f$cancelReason = Field(
     'cancelReason',
     _$cancelReason,
+    opt: true,
+  );
+  static DateTime? _$statusChangedAt(ContractEntity v) => v.statusChangedAt;
+  static const Field<ContractEntity, DateTime> _f$statusChangedAt = Field(
+    'statusChangedAt',
+    _$statusChangedAt,
     opt: true,
   );
   static bool? _$isPaying(ContractEntity v) => v.isPaying;
@@ -247,12 +285,18 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #ratingsPublishedAt: _f$ratingsPublishedAt,
     #rateByClient: _f$rateByClient,
     #rateByArtist: _f$rateByArtist,
+    #showRatingRequested: _f$showRatingRequested,
+    #showRatingSkipped: _f$showRatingSkipped,
+    #showRatingCompleted: _f$showRatingCompleted,
+    #showRatingRequestedAt: _f$showRatingRequestedAt,
+    #showRatingRequestedFor: _f$showRatingRequestedFor,
     #createdAt: _f$createdAt,
     #acceptedAt: _f$acceptedAt,
     #rejectedAt: _f$rejectedAt,
     #canceledAt: _f$canceledAt,
     #canceledBy: _f$canceledBy,
     #cancelReason: _f$cancelReason,
+    #statusChangedAt: _f$statusChangedAt,
     #isPaying: _f$isPaying,
   };
 
@@ -284,12 +328,18 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       ratingsPublishedAt: data.dec(_f$ratingsPublishedAt),
       rateByClient: data.dec(_f$rateByClient),
       rateByArtist: data.dec(_f$rateByArtist),
+      showRatingRequested: data.dec(_f$showRatingRequested),
+      showRatingSkipped: data.dec(_f$showRatingSkipped),
+      showRatingCompleted: data.dec(_f$showRatingCompleted),
+      showRatingRequestedAt: data.dec(_f$showRatingRequestedAt),
+      showRatingRequestedFor: data.dec(_f$showRatingRequestedFor),
       createdAt: data.dec(_f$createdAt),
       acceptedAt: data.dec(_f$acceptedAt),
       rejectedAt: data.dec(_f$rejectedAt),
       canceledAt: data.dec(_f$canceledAt),
       canceledBy: data.dec(_f$canceledBy),
       cancelReason: data.dec(_f$cancelReason),
+      statusChangedAt: data.dec(_f$statusChangedAt),
       isPaying: data.dec(_f$isPaying),
     );
   }
@@ -394,12 +444,18 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? ratingsPublishedAt,
     RatingEntity? rateByClient,
     RatingEntity? rateByArtist,
+    bool? showRatingRequested,
+    bool? showRatingSkipped,
+    bool? showRatingCompleted,
+    DateTime? showRatingRequestedAt,
+    String? showRatingRequestedFor,
     DateTime? createdAt,
     DateTime? acceptedAt,
     DateTime? rejectedAt,
     DateTime? canceledAt,
     String? canceledBy,
     String? cancelReason,
+    DateTime? statusChangedAt,
     bool? isPaying,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -464,12 +520,18 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? ratingsPublishedAt = $none,
     Object? rateByClient = $none,
     Object? rateByArtist = $none,
+    Object? showRatingRequested = $none,
+    Object? showRatingSkipped = $none,
+    Object? showRatingCompleted = $none,
+    Object? showRatingRequestedAt = $none,
+    Object? showRatingRequestedFor = $none,
     Object? createdAt = $none,
     Object? acceptedAt = $none,
     Object? rejectedAt = $none,
     Object? canceledAt = $none,
     Object? canceledBy = $none,
     Object? cancelReason = $none,
+    Object? statusChangedAt = $none,
     Object? isPaying = $none,
   }) => $apply(
     FieldCopyWithData({
@@ -500,12 +562,22 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (ratingsPublishedAt != $none) #ratingsPublishedAt: ratingsPublishedAt,
       if (rateByClient != $none) #rateByClient: rateByClient,
       if (rateByArtist != $none) #rateByArtist: rateByArtist,
+      if (showRatingRequested != $none)
+        #showRatingRequested: showRatingRequested,
+      if (showRatingSkipped != $none) #showRatingSkipped: showRatingSkipped,
+      if (showRatingCompleted != $none)
+        #showRatingCompleted: showRatingCompleted,
+      if (showRatingRequestedAt != $none)
+        #showRatingRequestedAt: showRatingRequestedAt,
+      if (showRatingRequestedFor != $none)
+        #showRatingRequestedFor: showRatingRequestedFor,
       if (createdAt != $none) #createdAt: createdAt,
       if (acceptedAt != $none) #acceptedAt: acceptedAt,
       if (rejectedAt != $none) #rejectedAt: rejectedAt,
       if (canceledAt != $none) #canceledAt: canceledAt,
       if (canceledBy != $none) #canceledBy: canceledBy,
       if (cancelReason != $none) #cancelReason: cancelReason,
+      if (statusChangedAt != $none) #statusChangedAt: statusChangedAt,
       if (isPaying != $none) #isPaying: isPaying,
     }),
   );
@@ -546,12 +618,33 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     ),
     rateByClient: data.get(#rateByClient, or: $value.rateByClient),
     rateByArtist: data.get(#rateByArtist, or: $value.rateByArtist),
+    showRatingRequested: data.get(
+      #showRatingRequested,
+      or: $value.showRatingRequested,
+    ),
+    showRatingSkipped: data.get(
+      #showRatingSkipped,
+      or: $value.showRatingSkipped,
+    ),
+    showRatingCompleted: data.get(
+      #showRatingCompleted,
+      or: $value.showRatingCompleted,
+    ),
+    showRatingRequestedAt: data.get(
+      #showRatingRequestedAt,
+      or: $value.showRatingRequestedAt,
+    ),
+    showRatingRequestedFor: data.get(
+      #showRatingRequestedFor,
+      or: $value.showRatingRequestedFor,
+    ),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     acceptedAt: data.get(#acceptedAt, or: $value.acceptedAt),
     rejectedAt: data.get(#rejectedAt, or: $value.rejectedAt),
     canceledAt: data.get(#canceledAt, or: $value.canceledAt),
     canceledBy: data.get(#canceledBy, or: $value.canceledBy),
     cancelReason: data.get(#cancelReason, or: $value.cancelReason),
+    statusChangedAt: data.get(#statusChangedAt, or: $value.statusChangedAt),
     isPaying: data.get(#isPaying, or: $value.isPaying),
   );
 

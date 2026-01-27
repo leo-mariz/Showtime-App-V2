@@ -2,6 +2,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Rejeitar uma solicitação de contrato
@@ -15,9 +16,11 @@ import 'package:dartz/dartz.dart';
 /// - Atualizar contrato no repositório
 class RejectContractUseCase {
   final IContractRepository repository;
+  final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   RejectContractUseCase({
     required this.repository,
+    this.updateContractsIndexUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -53,6 +56,7 @@ class RejectContractUseCase {
       final updatedContract = contract.copyWith(
         status: ContractStatusEnum.rejected,
         rejectedAt: DateTime.now(),
+        statusChangedAt: DateTime.now(),
       );
 
       // Atualizar contrato
@@ -60,7 +64,16 @@ class RejectContractUseCase {
 
       return updateResult.fold(
         (failure) => Left(failure),
-        (_) => const Right(null),
+        (_) async {
+          // Atualizar índice de contratos (não bloqueia se falhar)
+          if (updateContractsIndexUseCase != null) {
+            await updateContractsIndexUseCase!.call(
+              contract: updatedContract,
+              oldStatus: contract.status,
+            );
+          }
+          return const Right(null);
+        },
       );
     } catch (e) {
       return Left(ErrorHandler.handle(e));

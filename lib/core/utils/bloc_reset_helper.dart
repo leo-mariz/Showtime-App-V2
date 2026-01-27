@@ -34,6 +34,8 @@ import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart'
 import 'package:app/features/chat/presentation/bloc/messages/events/messages_events.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/events/unread_count_events.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 
 /// Helper para resetar todos os BLoCs ao estado inicial
 /// 
@@ -83,6 +85,8 @@ class BlocResetHelper {
       context.read<MessagesBloc>().add(ResetMessagesEvent());
       // Resetar UnreadCountBloc (cancela stream de contador de não lidas)
       context.read<UnreadCountBloc>().add(ResetUnreadCountEvent());
+      // Resetar PendingContractsCountBloc (cancela stream de contador de contratos pendentes)
+      context.read<PendingContractsCountBloc>().add(ResetPendingContractsCountEvent());
       // Resetar AuthBloc para AuthInitial (deve ser o último)
       context.read<AuthBloc>().add(ResetAuthEvent());
     } catch (e) {

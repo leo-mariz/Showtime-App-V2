@@ -3,6 +3,9 @@ import 'package:app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/events/unread_count_events.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/states/unread_count_states.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/states/pending_contracts_count_states.dart';
 import 'package:app/features/artist_dashboard/presentation/screens/artist_dashboard_screen.dart';
 import 'package:app/features/contracts/presentation/screens/artists/artist_contract_screen.dart';
 // import 'package:app/features/explore/presentation/screens/explore_screen.dart';
@@ -58,8 +61,8 @@ class _NavigationPageState extends State<NavigationPage> {
   // Páginas para professores
   List<Widget> get _artistPages => [
     ArtistDashboardScreen(),
-    ArtistContractsScreen(),
     AvailabilityCalendarScreen(),
+    ArtistContractsScreen(),
     ChatScreen(isArtist: true),
     ArtistProfileScreen(),
   ];
@@ -76,7 +79,7 @@ class _NavigationPageState extends State<NavigationPage> {
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.mic),
-      label: 'Solicitações',
+      label: 'Shows',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.message_rounded),
@@ -95,12 +98,12 @@ class _NavigationPageState extends State<NavigationPage> {
       label: 'Dashboard',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.mic),
-      label: 'Shows',
-    ),
-    BottomNavigationBarItem(
       icon: Icon(Icons.calendar_today),
       label: 'Calendário',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.mic),
+      label: 'Shows',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.message_rounded),
@@ -118,11 +121,13 @@ class _NavigationPageState extends State<NavigationPage> {
     isArtist = widget.isArtist;
     _pageController = PageController(initialPage: 0);
     
-    // Carregar contador de mensagens não lidas ao inicializar
-    // Este stream é otimizado e escuta apenas o campo totalUnread
+    // Carregar contadores ao inicializar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        // Carregar contador de mensagens não lidas
         context.read<UnreadCountBloc>().add(LoadUnreadCountEvent());
+        // Carregar contador de contratos pendentes (com role atual)
+        context.read<PendingContractsCountBloc>().add(LoadPendingContractsCountEvent(isArtist: isArtist));
       }
     });
   }
@@ -136,6 +141,12 @@ class _NavigationPageState extends State<NavigationPage> {
         // Resetar para a primeira página quando mudar o tipo de usuário
         _currentIndex = 0;
         _pageController.jumpToPage(0);
+      });
+      // Recarregar contador com novo role
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<PendingContractsCountBloc>().add(LoadPendingContractsCountEvent(isArtist: isArtist));
+        }
       });
     }
   }
@@ -167,33 +178,46 @@ class _NavigationPageState extends State<NavigationPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor = colorScheme.surface;
     
-    // Índice do item de chat no bottom nav (3 para ambos os perfis)
+    // Índices dos itens no bottom nav
     final chatIndex = 3;
+    final contractsIndex = isArtist ? 1 : 2; // Shows para artista, Solicitações para cliente
     
     return BlocBuilder<UnreadCountBloc, UnreadCountState>(
       builder: (context, unreadState) {
-        // Obter contador de mensagens não lidas do stream otimizado
-        final hasUnreadMessages = unreadState is UnreadCountSuccess && unreadState.count > 0;
-        
-        // Criar mapa de badges (apenas para o item de chat)
-        final badgeIndicators = hasUnreadMessages 
-            ? {chatIndex: true} 
-            : <int, bool>{};
-        
-        return Scaffold(
-          key: _navigationPageKey,
-          backgroundColor: backgroundColor,
-          body: PageView(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: pages,
-          ),
-          bottomNavigationBar: CustomBottomNavBar(
-            currentIndex: _currentIndex,
-            onTap: _onTabTapped,
-            items: navItems,
-            badgeIndicators: badgeIndicators,
-          ),
+        return BlocBuilder<PendingContractsCountBloc, PendingContractsCountState>(
+          builder: (context, contractsState) {
+            // Obter contador de mensagens não lidas
+            final hasUnreadMessages = unreadState is UnreadCountSuccess && unreadState.count > 0;
+            
+            // Obter contador de contratos pendentes (filtrado por role atual)
+            final hasPendingContracts = contractsState is PendingContractsCountSuccess && 
+                contractsState.totalUnseen > 0;
+            
+            // Criar mapa de badges
+            final badgeIndicators = <int, bool>{};
+            if (hasUnreadMessages) {
+              badgeIndicators[chatIndex] = true;
+            }
+            if (hasPendingContracts) {
+              badgeIndicators[contractsIndex] = true;
+            }
+            
+            return Scaffold(
+              key: _navigationPageKey,
+              backgroundColor: backgroundColor,
+              body: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: pages,
+              ),
+              bottomNavigationBar: CustomBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+                items: navItems,
+                badgeIndicators: badgeIndicators,
+              ),
+            );
+          },
         );
       },
     );

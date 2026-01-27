@@ -27,3 +27,6 @@ class SaveBankAccountEvent extends BankAccountEvent {
 
 class DeleteBankAccountEvent extends BankAccountEvent {}
 
+// ==================== RESET EVENT ====================
+
+class ResetBankAccountEvent extends BankAccountEvent {}

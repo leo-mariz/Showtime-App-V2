@@ -22,6 +22,7 @@ class AppListsBloc extends Bloc<AppListsEvent, AppListsState> {
     on<GetTalentsEvent>(_onGetTalentsEvent);
     on<GetEventTypesEvent>(_onGetEventTypesEvent);
     on<GetSupportSubjectsEvent>(_onGetSupportSubjectsEvent);
+    on<ResetAppListsEvent>(_onResetAppListsEvent);
   }
 
   // ==================== GET SPECIALTIES ====================
@@ -110,6 +111,15 @@ class AppListsBloc extends Bloc<AppListsEvent, AppListsState> {
         emit(AppListsInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetAppListsEvent(
+    ResetAppListsEvent event,
+    Emitter<AppListsState> emit,
+  ) async {
+    emit(AppListsInitial());
   }
 }
 

@@ -15,3 +15,7 @@ class GetArtistDashboardStatsEvent extends ArtistDashboardEvent {
   @override
   List<Object?> get props => [forceRefresh];
 }
+
+// ==================== RESET EVENT ====================
+
+class ResetArtistDashboardEvent extends ArtistDashboardEvent {}

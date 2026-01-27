@@ -34,3 +34,7 @@ class RemoveFavoriteEvent extends FavoritesEvent {
 // GET FAVORITE ARTISTS EVENTS ====================
 
 class GetFavoriteArtistsEvent extends FavoritesEvent {}
+
+// ==================== RESET EVENT ====================
+
+class ResetFavoritesEvent extends FavoritesEvent {}

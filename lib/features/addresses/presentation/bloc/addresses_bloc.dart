@@ -33,6 +33,7 @@ class AddressesBloc extends Bloc<AddressesEvent, AddressesState> {
     on<UpdateAddressEvent>(_onUpdateAddressEvent);
     on<DeleteAddressEvent>(_onDeleteAddressEvent);
     on<SetPrimaryAddressEvent>(_onSetPrimaryAddressEvent);
+    on<ResetAddressesEvent>(_onResetAddressesEvent);
   }
 
   // ==================== HELPERS ====================
@@ -196,6 +197,15 @@ class AddressesBloc extends Bloc<AddressesEvent, AddressesState> {
         emit(AddressesInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetAddressesEvent(
+    ResetAddressesEvent event,
+    Emitter<AddressesState> emit,
+  ) async {
+    emit(AddressesInitial());
   }
 }
 

@@ -70,3 +70,6 @@ class GetArtistAllAvailabilitiesEvent extends ExploreEvent {
   List<Object?> get props => [artistId, userAddress, forceRefresh];
 }
 
+// ==================== RESET EVENT ====================
+
+class ResetExploreEvent extends ExploreEvent {}

@@ -221,3 +221,6 @@ class RateClientEvent extends ContractsEvent {
   List<Object?> get props => [contractUid, rating, comment];
 }
 
+// ==================== RESET EVENT ====================
+
+class ResetContractsEvent extends ContractsEvent {}

@@ -21,3 +21,6 @@ class GetEventTypesEvent extends AppListsEvent {}
 
 class GetSupportSubjectsEvent extends AppListsEvent {}
 
+// ==================== RESET EVENT ====================
+
+class ResetAppListsEvent extends AppListsEvent {}

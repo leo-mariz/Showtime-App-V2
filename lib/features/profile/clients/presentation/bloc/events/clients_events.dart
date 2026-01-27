@@ -66,3 +66,7 @@ class UpdateClientAgreementEvent extends ClientsEvent {
   List<Object?> get props => [agreedToTerms];
 }
 
+
+// ==================== RESET EVENT ====================
+
+class ResetClientsEvent extends ClientsEvent {}

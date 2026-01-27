@@ -31,6 +31,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     on<DeleteGroupEvent>(_onDeleteGroupEvent);
     on<UpdateGroupNameEvent>(_onUpdateGroupNameEvent);
     on<UpdateGroupProfilePictureEvent>(_onUpdateGroupProfilePictureEvent);
+    on<ResetGroupsEvent>(_onResetGroupsEvent);
   }
 
   // ==================== HELPERS ====================
@@ -210,6 +211,15 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     // TODO: Implementar upload da imagem e atualização do grupo
     // Por enquanto, apenas emite erro
     emit(UpdateGroupProfilePictureFailure(error: 'Funcionalidade em desenvolvimento'));
+    emit(GroupsInitial());
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetGroupsEvent(
+    ResetGroupsEvent event,
+    Emitter<GroupsState> emit,
+  ) async {
     emit(GroupsInitial());
   }
 }

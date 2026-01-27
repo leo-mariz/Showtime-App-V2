@@ -79,6 +79,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<CheckNewEmailVerifiedEvent>(_onCheckNewEmailVerifiedEvent);
     on<ReauthenticateUserEvent>(_onReauthenticateUserEvent);
     on<SwitchUserTypeEvent>(_onSwitchUserTypeEvent);
+    on<ResetAuthEvent>(_onResetAuthEvent);
   }
 
   Future<void> _onRegisterUserEmailAndPasswordEvent(
@@ -350,7 +351,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       },
       (_) {
         emit(AuthLoggedOut());
-        emit(AuthInitial());
       },
     );
   }
@@ -535,5 +535,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  /// Reseta o AuthBloc ao estado inicial
+  void _onResetAuthEvent(
+    ResetAuthEvent event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(AuthInitial());
   }
 }

@@ -14,6 +14,7 @@ class DocumentsBloc extends Bloc<DocumentsEvent, DocumentsState> {
   }) : super(DocumentsInitial()) {
     on<GetDocumentsEvent>(_onGetDocumentsEvent);
     on<SetDocumentEvent>(_onSetDocumentEvent);
+    on<ResetDocumentsEvent>(_onResetDocumentsEvent);
   }
 
   // ==================== GET DOCUMENTS ====================
@@ -60,6 +61,15 @@ class DocumentsBloc extends Bloc<DocumentsEvent, DocumentsState> {
         emit(DocumentsInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetDocumentsEvent(
+    ResetDocumentsEvent event,
+    Emitter<DocumentsState> emit,
+  ) async {
+    emit(DocumentsInitial());
   }
 }
 

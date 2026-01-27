@@ -17,10 +17,12 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     required this.getUserUidUseCase,
     required this.checkCpfExistsUseCase,
     required this.checkCnpjExistsUseCase,
+
   }) : super(UsersInitial()) {
     on<GetUserDataEvent>(_onGetUserDataEvent);
     on<CheckCpfExistsEvent>(_onCheckCpfExistsEvent);
     on<CheckCnpjExistsEvent>(_onCheckCnpjExistsEvent);
+    on<ResetUsersEvent>(_onResetUsersEvent);
   }
 
   // ==================== HELPERS ====================
@@ -57,6 +59,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         emit(UsersInitial());
       },
       (user) {
+        print('🟢 [UsersBloc] Usuário carregado: ${user.uid}');
         emit(GetUserDataSuccess(user: user));
       },
     );
@@ -116,6 +119,15 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         emit(UsersInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetUsersEvent(
+    ResetUsersEvent event,
+    Emitter<UsersState> emit,
+  ) async {
+    emit(UsersInitial());
   }
 }
 

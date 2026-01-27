@@ -75,8 +75,6 @@ class ConfirmShowUseCase {
         (keyCode) => keyCode?.trim().toUpperCase(),
       );
 
-      print('normalizedInputCode: $normalizedInputCode');
-      print('normalizedContractCode: $normalizedContractCode');
 
       if (normalizedInputCode != normalizedContractCode) {
         return const Left(ValidationFailure('Código de confirmação inválido'));

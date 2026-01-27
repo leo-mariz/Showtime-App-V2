@@ -16,6 +16,7 @@ class ArtistDashboardBloc extends Bloc<ArtistDashboardEvent, ArtistDashboardStat
     required this.getArtistDashboardStatsUseCase,
   }) : super(ArtistDashboardInitial()) {
     on<GetArtistDashboardStatsEvent>(_onGetArtistDashboardStatsEvent);
+    on<ResetArtistDashboardEvent>(_onResetArtistDashboardEvent);
   }
 
   // ==================== GET DASHBOARD STATS ====================
@@ -39,5 +40,14 @@ class ArtistDashboardBloc extends Bloc<ArtistDashboardEvent, ArtistDashboardStat
         emit(GetArtistDashboardStatsSuccess(stats: stats));
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetArtistDashboardEvent(
+    ResetArtistDashboardEvent event,
+    Emitter<ArtistDashboardState> emit,
+  ) async {
+    emit(ArtistDashboardInitial());
   }
 }

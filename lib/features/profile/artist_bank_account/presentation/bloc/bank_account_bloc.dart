@@ -21,6 +21,7 @@ class BankAccountBloc extends Bloc<BankAccountEvent, BankAccountState> {
     on<GetBankAccountEvent>(_onGetBankAccountEvent);
     on<SaveBankAccountEvent>(_onSaveBankAccountEvent);
     on<DeleteBankAccountEvent>(_onDeleteBankAccountEvent);
+    on<ResetBankAccountEvent>(_onResetBankAccountEvent);
   }
 
   // ==================== HELPERS ====================
@@ -120,6 +121,15 @@ class BankAccountBloc extends Bloc<BankAccountEvent, BankAccountState> {
         emit(BankAccountInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetBankAccountEvent(
+    ResetBankAccountEvent event,
+    Emitter<BankAccountState> emit,
+  ) async {
+    emit(BankAccountInitial());
   }
 }
 

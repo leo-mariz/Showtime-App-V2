@@ -113,3 +113,8 @@ class SwitchUserTypeEvent extends AuthEvent {
   @override
   List<Object?> get props => [switchToArtist];
 }
+
+// ==================== RESET EVENT ====================
+
+/// Evento para resetar o AuthBloc ao estado inicial
+class ResetAuthEvent extends AuthEvent {}

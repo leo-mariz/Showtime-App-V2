@@ -41,6 +41,7 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
     on<UpdateTimeSlotEvent>(_onUpdateTimeSlotEvent);
     on<DeleteTimeSlotEvent>(_onDeleteTimeSlotEvent);
     on<UpdateAddressAndRadiusEvent>(_onUpdateAddressAndRadiusEvent);
+    on<ResetAvailabilityEvent>(_onResetAvailabilityEvent);
   }
 
   // ==================== INITIAL ====================
@@ -343,5 +344,14 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
         emit(AvailabilityInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetAvailabilityEvent(
+    ResetAvailabilityEvent event,
+    Emitter<AvailabilityState> emit,
+  ) async {
+    emit(AvailabilityInitial());
   }
 }

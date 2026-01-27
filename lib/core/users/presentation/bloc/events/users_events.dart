@@ -29,3 +29,7 @@ class CheckCnpjExistsEvent extends UsersEvent {
   List<Object?> get props => [cnpj];
 }
 
+
+// ==================== RESET EVENT ====================
+
+class ResetUsersEvent extends UsersEvent {}

@@ -28,6 +28,7 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
       _onGetArtistsWithAvailabilitiesFilteredEvent,
     );
     on<GetArtistAllAvailabilitiesEvent>(_onGetArtistAllAvailabilitiesEvent);
+    on<ResetExploreEvent>(_onResetExploreEvent);
   }
 
 //   // ==================== HELPERS ====================
@@ -131,6 +132,15 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
         ));
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetExploreEvent(
+    ResetExploreEvent event,
+    Emitter<ExploreState> emit,
+  ) async {
+    emit(ExploreInitial());
   }
 }
 

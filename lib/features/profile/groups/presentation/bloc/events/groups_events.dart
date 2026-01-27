@@ -94,3 +94,6 @@ class UpdateGroupProfilePictureEvent extends GroupsEvent {
   List<Object?> get props => [groupUid, localFilePath];
 }
 
+// ==================== RESET EVENT ====================
+
+class ResetGroupsEvent extends GroupsEvent {}

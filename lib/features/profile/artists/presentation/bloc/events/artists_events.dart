@@ -120,3 +120,6 @@ class CheckArtistNameExistsEvent extends ArtistsEvent {
   List<Object?> get props => [artistName];
 }
 
+// ==================== RESET EVENT ====================
+
+class ResetArtistsEvent extends ArtistsEvent {}

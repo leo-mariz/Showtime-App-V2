@@ -79,8 +79,7 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
             key == 'password' ||
             key == 'isCnpj' ||
             key == 'cpfUser' ||
-            key == 'cnpjUser' ||
-            key == 'uid',
+            key == 'cnpjUser'
       );
 
       await documentReference.set(userMap, SetOptions(merge: true));

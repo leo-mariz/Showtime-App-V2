@@ -59,7 +59,17 @@ import 'package:app/features/artist_dashboard/domain/usecases/calculate_next_sho
 import 'package:app/features/artist_dashboard/domain/usecases/calculate_pending_requests_usecase.dart';
 import 'package:app/features/artist_dashboard/domain/usecases/calculate_upcoming_events_usecase.dart';
 import 'package:app/features/artist_dashboard/domain/usecases/get_artist_dashboard_stats_usecase.dart';
-import 'package:app/features/chat/presentation/bloc/chat_bloc.dart';
+import 'package:app/features/chat/data/datasources/chat_local_datasource.dart';
+import 'package:app/features/chat/data/datasources/chat_remote_datasource.dart';
+import 'package:app/features/chat/data/repositories/chat_repository_impl.dart';
+import 'package:app/features/chat/domain/repositories/chat_repository.dart';
+import 'package:app/features/chat/domain/usecases/create_chat_usecase.dart';
+import 'package:app/features/chat/domain/usecases/get_messages_paginated_usecase.dart';
+import 'package:app/features/chat/domain/usecases/mark_messages_as_read_usecase.dart';
+import 'package:app/features/chat/domain/usecases/send_message_usecase.dart';
+import 'package:app/features/chat/domain/usecases/update_typing_status_usecase.dart';
+import 'package:app/features/chat/presentation/bloc/chats_list/chats_list_bloc.dart';
+import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
@@ -766,6 +776,44 @@ ArtistDashboardBloc _createArtistDashboardBloc(
   );
 }
 
+/// Factory function para criar o ChatsListBloc com todas as dependências
+ChatsListBloc _createChatsListBloc(
+  IChatRepository chatRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final createChatUseCase = CreateChatUseCase(repository: chatRepository);
+
+  // Criar e retornar ChatsListBloc
+  return ChatsListBloc(
+    getUserUidUseCase: getUserUidUseCase,
+    createChatUseCase: createChatUseCase,
+    chatRepository: chatRepository,
+  );
+}
+
+/// Factory function para criar o MessagesBloc com todas as dependências
+MessagesBloc _createMessagesBloc(
+  IChatRepository chatRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCases
+  final sendMessageUseCase = SendMessageUseCase(repository: chatRepository);
+  final markMessagesAsReadUseCase = MarkMessagesAsReadUseCase(repository: chatRepository);
+  final updateTypingStatusUseCase = UpdateTypingStatusUseCase(repository: chatRepository);
+  final getMessagesPaginatedUseCase = GetMessagesPaginatedUseCase(repository: chatRepository);
+
+  // Criar e retornar MessagesBloc
+  return MessagesBloc(
+    getUserUidUseCase: getUserUidUseCase,
+    sendMessageUseCase: sendMessageUseCase,
+    getMessagesPaginatedUseCase: getMessagesPaginatedUseCase,
+    markMessagesAsReadUseCase: markMessagesAsReadUseCase,
+    updateTypingStatusUseCase: updateTypingStatusUseCase,
+    chatRepository: chatRepository,
+  );
+}
+
 
 
 Future <void> main() async {
@@ -909,10 +957,19 @@ Future <void> main() async {
     remoteDataSource: appListsRemoteDataSource,
   );
 
+  // Chat
+  final chatLocalDataSource = ChatLocalDataSourceImpl(autoCache: localCacheService);
+  final chatRemoteDataSource = ChatRemoteDataSourceImpl(firestore: firestore);
+  final chatRepository = ChatRepositoryImpl(
+    remoteDataSource: chatRemoteDataSource,
+    localDataSource: chatLocalDataSource,
+  );
+
   // SyncArtistCompletenessIfChangedUseCase
 
   runApp(MultiBlocProvider(
         providers: [
+          // BLoCs
           BlocProvider(
             create: (context) => _createAuthBloc(
               authServices, 
@@ -1011,7 +1068,16 @@ Future <void> main() async {
             ),
           ),
           BlocProvider(
-            create: (context) => ChatBloc(),
+            create: (context) => _createChatsListBloc(
+              chatRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createMessagesBloc(
+              chatRepository,
+              getUserUidUseCase,
+            ),
           ),
           BlocProvider(
             create: (context) => _createArtistDashboardBloc(

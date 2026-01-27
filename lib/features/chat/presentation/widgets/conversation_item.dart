@@ -2,20 +2,23 @@ import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
-import 'package:app/core/domain/chat/conversation_entity.dart';
+import 'package:app/features/chat/domain/entities/chat_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Widget para item de conversa na lista de conversas
 /// 
+/// Widget de UI pura - recebe dados via parâmetros
 /// Exibe avatar, nome, última mensagem, timestamp e indicador de não lidas
 class ConversationItem extends StatelessWidget {
-  final ConversationEntity conversation;
+  final ChatEntity chat;
+  final String? currentUserId;
   final VoidCallback onTap;
 
   const ConversationItem({
     super.key,
-    required this.conversation,
+    required this.chat,
+    required this.currentUserId,
     required this.onTap,
   });
 
@@ -23,6 +26,20 @@ class ConversationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    // Determinar dados do outro participante
+    final otherUserName = currentUserId != null
+        ? chat.getOtherUserName(currentUserId!)
+        : chat.artistName;
+    final otherUserPhoto = currentUserId != null
+        ? chat.getOtherUserPhoto(currentUserId!)
+        : chat.artistPhoto;
+    final unreadCount = currentUserId != null
+        ? chat.getUnreadCountForUser(currentUserId!)
+        : 0;
+    final isTyping = currentUserId != null
+        ? chat.isOtherUserTyping(currentUserId!)
+        : false;
 
     return InkWell(
       onTap: onTap,
@@ -33,32 +50,10 @@ class ConversationItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar
-            Stack(
-              children: [
-                CustomCircleAvatar(
-                  imageUrl: conversation.recipientAvatar,
-                  size: 56,
-                ),
-                // Indicador de online
-                if (conversation.isOnline)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: DSSize.width(14),
-                      height: DSSize.height(14),
-                      decoration: BoxDecoration(
-                        color: colorScheme.onSecondaryContainer,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colorScheme.surface,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            // Avatar (sem indicador de online - não necessário)
+            CustomCircleAvatar(
+              imageUrl: otherUserPhoto,
+              size: 56,
             ),
             DSSizedBoxSpacing.horizontal(12),
             // Conteúdo
@@ -72,9 +67,9 @@ class ConversationItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.recipientName,
+                          otherUserName,
                           style: textTheme.titleSmall?.copyWith(
-                            fontWeight: conversation.unreadCount > 0
+                            fontWeight: unreadCount > 0
                                 ? FontWeight.bold
                                 : FontWeight.w400,
                           ),
@@ -82,9 +77,9 @@ class ConversationItem extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (conversation.lastMessageTimestamp != null)
+                      if (chat.lastMessageAt != null)
                         Text(
-                          _formatTimestamp(conversation.lastMessageTimestamp!),
+                          _formatTimestamp(chat.lastMessageAt!),
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -92,18 +87,16 @@ class ConversationItem extends StatelessWidget {
                     ],
                   ),
                   // Referência do contrato
-                  if (conversation.contractReference.isNotEmpty) ...[
-                    DSSizedBoxSpacing.vertical(2),
-                    Text(
-                      conversation.contractReference,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  DSSizedBoxSpacing.vertical(2),
+                  Text(
+                    'Contrato #${chat.contractId}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      fontSize: 12,
                     ),
-                  ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   DSSizedBoxSpacing.vertical(4),
                   // Última mensagem e contador de não lidas
                   Row(
@@ -111,18 +104,23 @@ class ConversationItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.lastMessage ?? 'Nenhuma mensagem ainda',
+                          isTyping
+                              ? 'Digitando...'
+                              : (chat.lastMessage ?? 'Nenhuma mensagem ainda'),
                           style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: conversation.unreadCount > 0
+                            color: isTyping
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: unreadCount > 0
                                 ? FontWeight.w500
                                 : FontWeight.w400,
+                            fontStyle: isTyping ? FontStyle.italic : null,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (conversation.unreadCount > 0) ...[
+                      if (unreadCount > 0) ...[
                         DSSizedBoxSpacing.horizontal(8),
                         Container(
                           padding: EdgeInsets.symmetric(
@@ -134,7 +132,7 @@ class ConversationItem extends StatelessWidget {
                             borderRadius: BorderRadius.circular(DSSize.width(12)),
                           ),
                           child: Text(
-                            conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
+                            unreadCount > 99 ? '99+' : '$unreadCount',
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.surface,
                               fontWeight: FontWeight.bold,

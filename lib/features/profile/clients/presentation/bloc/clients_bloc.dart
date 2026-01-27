@@ -33,6 +33,7 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
     on<UpdateClientPreferencesEvent>(_onUpdateClientPreferencesEvent);
     on<UpdateClientProfilePictureEvent>(_onUpdateClientProfilePictureEvent);
     on<UpdateClientAgreementEvent>(_onUpdateClientAgreementEvent);
+    on<ResetClientsEvent>(_onResetClientsEvent);
   }
 
   // ==================== HELPERS ====================
@@ -201,6 +202,15 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
         emit(ClientsInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetClientsEvent(
+    ResetClientsEvent event,
+    Emitter<ClientsState> emit,
+  ) async {
+    emit(ClientsInitial());
   }
 }
 

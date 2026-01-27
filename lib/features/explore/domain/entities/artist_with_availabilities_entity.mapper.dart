@@ -140,10 +140,7 @@ abstract class ArtistWithAvailabilitiesEntityCopyWith<
     >
   >
   get availabilities;
-  $R call({
-    ArtistEntity? artist,
-    List<AvailabilityDayEntity>? availabilities,  
-  });
+  $R call({ArtistEntity? artist, List<AvailabilityDayEntity>? availabilities});
   ArtistWithAvailabilitiesEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   );
@@ -188,12 +185,10 @@ class _ArtistWithAvailabilitiesEntityCopyWithImpl<$R, $Out>
   $R call({
     ArtistEntity? artist,
     List<AvailabilityDayEntity>? availabilities,
-    bool? isFavorite,
   }) => $apply(
     FieldCopyWithData({
       if (artist != null) #artist: artist,
       if (availabilities != null) #availabilities: availabilities,
-      if (isFavorite != null) #isFavorite: isFavorite,
     }),
   );
   @override

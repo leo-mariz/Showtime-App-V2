@@ -80,6 +80,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<RateArtistEvent>(_onRateArtistEvent);
     on<SkipRatingArtistEvent>(_onSkipRatingArtistEvent);
     on<RateClientEvent>(_onRateClientEvent);
+    on<ResetContractsEvent>(_onResetContractsEvent);
   }
 
   // ==================== HELPERS ====================
@@ -466,6 +467,15 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
         emit(ContractsInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetContractsEvent(
+    ResetContractsEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(ContractsInitial());
   }
 }
 

@@ -27,6 +27,7 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     on<AddFavoriteEvent>(_onAddFavoriteEvent);
     on<RemoveFavoriteEvent>(_onRemoveFavoriteEvent);
     on<GetFavoriteArtistsEvent>(_onGetFavoriteArtistsEvent);
+    on<ResetFavoritesEvent>(_onResetFavoritesEvent);
   }
 
   // ==================== HELPERS ====================
@@ -141,6 +142,15 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
         emit(GetFavoriteArtistsSuccess(artists: artists));
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetFavoritesEvent(
+    ResetFavoritesEvent event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    emit(FavoritesInitial());
   }
 }
 

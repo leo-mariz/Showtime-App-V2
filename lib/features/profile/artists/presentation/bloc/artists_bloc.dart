@@ -45,6 +45,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     on<UpdateArtistPresentationMediasEvent>(_onUpdateArtistPresentationMediasEvent);
     on<CheckArtistNameExistsEvent>(_onCheckArtistNameExistsEvent);
     on<AddArtistEvent>(_onAddArtistEvent);
+    on<ResetArtistsEvent>(_onResetArtistsEvent);
   }
 
   // ==================== HELPERS ====================
@@ -296,6 +297,15 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
         emit(ArtistsInitial());
       },
     );
+  }
+
+  // ==================== RESET ====================
+
+  Future<void> _onResetArtistsEvent(
+    ResetArtistsEvent event,
+    Emitter<ArtistsState> emit,
+  ) async {
+    emit(ArtistsInitial());
   }
 }
 

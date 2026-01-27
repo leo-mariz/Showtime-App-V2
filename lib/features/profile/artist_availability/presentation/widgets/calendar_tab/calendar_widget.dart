@@ -206,11 +206,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
         
         // Adicionar altura das rows anteriores
         totalHeight += rowIndex * dayCardHeight;
-        
-        print('🔍 [SCROLL] Mês: ${monthEntry.key}');
-        print('🔍 [SCROLL] Row (semana): $rowIndex');
-        print('🔍 [SCROLL] Posição total: ${totalHeight.toStringAsFixed(2)}px');
-        
+           
         return totalHeight;
       }
       
@@ -510,7 +506,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
       onTap: () {
         // Não permitir seleção de dias passados
         if (isPast) {
-          print('⚠️ [CALENDAR] Não é possível selecionar dia passado: $day');
           return;
         }
         
@@ -522,7 +517,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
       onLongPressStart: (details) {
         // Não permitir seleção de dias passados
         if (isPast) {
-          print('⚠️ [CALENDAR] Não é possível iniciar seleção em dia passado: $day');
           return;
         }
         
@@ -566,7 +560,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
           
           // Verificar se há datas válidas
           if (validDates.isEmpty) {
-            print('⚠️ [CALENDAR] Nenhuma data válida selecionada (todas no passado)');
             return;
           }
           

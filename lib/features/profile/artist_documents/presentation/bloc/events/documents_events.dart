@@ -24,4 +24,7 @@ class SetDocumentEvent extends DocumentsEvent {
   @override
   List<Object?> get props => [document, localFilePath];
 }
+// ==================== RESET EVENT ====================
+
+class ResetDocumentsEvent extends DocumentsEvent {}
 

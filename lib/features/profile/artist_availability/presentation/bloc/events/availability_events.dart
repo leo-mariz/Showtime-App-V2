@@ -163,3 +163,8 @@ class UpdateAddressAndRadiusEvent extends AvailabilityEvent {
   @override
   List<Object?> get props => [dayEntity];
 }
+
+
+// ==================== RESET EVENT ====================
+
+class ResetAvailabilityEvent extends AvailabilityEvent {}

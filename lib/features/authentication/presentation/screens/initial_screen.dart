@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/config/auto_router_config.gr.dart';
+import 'package:app/core/utils/bloc_reset_helper.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
@@ -22,10 +23,37 @@ class _InitialScreenState extends State<InitialScreen> {
   bool _isLoading = false;
   bool _shouldHandleBiometricsCheck = false; // Flag para controlar se deve processar o resultado
   bool _isNavigatingAfterLogin = false; // Flag para controlar se estamos navegando após login bem-sucedido
+  bool _hasResetBlocs = false; // Flag para evitar resetar múltiplas vezes
 
   @override
   void initState() {
     super.initState();
+    
+    // Verificar se o estado já é AuthLoggedOut quando a tela é montada
+    // Isso resolve o caso onde o logout acontece antes da tela estar montada
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthLoggedOut && !_hasResetBlocs) {
+          _resetAllBlocs(context);
+        }
+      }
+    });
+  }
+  
+  void _resetAllBlocs(BuildContext context) {
+    if (_hasResetBlocs) return; // Evitar resetar múltiplas vezes
+    
+    _hasResetBlocs = true;
+    print('🟡 [InitialScreen] Iniciando reset de BLoCs');
+    try {
+      BlocResetHelper.resetAllBlocs(context);
+      print('🟡 [InitialScreen] Reset de BLoCs concluído');
+    } catch (e, stackTrace) {
+      print('❌ [InitialScreen] Erro ao resetar BLoCs: $e');
+      print('❌ [InitialScreen] StackTrace: $stackTrace');
+      _hasResetBlocs = false; // Permitir tentar novamente em caso de erro
+    }
   }
 
   void _handleLoginButton(BuildContext context) {
@@ -45,7 +73,13 @@ class _InitialScreenState extends State<InitialScreen> {
     final router = AutoRouter.of(context);
     
     return BlocListener<AuthBloc, AuthState>(
+      // listenWhen garante que o listener seja acionado mesmo se o estado já for AuthLoggedOut
       listener: (context, state) {
+        // Resetar todos os BLoCs quando logout for detectado
+        if (state is AuthLoggedOut) {
+          _resetAllBlocs(context);
+        }
+
         if (state is InitialLoading) {
           setState(() {
             _isLoading = true;

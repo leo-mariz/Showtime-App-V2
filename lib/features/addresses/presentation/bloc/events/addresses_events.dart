@@ -75,3 +75,6 @@ class SetPrimaryAddressEvent extends AddressesEvent {
   List<Object?> get props => [addressId];
 }
 
+// ==================== RESET EVENT ====================
+
+class ResetAddressesEvent extends AddressesEvent {}

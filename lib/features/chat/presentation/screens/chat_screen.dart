@@ -17,7 +17,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// 
 /// Exibe uma lista de todas as conversas do usuário
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final bool isArtist;
+  
+  const ChatScreen({
+    super.key,
+    this.isArtist = false,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -30,8 +35,17 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadCurrentUserId();
-    // Carregar conversas ao inicializar
-    context.read<ChatsListBloc>().add(LoadChatsEvent());
+    // Carregar conversas ao inicializar com filtro de perfil
+    context.read<ChatsListBloc>().add(LoadChatsEvent(isArtist: widget.isArtist));
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Se o perfil mudou, recarregar chats com o novo filtro
+    if (oldWidget.isArtist != widget.isArtist) {
+      context.read<ChatsListBloc>().add(LoadChatsEvent(isArtist: widget.isArtist));
+    }
   }
 
   Future<void> _loadCurrentUserId() async {

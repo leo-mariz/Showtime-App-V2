@@ -12,7 +12,15 @@ abstract class ChatsListEvent extends Equatable {
 /// Evento para carregar lista de chats do usuário
 /// 
 /// Inicia stream de chats e escuta atualizações em tempo real
-class LoadChatsEvent extends ChatsListEvent {}
+/// Filtra chats baseado no perfil ativo do usuário (artista ou anfitrião)
+class LoadChatsEvent extends ChatsListEvent {
+  final bool isArtist;
+  
+  LoadChatsEvent({this.isArtist = false});
+  
+  @override
+  List<Object?> get props => [isArtist];
+}
 
 /// Evento interno disparado quando o stream de chats atualiza
 /// 

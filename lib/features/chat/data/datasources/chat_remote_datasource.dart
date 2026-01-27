@@ -24,7 +24,10 @@ abstract class IChatRemoteDataSource {
   Stream<ChatEntity> getChatStream(String chatId);
 
   /// Stream de todos os chats de um usuário
-  Stream<List<ChatEntity>> getUserChatsStream(String userId);
+  /// 
+  /// [userId] - UID do usuário
+  /// [isArtist] - Se true, filtra apenas chats onde o usuário é artista. Se false, filtra apenas chats onde o usuário é cliente (anfitrião)
+  Stream<List<ChatEntity>> getUserChatsStream(String userId, {bool isArtist = false});
 
   /// Fecha um chat
   Future<void> closeChat(String chatId);
@@ -223,7 +226,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
   }
 
   @override
-  Stream<List<ChatEntity>> getUserChatsStream(String userId) {
+  Stream<List<ChatEntity>> getUserChatsStream(String userId, {bool isArtist = false}) {
     try {
       
       // Escutar documento user_chats/{userId} para usar como índice
@@ -250,8 +253,30 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           return <ChatEntity>[];
         }
 
-        // Buscar cada chat completo em paralelo
-        final chatIds = chatsMap.keys.toList();
+        // Filtrar chats baseado no userRole antes de buscar os ChatEntity completos
+        // Isso evita buscar chats que não serão exibidos
+        final filteredChatIds = <String>[];
+        final expectedRole = isArtist ? 'ARTIST' : 'CLIENT';
+        
+        for (final entry in chatsMap.entries) {
+          final chatId = entry.key;
+          final chatPreviewData = entry.value as Map<String, dynamic>?;
+          
+          if (chatPreviewData != null) {
+            final userRole = chatPreviewData['userRole'] as String?;
+            // Se o role corresponder ao perfil ativo, incluir no filtro
+            if (userRole == expectedRole) {
+              filteredChatIds.add(chatId);
+            }
+          }
+        }
+        
+        if (filteredChatIds.isEmpty) {
+          return <ChatEntity>[];
+        }
+
+        // Buscar cada chat completo em paralelo (apenas os filtrados)
+        final chatIds = filteredChatIds;
         
         final chatFutures = chatIds.map((chatId) async {
           try {

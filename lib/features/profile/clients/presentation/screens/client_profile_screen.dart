@@ -40,6 +40,10 @@ class ClientProfileScreen extends StatefulWidget {
 
 class _ClientProfileScreenState extends State<ClientProfileScreen>{
   final ImagePickerService _imagePickerService = ImagePickerService();
+  
+  // Armazenar dados localmente para evitar desaparecer durante loading específico
+  String? _cachedUserName;
+  String? _cachedProfilePicture;
 
   @override
   void initState() {
@@ -91,7 +95,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
   }
 
   /// Verifica se os dados estão carregando
+  /// Retorna false se tivermos cache, mesmo durante loading
   bool _isLoadingData(UsersState usersState, ClientsState clientsState) {
+    // Se tivermos cache, não mostrar skeleton mesmo durante loading
+    if (_cachedUserName != null || _cachedProfilePicture != null) {
+      return false;
+    }
     return usersState is GetUserDataLoading || 
            clientsState is GetClientLoading ||
            usersState is UsersInitial ||
@@ -222,8 +231,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                 context.showError(state.error);
               } else if (state is UpdateClientProfilePictureSuccess) {
                 context.showSuccess('Foto de perfil atualizada com sucesso!');
-                // Forçar recarregamento após atualização
-                _handleGetClient(forceRefresh: true);
+                // Fazer refresh silencioso após um pequeno delay para atualizar dados
+                // mas manter cache para não mostrar skeleton
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _handleGetClient(forceRefresh: true);
+                  }
+                });
               } else if (state is UpdateClientProfilePictureFailure) {
                 context.showError(state.error);
               }
@@ -254,7 +268,25 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                             : null;
                         
                         final isLoadingProfilePicture = clientsState is UpdateClientProfilePictureLoading;
-                        final userName = _getUserName(user);
+                        
+                        // Atualizar cache apenas quando dados realmente mudarem (não durante loading)
+                        if (user != null && !isLoadingProfilePicture) {
+                          final newUserName = _getUserName(user);
+                          if (newUserName != null && newUserName != _cachedUserName) {
+                            _cachedUserName = newUserName;
+                          }
+                        }
+                        
+                        if (client != null && !isLoadingProfilePicture) {
+                          if (client.profilePicture != _cachedProfilePicture) {
+                            _cachedProfilePicture = client.profilePicture;
+                          }
+                        }
+                        
+                        // Usar dados em cache se disponíveis, senão usar dados atuais
+                        final displayName = _cachedUserName ?? _getUserName(user) ?? 'Cliente';
+                        final displayPicture = _cachedProfilePicture ?? client?.profilePicture;
+                        
                         final isLoadingData = _isLoadingData(usersState, clientsState);
                         final isDataReady = _isDataReady(usersState, clientsState);
                         
@@ -275,12 +307,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                     if (isLoadingData)
                                       // Mostrar skeleton enquanto carrega
                                       _buildHeaderSkeleton()
-                                    else if (isDataReady)
-                                      // Mostrar header real quando dados estiverem prontos
+                                    else if (isDataReady || _cachedUserName != null || _cachedProfilePicture != null)
+                                      // Mostrar header real quando dados estiverem prontos ou se tiver cache
                                       ProfileHeader(
-                                        name: userName ?? 'Cliente',
+                                        name: displayName,
                                         isArtist: false,
-                                        imageUrl: client?.profilePicture,
+                                        imageUrl: displayPicture,
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),

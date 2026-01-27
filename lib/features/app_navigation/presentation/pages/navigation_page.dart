@@ -1,5 +1,8 @@
 import 'package:app/features/app_navigation/presentation/widgets/bottom_navigation_bar.dart';
 import 'package:app/features/chat/presentation/screens/chat_screen.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/events/unread_count_events.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/states/unread_count_states.dart';
 import 'package:app/features/artist_dashboard/presentation/screens/artist_dashboard_screen.dart';
 import 'package:app/features/contracts/presentation/screens/artists/artist_contract_screen.dart';
 // import 'package:app/features/explore/presentation/screens/explore_screen.dart';
@@ -11,6 +14,7 @@ import 'package:app/features/profile/artist_availability/presentation/screens/av
 import 'package:app/features/profile/artists/presentation/screens/artist_profile_screen.dart';
 import 'package:app/features/profile/clients/presentation/screens/client_profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:auto_route/auto_route.dart';
 
 // GlobalKey para acessar o estado do NavigationPage
@@ -47,7 +51,7 @@ class _NavigationPageState extends State<NavigationPage> {
     ExploreScreen(),
     FavoritesScreen(),
     ClientContractsScreen(),
-    ChatScreen(),
+    ChatScreen(isArtist: false),
     ClientProfileScreen(),
   ];
 
@@ -56,7 +60,7 @@ class _NavigationPageState extends State<NavigationPage> {
     ArtistDashboardScreen(),
     ArtistContractsScreen(),
     AvailabilityCalendarScreen(),
-    ChatScreen(),
+    ChatScreen(isArtist: true),
     ArtistProfileScreen(),
   ];
 
@@ -113,6 +117,14 @@ class _NavigationPageState extends State<NavigationPage> {
     super.initState();
     isArtist = widget.isArtist;
     _pageController = PageController(initialPage: 0);
+    
+    // Carregar contador de mensagens não lidas ao inicializar
+    // Este stream é otimizado e escuta apenas o campo totalUnread
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<UnreadCountBloc>().add(LoadUnreadCountEvent());
+      }
+    });
   }
 
   @override
@@ -155,19 +167,35 @@ class _NavigationPageState extends State<NavigationPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor = colorScheme.surface;
     
-    return Scaffold(
-      key: _navigationPageKey,
-      backgroundColor: backgroundColor,
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: pages,
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: navItems,
-      ),
+    // Índice do item de chat no bottom nav (3 para ambos os perfis)
+    final chatIndex = 3;
+    
+    return BlocBuilder<UnreadCountBloc, UnreadCountState>(
+      builder: (context, unreadState) {
+        // Obter contador de mensagens não lidas do stream otimizado
+        final hasUnreadMessages = unreadState is UnreadCountSuccess && unreadState.count > 0;
+        
+        // Criar mapa de badges (apenas para o item de chat)
+        final badgeIndicators = hasUnreadMessages 
+            ? {chatIndex: true} 
+            : <int, bool>{};
+        
+        return Scaffold(
+          key: _navigationPageKey,
+          backgroundColor: backgroundColor,
+          body: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: pages,
+          ),
+          bottomNavigationBar: CustomBottomNavBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+            items: navItems,
+            badgeIndicators: badgeIndicators,
+          ),
+        );
+      },
     );
   }
 }

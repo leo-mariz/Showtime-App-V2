@@ -40,6 +40,10 @@ class ArtistProfileScreen extends StatefulWidget {
 
 class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
   final ImagePickerService _imagePickerService = ImagePickerService();
+  
+  // Armazenar dados localmente para evitar desaparecer durante loading específico
+  String? _cachedArtistName;
+  String? _cachedProfilePicture;
 
   @override
   void initState() {
@@ -67,7 +71,12 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
   }
 
   /// Verifica se os dados estão carregando
+  /// Retorna false se tivermos cache, mesmo durante loading
   bool _isLoadingData(ArtistsState artistsState) {
+    // Se tivermos cache, não mostrar skeleton mesmo durante loading
+    if (_cachedArtistName != null || _cachedProfilePicture != null) {
+      return false;
+    }
     return artistsState is GetArtistLoading ||
            artistsState is ArtistsInitial;
   }
@@ -194,14 +203,24 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                 context.showError(state.error);
               } else if (state is UpdateArtistProfilePictureSuccess) {
                 context.showSuccess('Foto de perfil atualizada com sucesso!');
-                // Forçar recarregamento após atualização
-                _handleGetArtist(forceRefresh: true);
+                // Fazer refresh silencioso após um pequeno delay para atualizar dados
+                // mas manter cache para não mostrar skeleton
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _handleGetArtist(forceRefresh: true);
+                  }
+                });
               } else if (state is UpdateArtistProfilePictureFailure) {
                 context.showError(state.error);
               } else if (state is UpdateArtistNameSuccess) {
                 context.showSuccess('Nome artístico atualizado com sucesso!');
-                // Forçar recarregamento após atualização
-                _handleGetArtist(forceRefresh: true);
+                // Fazer refresh silencioso após um pequeno delay para atualizar dados
+                // mas manter cache para não mostrar skeleton
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _handleGetArtist(forceRefresh: true);
+                  }
+                });
               } else if (state is UpdateArtistNameFailure) {
                 context.showError(state.error);
               }
@@ -219,7 +238,24 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                         : null;
                     
                     final isLoadingProfilePicture = artistsState is UpdateArtistProfilePictureLoading;
-                    final artistName = _getArtistName(artist);
+                    final isLoadingName = artistsState is UpdateArtistNameLoading;
+                    
+                    // Atualizar cache apenas quando dados realmente mudarem (não durante loading)
+                    if (artist != null && !isLoadingProfilePicture && !isLoadingName) {
+                      final newArtistName = _getArtistName(artist);
+                      if (newArtistName != null && newArtistName != _cachedArtistName) {
+                        _cachedArtistName = newArtistName;
+                      }
+                      
+                      if (artist.profilePicture != _cachedProfilePicture) {
+                        _cachedProfilePicture = artist.profilePicture;
+                      }
+                    }
+                    
+                    // Usar dados em cache se disponíveis, senão usar dados atuais
+                    final displayName = _cachedArtistName ?? _getArtistName(artist) ?? 'Artista';
+                    final displayPicture = _cachedProfilePicture ?? artist?.profilePicture;
+                    
                     final isLoadingData = _isLoadingData(artistsState);
                     final isDataReady = _isDataReady(artistsState);
                     
@@ -263,28 +299,20 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                                     if (isLoadingData)
                                       // Mostrar skeleton enquanto carrega
                                       _buildHeaderSkeleton()
-                                    else if (isDataReady && artistName != null)
-                                      // Mostrar header real quando dados estiverem prontos
+                                    else if (isDataReady || _cachedArtistName != null || _cachedProfilePicture != null)
+                                      // Mostrar header real quando dados estiverem prontos ou se tiver cache
                                       ProfileHeader(
-                                        name: artistName,
+                                        name: displayName,
                                         isArtist: true,
-                                        imageUrl: artist?.profilePicture,
+                                        imageUrl: displayPicture,
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                                        onEditName: () => _handleEditName(artist?.artistName),
+                                        onEditName: () => _handleEditName(_cachedArtistName ?? artist?.artistName),
                                       )
                                     else
-                                      // Fallback caso não tenha nome (não deveria acontecer, mas por segurança)
-                                      ProfileHeader(
-                                        name: 'Artista',
-                                        isArtist: true,
-                                        imageUrl: artist?.profilePicture,
-                                        onProfilePictureTap: () => _handleProfilePictureTap(),
-                                        isLoadingProfilePicture: isLoadingProfilePicture,
-                                        onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                                        onEditName: () => _handleEditName(artist?.artistName),
-                                      ),
+                                      // Fallback: mostrar skeleton se não tiver dados nem cache
+                                      _buildHeaderSkeleton(),
                                 
                                 DSSizedBoxSpacing.vertical(24),
 

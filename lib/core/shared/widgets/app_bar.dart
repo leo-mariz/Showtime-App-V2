@@ -4,6 +4,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
+  final Color? titleColor;
   final bool showBackButton;
   final VoidCallback? onBackButtonTap;
   final List<Widget>? actions;
@@ -12,6 +13,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
     this.title,
+    this.titleColor,
     this.showBackButton = true,
     this.onBackButtonTap,
     this.actions,
@@ -31,7 +33,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         color: onPrimaryContainer,
       ),
       titleTextStyle: textTheme.headlineSmall?.copyWith(
-        color: onPrimaryContainer,
+        color: titleColor ?? onPrimaryContainer,
       ),
       leading: showBackButton
           ? CustomLeadingButton(

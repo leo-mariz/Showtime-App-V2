@@ -11,6 +11,7 @@ import 'package:app/features/chat/domain/entities/chat_entity.dart';
 import 'package:app/features/chat/presentation/widgets/message_bubble.dart';
 import 'package:app/features/chat/presentation/widgets/message_input.dart';
 import 'package:app/features/chat/presentation/widgets/system_message_bubble.dart';
+import 'package:app/features/chat/presentation/widgets/contract_info_widget.dart';
 import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/messages/events/messages_events.dart';
 import 'package:app/features/chat/presentation/bloc/messages/states/messages_states.dart';
@@ -166,7 +167,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final otherUserPhoto = _currentUserId != null
         ? widget.chat.getOtherUserPhoto(_currentUserId!)
         : widget.chat.artistPhoto;
-    final contractRef = 'Contrato #${widget.chat.contractId}';
 
     return BlocListener<UsersBloc, UsersState>(
       listener: (context, usersState) {
@@ -180,6 +180,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       child: BasePage(
         showAppBar: true,
         appBarTitle: otherUserName,
+        appBarTitleColor: colorScheme.onPrimary,
         showAppBarBackButton: true,
         horizontalPadding: 0,
         verticalPadding: 0,
@@ -191,9 +192,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           behavior: HitTestBehavior.opaque,
           child: Column(
             children: [
-            // Referência do contrato abaixo do AppBar
+            // Informações do contrato abaixo do AppBar
             Container(
               width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                vertical: DSPadding.vertical(8),
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceVariant.withOpacity(0.3),
                 border: Border(
@@ -203,9 +207,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                 ),
               ),
-              child: Text(
-                contractRef,
-                style: textTheme.bodySmall?.copyWith(
+              child: ContractInfoWidget(
+                contractId: widget.chat.contractId,
+                textStyle: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant.withOpacity(0.8),
                   fontSize: calculateFontSize(12),
                 ),
@@ -325,7 +329,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     final messages = state.messages;
 
                     if (messages.isEmpty) {
-                      return _buildEmptyState(context, colorScheme, otherUserName, otherUserPhoto, contractRef);
+                      return _buildEmptyState(context, colorScheme, otherUserName, otherUserPhoto, widget.chat.contractId);
                     }
 
                     return ListView.builder(
@@ -377,7 +381,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   }
 
                   // Estado inicial - mostrar empty state
-                  return _buildEmptyState(context, colorScheme, otherUserName, otherUserPhoto, contractRef);
+                  return _buildEmptyState(context, colorScheme, otherUserName, otherUserPhoto, widget.chat.contractId);
                   },
                 ),
               ),

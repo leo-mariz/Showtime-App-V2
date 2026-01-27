@@ -9,6 +9,7 @@ class BasePage extends StatelessWidget {
   final double verticalPadding;
   final bool showAppBar;
   final String? appBarTitle;
+  final Color? appBarTitleColor;
   final bool? showAppBarBackButton;
   final Color? backgroundColor;
   final Widget? floatingActionButton;
@@ -20,6 +21,7 @@ class BasePage extends StatelessWidget {
     this.verticalPadding = 12,
     this.showAppBar = false,
     this.appBarTitle,
+    this.appBarTitleColor,
     this.showAppBarBackButton = false,
     this.backgroundColor,
     this.floatingActionButton,
@@ -32,6 +34,7 @@ class BasePage extends StatelessWidget {
         child: Scaffold(
           appBar: showAppBar ? CustomAppBar(
             title: appBarTitle,
+            titleColor: appBarTitleColor,
             showBackButton: showAppBarBackButton ?? false,
           ) : null,
           backgroundColor: backgroundColor ?? Colors.transparent,

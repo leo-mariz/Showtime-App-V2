@@ -1,8 +1,10 @@
+import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/features/chat/domain/entities/chat_entity.dart';
+import 'package:app/features/chat/presentation/widgets/contract_info_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -71,7 +73,7 @@ class ConversationItem extends StatelessWidget {
                           style: textTheme.titleSmall?.copyWith(
                             fontWeight: unreadCount > 0
                                 ? FontWeight.bold
-                                : FontWeight.w400,
+                                : FontWeight.w500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -86,16 +88,14 @@ class ConversationItem extends StatelessWidget {
                         ),
                     ],
                   ),
-                  // Referência do contrato
+                  // Informações do contrato
                   DSSizedBoxSpacing.vertical(2),
-                  Text(
-                    'Contrato #${chat.contractId}',
-                    style: textTheme.bodySmall?.copyWith(
+                  ContractInfoWidget(
+                    contractId: chat.contractId,
+                    textStyle: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                      fontSize: 12,
+                      fontSize: calculateFontSize(12),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   DSSizedBoxSpacing.vertical(4),
                   // Última mensagem e contador de não lidas

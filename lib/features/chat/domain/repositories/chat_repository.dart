@@ -52,10 +52,11 @@ abstract class IChatRepository {
   /// Stream de todos os chats de um usuário
   /// 
   /// [userId] - UID do usuário
+  /// [isArtist] - Se true, filtra apenas chats onde o usuário é artista. Se false, filtra apenas chats onde o usuário é cliente (anfitrião)
   /// 
   /// Retorna Stream<List<ChatEntity>> com os chats do usuário
   /// ordenados por data da última mensagem (mais recente primeiro)
-  Stream<List<ChatEntity>> getUserChatsStream(String userId);
+  Stream<List<ChatEntity>> getUserChatsStream(String userId, {bool isArtist = false});
 
   /// Fecha um chat
   /// 

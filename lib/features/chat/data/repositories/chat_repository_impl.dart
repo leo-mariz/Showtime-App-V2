@@ -90,9 +90,9 @@ class ChatRepositoryImpl implements IChatRepository {
   }
 
   @override
-  Stream<List<ChatEntity>> getUserChatsStream(String userId) {
+  Stream<List<ChatEntity>> getUserChatsStream(String userId, {bool isArtist = false}) {
     // Streams não usam cache pois já fornecem dados em tempo real
-    return remoteDataSource.getUserChatsStream(userId);
+    return remoteDataSource.getUserChatsStream(userId, isArtist: isArtist);
   }
 
   @override

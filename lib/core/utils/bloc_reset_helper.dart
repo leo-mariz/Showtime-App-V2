@@ -32,6 +32,8 @@ import 'package:app/features/chat/presentation/bloc/chats_list/chats_list_bloc.d
 import 'package:app/features/chat/presentation/bloc/chats_list/events/chats_list_events.dart';
 import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/messages/events/messages_events.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/events/unread_count_events.dart';
 
 /// Helper para resetar todos os BLoCs ao estado inicial
 /// 
@@ -79,6 +81,8 @@ class BlocResetHelper {
       context.read<ChatsListBloc>().add(ResetChatsListEvent());
       // Resetar MessagesBloc (cancela stream de mensagens e timer de digitação)
       context.read<MessagesBloc>().add(ResetMessagesEvent());
+      // Resetar UnreadCountBloc (cancela stream de contador de não lidas)
+      context.read<UnreadCountBloc>().add(ResetUnreadCountEvent());
       // Resetar AuthBloc para AuthInitial (deve ser o último)
       context.read<AuthBloc>().add(ResetAuthEvent());
     } catch (e) {

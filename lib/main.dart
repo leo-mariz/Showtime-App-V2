@@ -65,11 +65,13 @@ import 'package:app/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:app/features/chat/domain/usecases/create_chat_usecase.dart';
 import 'package:app/features/chat/domain/usecases/get_messages_paginated_usecase.dart';
+import 'package:app/features/chat/domain/usecases/get_unread_count_usecase.dart';
 import 'package:app/features/chat/domain/usecases/mark_messages_as_read_usecase.dart';
 import 'package:app/features/chat/domain/usecases/send_message_usecase.dart';
 import 'package:app/features/chat/domain/usecases/update_typing_status_usecase.dart';
 import 'package:app/features/chat/presentation/bloc/chats_list/chats_list_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart';
+import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
@@ -814,6 +816,24 @@ MessagesBloc _createMessagesBloc(
   );
 }
 
+/// Factory function para criar o UnreadCountBloc com todas as dependências
+/// 
+/// Este BLoC usa um stream otimizado que escuta apenas o campo totalUnread
+/// do documento user_chats/{userId}, sem precisar buscar todos os chats completos.
+UnreadCountBloc _createUnreadCountBloc(
+  IChatRepository chatRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  // Criar UseCase
+  final getUnreadCountUseCase = GetUnreadCountUseCase(repository: chatRepository);
+
+  // Criar e retornar UnreadCountBloc
+  return UnreadCountBloc(
+    getUserUidUseCase: getUserUidUseCase,
+    getUnreadCountUseCase: getUnreadCountUseCase,
+  );
+}
+
 
 
 Future <void> main() async {
@@ -1075,6 +1095,12 @@ Future <void> main() async {
           ),
           BlocProvider(
             create: (context) => _createMessagesBloc(
+              chatRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createUnreadCountBloc(
               chatRepository,
               getUserUidUseCase,
             ),

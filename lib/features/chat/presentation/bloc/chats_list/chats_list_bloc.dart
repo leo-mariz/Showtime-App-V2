@@ -21,6 +21,9 @@ class ChatsListBloc extends Bloc<ChatsListEvent, ChatsListState> {
 
   // Stream subscription para gerenciar lifecycle
   StreamSubscription? _chatsSubscription;
+  
+  // Armazenar o perfil ativo para usar em refresh
+  bool _currentIsArtist = false;
 
   ChatsListBloc({
     required this.getUserUidUseCase,
@@ -64,11 +67,17 @@ class ChatsListBloc extends Bloc<ChatsListEvent, ChatsListState> {
         return;
       }
 
+      // Armazenar o perfil ativo
+      _currentIsArtist = event.isArtist;
+      
       // Cancelar subscription anterior se existir
       await _chatsSubscription?.cancel();
 
-      // Criar nova subscription ao stream de chats
-      _chatsSubscription = chatRepository.getUserChatsStream(userId).listen(
+      // Criar nova subscription ao stream de chats com filtro de perfil
+      _chatsSubscription = chatRepository.getUserChatsStream(
+        userId,
+        isArtist: event.isArtist,
+      ).listen(
         (chats) {
           // Disparar evento interno quando stream atualizar
           add(ChatsUpdatedEvent(chats: chats));
@@ -97,8 +106,8 @@ class ChatsListBloc extends Bloc<ChatsListEvent, ChatsListState> {
     RefreshChatsEvent event,
     Emitter<ChatsListState> emit,
   ) async {
-    // Recarregar chats
-    add(LoadChatsEvent());
+    // Recarregar chats mantendo o filtro de perfil atual
+    add(LoadChatsEvent(isArtist: _currentIsArtist));
   }
 
   // ==================== CREATE CHAT ====================

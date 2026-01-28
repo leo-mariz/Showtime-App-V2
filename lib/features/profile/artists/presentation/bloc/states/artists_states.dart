@@ -125,6 +125,20 @@ class UpdateArtistAgreementFailure extends ArtistsState {
 
 class UpdateArtistPresentationMediasLoading extends ArtistsState {}
 
+/// Progresso do upload: [current] de [total] vídeos enviados.
+class UpdateArtistPresentationMediasProgress extends ArtistsState {
+  final int current;
+  final int total;
+
+  UpdateArtistPresentationMediasProgress({
+    required this.current,
+    required this.total,
+  });
+
+  @override
+  List<Object?> get props => [current, total];
+}
+
 class UpdateArtistPresentationMediasSuccess extends ArtistsState {}
 
 class UpdateArtistPresentationMediasFailure extends ArtistsState {
@@ -186,5 +200,20 @@ class CheckArtistNameExistsFailure extends ArtistsState {
 
   @override
   List<Object?> get props => [artistName, error];
+}
+
+// ==================== UPDATE ARTIST ACTIVE STATUS STATES ====================
+
+class UpdateArtistActiveStatusLoading extends ArtistsState {}
+
+class UpdateArtistActiveStatusSuccess extends ArtistsState {}
+
+class UpdateArtistActiveStatusFailure extends ArtistsState {
+  final String error;
+
+  UpdateArtistActiveStatusFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
 }
 

@@ -95,12 +95,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             showAppBar: true,
             appBarTitle: 'Documentos',
             showAppBarBackButton: true,
-            child: isLoading
-                ? const Center(child: CustomLoadingIndicator())
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              behavior: HitTestBehavior.opaque,
+              child: isLoading
+                  ? const Center(child: CustomLoadingIndicator())
+                  : SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Text(
                           'Envie seus documentos para verificação da conta.',
                           style: textTheme.bodyMedium?.copyWith(
@@ -143,6 +146,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       ],
                     ),
                   ),
+            ),
           );
         },
       ),

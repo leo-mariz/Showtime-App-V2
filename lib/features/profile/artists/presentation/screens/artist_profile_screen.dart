@@ -331,14 +331,14 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                                       onPressed: () => router.push(const RegisterDataAreaRoute()),
                                       showWarning: hasRegisterDataIncomplete,
                                     ),
-                                    IconMenuButton(
-                                      icon: Icons.group,
-                                      label: 'Conjuntos',
-                                      onPressed: () {
-                                        router.push(const GroupsRoute());
-                                      },
-                                      showWarning: false,
-                                    ),
+                                    // IconMenuButton(
+                                    //   icon: Icons.group,
+                                    //   label: 'Conjuntos',
+                                    //   onPressed: () {
+                                    //     router.push(const GroupsRoute());
+                                    //   },
+                                    //   showWarning: false,
+                                    // ),
                                   ],
                                 ),
 

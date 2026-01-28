@@ -119,6 +119,14 @@ class DocumentCard extends StatelessWidget {
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
+                    ] 
+                    else ...[
+                      Text(
+                        'PDF',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                     Text(
                       statusText,

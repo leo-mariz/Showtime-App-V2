@@ -7,6 +7,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_name_
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_active_status_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
@@ -21,6 +22,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
   final UpdateArtistProfessionalInfoUseCase updateArtistProfessionalInfoUseCase;
   final UpdateArtistAgreementUseCase updateArtistAgreementUseCase;
   final UpdateArtistPresentationMediasUseCase updateArtistPresentationMediasUseCase;
+  final UpdateArtistActiveStatusUseCase updateArtistActiveStatusUseCase;
   final CheckArtistNameExistsUseCase checkArtistNameExistsUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
@@ -33,6 +35,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     required this.updateArtistProfessionalInfoUseCase,
     required this.updateArtistAgreementUseCase,
     required this.updateArtistPresentationMediasUseCase,
+    required this.updateArtistActiveStatusUseCase,
     required this.checkArtistNameExistsUseCase,
     required this.getUserUidUseCase,
   }) : super(ArtistsInitial()) {
@@ -43,6 +46,7 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     on<UpdateArtistProfessionalInfoEvent>(_onUpdateArtistProfessionalInfoEvent);
     on<UpdateArtistAgreementEvent>(_onUpdateArtistAgreementEvent);
     on<UpdateArtistPresentationMediasEvent>(_onUpdateArtistPresentationMediasEvent);
+    on<UpdateArtistActiveStatusEvent>(_onUpdateArtistActiveStatusEvent);
     on<CheckArtistNameExistsEvent>(_onCheckArtistNameExistsEvent);
     on<AddArtistEvent>(_onAddArtistEvent);
     on<ResetArtistsEvent>(_onResetArtistsEvent);
@@ -249,13 +253,29 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     UpdateArtistPresentationMediasEvent event,
     Emitter<ArtistsState> emit,
   ) async {
-    emit(UpdateArtistPresentationMediasLoading());
+    final totalUploads = event.talentLocalFilePaths.entries
+        .where((e) =>
+            e.value.isNotEmpty &&
+            !e.value.startsWith('http://') &&
+            !e.value.startsWith('https://'))
+        .length;
+
+    if (totalUploads > 0) {
+      emit(UpdateArtistPresentationMediasProgress(current: 0, total: totalUploads));
+    } else {
+      emit(UpdateArtistPresentationMediasLoading());
+    }
 
     final uid = await _getCurrentUserId();
 
     final result = await updateArtistPresentationMediasUseCase.call(
       uid!,
       event.talentLocalFilePaths,
+      onProgress: totalUploads > 0
+          ? (completed, total) {
+              emit(UpdateArtistPresentationMediasProgress(current: completed, total: total));
+            }
+          : null,
     );
 
     result.fold(
@@ -270,6 +290,34 @@ class ArtistsBloc extends Bloc<ArtistsEvent, ArtistsState> {
     );
   }
 
+
+  // ==================== UPDATE ARTIST ACTIVE STATUS ====================
+
+  Future<void> _onUpdateArtistActiveStatusEvent(
+    UpdateArtistActiveStatusEvent event,
+    Emitter<ArtistsState> emit,
+  ) async {
+    emit(UpdateArtistActiveStatusLoading());
+
+    final uid = await _getCurrentUserId();
+
+    final result = await updateArtistActiveStatusUseCase.call(
+      uid!,
+      event.isActive,
+    );
+
+    result.fold(
+      (failure) {
+        emit(UpdateArtistActiveStatusFailure(error: failure.message));
+        emit(ArtistsInitial());
+      },
+      (_) {
+        emit(UpdateArtistActiveStatusSuccess());
+        // Recarregar artista para atualizar o estado
+        add(GetArtistEvent());
+      },
+    );
+  }
 
   // ==================== CHECK ARTIST NAME EXISTS ====================
 

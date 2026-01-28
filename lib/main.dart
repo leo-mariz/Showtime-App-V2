@@ -197,6 +197,7 @@ import 'package:app/features/profile/artists/domain/usecases/update_artist_profi
 import 'package:app/features/profile/artists/domain/usecases/update_artist_name_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
+import 'package:app/features/profile/artists/domain/usecases/update_artist_active_status_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 
@@ -474,6 +475,10 @@ ArtistsBloc _createArtistsBloc(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
   );
+  final updateArtistActiveStatusUseCase = UpdateArtistActiveStatusUseCase(
+    getArtistUseCase: getArtistUseCase,
+    updateArtistUseCase: updateArtistUseCase,
+  );
   final updateArtistPresentationMediasUseCase = UpdateArtistPresentationMediasUseCase(
     getArtistUseCase: getArtistUseCase,
     updateArtistUseCase: updateArtistUseCase,
@@ -492,6 +497,7 @@ ArtistsBloc _createArtistsBloc(
     updateArtistProfessionalInfoUseCase: updateArtistProfessionalInfoUseCase,
     updateArtistAgreementUseCase: updateArtistAgreementUseCase,
     updateArtistPresentationMediasUseCase: updateArtistPresentationMediasUseCase,
+    updateArtistActiveStatusUseCase: updateArtistActiveStatusUseCase,
     checkArtistNameExistsUseCase: checkArtistNameExistsUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );

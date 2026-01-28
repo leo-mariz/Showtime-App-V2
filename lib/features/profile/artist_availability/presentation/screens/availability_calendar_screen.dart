@@ -1,4 +1,5 @@
 import 'package:app/core/design_system/size/ds_size.dart';
+import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
@@ -212,6 +213,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
               }
             });
           }
+          
 
           return Scaffold(
             backgroundColor: colorScheme.surface,
@@ -228,28 +230,10 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
                     ),
                     child: Row(
                       children: [
+                        DSSizedBoxSpacing.horizontal(8),
                         // Botão limpar seleção (aparece quando tem seleção múltipla)
-                        if (_selectedDays != null && _selectedDays!.isNotEmpty) ...[
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _selectedDays = null;
-                              });
-                            },
-                            icon: Icon(
-                              Icons.clear,
-                              size: DSSize.width(18),
-                              color: colorScheme.error,
-                            ),
-                            label: Text(
-                              'Limpar (${_selectedDays!.length} dias)',
-                              style: TextStyle(
-                                fontSize: DSSize.width(13),
-                                color: colorScheme.error,
-                              ),
-                            ),
-                          ),
-                        ],
+                        Text('Disponibilidades', 
+                        style: textTheme.titleSmall?.copyWith(color: colorScheme.onPrimaryContainer, fontWeight: FontWeight.w600),),
                         
                         const Spacer(), 
                         

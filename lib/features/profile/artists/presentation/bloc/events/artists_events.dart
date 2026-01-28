@@ -120,6 +120,19 @@ class CheckArtistNameExistsEvent extends ArtistsEvent {
   List<Object?> get props => [artistName];
 }
 
+// ==================== UPDATE ARTIST ACTIVE STATUS EVENTS ====================
+
+class UpdateArtistActiveStatusEvent extends ArtistsEvent {
+  final bool isActive;
+
+  UpdateArtistActiveStatusEvent({
+    required this.isActive,
+  });
+
+  @override
+  List<Object?> get props => [isActive];
+}
+
 // ==================== RESET EVENT ====================
 
 class ResetArtistsEvent extends ArtistsEvent {}

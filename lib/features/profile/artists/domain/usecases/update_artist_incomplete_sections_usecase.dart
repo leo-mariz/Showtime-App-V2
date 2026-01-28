@@ -75,6 +75,7 @@ class UpdateArtistIncompleteSectionsUseCase {
           final updatedArtist = currentArtist.copyWith(
             hasIncompleteSections: hasIncomplete,
             incompleteSections: incompleteSections.isEmpty ? null : incompleteSections,
+            isActive: hasIncomplete ? false : true,
           );
 
           // Atualizar no repositório

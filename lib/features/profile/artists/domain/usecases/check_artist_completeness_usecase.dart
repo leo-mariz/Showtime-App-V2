@@ -105,18 +105,18 @@ class CheckArtistCompletenessUseCase {
     );
   }
 
-  /// Verifica se todos os documentos obrigatórios estão presentes e aprovados
-  /// 
+  /// Verifica se a seção de documentos está completa do ponto de vista do usuário.
+  ///
   /// Documentos obrigatórios:
   /// - Identity (RG ou CNH)
   /// - Residence (Comprovante de Residência)
   /// - Curriculum
   /// - Antecedents (Certidão de Antecedentes Criminais)
-  /// 
-  /// Um documento é considerado válido se:
-  /// - Existe na lista
-  /// - Tem URL não vazia
-  /// - Tem status aprovado (DocumentStatusEnum.approved)
+  ///
+  /// A seção é considerada INCOMPLETA somente se algum documento tiver:
+  /// - status 0 (pending / Não enviado) ou
+  /// - status 3 (rejected / Rejeitado).
+  /// Nos demais casos (em análise ou aprovado), o usuário já fez sua parte.
   ArtistInfoStatusEntity _checkDocuments(List<DocumentsEntity> documents) {
     final requiredDocumentTypes = [
       DocumentTypeEnum.identity,
@@ -133,12 +133,11 @@ class CheckArtistCompletenessUseCase {
         orElse: () => DocumentsEntity(documentType: docType.name),
       );
 
-      // Verificar se documento existe, tem URL e está aprovado
-      final isValid = document.url != null &&
-          document.url!.isNotEmpty &&
-          document.statusEnum == DocumentStatusEnum.approved;
+      // Incompleto apenas quando não enviado (0) ou rejeitado (3)
+      final isIncomplete = document.statusEnum == DocumentStatusEnum.pending ||
+          document.statusEnum == DocumentStatusEnum.rejected;
 
-      if (!isValid) {
+      if (isIncomplete) {
         missingDocuments.add(_getDocumentTypeName(docType));
       }
     }
@@ -151,44 +150,56 @@ class CheckArtistCompletenessUseCase {
     );
   }
 
-  /// Verifica se há informações bancárias válidas
-  /// 
-  /// Pode ser PIX OU Conta Bancária:
-  /// - PIX: pixKey != null && pixKey.isNotEmpty && pixType != null
-  /// - Conta: agency != null && agency.isNotEmpty && 
-  ///          accountNumber != null && accountNumber.isNotEmpty &&
-  ///          accountType != null && accountType.isNotEmpty
+  /// Verifica se as informações bancárias estão completas.
+  ///
+  /// Obrigatório sempre:
+  /// - Nome do titular (fullName)
+  /// - CPF ou CNPJ (cpfOrCnpj)
+  ///
+  /// E pelo menos um dos dois:
+  /// - PIX: pixKey e pixType preenchidos
+  /// - Conta: agência, número da conta e tipo de conta preenchidos
   ArtistInfoStatusEntity _checkBankAccount(BankAccountEntity? bankAccount) {
     if (bankAccount == null) {
       return const ArtistInfoStatusEntity(
         type: ArtistInfoType.bankAccount,
         category: ArtistInfoCategory.approvalRequired,
         isComplete: false,
-        missingItems: ['Informações bancárias ou PIX'],
+        missingItems: ['Nome do titular', 'CPF/CNPJ', 'PIX ou dados da conta'],
       );
     }
 
-    // Verificar PIX
+    final hasHolderName = bankAccount.fullName != null &&
+        bankAccount.fullName!.trim().isNotEmpty;
+    final hasCpfOrCnpj = bankAccount.cpfOrCnpj != null &&
+        bankAccount.cpfOrCnpj!.trim().isNotEmpty;
+
     final hasPix = bankAccount.pixKey != null &&
-        bankAccount.pixKey!.isNotEmpty &&
+        bankAccount.pixKey!.trim().isNotEmpty &&
         bankAccount.pixType != null &&
-        bankAccount.pixType!.isNotEmpty;
+        bankAccount.pixType!.trim().isNotEmpty;
 
-    // Verificar Conta Bancária
     final hasBankAccount = bankAccount.agency != null &&
-        bankAccount.agency!.isNotEmpty &&
+        bankAccount.agency!.trim().isNotEmpty &&
         bankAccount.accountNumber != null &&
-        bankAccount.accountNumber!.isNotEmpty &&
+        bankAccount.accountNumber!.trim().isNotEmpty &&
         bankAccount.accountType != null &&
-        bankAccount.accountType!.isNotEmpty;
+        bankAccount.accountType!.trim().isNotEmpty;
 
-    final isValid = hasPix || hasBankAccount;
+    final hasRequiredBase = hasHolderName && hasCpfOrCnpj;
+    final hasPixOrAccount = hasPix || hasBankAccount;
+    final isValid = hasRequiredBase && hasPixOrAccount;
+
+    final missingItems = <String>[];
+    if (!hasHolderName) missingItems.add('Nome do titular');
+    if (!hasCpfOrCnpj) missingItems.add('CPF/CNPJ');
+    if (!hasPixOrAccount) missingItems.add('PIX ou dados da conta (agência/conta)');
 
     return ArtistInfoStatusEntity(
       type: ArtistInfoType.bankAccount,
       category: ArtistInfoCategory.approvalRequired,
       isComplete: isValid,
-      missingItems: isValid ? [] : ['PIX ou Conta Bancária'],
+      missingItems: missingItems.isEmpty ? [] : missingItems,
     );
   }
 
@@ -230,15 +241,52 @@ class CheckArtistCompletenessUseCase {
     );
   }
 
-  /// Verifica se há informações profissionais
+  /// Verifica se as informações profissionais estão completas.
+  ///
+  /// A seção só é considerada completa quando todos os campos estão preenchidos:
+  /// - Especialidade(s) (lista não vazia)
+  /// - Preferências de gênero (lista não vazia)
+  /// - Duração mínima do show
+  /// - Tempo de preparação
+  /// - Bio
+  /// - Valor por hora
   ArtistInfoStatusEntity _checkProfessionalInfo(ArtistEntity artist) {
-    final hasProfessionalInfo = artist.professionalInfo != null;
+    final info = artist.professionalInfo;
+    if (info == null) {
+      return const ArtistInfoStatusEntity(
+        type: ArtistInfoType.professionalInfo,
+        category: ArtistInfoCategory.optional,
+        isComplete: false,
+        missingItems: [
+          'Especialidade(s)',
+          'Duração mínima do show',
+          'Tempo de preparação',
+          'Bio',
+        ],
+      );
+    }
+
+    final missingItems = <String>[];
+
+    final hasSpecialty = info.specialty != null && info.specialty!.isNotEmpty;
+    if (!hasSpecialty) missingItems.add('Especialidade(s)');
+
+    final hasMinimumShowDuration = info.minimumShowDuration != null;
+    if (!hasMinimumShowDuration) missingItems.add('Duração mínima do show');
+
+    final hasPreparationTime = info.preparationTime != null;
+    if (!hasPreparationTime) missingItems.add('Tempo de preparação');
+
+    final hasBio = info.bio != null && info.bio!.trim().isNotEmpty;
+    if (!hasBio) missingItems.add('Bio');
+
+    final isComplete = missingItems.isEmpty;
 
     return ArtistInfoStatusEntity(
       type: ArtistInfoType.professionalInfo,
       category: ArtistInfoCategory.optional,
-      isComplete: hasProfessionalInfo,
-      missingItems: hasProfessionalInfo ? [] : ['Informações profissionais'],
+      isComplete: isComplete,
+      missingItems: missingItems,
     );
   }
 

@@ -246,31 +246,34 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSSize.width(20))),
       ),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.disabled,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
-              child: Container(
-                width: DSSize.width(40),
-                height: DSSize.height(4),
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(DSSize.width(2)),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.disabled,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
+                child: Container(
+                  width: DSSize.width(40),
+                  height: DSSize.height(4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(DSSize.width(2)),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Identidade',
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Identidade',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onPrimaryContainer,
@@ -446,6 +449,7 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -645,32 +649,35 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSSize.width(20))),
       ),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.disabled,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Padding(
-              padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
-              child: Container(
-                width: DSSize.width(40),
-                height: DSSize.height(4),
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(DSSize.width(2)),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.disabled,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
+                child: Container(
+                  width: DSSize.width(40),
+                  height: DSSize.height(4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(DSSize.width(2)),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                    'Comprovante de Residência',
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                      'Comprovante de Residência',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onPrimaryContainer,
@@ -909,6 +916,7 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -1036,28 +1044,31 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSSize.width(20))),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Padding(
-            padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
-            child: Container(
-              width: DSSize.width(40),
-              height: DSSize.height(4),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(DSSize.width(2)),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
+              child: Container(
+                width: DSSize.width(40),
+                height: DSSize.height(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(DSSize.width(2)),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Currículo',
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Currículo',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
@@ -1221,6 +1232,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1346,29 +1358,32 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
         color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSSize.width(20))),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Padding(
-            padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
-            child: Container(
-              width: DSSize.width(40),
-              height: DSSize.height(4),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(DSSize.width(2)),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.only(top: DSSize.height(12), bottom: DSSize.height(8)),
+              child: Container(
+                width: DSSize.width(40),
+                height: DSSize.height(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(DSSize.width(2)),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                  'Certidão de Antecedentes',
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: DSSize.width(16)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                    'Certidão de Antecedentes',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimaryContainer,
@@ -1549,6 +1564,7 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

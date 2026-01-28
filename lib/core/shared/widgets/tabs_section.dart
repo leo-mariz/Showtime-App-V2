@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 
@@ -99,40 +100,72 @@ class TabsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tempo mínimo de apresentação
-          if (hasMinimumDuration) ...[
-            Text(
-              'Tempo mínimo de apresentação',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: DSSize.height(4)),
-            Text(
-              _formatDuration(Duration(minutes: professionalInfo!.minimumShowDuration!)),
-              style: textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onPrimary,
-              ),
-            ),
-            SizedBox(height: DSSize.height(16)),
-          ],
+          // Talentos (Specialty) - mantém como estava se existir no arquivo
           
-          // Tempo de preparação
-          if (hasPreparationTime) ...[
-            Text(
-              'Tempo de preparação antes do show',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: DSSize.height(4)),
-            Text(
-              _formatDuration(Duration(minutes: professionalInfo!.preparationTime!)),
-              style: textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onPrimary,
-              ),
+          // Cards lado a lado: tempo mínimo e tempo de preparação
+          if (hasMinimumDuration || hasPreparationTime) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasMinimumDuration)
+                  Expanded(
+                    child: _buildDurationCard(
+                      context: context,
+                      title: 'Duração mínima',
+                      value: _formatDuration(Duration(minutes: professionalInfo!.minimumShowDuration!)),
+                      colorScheme: colorScheme,
+                      textTheme: textTheme,
+                    ),
+                  ),
+                if (hasMinimumDuration && hasPreparationTime) SizedBox(width: DSSize.width(12)),
+                if (hasPreparationTime)
+                  Expanded(
+                    child: _buildDurationCard(
+                      context: context,
+                      title: 'Preparação',
+                      value: _formatDuration(Duration(minutes: professionalInfo!.preparationTime!)),
+                      colorScheme: colorScheme,
+                      textTheme: textTheme,
+                    ),
+                  ),
+              ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurationCard({
+    required BuildContext context,
+    required String title,
+    required String value,
+    required ColorScheme colorScheme,
+    required TextTheme textTheme,
+  }) {
+    return CustomCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: DSSize.width(12),
+        vertical: DSSize.height(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: DSSize.height(6)),
+          Text(
+            value,
+            style: textTheme.titleLarge?.copyWith(
+              color: colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

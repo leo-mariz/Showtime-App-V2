@@ -191,6 +191,10 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                   final artistName = artist?.artistName ?? '';
                   final artistPhoto = artist?.profilePicture;
                   final isActive = artist?.isActive ?? false;
+                  final hasIncompleteSections = artist?.hasIncompleteSections ?? false;
+                  final isAprooved = artist?.approved ?? false;
+                  print('isAprooved: $isAprooved');
+                  print('isActive: $isActive');
 
                   // Obter estatísticas
                   final stats = dashboardState is GetArtistDashboardStatsSuccess
@@ -215,6 +219,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                           artistName,
                           artistPhoto,
                           isActive,
+                          isAprooved,
+                          hasIncompleteSections,
                         ),
                         DSSizedBoxSpacing.vertical(24),
 
@@ -277,7 +283,42 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
     String artistName,
     String? artistPhoto,
     bool isActive,
+    bool isAprooved,
+    bool hasIncompleteSections,
   ) {
+
+    var statusIcon = Icons.error;
+    var statusText = '';
+    var statusColor = colorScheme.error;
+
+    if (isAprooved) {
+      if (isActive && !hasIncompleteSections) {
+        statusIcon = Icons.check_circle;
+        statusText = 'Perfil completo';
+        statusColor = colorScheme.onSecondaryContainer;
+      } else if (hasIncompleteSections) {
+        statusIcon = Icons.warning_amber_rounded;
+        statusText = 'Perfil incompleto';
+        statusColor = colorScheme.onTertiaryContainer;
+      } else {
+        statusIcon = Icons.error;
+        statusText = 'Perfil aguardando ativação';
+        statusColor = colorScheme.onTertiaryContainer;
+      }
+    } else {
+      if (!hasIncompleteSections) {
+        statusIcon = Icons.pending_actions;
+        statusText = 'Pendente de aprovação';
+        statusColor = colorScheme.onTertiaryContainer;
+      } else {
+        statusIcon = Icons.error;
+        statusText = 'Perfil incompleto';
+        statusColor = colorScheme.error;
+      }
+    }
+
+
+
     return Row(
       children: [
         CustomCircleAvatar(
@@ -306,19 +347,15 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
               Row(
                 children: [
                   Icon(
-                    isActive ? Icons.verified : Icons.error,
+                    statusIcon,
                     size: DSSize.width(16),
-                    color: isActive
-                        ? colorScheme.onSecondaryContainer
-                        : colorScheme.error,
+                    color: statusColor,
                   ),
                   DSSizedBoxSpacing.horizontal(4),
                   Text(
-                    isActive ? 'Perfil ativo' : 'Perfil incompleto',
+                    statusText,
                     style: textTheme.bodySmall?.copyWith(
-                      color: isActive
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.error,
+                      color: colorScheme.onPrimary
                     ),
                   ),
                 ],

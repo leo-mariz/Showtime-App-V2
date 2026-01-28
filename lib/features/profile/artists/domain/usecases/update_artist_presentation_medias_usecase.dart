@@ -11,12 +11,14 @@ import 'package:dartz/dartz.dart';
 /// 
 /// RESPONSABILIDADES:
 /// - Validar UID do artista
-/// - Validar map de talentos e caminhos de arquivos
 /// - Buscar artista atual (do cache se disponível)
-/// - Remover de presentationMedias (e deletar do Storage) talentos que não estão mais em professionalInfo.specialty (deletes em paralelo)
-/// - Para cada talento a salvar: atualizar map com URLs; uploads de arquivos locais feitos em paralelo (delete do antigo + upload do novo por talento)
+/// - Fase 1: Remover (e deletar do Storage) talentos que não estão mais em professionalInfo.specialty
+/// - Fase 1b: Remover (e deletar do Storage) vídeos que o artista deletou na UI (talento em specialty mas não em talentLocalFilePaths ou valor vazio)
+/// - Para cada talento a salvar: atualizar map com URLs; uploads de arquivos locais em paralelo (delete do antigo + upload do novo por talento)
 /// - Atualizar apenas o campo presentationMedias no Firestore
 /// - Salvar atualização
+/// 
+/// Permite talentLocalFilePaths vazio (artista removeu todos os vídeos).
 class UpdateArtistPresentationMediasUseCase {
   final GetArtistUseCase getArtistUseCase;
   final UpdateArtistUseCase updateArtistUseCase;
@@ -32,19 +34,16 @@ class UpdateArtistPresentationMediasUseCase {
 
   Future<Either<Failure, void>> call(
     String uid,
-
     Map<String, String> talentLocalFilePaths, // Map<talent, localFilePath>
-  ) async {
+    {void Function(int completed, int total)? onProgress,
+  }) async {
     try {
       // Validar UID
       if (uid.isEmpty) {
         return const Left(ValidationFailure('UID do artista não pode ser vazio'));
       }
 
-      // Validar map de arquivos
-      if (talentLocalFilePaths.isEmpty) {
-        return const Left(ValidationFailure('Map de arquivos não pode ser vazio'));
-      }
+      // Permite map vazio: usuário pode ter removido todos os vídeos
 
       // Buscar artista atual (cache-first)
       final getResult = await getArtistUseCase(uid);
@@ -64,19 +63,42 @@ class UpdateArtistPresentationMediasUseCase {
             currentArtist.presentationMedias ?? {},
           );
 
-          // Fase 1: Remover talentos que não estão mais na lista — deletes em paralelo
-          final keysToRemove = List<String>.from(updatedMedias.keys)
+          // Fase 1: Remover talentos que não estão mais em specialty — deletes em paralelo
+          final keysNotInSpecialty = List<String>.from(updatedMedias.keys)
               .where((key) => !currentTalentsSet.contains(key))
               .toList();
-          final urlsToDelete = <String>[];
-          for (final key in keysToRemove) {
+          final urlsToDeletePhase1 = <String>[];
+          for (final key in keysNotInSpecialty) {
             final url = updatedMedias[key];
-            if (url != null && url.isNotEmpty) urlsToDelete.add(url);
+            if (url != null && url.isNotEmpty) urlsToDeletePhase1.add(url);
             updatedMedias.remove(key);
           }
-          if (urlsToDelete.isNotEmpty) {
+          if (urlsToDeletePhase1.isNotEmpty) {
             await Future.wait(
-              urlsToDelete.map(
+              urlsToDeletePhase1.map(
+                (url) => storageService
+                    .deleteFileFromFirebaseStorage(url)
+                    .catchError((_) {}),
+              ),
+            );
+          }
+
+          // Fase 1b: Remover vídeos que o usuário deletou na UI (talento em specialty mas não em talentLocalFilePaths)
+          final talentsToRemoveFromUi = currentTalentsSet
+              .where((talent) {
+                final value = talentLocalFilePaths[talent];
+                return value == null || value.isEmpty;
+              })
+              .toList();
+          final urlsToDeletePhase1b = <String>[];
+          for (final talent in talentsToRemoveFromUi) {
+            final url = updatedMedias[talent];
+            if (url != null && url.isNotEmpty) urlsToDeletePhase1b.add(url);
+            updatedMedias.remove(talent);
+          }
+          if (urlsToDeletePhase1b.isNotEmpty) {
+            await Future.wait(
+              urlsToDeletePhase1b.map(
                 (url) => storageService
                     .deleteFileFromFirebaseStorage(url)
                     .catchError((_) {}),
@@ -99,7 +121,15 @@ class UpdateArtistPresentationMediasUseCase {
             }
           }
 
-          // Fase 3: Uploads de arquivos locais — todos em paralelo
+          // Fase 3: Uploads de arquivos locais — todos em paralelo, reportando progresso
+          final totalUploads = talentLocalFilePaths.entries
+              .where((e) =>
+                  e.value.isNotEmpty &&
+                  !e.value.startsWith('http://') &&
+                  !e.value.startsWith('https://'))
+              .length;
+          final completedCount = [0]; // lista para mutação dentro dos closures
+
           final uploadFutures = <Future<void>>[];
           for (final entry in talentLocalFilePaths.entries) {
             final talent = entry.key;
@@ -123,6 +153,8 @@ class UpdateArtistPresentationMediasUseCase {
                 filePathOrUrl,
               );
               updatedMedias[talent] = newVideoUrl;
+              completedCount[0]++;
+              onProgress?.call(completedCount[0], totalUploads);
             }();
             uploadFutures.add(future);
           }

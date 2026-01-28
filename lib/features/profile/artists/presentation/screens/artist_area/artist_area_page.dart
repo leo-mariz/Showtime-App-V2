@@ -7,6 +7,8 @@ import 'package:app/features/profile/artists/domain/enums/artist_incomplete_info
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
 import 'package:app/features/profile/artists/presentation/widgets/artist_area_option_card.dart';
+import 'package:app/features/profile/artists/presentation/widgets/artist_area_activation_card.dart';
+import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,6 +45,18 @@ class ArtistAreaScreen extends StatelessWidget {
               (types) => types.contains(infoType.name),
             );
           }
+
+          // Verificar se o artista pode ativar o perfil
+          // Precisa estar aprovado e sem informações incompletas
+          bool _canActivateProfile() {
+            if (artist == null) return false;
+            final isApproved = artist.approved == true;
+            final hasNoIncompleteSections = artist.hasIncompleteSections != true;
+            return isApproved && hasNoIncompleteSections;
+          }
+
+          final isActive = artist?.isActive ?? false;
+          final canActivate = _canActivateProfile();
           
           return SingleChildScrollView(
             child: Column(
@@ -91,12 +105,22 @@ class ArtistAreaScreen extends StatelessWidget {
 
             DSSizedBoxSpacing.vertical(8),
 
-            // ProfileVisibilityCard(
-            //   isActive: false, // TODO: Buscar do estado/bloc
-            //   isEnabled: false, // TODO: Verificar se todos os campos obrigatórios estão preenchidos
-            //   blockingReason: 'Complete seu perfil para ativar a visibilidade. Preencha todas as informações obrigatórias em "Dados Profissionais".',
+            // // Opção: Ativação do Perfil
+            // ArtistAreaActivationCard(
+            //   title: 'Ativar Perfil',
+            //   description: canActivate
+            //       ? (isActive
+            //           ? 'Seu perfil está ativo e visível para clientes'
+            //           : 'Ative seu perfil para aparecer nas buscas')
+            //       : 'Complete seu perfil e aguarde aprovação para ativar a visualização',
+            //   icon: Icons.public_outlined,
+            //   iconColor: onPrimaryContainer,
+            //   isActive: isActive,
+            //   isEnabled: canActivate,
             //   onChanged: (value) {
-            //     // TODO: Implementar lógica para ativar/desativar perfil
+            //     context.read<ArtistsBloc>().add(
+            //           UpdateArtistActiveStatusEvent(isActive: value),
+            //         );
             //   },
             // ),
               ],

@@ -37,6 +37,7 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
   final Map<String, String?> _initialVideoUrls = {};
   bool _isLoading = false;
   bool _hasLoadedData = false;
+  bool _isSavingDialogOpen = false;
 
   @override
   void initState() {
@@ -162,32 +163,73 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PopScope(
+      builder: (dialogContext) => PopScope(
         canPop: false,
-        child: AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CustomLoadingIndicator(),
-              SizedBox(height: DSSize.height(24)),
-              Text(
-                'Salvando seus vídeos...',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
+        child: BlocBuilder<ArtistsBloc, ArtistsState>(
+          buildWhen: (previous, current) =>
+              current is UpdateArtistPresentationMediasLoading ||
+              current is UpdateArtistPresentationMediasProgress,
+          builder: (context, state) {
+            final hasProgress = state is UpdateArtistPresentationMediasProgress && state.total > 0;
+            final current = state is UpdateArtistPresentationMediasProgress ? state.current : 0;
+            final total = state is UpdateArtistPresentationMediasProgress ? state.total : 0;
+            final progress = total > 0 ? current / total : 0.0;
+
+            return AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasProgress) ...[
+                    Row(children: [
+                      Text(
+                        '$current/$total',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      DSSizedBoxSpacing.horizontal(8),
+                      CustomLoadingIndicator(),
+                      ],
+                    ),
+                    SizedBox(height: DSSize.height(16)),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(DSSize.width(8)),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: DSSize.height(8),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const CustomLoadingIndicator(),
+                  ],
+                  SizedBox(height: DSSize.height(24)),
+                  Text(
+                    'Salvando seus vídeos...',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: DSSize.height(8)),
+                  Text(
+                    hasProgress
+                        ? 'Enviando vídeos. Por favor, não saia da tela.'
+                        : 'Por favor, aguarde.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              SizedBox(height: DSSize.height(12)),
-              Text(
-                'Isso pode demorar alguns minutos. Por favor, aguarde.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -240,19 +282,24 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
             _isLoading = false;
           });
           context.showError(state.error);
-        } else if (state is UpdateArtistPresentationMediasLoading) {
+        } else if (state is UpdateArtistPresentationMediasLoading ||
+            state is UpdateArtistPresentationMediasProgress) {
           setState(() {
             _isLoading = true;
           });
-          _showSavingDialog(context);
+          if (!_isSavingDialogOpen) {
+            _isSavingDialogOpen = true;
+            _showSavingDialog(context);
+          }
         } else if (state is UpdateArtistPresentationMediasSuccess) {
+          _isSavingDialogOpen = false;
           if (context.mounted) Navigator.of(context).pop(context);
-          // Recarregar dados atualizados para obter as novas URLs
           _hasLoadedData = false;
           _handleGetArtist();
           context.showSuccess('Vídeos salvos com sucesso!');
           router.maybePop();
         } else if (state is UpdateArtistPresentationMediasFailure) {
+          _isSavingDialogOpen = false;
           if (context.mounted) Navigator.of(context).pop(context);
           setState(() {
             _isLoading = false;

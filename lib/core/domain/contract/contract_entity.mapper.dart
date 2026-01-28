@@ -249,6 +249,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$statusChangedAt,
     opt: true,
   );
+  static DateTime? _$acceptDeadline(ContractEntity v) => v.acceptDeadline;
+  static const Field<ContractEntity, DateTime> _f$acceptDeadline = Field(
+    'acceptDeadline',
+    _$acceptDeadline,
+    opt: true,
+  );
   static bool? _$isPaying(ContractEntity v) => v.isPaying;
   static const Field<ContractEntity, bool> _f$isPaying = Field(
     'isPaying',
@@ -297,6 +303,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #canceledBy: _f$canceledBy,
     #cancelReason: _f$cancelReason,
     #statusChangedAt: _f$statusChangedAt,
+    #acceptDeadline: _f$acceptDeadline,
     #isPaying: _f$isPaying,
   };
 
@@ -340,6 +347,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       canceledBy: data.dec(_f$canceledBy),
       cancelReason: data.dec(_f$cancelReason),
       statusChangedAt: data.dec(_f$statusChangedAt),
+      acceptDeadline: data.dec(_f$acceptDeadline),
       isPaying: data.dec(_f$isPaying),
     );
   }
@@ -456,6 +464,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? canceledBy,
     String? cancelReason,
     DateTime? statusChangedAt,
+    DateTime? acceptDeadline,
     bool? isPaying,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -532,6 +541,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? canceledBy = $none,
     Object? cancelReason = $none,
     Object? statusChangedAt = $none,
+    Object? acceptDeadline = $none,
     Object? isPaying = $none,
   }) => $apply(
     FieldCopyWithData({
@@ -578,6 +588,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (canceledBy != $none) #canceledBy: canceledBy,
       if (cancelReason != $none) #cancelReason: cancelReason,
       if (statusChangedAt != $none) #statusChangedAt: statusChangedAt,
+      if (acceptDeadline != $none) #acceptDeadline: acceptDeadline,
       if (isPaying != $none) #isPaying: isPaying,
     }),
   );
@@ -645,6 +656,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     canceledBy: data.get(#canceledBy, or: $value.canceledBy),
     cancelReason: data.get(#cancelReason, or: $value.cancelReason),
     statusChangedAt: data.get(#statusChangedAt, or: $value.statusChangedAt),
+    acceptDeadline: data.get(#acceptDeadline, or: $value.acceptDeadline),
     isPaying: data.get(#isPaying, or: $value.isPaying),
   );
 

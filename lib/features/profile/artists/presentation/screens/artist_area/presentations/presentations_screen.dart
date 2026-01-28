@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/features/profile/artists/presentation/widgets/video_upload_card.dart';
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
@@ -14,11 +17,9 @@ import 'package:video_player/video_player.dart';
 
 @RoutePage(deferredLoading: true)
 class PresentationsScreen extends StatefulWidget {
-  final List<String> talents;
 
   const PresentationsScreen({
     super.key,
-    required this.talents,
   });
 
   @override
@@ -26,6 +27,8 @@ class PresentationsScreen extends StatefulWidget {
 }
 
 class _PresentationsScreenState extends State<PresentationsScreen> {
+  // Lista de talentos obtidos do artista
+  List<String> _talents = [];
   // Mapa para armazenar os vídeos selecionados por talento
   final Map<String, File?> _selectedVideos = {};
   // Mapa para armazenar as URLs dos vídeos (após upload ou se já existirem)
@@ -38,14 +41,21 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Inicializa o mapa de vídeos para cada talento
-    for (final talent in widget.talents) {
+    // Carregar dados do artista
+    _handleGetArtist();
+  }
+
+  /// Inicializa os mapas de vídeos para os talentos fornecidos
+  void _initializeVideosForTalents(List<String> talents) {
+    _selectedVideos.clear();
+    _videoUrls.clear();
+    _initialVideoUrls.clear();
+    
+    for (final talent in talents) {
       _selectedVideos[talent] = null;
       _videoUrls[talent] = null;
       _initialVideoUrls[talent] = null;
     }
-    // Carregar dados do artista
-    _handleGetArtist();
   }
 
   void _handleGetArtist() {
@@ -93,29 +103,35 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
     });
   }
 
-  void _loadPresentationMedias(Map<String, String>? presentationMedias) {
+  void _loadPresentationMedias(ArtistEntity artist) {
     if (_hasLoadedData) return;
+
+    // Obter talentos do professionalInfo
+    final specialties = artist.professionalInfo?.specialty ?? [];
+    
+    // Se não há talentos, não há nada para carregar
+    if (specialties.isEmpty) {
+      setState(() {
+        _hasLoadedData = true;
+        _talents = [];
+      });
+      return;
+    }
 
     setState(() {
       _hasLoadedData = true;
+      _talents = specialties;
       
-      // Limpar vídeos selecionados quando recarregamos os dados
-      _selectedVideos.clear();
-      for (final talent in widget.talents) {
-        _selectedVideos[talent] = null;
-      }
+      // Inicializar mapas para os talentos
+      _initializeVideosForTalents(specialties);
       
+      // Carregar URLs existentes se houver
+      final presentationMedias = artist.presentationMedias;
       if (presentationMedias != null) {
-        for (final talent in widget.talents) {
+        for (final talent in specialties) {
           final url = presentationMedias[talent];
           _videoUrls[talent] = url;
           _initialVideoUrls[talent] = url;
-        }
-      } else {
-        // Se não há mídias, limpar URLs
-        for (final talent in widget.talents) {
-          _videoUrls[talent] = null;
-          _initialVideoUrls[talent] = null;
         }
       }
     });
@@ -123,7 +139,7 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
 
   bool _hasChanges() {
     // Verificar se há mudanças comparando os vídeos selecionados com os iniciais
-    for (final talent in widget.talents) {
+    for (final talent in _talents) {
       final selectedVideo = _selectedVideos[talent];
       final currentUrl = _videoUrls[talent];
       final initialUrl = _initialVideoUrls[talent];
@@ -142,11 +158,46 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
     return false;
   }
 
+  void _showSavingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomLoadingIndicator(),
+              SizedBox(height: DSSize.height(24)),
+              Text(
+                'Salvando seus vídeos...',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: DSSize.height(12)),
+              Text(
+                'Isso pode demorar alguns minutos. Por favor, aguarde.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _onSave() {
     // Preparar map de arquivos para upload
     final Map<String, String> talentFilePaths = {};
 
-    for (final talent in widget.talents) {
+    for (final talent in _talents) {
       final selectedVideo = _selectedVideos[talent];
       final currentUrl = _videoUrls[talent];
 
@@ -182,8 +233,8 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
           setState(() {
             _isLoading = false;
           });
-          // Carregar mídias de apresentação
-          _loadPresentationMedias(state.artist.presentationMedias);
+          // Carregar mídias de apresentação e talentos
+          _loadPresentationMedias(state.artist);
         } else if (state is GetArtistFailure) {
           setState(() {
             _isLoading = false;
@@ -193,13 +244,16 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
           setState(() {
             _isLoading = true;
           });
+          _showSavingDialog(context);
         } else if (state is UpdateArtistPresentationMediasSuccess) {
+          if (context.mounted) Navigator.of(context).pop(context);
           // Recarregar dados atualizados para obter as novas URLs
           _hasLoadedData = false;
           _handleGetArtist();
           context.showSuccess('Vídeos salvos com sucesso!');
           router.maybePop();
         } else if (state is UpdateArtistPresentationMediasFailure) {
+          if (context.mounted) Navigator.of(context).pop(context);
           setState(() {
             _isLoading = false;
           });
@@ -228,28 +282,42 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
                 ),
               ),
               DSSizedBoxSpacing.vertical(16),
-              ...widget.talents.map((talent) {
-                return Column(
-                  children: [
-                    VideoUploadCard(
-                      talent: talent,
-                      videoFile: _selectedVideos[talent],
-                      videoUrl: _videoUrls[talent],
-                      onVideoSelected: (file) => _onVideoSelected(talent, file),
-                      onVideoRemoved: () => _onVideoRemoved(talent),
-                      enabled: !_isLoading,
+              // Mostrar mensagem se não há talentos cadastrados
+              if (_talents.isEmpty && _hasLoadedData)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Você precisa cadastrar pelo menos um talento (specialty) nas informações profissionais antes de fazer upload de apresentações.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    DSSizedBoxSpacing.vertical(8),
-                  ],
-                );
-              }).toList(),
+                  ),
+                )
+              else if (_talents.isEmpty)
+                const SizedBox.shrink()
+              else
+                ..._talents.map((talent) {
+                  return Column(
+                    children: [
+                      VideoUploadCard(
+                        talent: talent,
+                        videoFile: _selectedVideos[talent],
+                        videoUrl: _videoUrls[talent],
+                        onVideoSelected: (file) => _onVideoSelected(talent, file),
+                        onVideoRemoved: () => _onVideoRemoved(talent),
+                        enabled: !_isLoading,
+                      ),
+                      DSSizedBoxSpacing.vertical(8),
+                    ],
+                  );
+                }),
               DSSizedBoxSpacing.vertical(16),
               CustomButton(
                 label: 'Salvar',
                 backgroundColor: colorScheme.onPrimaryContainer,
                 textColor: colorScheme.primaryContainer,
                 onPressed: (_isLoading || !_hasChanges()) ? null : _onSave,
-                isLoading: _isLoading,
+                // isLoading: _isLoading,
               ),
               DSSizedBoxSpacing.vertical(24),
             ],

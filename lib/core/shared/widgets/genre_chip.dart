@@ -15,11 +15,12 @@ class GenreChip extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
+    final onPrimary = colorScheme.onPrimary;
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: DSSize.width(16),
-        vertical: DSSize.height(8),
+        horizontal: DSSize.width(12),
+        vertical: DSSize.height(6),
       ),
       decoration: BoxDecoration(
         color: onSurfaceVariant.withOpacity(0.1),
@@ -31,8 +32,8 @@ class GenreChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: textTheme.bodyMedium?.copyWith(
-          color: onSurfaceVariant,
+        style: textTheme.bodySmall?.copyWith(
+          color: onPrimary,
         ),
       ),
     );

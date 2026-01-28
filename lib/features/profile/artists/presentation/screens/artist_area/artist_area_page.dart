@@ -72,10 +72,7 @@ class ArtistAreaScreen extends StatelessWidget {
                   iconColor: onPrimaryContainer,
                   hasIncompleteInfo: _isSectionIncomplete(ArtistIncompleteInfoType.presentations),
                   onTap: () {
-                    // TODO: Obter talentos do artista atual do professionalInfo.specialty
-                    // Por enquanto, usando lista mockada
-                    final talents = ['Cantor', 'Guitarrista'];
-                    router.push(PresentationsRoute(talents: talents));
+                    router.push(PresentationsRoute());
                   },
                 ),
                 
@@ -89,7 +86,7 @@ class ArtistAreaScreen extends StatelessWidget {
               description: 'Visualize como sua página aparece para os clientes',
               icon: Icons.person_outline_rounded,
               iconColor: onPrimaryContainer,
-              onTap: () => router.push(ArtistProfileViewRoute()),
+              onTap: () => router.push(ArtistExploreRoute(artist: artist!, viewOnly: true)),
             ),
 
             DSSizedBoxSpacing.vertical(8),

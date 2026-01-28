@@ -8,6 +8,7 @@ class ProfessionalInfoEntity with ProfessionalInfoEntityMappable {
   final List<String>? specialty;
   final List<String>? genrePreferences;
   final int? minimumShowDuration;
+  final int? preparationTime;
   final String? bio;
   final double? hourlyRate;
 
@@ -15,6 +16,7 @@ class ProfessionalInfoEntity with ProfessionalInfoEntityMappable {
     this.specialty,
     this.genrePreferences,
     this.minimumShowDuration,
+    this.preparationTime,
     this.bio,
     this.hourlyRate,
   });

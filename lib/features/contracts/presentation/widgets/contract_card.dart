@@ -1,6 +1,7 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,69 @@ class ContractCard extends StatelessWidget {
 
   String _formatCurrency(double value) {
     return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
+  }
+
+  /// Constrói o indicador de prazo para aceitar
+  Widget _buildDeadlineIndicator(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
+    final isExpired = contract.isAcceptDeadlineExpired;
+    final isCritical = contract.isDeadlineCritical;
+    final isNear = contract.isDeadlineNear;
+    
+    // Cor baseada no estado do prazo
+    Color backgroundColor;
+    Color textColor;
+    IconData icon;
+    
+    if (isExpired) {
+      backgroundColor = colorScheme.errorContainer;
+      textColor = colorScheme.onErrorContainer;
+      icon = Icons.error_outline_rounded;
+    } else if (isCritical) {
+      backgroundColor = colorScheme.errorContainer.withOpacity(0.3);
+      textColor = colorScheme.error;
+      icon = Icons.warning_amber_rounded;
+    } else if (isNear) {
+      backgroundColor = colorScheme.tertiaryContainer.withOpacity(0.3);
+      textColor = colorScheme.onTertiaryContainer;
+      icon = Icons.access_time_rounded;
+    } else {
+      backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
+      textColor = colorScheme.onPrimaryContainer;
+      icon = Icons.schedule_rounded;
+    }
+    
+    return Container(
+      padding: EdgeInsets.all(DSSize.width(12)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(DSSize.width(8)),
+        border: isExpired || isCritical
+            ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1)
+            : null,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: DSSize.width(18),
+            color: textColor,
+          ),
+          DSSizedBoxSpacing.horizontal(8),
+          Expanded(
+            child: Text(
+              contract.formattedAcceptDeadline ?? 'Prazo não disponível',
+              style: textTheme.bodyMedium?.copyWith(
+                color: textColor,
+                fontWeight: isExpired || isCritical ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Organiza os botões de ação
@@ -244,6 +308,12 @@ class ContractCard extends StatelessWidget {
                   ],
                 ),
               ),
+              
+              // Indicador de prazo para aceitar (apenas para artista com contrato pendente)
+              if (isArtist && contract.isPending && contract.acceptDeadline != null) ...[
+                DSSizedBoxSpacing.vertical(12),
+                _buildDeadlineIndicator(context),
+              ],
               
               // Botões de ação (se fornecidos)
               if (_buildActionButtonsSection() != null) ...[

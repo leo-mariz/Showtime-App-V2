@@ -26,7 +26,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ArtistEventDetailRoute.page, path: '/artist-event-detail'),
 
     //Artist Profile Routes
-    AutoRoute(page: ArtistProfileRoute.page, path: '/artist-profile'),
+    AutoRoute(page: ArtistExploreRoute.page, path: '/artist-explore'),
     AutoRoute(page: ArtistAreaRoute.page, path: '/artist-area'),
     AutoRoute(page: RegisterDataAreaRoute.page, path: '/register-data-area'),
     AutoRoute(page: ProfessionalInfoRoute.page, path: '/professional-info'),
@@ -35,7 +35,6 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: BankAccountRoute.page, path: '/bank-account'),
     AutoRoute(page: GroupsRoute.page, path: '/groups'),
     AutoRoute(page: GroupAreaRoute.page, path: '/group-area'),
-    AutoRoute(page: ArtistProfileViewRoute.page, path: '/artist-profile-view'),
 
     //Artist Dashboard Routes
 

@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
@@ -28,9 +29,11 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
   final TextEditingController talentController = TextEditingController();
   final TextEditingController genrePreferencesController = TextEditingController();
   final TextEditingController minimumShowDurationController = TextEditingController();
+  final TextEditingController preparationTimeController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
 
   Duration? _selectedMinimumDuration;
+  Duration? _selectedPreparationTime;
   bool _isLoading = false;
   bool _hasLoadedData = false;
 
@@ -47,10 +50,15 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     _selectedMinimumDuration = const Duration(minutes: 30);
     minimumShowDurationController.text = _formatDuration(_selectedMinimumDuration!);
     
+    // Define tempo de preparação padrão de 15 minutos (será sobrescrito se houver dados)
+    _selectedPreparationTime = const Duration(minutes: 15);
+    preparationTimeController.text = _formatDuration(_selectedPreparationTime!);
+    
     // Adicionar listeners para detectar mudanças
     talentController.addListener(_onFieldChanged);
     genrePreferencesController.addListener(_onFieldChanged);
     minimumShowDurationController.addListener(_onFieldChanged);
+    preparationTimeController.addListener(_onFieldChanged);
     bioController.addListener(_onFieldChanged);
     
     // Carregar dados do artista após o frame ser construído
@@ -78,6 +86,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     talentController.dispose();
     genrePreferencesController.dispose();
     minimumShowDurationController.dispose();
+    preparationTimeController.dispose();
     bioController.dispose();
     super.dispose();
   }
@@ -132,6 +141,15 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         minimumShowDurationController.text = _formatDuration(_selectedMinimumDuration!);
       }
 
+      // Carregar preparationTime
+      if (professionalInfo?.preparationTime != null) {
+        _selectedPreparationTime = Duration(minutes: professionalInfo!.preparationTime!);
+        preparationTimeController.text = _formatDuration(_selectedPreparationTime!);
+      } else {
+        _selectedPreparationTime = const Duration(minutes: 15);
+        preparationTimeController.text = _formatDuration(_selectedPreparationTime!);
+      }
+
       // Carregar bio
       if (professionalInfo?.bio != null && professionalInfo!.bio!.isNotEmpty) {
         bioController.text = professionalInfo.bio!;
@@ -164,7 +182,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         initialHours: hours,
         initialMinutes: minutes,
         type: WheelPickerType.duration,
-        minimumDuration: const Duration(minutes: 15), // Duração mínima de 30 minutos
+        minimumDuration: const Duration(minutes: 15), // Duração mínima de 15 minutos
       ),
     );
 
@@ -172,6 +190,30 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
       setState(() {
         _selectedMinimumDuration = result;
         minimumShowDurationController.text = _formatDuration(result);
+        // O listener _onFieldChanged será chamado automaticamente
+      });
+    }
+  }
+
+  Future<void> _selectPreparationTime() async {
+    final hours = _selectedPreparationTime?.inHours ?? 0;
+    final minutes = (_selectedPreparationTime?.inMinutes ?? 0) % 60;
+
+    final result = await showDialog<Duration>(
+      context: context,
+      builder: (context) => WheelPickerDialog(
+        title: 'Tempo de preparação',
+        initialHours: hours,
+        initialMinutes: minutes,
+        type: WheelPickerType.duration,
+        minimumDuration: const Duration(minutes: 0), // Pode ser zero
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedPreparationTime = result;
+        preparationTimeController.text = _formatDuration(result);
         // O listener _onFieldChanged será chamado automaticamente
       });
     }
@@ -188,6 +230,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
     
     final currentMinimumShowDuration = _selectedMinimumDuration?.inMinutes;
+    final currentPreparationTime = _selectedPreparationTime?.inMinutes;
     
     final currentBio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
@@ -195,15 +238,17 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     final initialSpecialty = _initialProfessionalInfo?.specialty;
     final initialGenrePreferences = _initialProfessionalInfo?.genrePreferences;
     final initialMinimumShowDuration = _initialProfessionalInfo?.minimumShowDuration;
+    final initialPreparationTime = _initialProfessionalInfo?.preparationTime;
     final initialBio = _initialProfessionalInfo?.bio;
 
     // Verificar se há mudanças
     final specialtyChanged = _compareLists(currentSpecialty, initialSpecialty);
     final genrePreferencesChanged = _compareLists(currentGenrePreferences, initialGenrePreferences);
     final durationChanged = currentMinimumShowDuration != initialMinimumShowDuration;
+    final preparationTimeChanged = currentPreparationTime != initialPreparationTime;
     final bioChanged = currentBio != initialBio;
 
-    return specialtyChanged || genrePreferencesChanged || durationChanged || bioChanged;
+    return specialtyChanged || genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged;
   }
 
   bool _compareLists(List<String>? list1, List<String>? list2) {
@@ -232,6 +277,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
 
     final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
+    final preparationTime = _selectedPreparationTime?.inMinutes;
 
     final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
@@ -239,6 +285,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
       specialty: specialty,
       genrePreferences: genrePreferences,
       minimumShowDuration: minimumShowDuration,
+      preparationTime: preparationTime,
       bio: bio,
     );
 
@@ -285,11 +332,13 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                     ? null
                     : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
                 final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
+                final preparationTime = _selectedPreparationTime?.inMinutes;
                 final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
                 _initialProfessionalInfo = ProfessionalInfoEntity(
                   specialty: specialty,
                   genrePreferences: genrePreferences,
                   minimumShowDuration: minimumShowDuration,
+                  preparationTime: preparationTime,
                   bio: bio,
                 );
               });
@@ -331,6 +380,17 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         showAppBar: true,
         appBarTitle: 'Dados Profissionais',
         showAppBarBackButton: true,
+        appBarActions: [
+          IconButton(
+            onPressed: _showLegendModal,
+            icon: Icon(
+              Icons.info_outline,
+              size: DSSize.width(22),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            tooltip: 'Legenda dos campos',
+          ),
+        ],
         child: GestureDetector(
           onTap: () {
             // Remover foco de qualquer campo quando tocar na tela
@@ -355,11 +415,16 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                     talentController: talentController,
                     genrePreferencesController: genrePreferencesController,
                     minimumShowDurationController: minimumShowDurationController,
+                    preparationTimeController: preparationTimeController,
                     bioController: bioController,
                     onDurationTap: _selectDuration,
+                    onPreparationTimeTap: _selectPreparationTime,
                     durationDisplayValue: minimumShowDurationController.text.isEmpty
                         ? 'Selecione'
                         : minimumShowDurationController.text,
+                    preparationTimeDisplayValue: preparationTimeController.text.isEmpty
+                        ? 'Selecione'
+                        : preparationTimeController.text,
                     talentOptions: _talentOptions.isNotEmpty ? _talentOptions : null,
                   ),
                   DSSizedBoxSpacing.vertical(48),
@@ -377,6 +442,154 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         ),
         ),
       ),
+    );
+  }
+
+  void _showLegendModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _buildLegendBottomSheet(),
+    );
+  }
+
+  Widget _buildLegendBottomSheet() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(DSSize.width(20)),
+          topRight: Radius.circular(DSSize.width(20)),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              margin: EdgeInsets.only(
+                top: DSSize.height(12),
+                bottom: DSSize.height(16),
+              ),
+              width: DSSize.width(40),
+              height: DSSize.height(4),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(2)),
+              ),
+            ),
+          ),
+
+          // Título
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
+            child: Text(
+              'Informações Profissionais',
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+
+          SizedBox(height: DSSize.height(8)),
+
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
+            child: Text(
+              'O que cada informação significa?',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+
+          SizedBox(height: DSSize.height(24)),
+
+          // Lista de legendas (scrollável)
+          Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLegendItem(
+                    label: 'Talentos',
+                    description: 'Selecione os talentos ou especialidades que você possui. Cada talento poderá ter um vídeo de apresentação na área de apresentações.',
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                  ),
+
+                  SizedBox(height: DSSize.height(20)),
+
+                  _buildLegendItem(
+                    label: 'Duração Mínima',
+                    description: 'Tempo mínimo que sua apresentação deve durar. Clientes não poderão solicitar apresentações com duração menor que esta.',
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                  ),
+
+                  SizedBox(height: DSSize.height(20)),
+
+                  _buildLegendItem(
+                    label: 'Tempo de Preparação',
+                    description: 'Tempo necessário para você se preparar antes do início da apresentação. Este tempo dará uma estimativa do horário que você chegará no local do show.',
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                  ),
+
+                  SizedBox(height: DSSize.height(20)),
+
+                  _buildLegendItem(
+                    label: 'Minha Bio',
+                    description: 'Conte mais sobre você, seu estilo, experiência e o que torna sua apresentação única. Esta informação será visível para os clientes.',
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                  ),
+
+                  SizedBox(height: DSSize.height(48)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem({
+    required String label,
+    required String description,
+    required ColorScheme colorScheme,
+    required TextTheme textTheme,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        SizedBox(height: DSSize.height(4)),
+        Text(
+          description,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

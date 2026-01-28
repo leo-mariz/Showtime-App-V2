@@ -338,7 +338,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     
 
     router.push(
-      ArtistProfileRoute(
+      ArtistExploreRoute(
         artist: artist,
         isFavorite: isFavorite,
       ),

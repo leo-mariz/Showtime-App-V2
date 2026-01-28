@@ -320,5 +320,53 @@ class ContractRepositoryImpl implements IContractRepository {
       return Left(ErrorHandler.handle(e));
     }
   }
+
+  // ==================== AVAILABILITY FUNCTIONS ====================
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> verifyContractAvailability({
+    required String contractId,
+    required String artistId,
+    required String date,
+    required String time,
+    required int duration,
+    required Map<String, dynamic> address,
+    required double value,
+    Map<String, dynamic>? availabilitySnapshot,
+  }) async {
+    try {
+      final result = await remoteDataSource.verifyContractAvailability(
+        contractId: contractId,
+        artistId: artistId,
+        date: date,
+        time: time,
+        duration: duration,
+        address: address,
+        value: value,
+        availabilitySnapshot: availabilitySnapshot,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> releaseAvailabilitySlotAfterCancel({
+    required String contractId,
+    required String artistId,
+    required String date,
+  }) async {
+    try {
+      final result = await remoteDataSource.releaseAvailabilitySlotAfterCancel(
+        contractId: contractId,
+        artistId: artistId,
+        date: date,
+      );
+      return Right(result);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }
 

@@ -13,9 +13,8 @@ import 'package:dartz/dartz.dart';
 /// - Validar UID do artista
 /// - Validar map de talentos e caminhos de arquivos
 /// - Buscar artista atual (do cache se disponível)
-/// - Para cada talento:
-///   - Deletar vídeo antigo do Firebase Storage (se existir)
-///   - Fazer upload do novo vídeo e obter URL
+/// - Remover de presentationMedias (e deletar do Storage) talentos que não estão mais em professionalInfo.specialty (deletes em paralelo)
+/// - Para cada talento a salvar: atualizar map com URLs; uploads de arquivos locais feitos em paralelo (delete do antigo + upload do novo por talento)
 /// - Atualizar apenas o campo presentationMedias no Firestore
 /// - Salvar atualização
 class UpdateArtistPresentationMediasUseCase {
@@ -33,6 +32,7 @@ class UpdateArtistPresentationMediasUseCase {
 
   Future<Either<Failure, void>> call(
     String uid,
+
     Map<String, String> talentLocalFilePaths, // Map<talent, localFilePath>
   ) async {
     try {
@@ -55,63 +55,79 @@ class UpdateArtistPresentationMediasUseCase {
           // Obter referência base do Firebase Storage para mídias de apresentação
           final baseStorageReference = ArtistEntityReference.firestoragePresentationMediasReference(uid);
           
+          // Lista atual de talentos (professionalInfo.specialty)
+          final currentTalents = currentArtist.professionalInfo?.specialty ?? [];
+          final currentTalentsSet = currentTalents.toSet();
+
           // Map para armazenar as novas URLs (talent -> downloadUrl)
           final Map<String, String> updatedMedias = Map<String, String>.from(
             currentArtist.presentationMedias ?? {},
           );
 
-          // Processar cada talento
+          // Fase 1: Remover talentos que não estão mais na lista — deletes em paralelo
+          final keysToRemove = List<String>.from(updatedMedias.keys)
+              .where((key) => !currentTalentsSet.contains(key))
+              .toList();
+          final urlsToDelete = <String>[];
+          for (final key in keysToRemove) {
+            final url = updatedMedias[key];
+            if (url != null && url.isNotEmpty) urlsToDelete.add(url);
+            updatedMedias.remove(key);
+          }
+          if (urlsToDelete.isNotEmpty) {
+            await Future.wait(
+              urlsToDelete.map(
+                (url) => storageService
+                    .deleteFileFromFirebaseStorage(url)
+                    .catchError((_) {}),
+              ),
+            );
+          }
+
+          // Fase 2: Atualizar map com URLs que já existem (síncrono)
           for (final entry in talentLocalFilePaths.entries) {
             final talent = entry.key;
             final filePathOrUrl = entry.value;
+            if (filePathOrUrl.isEmpty) continue;
 
-            // Validar caminho do arquivo ou URL
-            if (filePathOrUrl.isEmpty) {
-              continue; // Pular se estiver vazio
-            }
-
-            // Verificar se já existe uma URL para este talento
             final existingUrl = updatedMedias[talent];
-            
-            // Se o valor passado for uma URL (começa com http/https)
             final isUrl = filePathOrUrl.startsWith('http://') || filePathOrUrl.startsWith('https://');
-            
+
             if (isUrl) {
-              // Se for uma URL e for igual à existente, não fazer nada
-              if (existingUrl != null && existingUrl == filePathOrUrl) {
-                continue; // Pular, não precisa atualizar
-              }
-              
-              // Se for uma URL diferente, atualizar diretamente (assumindo que já está no storage)
+              if (existingUrl != null && existingUrl == filePathOrUrl) continue;
               updatedMedias[talent] = filePathOrUrl;
-              continue;
             }
+          }
 
-            // Se chegou aqui, é um caminho local - fazer upload
-            // Se já existe uma URL para este talento, deletar o vídeo antigo
-            if (existingUrl != null && existingUrl.isNotEmpty) {
-              // Verificar se a URL antiga é diferente (para evitar deletar o mesmo arquivo)
-              // Se o arquivo local for o mesmo que já está no storage, não deletar
-              // Mas como não temos como comparar arquivo local com URL, sempre deletamos o antigo
-              try {
-                await storageService.deleteFileFromFirebaseStorage(existingUrl);
-              } catch (e) {
-                // Não falhar se o vídeo antigo não existir ou houver erro ao deletar
-                // Apenas continuar com o upload do novo vídeo
-              }
-            }
+          // Fase 3: Uploads de arquivos locais — todos em paralelo
+          final uploadFutures = <Future<void>>[];
+          for (final entry in talentLocalFilePaths.entries) {
+            final talent = entry.key;
+            final filePathOrUrl = entry.value;
+            if (filePathOrUrl.isEmpty) continue;
 
-            // Obter referência específica para este talento
+            final isUrl = filePathOrUrl.startsWith('http://') || filePathOrUrl.startsWith('https://');
+            if (isUrl) continue;
+
+            final existingUrl = updatedMedias[talent];
             final talentStorageReference = baseStorageReference.child(talent);
 
-            // Fazer upload do novo vídeo e obter URL
-            final newVideoUrl = await storageService.uploadFileToFirebaseStorage(
-              talentStorageReference,
-              filePathOrUrl,
-            );
-
-            // Atualizar o map com a nova URL
-            updatedMedias[talent] = newVideoUrl;
+            final future = () async {
+              if (existingUrl != null && existingUrl.isNotEmpty) {
+                try {
+                  await storageService.deleteFileFromFirebaseStorage(existingUrl);
+                } catch (_) {}
+              }
+              final newVideoUrl = await storageService.uploadFileToFirebaseStorage(
+                talentStorageReference,
+                filePathOrUrl,
+              );
+              updatedMedias[talent] = newVideoUrl;
+            }();
+            uploadFutures.add(future);
+          }
+          if (uploadFutures.isNotEmpty) {
+            await Future.wait(uploadFutures);
           }
 
           // Criar nova entidade com apenas presentationMedias atualizado

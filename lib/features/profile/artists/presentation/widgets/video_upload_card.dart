@@ -5,9 +5,17 @@ import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/selection_modal.dart';
+import 'package:app/core/shared/widgets/video_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
+
+/// Enum para ações disponíveis no modal de vídeo
+enum VideoAction {
+  gallery,
+  camera,
+  view,
+}
 
 class VideoUploadCard extends StatefulWidget {
   final String talent;
@@ -136,8 +144,19 @@ class _VideoUploadCardState extends State<VideoUploadCard> {
 
   Future<void> _selectVideo() async {
     try {
-      final source = await _showVideoSourceDialog();
-      if (source == null) return;
+      final action = await _showVideoActionDialog();
+      if (action == null) return;
+
+      // Se a ação for visualizar, abrir o visualizador de vídeo
+      if (action == VideoAction.view) {
+        _showVideoViewer();
+        return;
+      }
+
+      // Para galeria e câmera, continuar com o fluxo normal
+      final source = action == VideoAction.gallery 
+          ? ImageSource.gallery 
+          : ImageSource.camera;
 
       // Mostrar loading imediatamente antes de selecionar o vídeo
       if (mounted) {
@@ -201,24 +220,58 @@ class _VideoUploadCardState extends State<VideoUploadCard> {
     }
   }
 
-  Future<ImageSource?> _showVideoSourceDialog() async {
+  void _showVideoViewer() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: VideoViewer(
+              videoFile: widget.videoFile,
+              videoUrl: widget.videoUrl,
+              title: widget.talent,
+              autoPlay: true,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    return SelectionModal.show<ImageSource>(
+  Future<VideoAction?> _showVideoActionDialog() async {
+    final hasVideo = widget.videoFile != null || 
+                     (widget.videoUrl != null && widget.videoUrl!.isNotEmpty);
+    
+    final options = <SelectionModalOption<VideoAction>>[
+      SelectionModalOption<VideoAction>(
+        icon: Icons.photo_library,
+        title: 'Galeria',
+        value: VideoAction.gallery,
+      ),
+      SelectionModalOption<VideoAction>(
+        icon: Icons.videocam,
+        title: 'Câmera',
+        value: VideoAction.camera,
+      ),
+    ];
+
+    // Adicionar opção de visualizar apenas se houver vídeo
+    if (hasVideo) {
+      options.insert(
+        0,
+        SelectionModalOption<VideoAction>(
+          icon: Icons.play_circle_outline,
+          title: 'Visualizar vídeo',
+          value: VideoAction.view,
+        ),
+      );
+    }
+
+    return SelectionModal.show<VideoAction>(
       context: context,
-      title: 'Selecionar vídeo',
+      title: hasVideo ? 'Opções do vídeo' : 'Selecionar vídeo',
       showCancelButton: false,
-      options: [
-        SelectionModalOption<ImageSource>(
-          icon: Icons.photo_library,
-          title: 'Galeria',
-          value: ImageSource.gallery,
-        ),
-        SelectionModalOption<ImageSource>(
-          icon: Icons.videocam,
-          title: 'Câmera',
-          value: ImageSource.camera,
-        ),
-      ],
+      options: options,
     );
   }
 

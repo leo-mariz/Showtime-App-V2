@@ -11,6 +11,7 @@ class BasePage extends StatelessWidget {
   final String? appBarTitle;
   final Color? appBarTitleColor;
   final bool? showAppBarBackButton;
+  final List<Widget>? appBarActions;
   final Color? backgroundColor;
   final Widget? floatingActionButton;
 
@@ -23,6 +24,7 @@ class BasePage extends StatelessWidget {
     this.appBarTitle,
     this.appBarTitleColor,
     this.showAppBarBackButton = false,
+    this.appBarActions,
     this.backgroundColor,
     this.floatingActionButton,
   });
@@ -36,6 +38,7 @@ class BasePage extends StatelessWidget {
             title: appBarTitle,
             titleColor: appBarTitleColor,
             showBackButton: showAppBarBackButton ?? false,
+            actions: appBarActions,
           ) : null,
           backgroundColor: backgroundColor ?? Colors.transparent,
           floatingActionButton: floatingActionButton,

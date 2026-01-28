@@ -36,6 +36,12 @@ class ProfessionalInfoEntityMapper
       v.minimumShowDuration;
   static const Field<ProfessionalInfoEntity, int> _f$minimumShowDuration =
       Field('minimumShowDuration', _$minimumShowDuration, opt: true);
+  static int? _$preparationTime(ProfessionalInfoEntity v) => v.preparationTime;
+  static const Field<ProfessionalInfoEntity, int> _f$preparationTime = Field(
+    'preparationTime',
+    _$preparationTime,
+    opt: true,
+  );
   static String? _$bio(ProfessionalInfoEntity v) => v.bio;
   static const Field<ProfessionalInfoEntity, String> _f$bio = Field(
     'bio',
@@ -54,6 +60,7 @@ class ProfessionalInfoEntityMapper
     #specialty: _f$specialty,
     #genrePreferences: _f$genrePreferences,
     #minimumShowDuration: _f$minimumShowDuration,
+    #preparationTime: _f$preparationTime,
     #bio: _f$bio,
     #hourlyRate: _f$hourlyRate,
   };
@@ -63,6 +70,7 @@ class ProfessionalInfoEntityMapper
       specialty: data.dec(_f$specialty),
       genrePreferences: data.dec(_f$genrePreferences),
       minimumShowDuration: data.dec(_f$minimumShowDuration),
+      preparationTime: data.dec(_f$preparationTime),
       bio: data.dec(_f$bio),
       hourlyRate: data.dec(_f$hourlyRate),
     );
@@ -145,6 +153,7 @@ abstract class ProfessionalInfoEntityCopyWith<
     List<String>? specialty,
     List<String>? genrePreferences,
     int? minimumShowDuration,
+    int? preparationTime,
     String? bio,
     double? hourlyRate,
   });
@@ -185,6 +194,7 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
     Object? specialty = $none,
     Object? genrePreferences = $none,
     Object? minimumShowDuration = $none,
+    Object? preparationTime = $none,
     Object? bio = $none,
     Object? hourlyRate = $none,
   }) => $apply(
@@ -193,6 +203,7 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
       if (genrePreferences != $none) #genrePreferences: genrePreferences,
       if (minimumShowDuration != $none)
         #minimumShowDuration: minimumShowDuration,
+      if (preparationTime != $none) #preparationTime: preparationTime,
       if (bio != $none) #bio: bio,
       if (hourlyRate != $none) #hourlyRate: hourlyRate,
     }),
@@ -205,6 +216,7 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
       #minimumShowDuration,
       or: $value.minimumShowDuration,
     ),
+    preparationTime: data.get(#preparationTime, or: $value.preparationTime),
     bio: data.get(#bio, or: $value.bio),
     hourlyRate: data.get(#hourlyRate, or: $value.hourlyRate),
   );

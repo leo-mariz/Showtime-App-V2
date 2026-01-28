@@ -2,6 +2,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/domain/contract/key_code_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/entities/user_contracts_index_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -83,13 +84,52 @@ abstract class IContractRemoteDataSource {
   /// [updates] - Map com os campos a serem atualizados
   /// Lança [ServerException] em caso de erro
   Future<void> updateContractsIndex(String userId, Map<String, dynamic> updates);
+
+  // ==================== AVAILABILITY FUNCTIONS ====================
+
+  /// Verifica se a disponibilidade do artista ainda é válida para o contrato
+  /// 
+  /// Lança [ServerException] em caso de erro
+  /// Retorna Map com resultado da verificação:
+  /// - isValid: bool
+  /// - reason?: string (se inválido)
+  /// - availableSlots?: Array (se válido)
+  /// - distance?: number
+  /// - withinRadius?: bool
+  Future<Map<String, dynamic>> verifyContractAvailability({
+    required String contractId,
+    required String artistId,
+    required String date, // YYYY-MM-DD
+    required String time, // HH:mm
+    required int duration, // minutos
+    required Map<String, dynamic> address,
+    required double value,
+    Map<String, dynamic>? availabilitySnapshot,
+  });
+
+  /// Libera slot de disponibilidade após cancelamento de contrato PAID
+  /// 
+  /// Lança [ServerException] em caso de erro
+  /// Retorna Map com resultado:
+  /// - success: bool
+  /// - releasedSlot?: {startTime, endTime, valorHora}
+  /// - error?: string
+  Future<Map<String, dynamic>> releaseAvailabilitySlotAfterCancel({
+    required String contractId,
+    required String artistId,
+    required String date, // YYYY-MM-DD
+  });
 }
 
 /// Implementação do DataSource remoto usando Firestore
 class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
   final FirebaseFirestore firestore;
+  final IFirebaseFunctionsService firebaseFunctionsService;
 
-  ContractRemoteDataSourceImpl({required this.firestore});
+  ContractRemoteDataSourceImpl({
+    required this.firestore,
+    required this.firebaseFunctionsService,
+  });
 
   /// Converte todos os Timestamps do Firestore para DateTime no mapa
   /// Isso é necessário porque o dart_mappable espera DateTime, não Timestamp
@@ -714,6 +754,75 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       
       throw ServerException(
         'Erro inesperado ao atualizar índice de contratos',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  // ==================== AVAILABILITY FUNCTIONS ====================
+
+  @override
+  Future<Map<String, dynamic>> verifyContractAvailability({
+    required String contractId,
+    required String artistId,
+    required String date,
+    required String time,
+    required int duration,
+    required Map<String, dynamic> address,
+    required double value,
+    Map<String, dynamic>? availabilitySnapshot,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'contractId': contractId,
+        'artistId': artistId,
+        'date': date,
+        'time': time,
+        'duration': duration,
+        'address': address,
+        'value': value,
+      };
+
+      if (availabilitySnapshot != null) {
+        data['availabilitySnapshot'] = availabilitySnapshot;
+      }
+
+      final result = await firebaseFunctionsService.callFunction(
+        'verifyContractAvailability',
+        data,
+      );
+
+      return result;
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao verificar disponibilidade do contrato: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> releaseAvailabilitySlotAfterCancel({
+    required String contractId,
+    required String artistId,
+    required String date,
+  }) async {
+    try {
+      final result = await firebaseFunctionsService.callFunction(
+        'releaseAvailabilitySlotAfterCancel',
+        {
+          'contractId': contractId,
+          'artistId': artistId,
+          'date': date,
+        },
+      );
+
+      return result;
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao liberar slot de disponibilidade: ${e.toString()}',
         originalError: e,
         stackTrace: stackTrace,
       );

@@ -15,6 +15,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = TimeSlotMapper._());
       TimeSlotStatusEnumMapper.ensureInitialized();
+      ContractEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -42,6 +43,12 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
     _$valorHora,
     opt: true,
   );
+  static ContractEntity? _$contractSnapshot(TimeSlot v) => v.contractSnapshot;
+  static const Field<TimeSlot, ContractEntity> _f$contractSnapshot = Field(
+    'contractSnapshot',
+    _$contractSnapshot,
+    opt: true,
+  );
   static String? _$contractId(TimeSlot v) => v.contractId;
   static const Field<TimeSlot, String> _f$contractId = Field(
     'contractId',
@@ -62,6 +69,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
     #endTime: _f$endTime,
     #status: _f$status,
     #valorHora: _f$valorHora,
+    #contractSnapshot: _f$contractSnapshot,
     #contractId: _f$contractId,
     #sourcePatternId: _f$sourcePatternId,
   };
@@ -73,6 +81,7 @@ class TimeSlotMapper extends ClassMapperBase<TimeSlot> {
       endTime: data.dec(_f$endTime),
       status: data.dec(_f$status),
       valorHora: data.dec(_f$valorHora),
+      contractSnapshot: data.dec(_f$contractSnapshot),
       contractId: data.dec(_f$contractId),
       sourcePatternId: data.dec(_f$sourcePatternId),
     );
@@ -135,12 +144,15 @@ extension TimeSlotValueCopy<$R, $Out> on ObjectCopyWith<$R, TimeSlot, $Out> {
 
 abstract class TimeSlotCopyWith<$R, $In extends TimeSlot, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  ContractEntityCopyWith<$R, ContractEntity, ContractEntity>?
+  get contractSnapshot;
   $R call({
     String? slotId,
     String? startTime,
     String? endTime,
     TimeSlotStatusEnum? status,
     double? valorHora,
+    ContractEntity? contractSnapshot,
     String? contractId,
     String? sourcePatternId,
   });
@@ -156,12 +168,18 @@ class _TimeSlotCopyWithImpl<$R, $Out>
   late final ClassMapperBase<TimeSlot> $mapper =
       TimeSlotMapper.ensureInitialized();
   @override
+  ContractEntityCopyWith<$R, ContractEntity, ContractEntity>?
+  get contractSnapshot => $value.contractSnapshot?.copyWith.$chain(
+    (v) => call(contractSnapshot: v),
+  );
+  @override
   $R call({
     String? slotId,
     String? startTime,
     String? endTime,
     TimeSlotStatusEnum? status,
     Object? valorHora = $none,
+    Object? contractSnapshot = $none,
     Object? contractId = $none,
     Object? sourcePatternId = $none,
   }) => $apply(
@@ -171,6 +189,7 @@ class _TimeSlotCopyWithImpl<$R, $Out>
       if (endTime != null) #endTime: endTime,
       if (status != null) #status: status,
       if (valorHora != $none) #valorHora: valorHora,
+      if (contractSnapshot != $none) #contractSnapshot: contractSnapshot,
       if (contractId != $none) #contractId: contractId,
       if (sourcePatternId != $none) #sourcePatternId: sourcePatternId,
     }),
@@ -182,6 +201,7 @@ class _TimeSlotCopyWithImpl<$R, $Out>
     endTime: data.get(#endTime, or: $value.endTime),
     status: data.get(#status, or: $value.status),
     valorHora: data.get(#valorHora, or: $value.valorHora),
+    contractSnapshot: data.get(#contractSnapshot, or: $value.contractSnapshot),
     contractId: data.get(#contractId, or: $value.contractId),
     sourcePatternId: data.get(#sourcePatternId, or: $value.sourcePatternId),
   );

@@ -44,9 +44,7 @@ class _ProfileCompletenessCardSimpleState extends State<ProfileCompletenessCardS
         return () => AutoRouter.of(context).push(const ProfessionalInfoRoute());
       case ArtistIncompleteInfoType.presentations:
         return () {
-          // TODO: Obter talentos do artista
-          final talents = ['Cantor', 'Guitarrista'];
-          AutoRouter.of(context).push(PresentationsRoute(talents: talents));
+          AutoRouter.of(context).push(PresentationsRoute());
         };
     }
   }

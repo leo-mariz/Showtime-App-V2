@@ -1,10 +1,9 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/shared/widgets/genre_chip.dart';
 import 'package:app/core/shared/widgets/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 
-/// Seção de tabs para Estilos, Talentos e Calendário
+/// Seção de tabs para Show, Vídeos e Disponibilidades
 class TabsSection extends StatelessWidget {
   final ArtistEntity artist;
   final Function(String videoUrl)? onVideoTap;
@@ -17,9 +16,6 @@ class TabsSection extends StatelessWidget {
     this.calendarTab,
   });
 
-  bool get _hasGenres => 
-      artist.professionalInfo?.genrePreferences?.isNotEmpty ?? false;
-  
   bool get _hasTalents => 
       artist.presentationMedias?.isNotEmpty ?? false;
 
@@ -27,10 +23,10 @@ class TabsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // Sempre mostrar as tabs, mesmo quando não houver dados
     final List<String> tabs = [];
-    tabs.add('Estilos');
-    tabs.add('Talentos');
+    tabs.add('Sobre o Show');
+    tabs.add('Vídeos');
     if (calendarTab != null) {
-      tabs.add('Calendário');
+      tabs.add('Disponibilidades');
     }
 
     return DefaultTabController(
@@ -76,13 +72,19 @@ class TabsSection extends StatelessWidget {
   Widget _buildGenresTab(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final professionalInfo = artist.professionalInfo;
     
-    if (!_hasGenres) {
+    // Verificar se há informações para mostrar
+    final hasSpecialty = professionalInfo?.specialty?.isNotEmpty ?? false;
+    final hasMinimumDuration = professionalInfo?.minimumShowDuration != null;
+    final hasPreparationTime = professionalInfo?.preparationTime != null;
+    
+    if (!hasSpecialty && !hasMinimumDuration && !hasPreparationTime) {
       return Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
           child: Text(
-            'O artista não possui estilos musicais cadastrados',
+            'O artista não possui informações de show cadastradas',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant.withOpacity(0.6),
               fontStyle: FontStyle.italic,
@@ -94,14 +96,59 @@ class TabsSection extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
-      child: Wrap(
-        spacing: DSSize.width(8),
-        runSpacing: DSSize.height(8),
-        children: artist.professionalInfo?.genrePreferences?.map(
-              (genre) => GenreChip(label: genre),
-            ).toList() ?? [],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tempo mínimo de apresentação
+          if (hasMinimumDuration) ...[
+            Text(
+              'Tempo mínimo de apresentação',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: DSSize.height(4)),
+            Text(
+              _formatDuration(Duration(minutes: professionalInfo!.minimumShowDuration!)),
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onPrimary,
+              ),
+            ),
+            SizedBox(height: DSSize.height(16)),
+          ],
+          
+          // Tempo de preparação
+          if (hasPreparationTime) ...[
+            Text(
+              'Tempo de preparação antes do show',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: DSSize.height(4)),
+            Text(
+              _formatDuration(Duration(minutes: professionalInfo!.preparationTime!)),
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onPrimary,
+              ),
+            ),
+          ],
+        ],
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    
+    if (hours > 0) {
+      if (minutes > 0) {
+        return '${hours}h ${minutes}min';
+      }
+      return '${hours}h';
+    }
+    return '${minutes}min';
   }
 
   Widget _buildTalentsTab(BuildContext context) {
@@ -134,7 +181,7 @@ class TabsSection extends StatelessWidget {
         final videoUrl = entry.value;
 
         return Container(
-          width: MediaQuery.of(context).size.width * 0.85,
+          width: MediaQuery.of(context).size.width * 0.7,
           margin: EdgeInsets.only(
             right: DSSize.width(16),
           ),

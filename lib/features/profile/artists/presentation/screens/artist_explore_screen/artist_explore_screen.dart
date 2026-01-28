@@ -9,7 +9,9 @@ import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
 import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
+import 'package:app/core/shared/widgets/genre_chip.dart';
 import 'package:app/core/shared/widgets/tabs_section.dart';
+import 'package:app/core/shared/widgets/video_viewer.dart';
 import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
 import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
@@ -25,14 +27,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage(deferredLoading: true)
-class ArtistProfileScreen extends StatefulWidget {
+class ArtistExploreScreen extends StatefulWidget {
   final ArtistEntity artist;
   final bool isFavorite;
   final bool viewOnly;
   final DateTime? selectedDate;
   final AddressInfoEntity? selectedAddress;
 
-  const ArtistProfileScreen({
+  const ArtistExploreScreen({
     super.key,
     required this.artist,
     this.isFavorite = false,
@@ -42,10 +44,10 @@ class ArtistProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<ArtistProfileScreen> createState() => _ArtistProfileScreenState();
+  State<ArtistExploreScreen> createState() => _ArtistExploreScreenState();
 }
 
-class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
+class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
   AddressInfoEntity? _selectedAddress;
 
   @override
@@ -127,36 +129,14 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
   }
 
   void _onVideoTap(String videoUrl) {
-    // TODO: Implementar abertura do vídeo em tela cheia
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white,
-                  size: DSSize.width(64),
-                ),
-                SizedBox(height: DSSize.height(16)),
-                Text(
-                  'Vídeo: $videoUrl',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: DSSize.height(24)),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Fechar'),
-                ),
-              ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: VideoViewer(
+              videoUrl: videoUrl,
+              autoPlay: true,
             ),
           ),
         ),
@@ -290,6 +270,18 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
 
                       DSSizedBoxSpacing.vertical(12),
 
+                      // Talentos (Specialty)
+                      if (artist.professionalInfo?.specialty?.isNotEmpty ?? false) ...[
+                        Wrap(
+                          spacing: DSSize.width(8),
+                          runSpacing: DSSize.height(8),
+                          children: artist.professionalInfo!.specialty!.map(
+                            (talent) => GenreChip(label: talent),
+                          ).toList(),
+                        ),
+                        SizedBox(height: DSSize.height(16)),
+                      ],
+
                       // Badges de avaliação, contratos e favorito
                       Row(
                         children: [
@@ -297,12 +289,14 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                           DSSizedBoxSpacing.horizontal(8),
                           CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
                           const Spacer(),
+                          if (!widget.viewOnly) ...[
                           FavoriteButton(
                             isFavorite: widget.isFavorite,
                             onTap: () {
-                              // TODO: Implementar toggle de favorito
-                            },
-                          ),
+                                // TODO: Implementar toggle de favorito
+                              },
+                            ),
+                          ],
                         ],
                       ),
 
@@ -336,14 +330,16 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
           ),
 
           // Footer fixo
-          Positioned(
-            left: DSSize.width(0),
-            right: DSSize.width(0),
-            bottom: DSSize.height(-12),
-            child: ArtistFooter(
-              onRequestPressed: () => _onRequestPressed(context),
+          if (!widget.viewOnly) ...[
+            Positioned(
+              left: DSSize.width(0),
+              right: DSSize.width(0),
+              bottom: DSSize.height(-12),
+              child: ArtistFooter(
+                onRequestPressed: () => _onRequestPressed(context),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -511,7 +507,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
               selectedDate: widget.selectedDate,
               onDateSelected: (date) {
                 // Navegar para tela de solicitação com data selecionada
-                if (_selectedAddress != null) {
+                if (_selectedAddress != null && !widget.viewOnly) {
                   context.router.push(
                     RequestRoute(
                       selectedDate: date,

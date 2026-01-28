@@ -72,6 +72,7 @@ class ContractEntity with ContractEntityMappable {
   final String? canceledBy;            // Quem cancelou ('CLIENT' ou 'ARTIST')
   final String? cancelReason;          // Motivo do cancelamento
   final DateTime? statusChangedAt;    // Data da última mudança de status (para rastreamento de notificações)
+  final DateTime? acceptDeadline;    // Data/hora limite para o artista aceitar a solicitação
 
   final bool? isPaying;
   
@@ -114,6 +115,7 @@ class ContractEntity with ContractEntityMappable {
     this.canceledBy,
     this.cancelReason,
     this.statusChangedAt,
+    this.acceptDeadline,
     this.isPaying = false,
   }) : createdAt = createdAt ?? DateTime.now();
   
@@ -130,6 +132,20 @@ class ContractEntity with ContractEntityMappable {
   // Retorna o UID correto baseado no tipo
   String? get contractorUid => isGroupContract ? refGroup : refArtist;
   String? get contractorName => isGroupContract ? nameGroup : nameArtist;
+  
+  /// Verifica se o prazo para aceitar a solicitação expirou
+  bool get isAcceptDeadlineExpired {
+    if (acceptDeadline == null || !isPending) return false;
+    return DateTime.now().isAfter(acceptDeadline!);
+  }
+  
+  /// Retorna o tempo restante até o deadline (ou null se expirado)
+  Duration? get remainingTimeToAccept {
+    if (acceptDeadline == null || !isPending) return null;
+    final now = DateTime.now();
+    if (now.isAfter(acceptDeadline!)) return null;
+    return acceptDeadline!.difference(now);
+  }
 }
 
 extension ContractEntityReference on ContractEntity {

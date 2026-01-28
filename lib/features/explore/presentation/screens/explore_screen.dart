@@ -606,7 +606,7 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
     final artist = artistWithAvailabilities.artist;
     final isFavorite = _favoriteArtistIds.contains(artist.uid ?? '');
 
-    router.push(ArtistProfileRoute(
+    router.push(ArtistExploreRoute(
       artist: artist,
       isFavorite: isFavorite, 
       selectedDate: _selectedDate,

@@ -84,6 +84,35 @@ class CancelContractUseCase {
       return updateResult.fold(
         (failure) => Left(failure),
         (_) async {
+          // Se o contrato estava PAID, liberar slot de disponibilidade
+          if (contract.status == ContractStatusEnum.paid) {
+            final artistId = contract.refArtist ?? contract.refGroup;
+            if (artistId != null) {
+              final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
+              
+              final releaseResult = await repository.releaseAvailabilitySlotAfterCancel(
+                contractId: contract.uid!,
+                artistId: artistId,
+                date: dateString,
+              );
+
+              // Log do resultado (não bloqueia se falhar)
+              releaseResult.fold(
+                (failure) {
+                  // Log de erro, mas não retorna erro (não bloqueia cancelamento)
+                  print('⚠️ [CancelContractUseCase] Erro ao liberar slot: ${failure.message}');
+                },
+                (result) {
+                  if (result['success'] == true) {
+                    print('✅ [CancelContractUseCase] Slot liberado com sucesso');
+                  } else {
+                    print('⚠️ [CancelContractUseCase] Erro ao liberar slot: ${result['error']}');
+                  }
+                },
+              );
+            }
+          }
+
           // Atualizar índice de contratos (não bloqueia se falhar)
           if (updateContractsIndexUseCase != null) {
             await updateContractsIndexUseCase!.call(

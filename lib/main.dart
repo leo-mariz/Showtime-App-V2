@@ -978,7 +978,10 @@ Future <void> main() async {
 
   // Contracts
   final contractLocalDataSource = ContractLocalDataSourceImpl(autoCacheService: localCacheService);
-  final contractRemoteDataSource = ContractRemoteDataSourceImpl(firestore: firestore);
+  final contractRemoteDataSource = ContractRemoteDataSourceImpl(
+    firestore: firestore,
+    firebaseFunctionsService: firebaseFunctionsService,
+  );
   final contractRepository = ContractRepositoryImpl(
     localDataSource: contractLocalDataSource,
     remoteDataSource: contractRemoteDataSource,

@@ -89,7 +89,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       onTap: widget.onTap,
       child: Container(
         width: double.infinity,
-        height: DSSize.height(200),
+        height: DSSize.height(120),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(DSSize.width(16)),
           color: Colors.black,
@@ -163,7 +163,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                   ),
                   child: Text(
                     widget.talentName,
-                    style: textTheme.bodyMedium?.copyWith(
+                    style: textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

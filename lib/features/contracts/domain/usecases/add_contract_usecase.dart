@@ -42,6 +42,23 @@ class AddContractUseCase {
     );
   }
 
+  /// Calcula o deadline para aceitar a solicitação baseado na regra:
+  /// - Se evento é nas próximas 36h: prazo de 1h30min
+  /// - Caso contrário: prazo de 24h
+  DateTime _calculateAcceptDeadline(DateTime createdAt, DateTime eventDateTime) {
+    // Calcular diferença entre criação e evento
+    final timeUntilEvent = eventDateTime.difference(createdAt);
+    
+    // Se evento é nas próximas 36 horas (ou menos)
+    if (timeUntilEvent.inHours <= 36) {
+      // Prazo de 1h30min
+      return createdAt.add(const Duration(hours: 1, minutes: 30));
+    } else {
+      // Prazo de 24h
+      return createdAt.add(const Duration(hours: 24));
+    }
+  }
+
   Future<Either<Failure, String>> call(ContractEntity contract) async {
     try {
       // Validar referência do cliente
@@ -50,14 +67,18 @@ class AddContractUseCase {
       }
 
       // Validar referência do contratado (artista ou grupo)
+      String? artistId;
       if (contract.contractorType == ContractorTypeEnum.artist) {
         if (contract.refArtist == null || contract.refArtist!.isEmpty) {
           return const Left(ValidationFailure('Referência do artista não pode ser vazia'));
         }
+        artistId = contract.refArtist;
       } else if (contract.contractorType == ContractorTypeEnum.group) {
         if (contract.refGroup == null || contract.refGroup!.isEmpty) {
           return const Left(ValidationFailure('Referência do grupo não pode ser vazia'));
         }
+        // Para grupos, não verificamos disponibilidade (por enquanto)
+        artistId = null;
       }
 
       // Validar data e horário do evento (deve ser no futuro)
@@ -77,8 +98,54 @@ class AddContractUseCase {
         return const Left(ValidationFailure('Valor não pode ser negativo'));
       }
 
+      // Verificar disponibilidade do artista antes de criar o contrato
+      if (artistId != null) {
+        final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
+        
+        // Converter availabilitySnapshot para Map se existir
+        Map<String, dynamic>? availabilitySnapshotMap;
+        if (contract.availabilitySnapshot != null) {
+          availabilitySnapshotMap = contract.availabilitySnapshot!.toMap();
+        }
+
+        final verifyResult = await repository.verifyContractAvailability(
+          contractId: contract.uid ?? 'temp_${DateTime.now().millisecondsSinceEpoch}',
+          artistId: artistId,
+          date: dateString,
+          time: contract.time,
+          duration: contract.duration,
+          address: contract.address.toMap(),
+          value: contract.value,
+          availabilitySnapshot: availabilitySnapshotMap,
+        );
+
+        final verification = verifyResult.fold(
+          (failure) => null,
+          (result) => result,
+        );
+
+        if (verification == null) {
+          return const Left(ServerFailure('Erro ao verificar disponibilidade do artista'));
+        }
+
+        if (verification['isValid'] != true) {
+          final reason = verification['reason'] as String? ?? 'Disponibilidade não é mais válida';
+          return Left(ValidationFailure(reason));
+        }
+      }
+
+      // Calcular deadline para aceitar a solicitação
+      final createdAt = contract.createdAt ?? DateTime.now();
+      final acceptDeadline = _calculateAcceptDeadline(createdAt, eventDateTime);
+      
+      // Criar contrato com deadline calculado
+      final contractWithDeadline = contract.copyWith(
+        acceptDeadline: acceptDeadline,
+        createdAt: createdAt,
+      );
+
       // Adicionar contrato
-      final result = await repository.addContract(contract);
+      final result = await repository.addContract(contractWithDeadline);
 
       return result.fold(
         (failure) => Left(failure),

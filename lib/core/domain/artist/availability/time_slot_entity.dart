@@ -1,4 +1,5 @@
 import 'package:app/core/enums/time_slot_status_enum.dart';
+import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
 part 'time_slot_entity.mapper.dart';
@@ -25,6 +26,9 @@ class TimeSlot with TimeSlotMappable {
   
   /// ID da reserva (apenas se status = booked)
   final String? contractId;
+
+  ///Snapshot da reserva (apenas se status = booked)
+  final ContractEntity? contractSnapshot;
   
   /// ID do padrão que gerou este slot (se foi gerado de um padrão)
   final String? sourcePatternId;
@@ -35,6 +39,7 @@ class TimeSlot with TimeSlotMappable {
     required this.endTime,
     required this.status,
     this.valorHora,
+    this.contractSnapshot,
     this.contractId,
     this.sourcePatternId,
   });

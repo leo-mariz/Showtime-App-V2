@@ -37,6 +37,12 @@ class CustomMultiSelectFieldState extends State<CustomMultiSelectField> {
 
   void _showMultiSelectDialog() async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    // Ler do controller ao abrir o diálogo para refletir valores já carregados/salvos
+    final currentSelection = widget.controller.text
+        .split(', ')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -47,7 +53,7 @@ class CustomMultiSelectFieldState extends State<CustomMultiSelectField> {
           ),
           child: MultiSelectDialogContent(
             items: widget.items,
-            initialValue: _selectedItems,
+            initialValue: currentSelection,
             title: widget.labelText,
             onConfirm: (values) {
               setState(() {

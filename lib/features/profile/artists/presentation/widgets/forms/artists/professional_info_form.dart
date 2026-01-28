@@ -9,20 +9,25 @@ class ProfessionalInfoForm extends StatelessWidget {
   final TextEditingController talentController;
   final TextEditingController genrePreferencesController;
   final TextEditingController minimumShowDurationController;
+  final TextEditingController preparationTimeController;
   final TextEditingController bioController;
   final VoidCallback onDurationTap;
+  final VoidCallback onPreparationTimeTap;
   final String durationDisplayValue;
+  final String preparationTimeDisplayValue;
   final List<String>? talentOptions;
-  
 
   const ProfessionalInfoForm({
     super.key,
     required this.talentController,
     required this.genrePreferencesController,
     required this.minimumShowDurationController,
+    required this.preparationTimeController,
     required this.bioController,
     required this.onDurationTap,
+    required this.onPreparationTimeTap,
     required this.durationDisplayValue,
+    required this.preparationTimeDisplayValue,
     this.talentOptions,
   });
 
@@ -38,7 +43,7 @@ class ProfessionalInfoForm extends StatelessWidget {
       'Outros',
     ];
     final talentOptionsList = talentOptions ?? defaultTalentOptions;
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -68,6 +73,12 @@ class ProfessionalInfoForm extends StatelessWidget {
           label: 'Duração Mínima:',
           value: durationDisplayValue,
           onTap: onDurationTap,
+        ),
+        DSSizedBoxSpacing.vertical(16),
+        SelectableRow(
+          label: 'Tempo de Preparação:',
+          value: preparationTimeDisplayValue,
+          onTap: onPreparationTimeTap,
         ),
       ],
     );

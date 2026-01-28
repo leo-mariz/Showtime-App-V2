@@ -72,5 +72,38 @@ abstract class IContractRepository {
   /// 
   /// [updates] - Map com os campos a serem atualizados (ex: {'tab0Total': 5, 'tab0Unseen': 2})
   Future<Either<Failure, void>> updateContractsIndex(String userId, Map<String, dynamic> updates);
+
+  // ==================== AVAILABILITY FUNCTIONS ====================
+
+  /// Verifica se a disponibilidade do artista ainda é válida para o contrato
+  /// 
+  /// Retorna Map com resultado da verificação:
+  /// - isValid: bool
+  /// - reason?: string (se inválido)
+  /// - availableSlots?: Array (se válido)
+  /// - distance?: number
+  /// - withinRadius?: bool
+  Future<Either<Failure, Map<String, dynamic>>> verifyContractAvailability({
+    required String contractId,
+    required String artistId,
+    required String date, // YYYY-MM-DD
+    required String time, // HH:mm
+    required int duration, // minutos
+    required Map<String, dynamic> address,
+    required double value,
+    Map<String, dynamic>? availabilitySnapshot,
+  });
+
+  /// Libera slot de disponibilidade após cancelamento de contrato PAID
+  /// 
+  /// Retorna Map com resultado:
+  /// - success: bool
+  /// - releasedSlot?: {startTime, endTime, valorHora}
+  /// - error?: string
+  Future<Either<Failure, Map<String, dynamic>>> releaseAvailabilitySlotAfterCancel({
+    required String contractId,
+    required String artistId,
+    required String date, // YYYY-MM-DD
+  });
 }
 

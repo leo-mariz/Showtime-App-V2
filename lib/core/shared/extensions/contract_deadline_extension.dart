@@ -94,4 +94,12 @@ extension ContractDeadlineExtension on ContractEntity {
     if (remaining == null) return false;
     return remaining.inMinutes < 10;
   }
+
+  /// Texto para exibição ao cliente: data/hora limite em que o artista pode aceitar
+  /// Ex: "O artista tem até 14/02 às 14:30 para responder"
+  String? get formattedAcceptDeadlineForClient {
+    if (acceptDeadline == null || !isPending) return null;
+    final dateFormat = DateFormat("dd/MM 'às' HH:mm");
+    return 'O artista tem até ${dateFormat.format(acceptDeadline!)} para responder';
+  }
 }

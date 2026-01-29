@@ -105,5 +105,10 @@ abstract class IContractRepository {
     required String artistId,
     required String date, // YYYY-MM-DD
   });
+
+  /// Verifica se o contrato tem overlap com algum slot BOOKED na disponibilidade do artista
+  /// 
+  /// Retorna true se há overlap (horário já reservado por outro show)
+  Future<Either<Failure, bool>> checkContractOverlapWithBooked(String contractId);
 }
 

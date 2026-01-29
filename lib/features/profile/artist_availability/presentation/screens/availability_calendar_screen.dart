@@ -967,7 +967,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     final onSecondaryContainer = colorScheme.onSecondaryContainer;
     final onTertiaryContainer = colorScheme.onTertiaryContainer;
     final error = colorScheme.error;
-    final showColor = Colors.purple;
+    final showColor = Colors.yellow;
 
     return Container(
       decoration: BoxDecoration(
@@ -1040,7 +1040,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
 
           _buildLegendItem(
             icon: Icons.close,
-            label: 'Inativo',
+            label: 'Indisponível',
             description: 'Disponibilidade desativada',
             color: error,
             colorScheme: colorScheme,
@@ -1050,7 +1050,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
           SizedBox(height: DSSize.height(16)),
 
           _buildLegendItem(
-            icon: Icons.mic,
+            icon: Icons.star,
             label: 'Shows',
             description: 'Número de apresentações confirmadas',
             color: showColor,

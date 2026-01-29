@@ -36,6 +36,7 @@ class ContractEntity with ContractEntityMappable {
   final DateTime date;                // Data do evento
   final String time;                  // Hora de início (formato "HH:mm")
   final int duration;                 // Duração em minutos
+  final int? preparationTime;          // Tempo de preparação em minutos
   final AddressInfoEntity address;     // Endereço do evento
   final EventTypeEntity? eventType;   // Tipo de evento
   
@@ -80,6 +81,7 @@ class ContractEntity with ContractEntityMappable {
     required this.date,
     required this.time,
     required this.duration,
+    required this.preparationTime,
     required this.address,
     required this.contractorType,
     required this.refClient,
@@ -190,6 +192,7 @@ extension ContractEntityReference on ContractEntity {
     'date',
     'time',
     'duration',
+    'preparationTime',
     'address',
     'eventType',
     'status',
@@ -208,6 +211,8 @@ extension ContractEntityReference on ContractEntity {
     'canceledAt',
     'canceledBy',
     'cancelReason',
+    'statusChangedAt',
+    'acceptDeadline',
   ];
 }
 

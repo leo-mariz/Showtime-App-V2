@@ -92,7 +92,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
     // Vamos encontrar o NavigationPage e mudar o índice usando dynamic para acessar o método público
     final navigationState = context.findAncestorStateOfType<State<NavigationPage>>();
     if (navigationState != null) {
-      (navigationState as dynamic).navigateToPage(1);
+      (navigationState as dynamic).navigateToPage(2);
     }
   }
 

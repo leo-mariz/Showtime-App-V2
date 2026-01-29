@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/mercado_pago_service.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Abrir link de pagamento do Mercado Pago
@@ -13,10 +14,12 @@ import 'package:dartz/dartz.dart';
 class MakePaymentUseCase {
   final MercadoPagoService mercadoPagoService;
   final IContractRepository repository;
+  final CancelContractUseCase cancelContractUseCase;
 
   MakePaymentUseCase({
     required this.mercadoPagoService,
     required this.repository,
+    required this.cancelContractUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -41,6 +44,17 @@ class MakePaymentUseCase {
       if (contract.status != ContractStatusEnum.paymentPending) {
         return const Left(ValidationFailure('Contrato não está pendente de pagamento. Atualizando contrato...'));
       }
+
+      // Verificar se não existe slot BOOKED no horário antes de abrir o pagamento
+      // final overlapResult = await repository.checkContractOverlapWithBooked(contractUid);
+      // final hasOverlap = overlapResult.fold((failure) => null, (overlap) => overlap);
+      // if (hasOverlap == null) return overlapResult.fold((l) => Left(l), (_) => throw StateError('unreachable'));
+      // if (hasOverlap) {
+      //   await cancelContractUseCase.call(contractUid: contractUid, canceledBy: 'ARTIST', cancelReason: 'Horário já está reservado por outro show.');
+      //   return Left(ValidationFailure(
+      //     'Este horário já está reservado por outro show.',
+      //   ));
+      // }
 
       final updatedContract = contract.copyWith(
         isPaying: true,

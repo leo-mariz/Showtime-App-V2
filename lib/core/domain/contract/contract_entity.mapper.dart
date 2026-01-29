@@ -36,6 +36,11 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     'duration',
     _$duration,
   );
+  static int? _$preparationTime(ContractEntity v) => v.preparationTime;
+  static const Field<ContractEntity, int> _f$preparationTime = Field(
+    'preparationTime',
+    _$preparationTime,
+  );
   static AddressInfoEntity _$address(ContractEntity v) => v.address;
   static const Field<ContractEntity, AddressInfoEntity> _f$address = Field(
     'address',
@@ -268,6 +273,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #date: _f$date,
     #time: _f$time,
     #duration: _f$duration,
+    #preparationTime: _f$preparationTime,
     #address: _f$address,
     #contractorType: _f$contractorType,
     #refClient: _f$refClient,
@@ -312,6 +318,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       date: data.dec(_f$date),
       time: data.dec(_f$time),
       duration: data.dec(_f$duration),
+      preparationTime: data.dec(_f$preparationTime),
       address: data.dec(_f$address),
       contractorType: data.dec(_f$contractorType),
       refClient: data.dec(_f$refClient),
@@ -429,6 +436,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? date,
     String? time,
     int? duration,
+    int? preparationTime,
     AddressInfoEntity? address,
     ContractorTypeEnum? contractorType,
     String? refClient,
@@ -506,6 +514,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     DateTime? date,
     String? time,
     int? duration,
+    Object? preparationTime = $none,
     AddressInfoEntity? address,
     ContractorTypeEnum? contractorType,
     Object? refClient = $none,
@@ -548,6 +557,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (date != null) #date: date,
       if (time != null) #time: time,
       if (duration != null) #duration: duration,
+      if (preparationTime != $none) #preparationTime: preparationTime,
       if (address != null) #address: address,
       if (contractorType != null) #contractorType: contractorType,
       if (refClient != $none) #refClient: refClient,
@@ -597,6 +607,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     date: data.get(#date, or: $value.date),
     time: data.get(#time, or: $value.time),
     duration: data.get(#duration, or: $value.duration),
+    preparationTime: data.get(#preparationTime, or: $value.preparationTime),
     address: data.get(#address, or: $value.address),
     contractorType: data.get(#contractorType, or: $value.contractorType),
     refClient: data.get(#refClient, or: $value.refClient),

@@ -687,10 +687,10 @@ ContractsBloc _createContractsBloc(
   final addContractUseCase = AddContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final updateContractUseCase = UpdateContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
-  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository);
   final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, cancelContractUseCase: cancelContractUseCase);
+  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository, cancelContractUseCase: cancelContractUseCase);
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
   final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, contractRepository: contractRepository);
   final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);

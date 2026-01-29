@@ -107,6 +107,38 @@ class ContractCard extends StatelessWidget {
     );
   }
 
+  /// Indicador de prazo para o cliente (data/hora em que o artista pode aceitar)
+  Widget _buildClientDeadlineIndicator(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final text = contract.formattedAcceptDeadlineForClient ?? 'Prazo não disponível';
+    return Container(
+      padding: EdgeInsets.all(DSSize.width(12)),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(DSSize.width(8)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.schedule_rounded,
+            size: DSSize.width(18),
+            color: colorScheme.onPrimaryContainer,
+          ),
+          DSSizedBoxSpacing.horizontal(8),
+          Expanded(
+            child: Text(
+              text,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Organiza os botões de ação
   // Se 1 botão: ocupa toda a linha
   // Se 2+ botões: divide em linhas, 2 por linha
@@ -309,14 +341,16 @@ class ContractCard extends StatelessWidget {
                 ),
               ),
               
-              // Indicador de prazo para aceitar (apenas para artista com contrato pendente)
-              if (isArtist && contract.isPending && contract.acceptDeadline != null) ...[
+              // Indicador de prazo para aceitar (artista: "Você tem até..."; cliente: "O artista tem até...")
+              if (contract.isPending && contract.acceptDeadline != null) ...[
                 DSSizedBoxSpacing.vertical(12),
-                _buildDeadlineIndicator(context),
+                isArtist
+                    ? _buildDeadlineIndicator(context)
+                    : _buildClientDeadlineIndicator(context),
               ],
               
               // Botões de ação (se fornecidos)
-              if (_buildActionButtonsSection() != null) ...[
+              if (_buildActionButtonsSection() != null ) ...[
                 DSSizedBoxSpacing.vertical(16),
                 _buildActionButtonsSection()!,
               ],

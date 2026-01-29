@@ -99,40 +99,40 @@ class AddContractUseCase {
       }
 
       // Verificar disponibilidade do artista antes de criar o contrato
-      if (artistId != null) {
-        final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
+      // if (artistId != null) {
+      //   final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
         
-        // Converter availabilitySnapshot para Map se existir
-        Map<String, dynamic>? availabilitySnapshotMap;
-        if (contract.availabilitySnapshot != null) {
-          availabilitySnapshotMap = contract.availabilitySnapshot!.toMap();
-        }
+      //   // Converter availabilitySnapshot para Map se existir
+      //   Map<String, dynamic>? availabilitySnapshotMap;
+      //   if (contract.availabilitySnapshot != null) {
+      //     availabilitySnapshotMap = contract.availabilitySnapshot!.toMap();
+      //   }
 
-        final verifyResult = await repository.verifyContractAvailability(
-          contractId: contract.uid ?? 'temp_${DateTime.now().millisecondsSinceEpoch}',
-          artistId: artistId,
-          date: dateString,
-          time: contract.time,
-          duration: contract.duration,
-          address: contract.address.toMap(),
-          value: contract.value,
-          availabilitySnapshot: availabilitySnapshotMap,
-        );
+      //   final verifyResult = await repository.verifyContractAvailability(
+      //     contractId: contract.uid ?? 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      //     artistId: artistId,
+      //     date: dateString,
+      //     time: contract.time,
+      //     duration: contract.duration,
+      //     address: contract.address.toMap(),
+      //     value: contract.value,
+      //     availabilitySnapshot: availabilitySnapshotMap,
+      //   );
 
-        final verification = verifyResult.fold(
-          (failure) => null,
-          (result) => result,
-        );
+      //   final verification = verifyResult.fold(
+      //     (failure) => null,
+      //     (result) => result,
+      //   );
 
-        if (verification == null) {
-          return const Left(ServerFailure('Erro ao verificar disponibilidade do artista'));
-        }
+      //   if (verification == null) {
+      //     return const Left(ServerFailure('Erro ao verificar disponibilidade do artista'));
+      //   }
 
-        if (verification['isValid'] != true) {
-          final reason = verification['reason'] as String? ?? 'Disponibilidade não é mais válida';
-          return Left(ValidationFailure(reason));
-        }
-      }
+      //   if (verification['isValid'] != true) {
+      //     final reason = verification['reason'] as String? ?? 'Disponibilidade não é mais válida';
+      //     return Left(ValidationFailure(reason));
+      //   }
+      // }
 
       // Calcular deadline para aceitar a solicitação
       final createdAt = contract.createdAt ?? DateTime.now();

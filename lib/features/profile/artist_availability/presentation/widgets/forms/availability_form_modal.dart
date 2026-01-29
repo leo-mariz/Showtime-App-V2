@@ -83,6 +83,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
   List<String> _selectedWeekdays = []; // Códigos: MO, TU, WE, etc
   AddressInfoEntity? _selectedAddress;
   double _radiusKm = 10.0; // Padrão: 10km
+  final FocusNode _valueFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -101,6 +102,23 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
     _startTime = const TimeOfDay(hour: 9, minute: 0);
     _endTime = const TimeOfDay(hour: 18, minute: 0);
     _updateControllers();
+
+    _valueFocusNode.addListener(_onValueFieldFocusChange);
+  }
+
+  void _onValueFieldFocusChange() {
+    if (_valueFocusNode.hasFocus && _valueFocusNode.context != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _valueFocusNode.hasFocus && _valueFocusNode.context != null) {
+          Scrollable.ensureVisible(
+            _valueFocusNode.context!,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
   }
   
   void _onModeChanged(bool isBlocking) {
@@ -155,6 +173,8 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
 
   @override
   void dispose() {
+    _valueFocusNode.removeListener(_onValueFieldFocusChange);
+    _valueFocusNode.dispose();
     _startDateController.dispose();
     _endDateController.dispose();
     _startTimeController.dispose();
@@ -430,7 +450,9 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
           top: Radius.circular(20),
         ),
       ),
-      child: Form(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+        child: Form(
         key: _formKey,
         child: Column(
           children: [
@@ -551,40 +573,40 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
 
                         if (_isBlocking) ...[
                           DSSizedBoxSpacing.vertical(16),
-                      CheckboxListTile(
-                        title: const Text('Todos os horários'),
-                        value: _allHours,
-                        onChanged: (value) {
-                          setState(() {
-                            _allHours = value ?? true;
-                            if (_allHours) {
-                              _startTime = null;
-                              _endTime = null;
-                              _startTimeController.clear();
-                              _endTimeController.clear();
-                            }
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
+                          CheckboxListTile(
+                            title: const Text('Todos os horários'),
+                            value: _allHours,
+                            onChanged: (value) {
+                              setState(() {
+                                _allHours = value ?? true;
+                                if (_allHours) {
+                                  _startTime = null;
+                                  _endTime = null;
+                                  _startTimeController.clear();
+                                  _endTimeController.clear();
+                                }
+                              });
+                            },
+                            contentPadding: EdgeInsets.zero,
+                          ),
                       
-                      if (!_allHours) ...[
-                        DSSizedBoxSpacing.vertical(8),
-                        SelectableRow(
-                          label: 'Horário início',
-                          value: _startTimeController.text.isEmpty
-                              ? 'Selecione'
-                              : _startTimeController.text,
-                          onTap: _selectStartTime,
-                        ),
-                        DSSizedBoxSpacing.vertical(16),
-                        SelectableRow(
-                          label: 'Horário fim',
-                          value: _endTimeController.text.isEmpty
-                              ? 'Selecione'
-                              : _endTimeController.text,
-                          onTap: _selectEndTime,
-                        ),
+                        if (!_allHours) ...[
+                          DSSizedBoxSpacing.vertical(8),
+                          SelectableRow(
+                            label: 'Horário início',
+                            value: _startTimeController.text.isEmpty
+                                ? 'Selecione'
+                                : _startTimeController.text,
+                            onTap: _selectStartTime,
+                          ),
+                          DSSizedBoxSpacing.vertical(16),
+                          SelectableRow(
+                            label: 'Horário fim',
+                            value: _endTimeController.text.isEmpty
+                                ? 'Selecione'
+                                : _endTimeController.text,
+                            onTap: _selectEndTime,
+                          ),
                       ],
                     ],
                     
@@ -636,6 +658,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
                       // Valor/hora
                       PricePerHourInput(
                         controller: _valueController,
+                        focusNode: _valueFocusNode,
                         onChanged: (_) => setState(() {}),
                       ),
                     DSSizedBoxSpacing.vertical(16),
@@ -751,6 +774,7 @@ class _AvailabilityFormModalState extends State<AvailabilityFormModal> {
         ),
       ),
     ),
+  ),
   );
   }
 }
@@ -791,13 +815,18 @@ class _WeekdaySelectionDialogState extends State<_WeekdaySelectionDialog> {
   }
 
   void _toggleDay(String code) {
-    if (_allDays) return;
-    
     setState(() {
-      if (_selected.contains(code)) {
-        _selected.remove(code);
+      if (_allDays) {
+        // Primeiro clique em um dia: desmarca "Todos os dias" e seleciona esse dia
+        _allDays = false;
+        _selected = {code};
       } else {
-        _selected.add(code);
+        // Já em modo de dias específicos: alterna o dia
+        if (_selected.contains(code)) {
+          _selected.remove(code);
+        } else {
+          _selected.add(code);
+        }
       }
     });
   }
@@ -844,7 +873,7 @@ class _WeekdaySelectionDialogState extends State<_WeekdaySelectionDialog> {
                 return CheckboxListTile(
                   title: Text(name),
                   value: isSelected,
-                  onChanged: _allDays ? null : (_) => _toggleDay(code),
+                  onChanged: (_) => _toggleDay(code),
                 );
               }),
             ],

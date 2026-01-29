@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -19,11 +20,13 @@ class AcceptContractUseCase {
   final IContractRepository repository;
   final IFirebaseFunctionsService firebaseFunctionsService;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
+  final CancelContractUseCase cancelContractUseCase;
 
   AcceptContractUseCase({
     required this.repository,
     required this.firebaseFunctionsService,
     this.updateContractsIndexUseCase,
+    required this.cancelContractUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -54,6 +57,19 @@ class AcceptContractUseCase {
           'Apenas contratos pendentes podem ser aceitos. Status atual: ${contract.status.value}'
         ));
       }
+
+      // Verificar se não existe slot BOOKED no horário (evitar criar links e chamadas desnecessárias)
+      // final overlapResult = await repository.checkContractOverlapWithBooked(contractUid);
+      // final hasOverlap = overlapResult.fold(
+      //   (failure) => throw failure,
+      //   (overlap) => overlap,
+      // );
+      // if (hasOverlap) {
+      //   await cancelContractUseCase.call(contractUid: contractUid, canceledBy: 'ARTIST', cancelReason: 'Horário já está reservado por outro show.');
+      //   return Left(ValidationFailure(
+      //     'Este horário já está reservado por outro show.',
+      //   ));
+      // }
 
       // Criar pagamento no Mercado Pago
       final paymentLink = await firebaseFunctionsService.createMercadoPagoPayment(
@@ -86,6 +102,7 @@ class AcceptContractUseCase {
         },
       );
     } catch (e) {
+      if (e is Failure) return Left(e);
       return Left(ErrorHandler.handle(e));
     }
   }

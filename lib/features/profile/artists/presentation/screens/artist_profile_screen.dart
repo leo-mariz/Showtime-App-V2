@@ -14,7 +14,6 @@ import 'package:app/features/profile/shared/presentation/widgets/profile_header.
 import 'package:app/features/profile/shared/presentation/widgets/profile_option_tile.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_picture/photo_confirmation_dialog.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_picture/profile_picture_options_menu.dart';
-import 'package:app/features/profile/shared/presentation/widgets/artist_name_edit_modal.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
@@ -308,7 +307,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                                        onEditName: () => _handleEditName(_cachedArtistName ?? artist?.artistName),
+                                        // onEditName: () {},
                                       )
                                     else
                                       // Fallback: mostrar skeleton se não tiver dados nem cache
@@ -572,30 +571,30 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
   }
 
   /// Gerencia a edição do nome artístico
-  Future<void> _handleEditName(String? currentName) async {
-    if (!mounted) return;
+  // Future<void> _handleEditName(String? currentName) async {
+  //   if (!mounted) return;
 
-    final artistsBloc = context.read<ArtistsBloc>();
+  //   final artistsBloc = context.read<ArtistsBloc>();
 
-    await ArtistNameEditModal.show(
-      context: context,
-      currentName: currentName,
-      onCheckName: (name) async {
-        final result = await artistsBloc.checkArtistNameExistsUseCase(name);
-        return result.fold(
-          (_) => true, // Em caso de erro, considerar como existente para segurança
-          (exists) => exists,
-        );
-      },
-      onSave: (name) async {
-        artistsBloc.add(UpdateArtistNameEvent(artistName: name));
-        // Aguardar o estado de sucesso ser emitido
-        await artistsBloc.stream.firstWhere(
-          (state) => state is UpdateArtistNameSuccess || state is UpdateArtistNameFailure,
-        );
-      },
-    );
-  }
+  //   await ArtistNameEditModal.show(
+  //     context: context,
+  //     currentName: currentName,
+  //     onCheckName: (name) async {
+  //       final result = await artistsBloc.checkArtistNameExistsUseCase(name);
+  //       return result.fold(
+  //         (_) => true, // Em caso de erro, considerar como existente para segurança
+  //         (exists) => exists,
+  //       );
+  //     },
+  //     onSave: (name) async {
+  //       artistsBloc.add(UpdateArtistNameEvent(artistName: name));
+  //       // Aguardar o estado de sucesso ser emitido
+  //       await artistsBloc.stream.firstWhere(
+  //         (state) => state is UpdateArtistNameSuccess || state is UpdateArtistNameFailure,
+  //       );
+  //     },
+  //   );
+  // }
 
   /// Gerencia o logout do usuário
   void _handleLogout(BuildContext context) {

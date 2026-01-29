@@ -3,6 +3,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
+import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
@@ -201,6 +202,37 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               onSurfaceVariant: onSurfaceVariant,
               onPrimary: onPrimary,
             ),
+
+            // Prazo para o artista responder (apenas quando pendente)
+            if (_status == ContractStatusEnum.pending &&
+                _contract.acceptDeadline != null) ...[
+              DSSizedBoxSpacing.vertical(12),
+              Container(
+                padding: EdgeInsets.all(DSSize.width(12)),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(DSSize.width(8)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: DSSize.width(18),
+                      color: colorScheme.onPrimaryContainer,
+                    ),
+                    DSSizedBoxSpacing.horizontal(8),
+                    Expanded(
+                      child: Text(
+                        _contract.formattedAcceptDeadlineForClient ?? 'Prazo não disponível',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             DSSizedBoxSpacing.vertical(24),
 

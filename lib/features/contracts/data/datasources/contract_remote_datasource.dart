@@ -119,6 +119,13 @@ abstract class IContractRemoteDataSource {
     required String artistId,
     required String date, // YYYY-MM-DD
   });
+
+  /// Verifica se o contrato tem overlap com algum slot BOOKED na disponibilidade do artista
+  /// 
+  /// A função recebe apenas o ID do contrato; data, hora, duração e artista são obtidos no servidor
+  /// Retorna true se há overlap com slot já reservado
+  /// Lança [ServerException] em caso de erro
+  Future<bool> checkContractOverlapWithBooked(String contractId);
 }
 
 /// Implementação do DataSource remoto usando Firestore
@@ -823,6 +830,29 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro ao liberar slot de disponibilidade: ${e.toString()}',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> checkContractOverlapWithBooked(String contractId) async {
+    try {
+      if (contractId.isEmpty) {
+        throw const ValidationException('contractId não pode ser vazio');
+      }
+      final result = await firebaseFunctionsService.callFunction(
+        'checkContractOverlapWithBooked',
+        {'contractId': contractId},
+      );
+      final hasOverlap = result['hasOverlap'] == true;
+      return hasOverlap;
+    } catch (e, stackTrace) {
+      if (e is ServerException) rethrow;
+      if (e is ValidationException) rethrow;
+      throw ServerException(
+        'Erro ao verificar overlap com slots reservados: ${e.toString()}',
         originalError: e,
         stackTrace: stackTrace,
       );

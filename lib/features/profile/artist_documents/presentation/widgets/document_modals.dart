@@ -20,6 +20,7 @@ import 'package:url_launcher/url_launcher.dart';
 enum DocumentFileSource {
   file,
   gallery,
+  camera,
 }
 
 class DocumentModals {
@@ -150,14 +151,21 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
           title: 'Galeria',
           value: DocumentFileSource.gallery,
         ),
+        SelectionModalOption<DocumentFileSource>(
+          icon: Icons.camera_alt,
+          title: 'Câmera',
+          value: DocumentFileSource.camera,
+        ),
       ],
     );
 
     if (source != null && mounted) {
       if (source == DocumentFileSource.file) {
         await _pickFile();
-      } else {
+      } else if (source == DocumentFileSource.gallery) {
         await _pickFromGallery();
+      } else if (source == DocumentFileSource.camera) {
+        await _pickFromCamera();
       }
     }
   }
@@ -189,6 +197,16 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
   Future<void> _pickFromGallery() async {
       final file = await _imagePicker.pickImageFromGallery();
       if (file != null && mounted) {
+      setState(() {
+        _selectedFile = file;
+        _fileName = file.path.split('/').last;
+      });
+    }
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await _imagePicker.captureImageFromCamera();
+    if (file != null && mounted) {
       setState(() {
         _selectedFile = file;
         _fileName = file.path.split('/').last;
@@ -541,14 +559,21 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
           title: 'Galeria',
           value: DocumentFileSource.gallery,
         ),
+        SelectionModalOption<DocumentFileSource>(
+          icon: Icons.camera_alt,
+          title: 'Câmera',
+          value: DocumentFileSource.camera,
+        ),
       ],
     );
 
     if (source != null && mounted) {
       if (source == DocumentFileSource.file) {
         await _pickFile();
-      } else {
+      } else if (source == DocumentFileSource.gallery) {
         await _pickFromGallery();
+      } else if (source == DocumentFileSource.camera) {
+        await _pickFromCamera();
       }
     }
   }
@@ -580,6 +605,16 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
   Future<void> _pickFromGallery() async {
       final file = await _imagePicker.pickImageFromGallery();
       if (file != null && mounted) {
+      setState(() {
+        _selectedFile = file;
+        _fileName = file.path.split('/').last;
+      });
+    }
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await _imagePicker.captureImageFromCamera();
+    if (file != null && mounted) {
       setState(() {
         _selectedFile = file;
         _fileName = file.path.split('/').last;
@@ -939,6 +974,7 @@ class _CurriculumDocumentModal extends StatefulWidget {
 class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
   String? _selectedDocumentOption;
   final List<String> _options = DocumentsEntityOptions.curriculumDocumentOptions();
+  final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
 
@@ -961,14 +997,21 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
           title: 'Galeria',
           value: DocumentFileSource.gallery,
         ),
+        SelectionModalOption<DocumentFileSource>(
+          icon: Icons.camera_alt,
+          title: 'Câmera',
+          value: DocumentFileSource.camera,
+        ),
       ],
     );
 
     if (source != null && mounted) {
       if (source == DocumentFileSource.file) {
         await _pickFile();
-      } else {
+      } else if (source == DocumentFileSource.gallery) {
         await _pickFromGallery();
+      } else if (source == DocumentFileSource.camera) {
+        await _pickFromCamera();
       }
     }
   }
@@ -998,8 +1041,17 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
   }
 
   Future<void> _pickFromGallery() async {
-    final ImagePickerService imagePicker = ImagePickerService();
-    final file = await imagePicker.pickImageFromGallery();
+    final file = await _imagePicker.pickImageFromGallery();
+    if (file != null && mounted) {
+      setState(() {
+        _selectedFile = file;
+        _fileName = file.path.split('/').last;
+      });
+    }
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await _imagePicker.captureImageFromCamera();
     if (file != null && mounted) {
       setState(() {
         _selectedFile = file;
@@ -1253,6 +1305,7 @@ class _AntecedentsDocumentModal extends StatefulWidget {
 }
 
 class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
+  final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
 
@@ -1275,14 +1328,21 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
           title: 'Galeria',
           value: DocumentFileSource.gallery,
         ),
+        SelectionModalOption<DocumentFileSource>(
+          icon: Icons.camera_alt,
+          title: 'Câmera',
+          value: DocumentFileSource.camera,
+        ),
       ],
     );
 
     if (source != null && mounted) {
       if (source == DocumentFileSource.file) {
         await _pickFile();
-      } else {
+      } else if (source == DocumentFileSource.gallery) {
         await _pickFromGallery();
+      } else if (source == DocumentFileSource.camera) {
+        await _pickFromCamera();
       }
     }
   }
@@ -1312,8 +1372,17 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
   }
 
   Future<void> _pickFromGallery() async {
-    final ImagePickerService imagePicker = ImagePickerService();
-    final file = await imagePicker.pickImageFromGallery();
+    final file = await _imagePicker.pickImageFromGallery();
+    if (file != null && mounted) {
+      setState(() {
+        _selectedFile = file;
+        _fileName = file.path.split('/').last;
+      });
+    }
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await _imagePicker.captureImageFromCamera();
     if (file != null && mounted) {
       setState(() {
         _selectedFile = file;

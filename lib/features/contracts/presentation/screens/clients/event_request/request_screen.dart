@@ -591,6 +591,7 @@ class _RequestScreenState extends State<RequestScreen> {
       date: _selectedDate!,
       time: _timeController.text,
       duration: _selectedDuration!.inMinutes,
+      preparationTime: widget.artist.professionalInfo?.preparationTime,
       address: address,
       contractorType: ContractorTypeEnum.artist,
       refClient: clientUid,
@@ -739,6 +740,7 @@ class _RequestScreenState extends State<RequestScreen> {
                 onTap: _selectDate,
                 errorMessage: _hasAttemptedSubmit && _selectedDate == null ? 'Selecione a data' : null,
               ),
+              // Aviso de prazo para resposta (regra: hoje/amanhã = 1h30, depois = 24h)
               
               DSSizedBoxSpacing.vertical(16),
               
@@ -798,7 +800,50 @@ class _RequestScreenState extends State<RequestScreen> {
                 highlightColor: colorScheme.onPrimaryContainer,
               ),
               
-              DSSizedBoxSpacing.vertical(32),
+              DSSizedBoxSpacing.vertical(16),
+
+              if (_selectedDate != null) ...[
+                DSSizedBoxSpacing.vertical(8),
+                Builder(
+                  builder: (context) {
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    final selectedOnly = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
+                    final tomorrow = today.add(const Duration(days: 1));
+                    final isTodayOrTomorrow = selectedOnly == today || selectedOnly == tomorrow;
+                    final message = isTodayOrTomorrow
+                        ? 'A solicitação será respondida em até 1h30.'
+                        : 'A solicitação será respondida em até 24 horas.';
+                    final colorScheme = Theme.of(context).colorScheme;
+                    final textTheme = Theme.of(context).textTheme;
+                    return Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          DSSizedBoxSpacing.horizontal(8),
+                          Expanded(
+                            child: Text(
+                              message,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+
+              DSSizedBoxSpacing.vertical(24),
               
               // Botão de envio
               BlocBuilder<ContractsBloc, ContractsState>(

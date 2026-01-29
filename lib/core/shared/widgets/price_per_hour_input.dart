@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 /// - Suporte a validação customizada
 class PricePerHourInput extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final String label;
   final String? hintText;
   final bool enabled;
@@ -21,6 +22,7 @@ class PricePerHourInput extends StatelessWidget {
   const PricePerHourInput({
     super.key,
     required this.controller,
+    this.focusNode,
     this.label = 'Valor/hora',
     this.hintText = '0.00',
     this.enabled = true,
@@ -69,6 +71,7 @@ class PricePerHourInput extends StatelessWidget {
           flex: 3,
           child: TextFormField(
             controller: controller,
+            focusNode: focusNode,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textAlign: TextAlign.end,

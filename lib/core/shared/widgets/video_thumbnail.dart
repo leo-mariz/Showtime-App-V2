@@ -163,7 +163,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                   ),
                   child: Text(
                     widget.talentName,
-                    style: textTheme.titleMedium?.copyWith(
+                    style: textTheme.titleSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),

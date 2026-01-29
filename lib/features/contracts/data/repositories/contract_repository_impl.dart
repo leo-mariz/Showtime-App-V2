@@ -368,5 +368,15 @@ class ContractRepositoryImpl implements IContractRepository {
       return Left(ErrorHandler.handle(e));
     }
   }
+
+  @override
+  Future<Either<Failure, bool>> checkContractOverlapWithBooked(String contractId) async {
+    try {
+      final hasOverlap = await remoteDataSource.checkContractOverlapWithBooked(contractId);
+      return Right(hasOverlap);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }
 

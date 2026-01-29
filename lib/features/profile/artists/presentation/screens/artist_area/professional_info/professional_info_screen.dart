@@ -31,9 +31,11 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
   final TextEditingController minimumShowDurationController = TextEditingController();
   final TextEditingController preparationTimeController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
+  final TextEditingController requestMinimumEarlinessController = TextEditingController();
 
   Duration? _selectedMinimumDuration;
   Duration? _selectedPreparationTime;
+  Duration? _selectedRequestMinimumEarliness;
   bool _isLoading = false;
   bool _hasLoadedData = false;
 
@@ -219,6 +221,30 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     }
   }
 
+  Future<void> _selectRequestMinimumEarliness() async {
+    final hours = _selectedRequestMinimumEarliness?.inHours ?? 0;
+    final minutes = (_selectedRequestMinimumEarliness?.inMinutes ?? 0) % 60;
+
+    final result = await showDialog<Duration>(
+      context: context,
+      builder: (context) => WheelPickerDialog(
+        title: 'Antecedência mínima para solicitações',
+        initialHours: hours,
+        initialMinutes: minutes,
+        type: WheelPickerType.duration,
+        minimumDuration: const Duration(minutes: 0), // Pode ser zero
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedRequestMinimumEarliness = result;
+        requestMinimumEarlinessController.text = _formatDuration(result);
+        // O listener _onFieldChanged será chamado automaticamente
+      });
+    }
+  }
+
   bool _hasChanges() {
     // Converter valores atuais
     final currentSpecialty = talentController.text.trim().isEmpty
@@ -231,8 +257,9 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     
     final currentMinimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final currentPreparationTime = _selectedPreparationTime?.inMinutes;
-    
+    final currentRequestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
     final currentBio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
+
 
     // Comparar com valores iniciais
     final initialSpecialty = _initialProfessionalInfo?.specialty;
@@ -240,6 +267,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     final initialMinimumShowDuration = _initialProfessionalInfo?.minimumShowDuration;
     final initialPreparationTime = _initialProfessionalInfo?.preparationTime;
     final initialBio = _initialProfessionalInfo?.bio;
+    final initialRequestMinimumEarliness = _initialProfessionalInfo?.requestMinimumEarliness;
 
     // Verificar se há mudanças
     final specialtyChanged = _compareLists(currentSpecialty, initialSpecialty);
@@ -247,8 +275,9 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     final durationChanged = currentMinimumShowDuration != initialMinimumShowDuration;
     final preparationTimeChanged = currentPreparationTime != initialPreparationTime;
     final bioChanged = currentBio != initialBio;
+    final requestMinimumEarlinessChanged = currentRequestMinimumEarliness != initialRequestMinimumEarliness;
 
-    return specialtyChanged || genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged;
+    return specialtyChanged || genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
   }
 
   bool _compareLists(List<String>? list1, List<String>? list2) {
@@ -278,6 +307,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
     final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final preparationTime = _selectedPreparationTime?.inMinutes;
+    final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
 
     final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
@@ -286,6 +316,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
       genrePreferences: genrePreferences,
       minimumShowDuration: minimumShowDuration,
       preparationTime: preparationTime,
+      requestMinimumEarliness: requestMinimumEarliness,
       bio: bio,
     );
 
@@ -334,16 +365,18 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                 final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
                 final preparationTime = _selectedPreparationTime?.inMinutes;
                 final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
+                final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
                 _initialProfessionalInfo = ProfessionalInfoEntity(
                   specialty: specialty,
                   genrePreferences: genrePreferences,
                   minimumShowDuration: minimumShowDuration,
                   preparationTime: preparationTime,
                   bio: bio,
+                  requestMinimumEarliness: requestMinimumEarliness,
                 );
               });
               // Recarregar dados atualizados antes de voltar
-              _handleGetArtist(forceRefresh: true);
+              _handleGetArtist(forceRefresh: false);
               context.showSuccess('Informações profissionais salvas com sucesso!');
               // Voltar para a tela anterior após salvar
               Navigator.of(context).pop();
@@ -419,12 +452,16 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                     bioController: bioController,
                     onDurationTap: _selectDuration,
                     onPreparationTimeTap: _selectPreparationTime,
+                    onRequestMinimumEarlinessTap: _selectRequestMinimumEarliness,
                     durationDisplayValue: minimumShowDurationController.text.isEmpty
                         ? 'Selecione'
                         : minimumShowDurationController.text,
                     preparationTimeDisplayValue: preparationTimeController.text.isEmpty
                         ? 'Selecione'
                         : preparationTimeController.text,
+                    requestMinimumEarlinessDisplayValue: requestMinimumEarlinessController.text.isEmpty
+                        ? 'Selecione'
+                        : requestMinimumEarlinessController.text,
                     talentOptions: _talentOptions.isNotEmpty ? _talentOptions : null,
                   ),
                   DSSizedBoxSpacing.vertical(48),
@@ -522,6 +559,17 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+
+                  _buildLegendItem(
+                    label: 'Minha Bio',
+                    description: 'Conte mais sobre você, seu estilo, experiência e o que torna sua apresentação única. Esta informação será visível para os clientes.',
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                  ),
+
+                  SizedBox(height: DSSize.height(20)),
+
                   _buildLegendItem(
                     label: 'Talentos',
                     description: 'Selecione os talentos ou especialidades que você possui. Cada talento poderá ter um vídeo de apresentação na área de apresentações.',
@@ -547,14 +595,14 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                     textTheme: textTheme,
                   ),
 
-                  SizedBox(height: DSSize.height(20)),
-
                   _buildLegendItem(
-                    label: 'Minha Bio',
-                    description: 'Conte mais sobre você, seu estilo, experiência e o que torna sua apresentação única. Esta informação será visível para os clientes.',
+                    label: 'Antecedência mínima para solicitações',
+                    description: 'Tempo mínimo que você precisa para ser solicitado para uma apresentação. Clientes não poderão solicitar apresentações com antecedência menor que esta.',
                     colorScheme: colorScheme,
                     textTheme: textTheme,
                   ),
+
+                  
 
                   SizedBox(height: DSSize.height(48)),
                 ],

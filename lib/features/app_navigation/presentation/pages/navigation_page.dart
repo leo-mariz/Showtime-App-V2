@@ -180,7 +180,7 @@ class _NavigationPageState extends State<NavigationPage> {
     
     // Índices dos itens no bottom nav
     final chatIndex = 3;
-    final contractsIndex = isArtist ? 1 : 2; // Shows para artista, Solicitações para cliente
+    final contractsIndex = isArtist ? 2 : 2; // Shows para artista, Solicitações para cliente
     
     return BlocBuilder<UnreadCountBloc, UnreadCountState>(
       builder: (context, unreadState) {

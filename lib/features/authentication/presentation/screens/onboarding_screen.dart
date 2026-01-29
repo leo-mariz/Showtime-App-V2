@@ -63,9 +63,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _emailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
   
-  // Controller nome artístico (apenas para artistas)
-  final _artistNameController = TextEditingController();
-  
   // Estado CPF
   String? _selectedGender;
   final List<String> _genderOptions = ['Masculino', 'Feminino', 'Não informar'];
@@ -77,7 +74,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Estados de validação
   bool _showTermsError = false;
   bool _isLoading = false;
-  bool _isArtistNameValid = true; // Indica se nome artístico está válido (opcional, então começa como true)
   bool _isCpfValid = true; // Indica se CPF está válido (disponível)
   bool _isCnpjValid = true; // Indica se CNPJ está válido (disponível)
   
@@ -105,7 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Controllers compartilhados
     _emailController.dispose();
     _phoneNumberController.dispose();
-    _artistNameController.dispose();
     
     super.dispose();
   }
@@ -213,7 +208,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           companyNameController: _companyNameController,
           fantasyNameController: _fantasyNameController,
           stateRegistrationController: _stateRegistrationController,
-          artistNameController: _isArtist! ? _artistNameController : null,
           selectedGender: _selectedGender,
           genderOptions: _genderOptions,
           onDocumentTypeChanged: (isCnpj) {
@@ -228,11 +222,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             setState(() => _selectedGender = gender);
           },
           isCnpj: _isCnpj,
-          onArtistNameValidationChanged: _isArtist!
-              ? (isValid) {
-                  setState(() => _isArtistNameValid = isValid);
-                }
-              : null,
           onCpfValidationChanged: !_isCnpj
               ? (isValid) {
                   setState(() => _isCpfValid = isValid);
@@ -340,11 +329,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
       
       // Validar nome artístico se for artista e tiver preenchido
-      if (_isArtist == true && _artistNameController.text.trim().isNotEmpty && !_isArtistNameValid) {
-        context.showError('Por favor, verifique se o nome artístico está disponível antes de continuar');
-        return;
-      }
-      
       setState(() => _currentStep++);
       return;
     }
@@ -388,13 +372,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
 
     // Criar ArtistEntity ou ClientEntity
-    final artist = _isArtist == true
-        ? ArtistEntity.defaultEntity().copyWith(
-            artistName: _artistNameController.text.trim().isNotEmpty
-                ? _artistNameController.text.trim()
-                : null,
-          )
-        : ArtistEntity.defaultEntity();
+    final artist = ArtistEntity.defaultEntity();
     
     final client = ClientEntity.defaultClientEntity();
 

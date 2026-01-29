@@ -13,8 +13,10 @@ class ProfessionalInfoForm extends StatelessWidget {
   final TextEditingController bioController;
   final VoidCallback onDurationTap;
   final VoidCallback onPreparationTimeTap;
+  final VoidCallback onRequestMinimumEarlinessTap;
   final String durationDisplayValue;
   final String preparationTimeDisplayValue;
+  final String requestMinimumEarlinessDisplayValue;
   final List<String>? talentOptions;
 
   const ProfessionalInfoForm({
@@ -26,8 +28,10 @@ class ProfessionalInfoForm extends StatelessWidget {
     required this.bioController,
     required this.onDurationTap,
     required this.onPreparationTimeTap,
+    required this.onRequestMinimumEarlinessTap,
     required this.durationDisplayValue,
     required this.preparationTimeDisplayValue,
+    required this.requestMinimumEarlinessDisplayValue,
     this.talentOptions,
   });
 
@@ -79,6 +83,12 @@ class ProfessionalInfoForm extends StatelessWidget {
           label: 'Tempo de Preparação:',
           value: preparationTimeDisplayValue,
           onTap: onPreparationTimeTap,
+        ),
+        DSSizedBoxSpacing.vertical(16),
+        SelectableRow(
+          label: 'Antecedência mínima para solicitações:',
+          value: requestMinimumEarlinessDisplayValue,
+          onTap: onRequestMinimumEarlinessTap,
         ),
       ],
     );

@@ -13,7 +13,7 @@ class ArtistEntity with ArtistEntityMappable {
   ProfessionalInfoEntity? professionalInfo;
   Map<String, String>? presentationMedias;
   final AddressInfoEntity? residenceAddress;
-  List<String>? groupsInUids;
+  List<String>? groupsUids;
   Map<String, List<String>>? incompleteSections;
   bool? approved;
   bool? isActive;
@@ -39,7 +39,7 @@ class ArtistEntity with ArtistEntityMappable {
     this.incompleteSections,
     this.agreedToArtistTermsOfUse,
     this.isOnAnyGroup,
-    this.groupsInUids,
+    this.groupsUids,
     this.rating,
     this.rateCount,
     this.contractsRatedUids,

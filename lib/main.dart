@@ -15,6 +15,29 @@ import 'package:app/features/explore/domain/repositories/explore_repository.dart
 import 'package:app/features/explore/domain/usecases/get_artist_active_availabilities_usecase.dart';
 import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
+import 'package:app/features/ensemble/ensemble/data/datasources/ensemble_local_datasource.dart';
+import 'package:app/features/ensemble/ensemble/data/datasources/ensemble_remote_datasource.dart';
+import 'package:app/features/ensemble/ensemble/data/repositories/ensemble_repository_impl.dart';
+import 'package:app/features/ensemble/ensemble/domain/repositories/ensemble_repository.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/create_empty_ensemble_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/create_ensemble_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/delete_ensemble_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_all_ensembles_by_artist_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_by_id_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_usecase.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
+import 'package:app/features/ensemble/members/data/datasources/members_local_datasource.dart';
+import 'package:app/features/ensemble/members/data/datasources/members_remote_datasource.dart';
+import 'package:app/features/ensemble/members/data/repositories/members_repository_impl.dart';
+import 'package:app/features/ensemble/members/domain/repositories/members_repository.dart';
+import 'package:app/features/ensemble/members/domain/usecases/create_member_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/delete_member_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_artist_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_member_by_cpf_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_ensemble_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_member_by_id_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/update_member_usecase.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
 import 'package:app/features/favorites/data/datasources/favorite_remote_datasource.dart';
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
@@ -23,14 +46,6 @@ import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart
 import 'package:app/features/favorites/domain/usecases/get_favorite_artists_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
-// import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
-// import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
-// import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
-// import 'package:app/features/explore/domain/repositories/explore_repository.dart';
-// import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
-// import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_usecase.dart';
-// import 'package:app/features/explore/domain/usecases/is_availability_valid_for_date_usecase.dart';
-// import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
 import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
@@ -117,16 +132,6 @@ import 'package:app/features/profile/artists/domain/usecases/check_artist_comple
 import 'package:app/features/profile/artists/domain/usecases/get_artist_completeness_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
 import 'package:app/features/profile/artists/domain/usecases/update_artist_incomplete_sections_usecase.dart';
-import 'package:app/features/profile/groups/data/datasources/groups_local_datasource.dart';
-import 'package:app/features/profile/groups/data/datasources/groups_remote_datasource.dart';
-import 'package:app/features/profile/groups/data/repositories/groups_repository_impl.dart';
-import 'package:app/features/profile/groups/domain/repositories/groups_repository.dart';
-import 'package:app/features/profile/groups/domain/usecases/add_group_usecase.dart';
-import 'package:app/features/profile/groups/domain/usecases/delete_group_usecase.dart';
-import 'package:app/features/profile/groups/domain/usecases/get_group_usecase.dart';
-import 'package:app/features/profile/groups/domain/usecases/get_groups_usecase.dart';
-import 'package:app/features/profile/groups/domain/usecases/update_group_usecase.dart';
-import 'package:app/features/profile/groups/presentation/bloc/groups_bloc.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
 import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
 import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
@@ -144,7 +149,6 @@ import 'package:app/core/config/auto_router_config.dart';
 import 'package:flutter_auto_cache/flutter_auto_cache.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Authentication imports
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -216,6 +220,15 @@ import 'package:app/features/app_lists/domain/usecases/get_specialties_usecase.d
 import 'package:app/features/app_lists/domain/usecases/get_talents_usecase.dart';
 import 'package:app/features/app_lists/domain/usecases/get_event_types_usecase.dart';
 import 'package:app/features/app_lists/domain/usecases/get_support_subjects_usecase.dart';
+
+// Support (atendimento) imports
+import 'package:app/features/support/presentation/bloc/support_bloc.dart';
+import 'package:app/features/support/data/datasources/support_remote_datasource.dart';
+import 'package:app/features/support/data/repositories/support_repository_impl.dart';
+import 'package:app/features/support/data/services/support_email_service_impl.dart';
+import 'package:app/features/support/domain/repositories/support_repository.dart';
+import 'package:app/features/support/domain/usecases/send_support_message_usecase.dart';
+import 'package:app/core/services/mail_services.dart';
 
 
 /// Factory function para criar o AuthBloc com todas as dependências
@@ -531,29 +544,6 @@ DocumentsBloc _createDocumentsBloc(
   );
 }
 
-/// Factory function para criar o GroupsBloc com todas as dependências
-GroupsBloc _createGroupsBloc(
-  IGroupsRepository groupsRepository,
-  GetUserUidUseCase getUserUidUseCase,
-) {
-  // Criar UseCases
-  final getGroupsUseCase = GetGroupsUseCase(repository: groupsRepository);
-  final getGroupUseCase = GetGroupUseCase(repository: groupsRepository);
-  final addGroupUseCase = AddGroupUseCase(repository: groupsRepository);
-  final updateGroupUseCase = UpdateGroupUseCase(repository: groupsRepository);
-  final deleteGroupUseCase = DeleteGroupUseCase(repository: groupsRepository);
-
-  // Criar e retornar GroupsBloc
-  return GroupsBloc(
-    getGroupsUseCase: getGroupsUseCase,
-    getGroupUseCase: getGroupUseCase,
-    addGroupUseCase: addGroupUseCase,
-    updateGroupUseCase: updateGroupUseCase,
-    deleteGroupUseCase: deleteGroupUseCase,
-    getUserUidUseCase: getUserUidUseCase,
-  );
-}
-
 /// Factory function para criar o AvailabilityBloc com todas as dependências
 AvailabilityBloc _createAvailabilityBloc(
   IAvailabilityRepository availabilityRepository,
@@ -732,6 +722,65 @@ FavoritesBloc _createFavoritesBloc(
   return FavoritesBloc(getUserUidUseCase: getUserUidUseCase, addFavoriteUseCase: addFavoriteUseCase, removeFavoriteUseCase: removeFavoriteUseCase, getFavoriteArtistsUseCase: getFavoriteArtistsUseCase);
 }
 
+EnsembleBloc _createEnsembleBloc(
+  IEnsembleRepository ensembleRepository,
+  IMembersRepository membersRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  final getAllEnsemblesByArtistUseCase = GetAllEnsemblesByArtistUseCase(repository: ensembleRepository);
+  final getEnsembleByIdUseCase = GetEnsembleByIdUseCase(repository: ensembleRepository);
+  final createEmptyEnsembleUseCase = CreateEmptyEnsembleUseCase(repository: ensembleRepository);
+  final getAllMembersByArtistUseCase = GetAllMembersByArtistUseCase(
+    ensembleRepository: ensembleRepository,
+    membersRepository: membersRepository,
+  );
+  final getMemberByCpfUseCase = GetMemberByCpfUseCase(
+    getAllMembersByArtistUseCase: getAllMembersByArtistUseCase,
+  );
+  final createMemberUseCase = CreateMemberUseCase(repository: membersRepository);
+  final updateEnsembleUseCase = UpdateEnsembleUseCase(repository: ensembleRepository);
+  final createEnsembleUseCase = CreateEnsembleUseCase(
+    createEmptyEnsembleUseCase: createEmptyEnsembleUseCase,
+    getMemberByCpfUseCase: getMemberByCpfUseCase,
+    createMemberUseCase: createMemberUseCase,
+    updateEnsembleUseCase: updateEnsembleUseCase,
+  );
+  final deleteEnsembleUseCase = DeleteEnsembleUseCase(repository: ensembleRepository);
+  return EnsembleBloc(
+    getAllEnsemblesByArtistUseCase: getAllEnsemblesByArtistUseCase,
+    getEnsembleByIdUseCase: getEnsembleByIdUseCase,
+    createEnsembleUseCase: createEnsembleUseCase,
+    updateEnsembleUseCase: updateEnsembleUseCase,
+    deleteEnsembleUseCase: deleteEnsembleUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+MembersBloc _createMembersBloc(
+  IEnsembleRepository ensembleRepository,
+  IMembersRepository membersRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  final getAllMembersByEnsembleUseCase = GetAllMembersByEnsembleUseCase(repository: membersRepository);
+  final getAllMembersByArtistUseCase = GetAllMembersByArtistUseCase(
+    ensembleRepository: ensembleRepository,
+    membersRepository: membersRepository,
+  );
+  final getMemberByIdUseCase = GetMemberByIdUseCase(repository: membersRepository);
+  final createMemberUseCase = CreateMemberUseCase(repository: membersRepository);
+  final updateMemberUseCase = UpdateMemberUseCase(repository: membersRepository);
+  final deleteMemberUseCase = DeleteMemberUseCase(repository: membersRepository);
+  return MembersBloc(
+    getAllMembersByEnsembleUseCase: getAllMembersByEnsembleUseCase,
+    getAllMembersByArtistUseCase: getAllMembersByArtistUseCase,
+    getMemberByIdUseCase: getMemberByIdUseCase,
+    createMemberUseCase: createMemberUseCase,
+    updateMemberUseCase: updateMemberUseCase,
+    deleteMemberUseCase: deleteMemberUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
 AppListsBloc _createAppListsBloc(
   IAppListsRepository appListsRepository,
 ) {
@@ -747,6 +796,17 @@ AppListsBloc _createAppListsBloc(
     getTalentsUseCase: getTalentsUseCase,
     getEventTypesUseCase: getEventTypesUseCase,
     getSupportSubjectsUseCase: getSupportSubjectsUseCase,
+  );
+}
+
+SupportBloc _createSupportBloc(
+  ISupportRepository supportRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  final sendSupportMessageUseCase = SendSupportMessageUseCase(repository: supportRepository);
+  return SupportBloc(
+    sendSupportMessageUseCase: sendSupportMessageUseCase,
+    getUserUidUseCase: getUserUidUseCase,
   );
 }
 
@@ -935,11 +995,6 @@ Future <void> main() async {
   final documentsRemoteDataSource = DocumentsRemoteDataSourceImpl(firestore: firestore);
   final documentsRepository = DocumentsRepositoryImpl(localDataSource: documentsLocalDataSource, remoteDataSource: documentsRemoteDataSource);
 
-  // Groups
-  final groupsLocalDataSource = GroupsLocalDataSourceImpl(autoCacheService: localCacheService);
-  final groupsRemoteDataSource = GroupsRemoteDataSourceImpl(firestore: firestore);
-  final groupsRepository = GroupsRepositoryImpl(localDataSource: groupsLocalDataSource, remoteDataSource: groupsRemoteDataSource);
-
   // Availability
   final availabilityLocalDataSource = AvailabilityLocalDataSourceImpl(localCacheService: localCacheService);
   final availabilityRemoteDataSource = AvailabilityRemoteDataSourceImpl(firestore: firestore);
@@ -979,6 +1034,22 @@ Future <void> main() async {
     exploreLocalDataSource: exploreLocalDataSource,
   );
 
+  // Ensemble (conjuntos)
+  final ensembleLocalDataSource = EnsembleLocalDataSourceImpl(localCacheService: localCacheService);
+  final ensembleRemoteDataSource = EnsembleRemoteDataSourceImpl(firestore: firestore);
+  final ensembleRepository = EnsembleRepositoryImpl(
+    remoteDataSource: ensembleRemoteDataSource,
+    localDataSource: ensembleLocalDataSource,
+  );
+
+  // Ensemble Members (integrantes)
+  final membersLocalDataSource = MembersLocalDataSourceImpl(localCacheService: localCacheService);
+  final membersRemoteDataSource = MembersRemoteDataSourceImpl(firestore: firestore);
+  final membersRepository = MembersRepositoryImpl(
+    remoteDataSource: membersRemoteDataSource,
+    localDataSource: membersLocalDataSource,
+  );
+
   // CalculateAddressGeohashUseCase (compartilhado entre Addresses e Explore)
   final calculateAddressGeohashUseCase = CalculateAddressGeohashUseCase();
 
@@ -1014,7 +1085,13 @@ Future <void> main() async {
     localDataSource: chatLocalDataSource,
   );
 
-  // SyncArtistCompletenessIfChangedUseCase
+  // Support (atendimento)
+  final supportRemoteDataSource = SupportRemoteDataSourceImpl(firestore: firestore);
+  final supportEmailService = SupportEmailServiceImpl(mailService: MailService());
+  final supportRepository = SupportRepositoryImpl(
+    remoteDataSource: supportRemoteDataSource,
+    emailService: supportEmailService,
+  );
 
   runApp(MultiBlocProvider(
         providers: [
@@ -1070,12 +1147,6 @@ Future <void> main() async {
             ),
           ),
           BlocProvider(
-            create: (context) => _createGroupsBloc(
-              groupsRepository,
-              getUserUidUseCase,
-            ),
-          ),
-          BlocProvider(
             create: (context) => _createAvailabilityBloc(
               availabilityRepository, 
               getUserUidUseCase,
@@ -1118,8 +1189,28 @@ Future <void> main() async {
             ),
           ),
           BlocProvider(
+            create: (context) => _createEnsembleBloc(
+              ensembleRepository,
+              membersRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createMembersBloc(
+              ensembleRepository,
+              membersRepository,
+              getUserUidUseCase,
+            ),
+          ),
+          BlocProvider(
             create: (context) => _createAppListsBloc(
               appListsRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createSupportBloc(
+              supportRepository,
+              getUserUidUseCase,
             ),
           ),
           BlocProvider(

@@ -359,7 +359,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                               title: 'Atendimento',
                                               showDivider: true,
                                               onTap: () {
-                                                router.push(const SupportRoute());
+                                                router.push(SupportRoute());
                                               },
                                             ),
                                             ProfileOptionTile(

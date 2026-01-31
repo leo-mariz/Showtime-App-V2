@@ -7,6 +7,7 @@ class ProfileHeader extends StatelessWidget {
   final String? imageUrl;
   final String name;
   final bool isArtist;
+  final bool isGroup;
   final VoidCallback? onProfilePictureTap;
   final bool isLoadingProfilePicture;
   final VoidCallback? onSwitchUserType;
@@ -17,6 +18,7 @@ class ProfileHeader extends StatelessWidget {
     this.imageUrl,
     required this.name,
     required this.isArtist,
+    this.isGroup = false,
     this.onProfilePictureTap,
     this.isLoadingProfilePicture = false,
     this.onSwitchUserType,
@@ -86,7 +88,7 @@ class ProfileHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(DSSize.width(12)),
                       ),
                       child: Text(
-                        isArtist ? 'Artista' : 'Anfitrião',
+                        isArtist ? 'Artista' : isGroup ? 'Conjunto' : 'Anfitrião',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,

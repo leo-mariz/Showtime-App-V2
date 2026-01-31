@@ -42,6 +42,10 @@ class ProfessionalInfoEntityMapper
     _$preparationTime,
     opt: true,
   );
+  static int? _$requestMinimumEarliness(ProfessionalInfoEntity v) =>
+      v.requestMinimumEarliness;
+  static const Field<ProfessionalInfoEntity, int> _f$requestMinimumEarliness =
+      Field('requestMinimumEarliness', _$requestMinimumEarliness, opt: true);
   static String? _$bio(ProfessionalInfoEntity v) => v.bio;
   static const Field<ProfessionalInfoEntity, String> _f$bio = Field(
     'bio',
@@ -61,6 +65,7 @@ class ProfessionalInfoEntityMapper
     #genrePreferences: _f$genrePreferences,
     #minimumShowDuration: _f$minimumShowDuration,
     #preparationTime: _f$preparationTime,
+    #requestMinimumEarliness: _f$requestMinimumEarliness,
     #bio: _f$bio,
     #hourlyRate: _f$hourlyRate,
   };
@@ -71,6 +76,7 @@ class ProfessionalInfoEntityMapper
       genrePreferences: data.dec(_f$genrePreferences),
       minimumShowDuration: data.dec(_f$minimumShowDuration),
       preparationTime: data.dec(_f$preparationTime),
+      requestMinimumEarliness: data.dec(_f$requestMinimumEarliness),
       bio: data.dec(_f$bio),
       hourlyRate: data.dec(_f$hourlyRate),
     );
@@ -154,6 +160,7 @@ abstract class ProfessionalInfoEntityCopyWith<
     List<String>? genrePreferences,
     int? minimumShowDuration,
     int? preparationTime,
+    int? requestMinimumEarliness,
     String? bio,
     double? hourlyRate,
   });
@@ -195,6 +202,7 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
     Object? genrePreferences = $none,
     Object? minimumShowDuration = $none,
     Object? preparationTime = $none,
+    Object? requestMinimumEarliness = $none,
     Object? bio = $none,
     Object? hourlyRate = $none,
   }) => $apply(
@@ -204,6 +212,8 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
       if (minimumShowDuration != $none)
         #minimumShowDuration: minimumShowDuration,
       if (preparationTime != $none) #preparationTime: preparationTime,
+      if (requestMinimumEarliness != $none)
+        #requestMinimumEarliness: requestMinimumEarliness,
       if (bio != $none) #bio: bio,
       if (hourlyRate != $none) #hourlyRate: hourlyRate,
     }),
@@ -217,6 +227,10 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
       or: $value.minimumShowDuration,
     ),
     preparationTime: data.get(#preparationTime, or: $value.preparationTime),
+    requestMinimumEarliness: data.get(
+      #requestMinimumEarliness,
+      or: $value.requestMinimumEarliness,
+    ),
     bio: data.get(#bio, or: $value.bio),
     hourlyRate: data.get(#hourlyRate, or: $value.hourlyRate),
   );

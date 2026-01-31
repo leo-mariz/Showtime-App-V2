@@ -33,10 +33,12 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: PresentationsRoute.page, path: '/presentations'),
     AutoRoute(page: DocumentsRoute.page, path: '/documents'),
     AutoRoute(page: BankAccountRoute.page, path: '/bank-account'),
-    AutoRoute(page: GroupsRoute.page, path: '/groups'),
-    AutoRoute(page: GroupAreaRoute.page, path: '/group-area'),
 
-    //Artist Dashboard Routes
+    // Ensemble (Conjuntos) Routes
+    AutoRoute(page: EnsemblesListRoute.page, path: '/ensembles-list'),
+    AutoRoute(page: EnsembleAreaRoute.page, path: '/ensemble-area/:ensembleId'),
+    AutoRoute(page: EnsembleMembersRoute.page, path: '/ensemble-members/:ensembleId'),
+    AutoRoute(page: EnsemblePresentationsRoute.page, path: '/ensemble-presentations/:ensembleId'),
 
     //Profile Routes
     AutoRoute(page: PersonalInfoRoute.page, path: '/personal-info'),

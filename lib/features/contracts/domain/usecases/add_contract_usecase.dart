@@ -67,6 +67,7 @@ class AddContractUseCase {
       }
 
       // Validar referência do contratado (artista ou grupo)
+      // ignore: unused_local_variable
       String? artistId;
       if (contract.contractorType == ContractorTypeEnum.artist) {
         if (contract.refArtist == null || contract.refArtist!.isEmpty) {

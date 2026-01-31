@@ -4,30 +4,50 @@ import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 
-/// Seção de tabs para Show, Vídeos e Disponibilidades
+/// Seção de tabs para Show, Vídeos e Disponibilidades.
+/// Para grupos (ensemble), passe [memberNames] para exibir a tab "Integrantes".
 class TabsSection extends StatelessWidget {
   final ArtistEntity artist;
   final Function(String videoUrl)? onVideoTap;
   final Widget? calendarTab; // Tab customizada para calendário
+  /// Nomes dos integrantes (para grupos); quando não vazio, adiciona tab "Integrantes"
+  final List<String>? memberNames;
 
   const TabsSection({
     super.key,
     required this.artist,
     this.onVideoTap,
     this.calendarTab,
+    this.memberNames,
   });
 
-  bool get _hasTalents => 
+  bool get _hasTalents =>
       artist.presentationMedias?.isNotEmpty ?? false;
+
+  bool get _hasMembersTab =>
+      memberNames != null && memberNames!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    // Sempre mostrar as tabs, mesmo quando não houver dados
     final List<String> tabs = [];
     tabs.add('Sobre o Show');
     tabs.add('Vídeos');
+    if (_hasMembersTab) {
+      tabs.add('Integrantes');
+    }
     if (calendarTab != null) {
       tabs.add('Disponibilidades');
+    }
+
+    final tabViews = <Widget>[
+      _buildGenresTab(context),
+      _buildTalentsTab(context),
+    ];
+    if (_hasMembersTab) {
+      tabViews.add(_buildMembersTab(context));
+    }
+    if (calendarTab != null) {
+      tabViews.add(calendarTab!);
     }
 
     return DefaultTabController(
@@ -49,11 +69,7 @@ class TabsSection extends StatelessWidget {
           SizedBox(
             height: _calculateTabHeight(),
             child: TabBarView(
-              children: [
-                _buildGenresTab(context),
-                _buildTalentsTab(context),
-                if (calendarTab != null) calendarTab!,
-              ],
+              children: tabViews,
             ),
           ),
         ],
@@ -63,11 +79,48 @@ class TabsSection extends StatelessWidget {
 
   double _calculateTabHeight() {
     if (calendarTab != null) {
-      // Altura maior para o calendário
       return DSSize.height(500);
     }
-    // Altura padrão para Estilos/Talentos
+    if (_hasMembersTab) {
+      return DSSize.height(200);
+    }
     return _hasTalents ? DSSize.height(220) : DSSize.height(120);
+  }
+
+  Widget _buildMembersTab(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final names = memberNames!;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: names.length,
+        itemBuilder: (context, index) {
+          final memberName = names[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: DSSize.height(8)),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  size: DSSize.width(20),
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                SizedBox(width: DSSize.width(12)),
+                Text(
+                  memberName,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildGenresTab(BuildContext context) {

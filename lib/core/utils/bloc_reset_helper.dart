@@ -3,6 +3,12 @@ import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
 import 'package:app/features/artist_dashboard/presentation/bloc/events/artist_dashboard_events.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
+import 'package:app/features/ensemble/member_documents/presentation/bloc/events/member_documents_events.dart';
+import 'package:app/features/ensemble/member_documents/presentation/bloc/member_documents_bloc.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/profile/artist_availability/presentation/bloc/events/availability_events.dart';
@@ -22,8 +28,6 @@ import 'package:app/features/profile/artist_availability/presentation/bloc/avail
 import 'package:app/features/profile/artist_bank_account/presentation/bloc/bank_account_bloc.dart';
 import 'package:app/features/profile/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/profile/groups/presentation/bloc/events/groups_events.dart';
-import 'package:app/features/profile/groups/presentation/bloc/groups_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -63,8 +67,6 @@ class BlocResetHelper {
       context.read<ArtistsBloc>().add(ResetArtistsEvent());
       // Resetar DocumentsBloc (cancela stream de documentos)
       context.read<DocumentsBloc>().add(ResetDocumentsEvent());
-      // Resetar GroupsBloc (cancela stream de grupos)
-      context.read<GroupsBloc>().add(ResetGroupsEvent());
       // Resetar AvailabilityBloc (cancela stream de disponibilidade)
       context.read<AvailabilityBloc>().add(ResetAvailabilityEvent());
       // Resetar BankAccountBloc (cancela stream de conta bancária)
@@ -87,6 +89,12 @@ class BlocResetHelper {
       context.read<UnreadCountBloc>().add(ResetUnreadCountEvent());
       // Resetar PendingContractsCountBloc (cancela stream de contador de contratos pendentes)
       context.read<PendingContractsCountBloc>().add(ResetPendingContractsCountEvent());
+      // Resetar MembersBloc (cancela stream de membros)
+      context.read<MembersBloc>().add(ResetMembersEvent());
+      // Resetar EnsembleBloc (cancela stream de conjuntos)
+      context.read<EnsembleBloc>().add(ResetEnsembleEvent());
+      // Resetar MemberDocumentsBloc (cancela stream de documentos de membros)
+      context.read<MemberDocumentsBloc>().add(ResetMemberDocumentsEvent());
       // Resetar AuthBloc para AuthInitial (deve ser o último)
       context.read<AuthBloc>().add(ResetAuthEvent());
     } catch (e) {

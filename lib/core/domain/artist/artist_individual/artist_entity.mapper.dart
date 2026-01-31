@@ -99,10 +99,10 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     _$isOnAnyGroup,
     opt: true,
   );
-  static List<String>? _$groupsInUids(ArtistEntity v) => v.groupsInUids;
-  static const Field<ArtistEntity, List<String>> _f$groupsInUids = Field(
-    'groupsInUids',
-    _$groupsInUids,
+  static List<String>? _$groupsUids(ArtistEntity v) => v.groupsUids;
+  static const Field<ArtistEntity, List<String>> _f$groupsUids = Field(
+    'groupsUids',
+    _$groupsUids,
     opt: true,
   );
   static double? _$rating(ArtistEntity v) => v.rating;
@@ -140,7 +140,7 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     #incompleteSections: _f$incompleteSections,
     #agreedToArtistTermsOfUse: _f$agreedToArtistTermsOfUse,
     #isOnAnyGroup: _f$isOnAnyGroup,
-    #groupsInUids: _f$groupsInUids,
+    #groupsUids: _f$groupsUids,
     #rating: _f$rating,
     #rateCount: _f$rateCount,
     #contractsRatedUids: _f$contractsRatedUids,
@@ -161,7 +161,7 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       incompleteSections: data.dec(_f$incompleteSections),
       agreedToArtistTermsOfUse: data.dec(_f$agreedToArtistTermsOfUse),
       isOnAnyGroup: data.dec(_f$isOnAnyGroup),
-      groupsInUids: data.dec(_f$groupsInUids),
+      groupsUids: data.dec(_f$groupsUids),
       rating: data.dec(_f$rating),
       rateCount: data.dec(_f$rateCount),
       contractsRatedUids: data.dec(_f$contractsRatedUids),
@@ -247,8 +247,7 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     ObjectCopyWith<$R, List<String>, List<String>>
   >?
   get incompleteSections;
-  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
-  get groupsInUids;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get groupsUids;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
   get contractsRatedUids;
   $R call({
@@ -265,7 +264,7 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     Map<String, List<String>>? incompleteSections,
     bool? agreedToArtistTermsOfUse,
     bool? isOnAnyGroup,
-    List<String>? groupsInUids,
+    List<String>? groupsUids,
     double? rating,
     int? rateCount,
     List<String>? contractsRatedUids,
@@ -320,11 +319,11 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       : null;
   @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
-  get groupsInUids => $value.groupsInUids != null
+  get groupsUids => $value.groupsUids != null
       ? ListCopyWith(
-          $value.groupsInUids!,
+          $value.groupsUids!,
           (v, t) => ObjectCopyWith(v, $identity, t),
-          (v) => call(groupsInUids: v),
+          (v) => call(groupsUids: v),
         )
       : null;
   @override
@@ -351,7 +350,7 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     Object? incompleteSections = $none,
     Object? agreedToArtistTermsOfUse = $none,
     Object? isOnAnyGroup = $none,
-    Object? groupsInUids = $none,
+    Object? groupsUids = $none,
     Object? rating = $none,
     Object? rateCount = $none,
     Object? contractsRatedUids = $none,
@@ -372,7 +371,7 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       if (agreedToArtistTermsOfUse != $none)
         #agreedToArtistTermsOfUse: agreedToArtistTermsOfUse,
       if (isOnAnyGroup != $none) #isOnAnyGroup: isOnAnyGroup,
-      if (groupsInUids != $none) #groupsInUids: groupsInUids,
+      if (groupsUids != $none) #groupsUids: groupsUids,
       if (rating != $none) #rating: rating,
       if (rateCount != $none) #rateCount: rateCount,
       if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
@@ -405,7 +404,7 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       or: $value.agreedToArtistTermsOfUse,
     ),
     isOnAnyGroup: data.get(#isOnAnyGroup, or: $value.isOnAnyGroup),
-    groupsInUids: data.get(#groupsInUids, or: $value.groupsInUids),
+    groupsUids: data.get(#groupsUids, or: $value.groupsUids),
     rating: data.get(#rating, or: $value.rating),
     rateCount: data.get(#rateCount, or: $value.rateCount),
     contractsRatedUids: data.get(

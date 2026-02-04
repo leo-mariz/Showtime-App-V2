@@ -105,7 +105,6 @@ class _AddressesModalState extends State<AddressesModal> {
     final surface = colorScheme.surface;
     final onPrimary = colorScheme.onPrimary;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
-    final surfaceContainerHighest = colorScheme.surfaceContainerHighest;
 
     return BlocListener<AddressesBloc, AddressesState>(
       listener: (context, state) {

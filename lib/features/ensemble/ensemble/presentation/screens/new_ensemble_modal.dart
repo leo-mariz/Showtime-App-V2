@@ -2,33 +2,28 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
-import 'package:app/features/ensemble/members/presentation/widgets/member_modal.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
+import 'package:app/features/ensemble/members/presentation/screens/member_modal.dart';
 import 'package:app/features/ensemble/members/presentation/widgets/member_selection_chip.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Modal para criar um novo conjunto.
 /// Fluxo: um único botão — primeiro "Selecionar integrantes" (abre modal de integrantes);
 /// ao voltar, exibe os selecionados e o botão vira "Criar".
 /// Retorna a lista de integrantes selecionados ao confirmar "Criar".
 class NewEnsembleModal extends StatefulWidget {
-  /// Integrantes disponíveis para seleção (ex.: obtidos do MembersBloc).
-  final List<EnsembleMemberEntity> availableMembers;
-
-  const NewEnsembleModal({
-    super.key,
-    this.availableMembers = const [],
-  });
+  const NewEnsembleModal({super.key});
 
   /// Exibe o modal. Retorna lista de integrantes ao criar, ou null ao cancelar.
   static Future<List<EnsembleMemberEntity>?> show({
     required BuildContext context,
-    List<EnsembleMemberEntity> availableMembers = const [],
   }) {
     return showModalBottomSheet<List<EnsembleMemberEntity>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => NewEnsembleModal(availableMembers: availableMembers),
+      builder: (context) => const NewEnsembleModal(),
     );
   }
 
@@ -42,8 +37,8 @@ class _NewEnsembleModalState extends State<NewEnsembleModal> {
   Future<void> _openMemberModal() async {
     final selected = await MemberModal.show(
       context: context,
+      membersBloc: context.read<MembersBloc>(),
       initialSelected: _selectedMembers,
-      availableMembers: widget.availableMembers,
     );
     if (selected != null && mounted) {
       setState(() => _selectedMembers = selected);

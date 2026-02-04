@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
-import 'package:app/features/profile/artist_availability/domain/entities/overlap_type.dart';
+import 'package:app/core/domain/availability/time_slot_entity.dart';
+import 'package:app/features/availability/domain/entities/overlap_type.dart';
 
 /// Classe utilitária para operações relacionadas à disponibilidade de artistas
 /// 

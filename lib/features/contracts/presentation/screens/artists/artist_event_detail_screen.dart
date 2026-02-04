@@ -1,3 +1,4 @@
+import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
@@ -546,8 +547,8 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           TextButton(
-                            onPressed: isAnyLoading ? null : () {
-                              // TODO: Implementar tela de ajuda
+                            onPressed: () {
+                              context.router.push(SupportRoute(contract: _contract));
                             },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.symmetric(

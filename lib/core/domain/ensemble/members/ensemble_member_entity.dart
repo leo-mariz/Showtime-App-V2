@@ -28,11 +28,8 @@ abstract class EnsembleMemberEntityKeys {
   static const String name = 'name';
   static const String cpf = 'cpf';
   static const String email = 'email';
-  static const String identityDocumentUrl = 'identityDocumentUrl';
-  static const String antecedentsDocumentUrl = 'antecedentsDocumentUrl';
-  static const String identityStatus = 'identityStatus';
-  static const String antecedentsStatus = 'antecedentsStatus';
-  static const String order = 'order';
+  static const String specialty = 'specialty';
+  static const String isApproved = 'isApproved';
 }
 
 /// Entidade que representa um integrante do conjunto.
@@ -42,8 +39,8 @@ class EnsembleMemberEntity with EnsembleMemberEntityMappable {
   /// ID único do integrante (document ID no Firestore)
   final String? id;
 
-  /// ID do conjunto ao qual pertence
-  final String ensembleId;
+  /// ID dos conjuntos ao qual pertence
+  final List<String>? ensembleIds;
 
   /// Indica se é o dono do conjunto (conta principal)
   final bool isOwner;
@@ -60,17 +57,21 @@ class EnsembleMemberEntity with EnsembleMemberEntityMappable {
   /// E-mail do integrante (quando não é o dono)
   final String? email;
 
+  /// Especialidades do integrante
+  final List<String>? specialty;
+
   /// Aproved
   final bool isApproved;
 
   const EnsembleMemberEntity({
     this.id,
-    required this.ensembleId,
+    this.ensembleIds,
     this.isOwner = false,
     this.artistId,
     this.name,
     this.cpf,
     this.email,
+    this.specialty,
     this.isApproved = false,
   });
 }

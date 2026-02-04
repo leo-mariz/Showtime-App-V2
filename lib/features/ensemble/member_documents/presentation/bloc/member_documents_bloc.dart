@@ -1,5 +1,4 @@
 
-import 'package:app/features/ensemble/member_documents/domain/usecases/delete_member_document_usecase.dart';
 import 'package:app/features/ensemble/member_documents/domain/usecases/get_all_member_documents_usecase.dart';
 import 'package:app/features/ensemble/member_documents/domain/usecases/get_member_document_usecase.dart';
 import 'package:app/features/ensemble/member_documents/domain/usecases/save_member_document_usecase.dart';
@@ -12,20 +11,17 @@ class MemberDocumentsBloc extends Bloc<MemberDocumentsEvent, MemberDocumentsStat
   final GetAllMemberDocumentsUseCase getAllMemberDocumentsUseCase;
   final GetMemberDocumentUseCase getMemberDocumentUseCase;
   final SaveMemberDocumentUseCase saveMemberDocumentUseCase;
-  final DeleteMemberDocumentUseCase deleteMemberDocumentUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
   MemberDocumentsBloc({
     required this.getAllMemberDocumentsUseCase,
     required this.getMemberDocumentUseCase,
     required this.saveMemberDocumentUseCase,
-    required this.deleteMemberDocumentUseCase,
     required this.getUserUidUseCase,
   }) : super(MemberDocumentsInitial()) {
     on<GetAllMemberDocumentsEvent>(_onGetAllMemberDocuments);
     on<GetMemberDocumentEvent>(_onGetMemberDocument);
     on<SaveMemberDocumentEvent>(_onSaveMemberDocument);
-    on<DeleteMemberDocumentEvent>(_onDeleteMemberDocument);
     on<ResetMemberDocumentsEvent>(_onResetMemberDocuments);
   }
 
@@ -103,46 +99,21 @@ class MemberDocumentsBloc extends Bloc<MemberDocumentsEvent, MemberDocumentsStat
       emit(MemberDocumentsInitial());
       return;
     }
-    final result = await saveMemberDocumentUseCase.call(artistId, event.document);
+    final documentToSave = event.document.artistId.isEmpty
+        ? event.document.copyWith(artistId: artistId)
+        : event.document;
+    final result = await saveMemberDocumentUseCase.call(
+      artistId,
+      documentToSave,
+      localFilePath: event.localFilePath,
+    );
     result.fold(
       (failure) {
         emit(SaveMemberDocumentFailure(error: failure.message));
         emit(MemberDocumentsInitial());
       },
       (_) {
-        emit(SaveMemberDocumentSuccess(document: event.document));
-        emit(MemberDocumentsInitial());
-      },
-    );
-  }
-
-  Future<void> _onDeleteMemberDocument(
-    DeleteMemberDocumentEvent event,
-    Emitter<MemberDocumentsState> emit,
-  ) async {
-    emit(DeleteMemberDocumentLoading());
-    final artistId = await _getCurrentArtistId();
-    if (artistId == null) {
-      emit(DeleteMemberDocumentFailure(error: 'Usuário não autenticado'));
-      emit(MemberDocumentsInitial());
-      return;
-    }
-    final result = await deleteMemberDocumentUseCase.call(
-      artistId,
-      event.ensembleId,
-      event.memberId,
-      event.documentType,
-    );
-    result.fold(
-      (failure) {
-        emit(DeleteMemberDocumentFailure(error: failure.message));
-        emit(MemberDocumentsInitial());
-      },
-      (_) {
-        emit(DeleteMemberDocumentSuccess(
-          memberId: event.memberId,
-          documentType: event.documentType,
-        ));
+        emit(SaveMemberDocumentSuccess(document: documentToSave));
         emit(MemberDocumentsInitial());
       },
     );

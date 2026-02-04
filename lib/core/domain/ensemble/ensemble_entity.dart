@@ -1,6 +1,7 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
 part 'ensemble_entity.mapper.dart';
@@ -35,6 +36,11 @@ class EnsembleEntity with EnsembleEntityMappable {
 
   Map<String, List<String>>? incompleteSections;
 
+
+  double? rating;
+  int? rateCount;
+  List<String>? contractsRatedUids;
+
   /// Data de criação
   final DateTime? createdAt;
 
@@ -54,6 +60,9 @@ class EnsembleEntity with EnsembleEntityMappable {
     this.incompleteSections,
     this.createdAt,
     this.updatedAt,
+    this.rating,
+    this.rateCount,
+    this.contractsRatedUids,
   });
 }
 
@@ -62,6 +71,14 @@ class EnsembleEntity with EnsembleEntityMappable {
 abstract class EnsembleEntityKeys {
   static const String id = 'id';
   static const String ownerArtistId = 'ownerArtistId';
+  static const String profilePhotoUrl = 'profilePhotoUrl';
+  static const String professionalInfo = 'professionalInfo';
+  static const String presentationVideoUrl = 'presentationVideoUrl';
+  static const String members = 'members';
+  static const String isActive = 'isActive';
+  static const String allMembersApproved = 'allMembersApproved';
+  static const String hasIncompleteSections = 'hasIncompleteSections';
+  static const String incompleteSections = 'incompleteSections';
   static const String createdAt = 'createdAt';
   static const String updatedAt = 'updatedAt';
 }
@@ -94,5 +111,23 @@ extension EnsembleEntityReference on EnsembleEntity {
     FirebaseFirestore firestore,
   ) {
     return firestore.collection(remoteKey);
+  }
+
+  /// Referência no Firebase Storage para a foto de perfil do conjunto.
+  static Reference firestorageProfilePictureReference(String ensembleId) {
+    return FirebaseStorage.instance
+        .ref()
+        .child('Ensembles')
+        .child(ensembleId)
+        .child('profilePicture');
+  }
+
+  /// Referência no Firebase Storage para o vídeo de apresentação do conjunto.
+  static Reference firestoragePresentationVideoReference(String ensembleId) {
+    return FirebaseStorage.instance
+        .ref()
+        .child('Ensembles')
+        .child(ensembleId)
+        .child('presentationVideo');
   }
 }

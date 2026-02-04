@@ -12,6 +12,8 @@ class ProfileHeader extends StatelessWidget {
   final bool isLoadingProfilePicture;
   final VoidCallback? onSwitchUserType;
   final VoidCallback? onEditName;
+  /// Quando true, exibe um ícone de alerta (!) no canto superior direito do avatar (ex.: foto incompleta).
+  final bool showPhotoIncompleteBadge;
 
   const ProfileHeader({
     super.key,
@@ -23,6 +25,7 @@ class ProfileHeader extends StatelessWidget {
     this.isLoadingProfilePicture = false,
     this.onSwitchUserType,
     this.onEditName,
+    this.showPhotoIncompleteBadge = false,
   });
 
   @override
@@ -34,13 +37,41 @@ class ProfileHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            CustomCircleAvatar(
-              imageUrl: imageUrl,
-              onEdit: onProfilePictureTap,
-              isLoading: isLoadingProfilePicture,
-              size: DSSize.width(80),
-              showCameraIcon: true,
-            ),   
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CustomCircleAvatar(
+                  imageUrl: imageUrl,
+                  onEdit: onProfilePictureTap,
+                  isLoading: isLoadingProfilePicture,
+                  size: DSSize.width(80),
+                  showCameraIcon: true,
+                ),
+                if (showPhotoIncompleteBadge)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: DSSize.width(24),
+                      height: DSSize.width(24),
+                      decoration: BoxDecoration(
+                        color: colorScheme.error,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.scaffoldBackgroundColor,
+                          width: 1.5,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.error_outline,
+                        size: DSSize.width(16),
+                        color: colorScheme.onError,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             DSSizedBoxSpacing.horizontal(12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

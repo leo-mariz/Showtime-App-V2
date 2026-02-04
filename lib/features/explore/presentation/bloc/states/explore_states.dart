@@ -1,4 +1,4 @@
-import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
 import 'package:equatable/equatable.dart';
 

@@ -27,10 +27,11 @@ class EnsembleMemberEntityMapper extends ClassMapperBase<EnsembleMemberEntity> {
     _$id,
     opt: true,
   );
-  static String _$ensembleId(EnsembleMemberEntity v) => v.ensembleId;
-  static const Field<EnsembleMemberEntity, String> _f$ensembleId = Field(
-    'ensembleId',
-    _$ensembleId,
+  static List<String>? _$ensembleIds(EnsembleMemberEntity v) => v.ensembleIds;
+  static const Field<EnsembleMemberEntity, List<String>> _f$ensembleIds = Field(
+    'ensembleIds',
+    _$ensembleIds,
+    opt: true,
   );
   static bool _$isOwner(EnsembleMemberEntity v) => v.isOwner;
   static const Field<EnsembleMemberEntity, bool> _f$isOwner = Field(
@@ -63,6 +64,12 @@ class EnsembleMemberEntityMapper extends ClassMapperBase<EnsembleMemberEntity> {
     _$email,
     opt: true,
   );
+  static List<String>? _$specialty(EnsembleMemberEntity v) => v.specialty;
+  static const Field<EnsembleMemberEntity, List<String>> _f$specialty = Field(
+    'specialty',
+    _$specialty,
+    opt: true,
+  );
   static bool _$isApproved(EnsembleMemberEntity v) => v.isApproved;
   static const Field<EnsembleMemberEntity, bool> _f$isApproved = Field(
     'isApproved',
@@ -74,24 +81,26 @@ class EnsembleMemberEntityMapper extends ClassMapperBase<EnsembleMemberEntity> {
   @override
   final MappableFields<EnsembleMemberEntity> fields = const {
     #id: _f$id,
-    #ensembleId: _f$ensembleId,
+    #ensembleIds: _f$ensembleIds,
     #isOwner: _f$isOwner,
     #artistId: _f$artistId,
     #name: _f$name,
     #cpf: _f$cpf,
     #email: _f$email,
+    #specialty: _f$specialty,
     #isApproved: _f$isApproved,
   };
 
   static EnsembleMemberEntity _instantiate(DecodingData data) {
     return EnsembleMemberEntity(
       id: data.dec(_f$id),
-      ensembleId: data.dec(_f$ensembleId),
+      ensembleIds: data.dec(_f$ensembleIds),
       isOwner: data.dec(_f$isOwner),
       artistId: data.dec(_f$artistId),
       name: data.dec(_f$name),
       cpf: data.dec(_f$cpf),
       email: data.dec(_f$email),
+      specialty: data.dec(_f$specialty),
       isApproved: data.dec(_f$isApproved),
     );
   }
@@ -166,14 +175,17 @@ abstract class EnsembleMemberEntityCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get ensembleIds;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get specialty;
   $R call({
     String? id,
-    String? ensembleId,
+    List<String>? ensembleIds,
     bool? isOwner,
     String? artistId,
     String? name,
     String? cpf,
     String? email,
+    List<String>? specialty,
     bool? isApproved,
   });
   EnsembleMemberEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -190,36 +202,57 @@ class _EnsembleMemberEntityCopyWithImpl<$R, $Out>
   late final ClassMapperBase<EnsembleMemberEntity> $mapper =
       EnsembleMemberEntityMapper.ensureInitialized();
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get ensembleIds => $value.ensembleIds != null
+      ? ListCopyWith(
+          $value.ensembleIds!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(ensembleIds: v),
+        )
+      : null;
+  @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get specialty =>
+      $value.specialty != null
+      ? ListCopyWith(
+          $value.specialty!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(specialty: v),
+        )
+      : null;
+  @override
   $R call({
     Object? id = $none,
-    String? ensembleId,
+    Object? ensembleIds = $none,
     bool? isOwner,
     Object? artistId = $none,
     Object? name = $none,
     Object? cpf = $none,
     Object? email = $none,
+    Object? specialty = $none,
     bool? isApproved,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
-      if (ensembleId != null) #ensembleId: ensembleId,
+      if (ensembleIds != $none) #ensembleIds: ensembleIds,
       if (isOwner != null) #isOwner: isOwner,
       if (artistId != $none) #artistId: artistId,
       if (name != $none) #name: name,
       if (cpf != $none) #cpf: cpf,
       if (email != $none) #email: email,
+      if (specialty != $none) #specialty: specialty,
       if (isApproved != null) #isApproved: isApproved,
     }),
   );
   @override
   EnsembleMemberEntity $make(CopyWithData data) => EnsembleMemberEntity(
     id: data.get(#id, or: $value.id),
-    ensembleId: data.get(#ensembleId, or: $value.ensembleId),
+    ensembleIds: data.get(#ensembleIds, or: $value.ensembleIds),
     isOwner: data.get(#isOwner, or: $value.isOwner),
     artistId: data.get(#artistId, or: $value.artistId),
     name: data.get(#name, or: $value.name),
     cpf: data.get(#cpf, or: $value.cpf),
     email: data.get(#email, or: $value.email),
+    specialty: data.get(#specialty, or: $value.specialty),
     isApproved: data.get(#isApproved, or: $value.isApproved),
   );
 

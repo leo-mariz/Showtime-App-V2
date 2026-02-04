@@ -53,5 +53,11 @@
 	<string>Precisamos da sua localização para encontrar endereços próximos e facilitar o cadastro de endereços.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Habilite o Face ID para fazer login de forma rápida e segura.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O app precisa acessar a câmera para capturar fotos de documentos (identidade, certidão de antecedentes).</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O app precisa acessar suas fotos para enviar imagens de documentos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>O app pode usar o microfone ao gravar vídeos.</string>
 </dict>
 </plist>

@@ -8,24 +8,10 @@ abstract class MembersEvent extends Equatable {
 
 // ==================== GET ALL MEMBERS ====================
 
-class GetAllMembersByEnsembleEvent extends MembersEvent {
-  final String ensembleId;
+class GetAllMembersEvent extends MembersEvent {
   final bool forceRemote;
 
-  GetAllMembersByEnsembleEvent({
-    required this.ensembleId,
-    this.forceRemote = false,
-  });
-
-  @override
-  List<Object?> get props => [ensembleId, forceRemote];
-}
-
-/// Carrega o pool de integrantes (todos os conjuntos do artista) para o modal de novo conjunto.
-class GetAvailableMembersForNewEnsembleEvent extends MembersEvent {
-  final bool forceRemote;
-
-  GetAvailableMembersForNewEnsembleEvent({this.forceRemote = false});
+  GetAllMembersEvent({this.forceRemote = false});
 
   @override
   List<Object?> get props => [forceRemote];
@@ -92,15 +78,6 @@ class DeleteMemberEvent extends MembersEvent {
 }
 
 // ==================== CLEAR CACHE ====================
-
-class ClearMembersCacheEvent extends MembersEvent {
-  final String ensembleId;
-
-  ClearMembersCacheEvent({required this.ensembleId});
-
-  @override
-  List<Object?> get props => [ensembleId];
-}
 
 // ==================== RESET ====================
 

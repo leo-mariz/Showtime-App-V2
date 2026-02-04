@@ -1,9 +1,10 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
-import 'package:app/features/profile/artists/presentation/widgets/forms/support_form.dart';
+import 'package:app/features/artists/artists/presentation/widgets/forms/support_form.dart';
 import 'package:app/features/support/presentation/bloc/events/support_events.dart';
 import 'package:app/features/support/presentation/bloc/support_bloc.dart';
 import 'package:app/features/support/presentation/bloc/states/support_states.dart';
@@ -113,9 +114,7 @@ class _SupportPageState extends State<SupportPage> {
           _showSuccessDialog(protocol);
         }
         if (state is SendSupportMessageFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
-          );
+          context.showError(state.error);
         }
       },
       child: BasePage(

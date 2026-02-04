@@ -1,8 +1,7 @@
 import 'package:app/features/ensemble/members/domain/usecases/create_member_usecase.dart';
 import 'package:app/features/ensemble/members/domain/usecases/delete_member_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_artist_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_ensemble_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_member_by_id_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_all_members_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_member_usecase.dart';
 import 'package:app/features/ensemble/members/domain/usecases/update_member_usecase.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
@@ -10,25 +9,22 @@ import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MembersBloc extends Bloc<MembersEvent, MembersState> {
-  final GetAllMembersByEnsembleUseCase getAllMembersByEnsembleUseCase;
-  final GetAllMembersByArtistUseCase getAllMembersByArtistUseCase;
-  final GetMemberByIdUseCase getMemberByIdUseCase;
+  final GetAllMembersUseCase getAllMembersUseCase;
+  final GetMemberUseCase getMemberUseCase;
   final CreateMemberUseCase createMemberUseCase;
   final UpdateMemberUseCase updateMemberUseCase;
   final DeleteMemberUseCase deleteMemberUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
   MembersBloc({
-    required this.getAllMembersByEnsembleUseCase,
-    required this.getAllMembersByArtistUseCase,
-    required this.getMemberByIdUseCase,
+    required this.getAllMembersUseCase,
+    required this.getMemberUseCase,
     required this.createMemberUseCase,
     required this.updateMemberUseCase,
     required this.deleteMemberUseCase,
     required this.getUserUidUseCase,
   }) : super(MembersInitial()) {
-    on<GetAllMembersByEnsembleEvent>(_onGetAllMembersByEnsemble);
-    on<GetAvailableMembersForNewEnsembleEvent>(_onGetAvailableMembersForNewEnsemble);
+    on<GetAllMembersEvent>(_onGetAllMembers);
     on<GetMemberByIdEvent>(_onGetMemberById);
     on<CreateMemberEvent>(_onCreateMember);
     on<UpdateMemberEvent>(_onUpdateMember);
@@ -36,13 +32,8 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
     on<ResetMembersEvent>(_onResetMembers);
   }
 
-  Future<String?> _getCurrentArtistId() async {
-    final result = await getUserUidUseCase.call();
-    return result.fold((_) => null, (uid) => uid);
-  }
-
-  Future<void> _onGetAllMembersByEnsemble(
-    GetAllMembersByEnsembleEvent event,
+  Future<void> _onGetAllMembers(
+    GetAllMembersEvent event,
     Emitter<MembersState> emit,
   ) async {
     emit(GetAllMembersLoading());
@@ -52,9 +43,8 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
       emit(MembersInitial());
       return;
     }
-    final result = await getAllMembersByEnsembleUseCase.call(
+    final result = await getAllMembersUseCase.call(
       artistId,
-      event.ensembleId,
       forceRemote: event.forceRemote,
     );
     result.fold(
@@ -62,39 +52,15 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
         emit(GetAllMembersFailure(error: failure.message));
         emit(MembersInitial());
       },
-      (members) {
-        emit(GetAllMembersSuccess(members: members));
-        emit(MembersInitial());
-      },
+      (members) => emit(GetAllMembersSuccess(members: members)),
     );
   }
 
-  Future<void> _onGetAvailableMembersForNewEnsemble(
-    GetAvailableMembersForNewEnsembleEvent event,
-    Emitter<MembersState> emit,
-  ) async {
-    emit(GetAvailableMembersLoading());
-    final artistId = await _getCurrentArtistId();
-    if (artistId == null) {
-      emit(GetAvailableMembersFailure(error: 'Usuário não autenticado'));
-      emit(MembersInitial());
-      return;
-    }
-    final result = await getAllMembersByArtistUseCase.call(
-      artistId,
-      forceRemote: event.forceRemote,
-    );
-    result.fold(
-      (failure) {
-        emit(GetAvailableMembersFailure(error: failure.message));
-        emit(MembersInitial());
-      },
-      (members) {
-        emit(GetAvailableMembersSuccess(members: members));
-        // Mantém o estado com a lista para o modal de seleção exibir
-      },
-    );
+  Future<String?> _getCurrentArtistId() async {
+    final result = await getUserUidUseCase.call();
+    return result.fold((_) => null, (uid) => uid);
   }
+
 
   Future<void> _onGetMemberById(
     GetMemberByIdEvent event,
@@ -107,9 +73,8 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
       emit(MembersInitial());
       return;
     }
-    final result = await getMemberByIdUseCase.call(
+    final result = await getMemberUseCase.call(
       artistId,
-      event.ensembleId,
       event.memberId,
     );
     result.fold(
@@ -136,9 +101,8 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
       return;
     }
     final result = await createMemberUseCase.call(
-      artistId,
-      event.ensembleId,
-      event.member,
+      artistId: artistId,
+      member: event.member,
     );
     result.fold(
       (failure) {
@@ -164,9 +128,8 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
       return;
     }
     final result = await updateMemberUseCase.call(
-      artistId,
-      event.ensembleId,
-      event.member,
+      artistId: artistId,
+      member: event.member,
     );
     result.fold(
       (failure) {
@@ -193,7 +156,6 @@ class MembersBloc extends Bloc<MembersEvent, MembersState> {
     }
     final result = await deleteMemberUseCase.call(
       artistId,
-      event.ensembleId,
       event.memberId,
     );
     result.fold(

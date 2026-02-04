@@ -1,5 +1,5 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';

@@ -2,7 +2,7 @@ import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
-import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Verificar se o usuário pode trocar para perfil de artista

@@ -1,5 +1,5 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
-import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/auto_cache_service.dart';
 import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';

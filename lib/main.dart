@@ -5,9 +5,27 @@ import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
-import 'package:app/features/artist_dashboard/presentation/bloc/artist_dashboard_bloc.dart';
+import 'package:app/features/artists/artist_dashboard/presentation/bloc/artist_dashboard_bloc.dart';
 import 'package:app/features/contracts/domain/usecases/confirm_show_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/verify_payment_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_member_talents_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_members_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_presentation_video_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_professional_info_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_profile_photo_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/data/datasources/ensemble_availability_local_datasource.dart';
+import 'package:app/features/ensemble/ensemble_availability/data/datasources/ensemble_availability_remote_datasource.dart';
+import 'package:app/features/ensemble/ensemble_availability/data/repositories/ensemble_availability_repository_impl.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/repositories/ensemble_availability_repository.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/create_availability_day_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/update_availability_day_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/get_all_availabilities_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/period/close_period_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/period/open_period_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/domain/usecases/validation/get_organized_day_usecase.dart';
+import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/ensemble_availability_bloc.dart';
 import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
 import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
 import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
@@ -22,8 +40,13 @@ import 'package:app/features/ensemble/ensemble/domain/repositories/ensemble_repo
 import 'package:app/features/ensemble/ensemble/domain/usecases/create_empty_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/create_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/delete_ensemble_usecase.dart';
-import 'package:app/features/ensemble/ensemble/domain/usecases/get_all_ensembles_by_artist_usecase.dart';
-import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_by_id_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_all_ensembles_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_completeness_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_completeness_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/sync_ensemble_completeness_if_changed_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_active_status_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_incomplete_sections_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/members/data/datasources/members_local_datasource.dart';
@@ -32,12 +55,18 @@ import 'package:app/features/ensemble/members/data/repositories/members_reposito
 import 'package:app/features/ensemble/members/domain/repositories/members_repository.dart';
 import 'package:app/features/ensemble/members/domain/usecases/create_member_usecase.dart';
 import 'package:app/features/ensemble/members/domain/usecases/delete_member_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_artist_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_member_by_cpf_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_all_members_by_ensemble_usecase.dart';
-import 'package:app/features/ensemble/members/domain/usecases/get_member_by_id_usecase.dart';
 import 'package:app/features/ensemble/members/domain/usecases/update_member_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_all_members_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_member_usecase.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
+import 'package:app/features/ensemble/member_documents/data/datasources/member_documents_local_datasource.dart';
+import 'package:app/features/ensemble/member_documents/data/datasources/member_documents_remote_datasource.dart';
+import 'package:app/features/ensemble/member_documents/data/repositories/member_documents_repository_impl.dart';
+import 'package:app/features/ensemble/member_documents/domain/repositories/member_documents_repository.dart';
+import 'package:app/features/ensemble/member_documents/domain/usecases/get_all_member_documents_usecase.dart';
+import 'package:app/features/ensemble/member_documents/domain/usecases/get_member_document_usecase.dart';
+import 'package:app/features/ensemble/member_documents/domain/usecases/save_member_document_usecase.dart';
+import 'package:app/features/ensemble/member_documents/presentation/bloc/member_documents_bloc.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
 import 'package:app/features/favorites/data/datasources/favorite_remote_datasource.dart';
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
@@ -68,14 +97,14 @@ import 'package:app/features/contracts/domain/usecases/update_contract_usecase.d
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_acceptance_rate_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_completed_events_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_monthly_earnings_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_monthly_stats_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_next_show_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_pending_requests_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/calculate_upcoming_events_usecase.dart';
-import 'package:app/features/artist_dashboard/domain/usecases/get_artist_dashboard_stats_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_acceptance_rate_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_completed_events_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_monthly_earnings_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_monthly_stats_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_next_show_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_pending_requests_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_upcoming_events_usecase.dart';
+import 'package:app/features/artists/artist_dashboard/domain/usecases/get_artist_dashboard_stats_usecase.dart';
 import 'package:app/features/chat/data/datasources/chat_local_datasource.dart';
 import 'package:app/features/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:app/features/chat/data/repositories/chat_repository_impl.dart';
@@ -89,54 +118,54 @@ import 'package:app/features/chat/domain/usecases/update_typing_status_usecase.d
 import 'package:app/features/chat/presentation/bloc/chats_list/chats_list_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/messages/messages_bloc.dart';
 import 'package:app/features/chat/presentation/bloc/unread_count/unread_count_bloc.dart';
-import 'package:app/features/profile/artist_availability/data/datasources/availability_local_datasource.dart';
-import 'package:app/features/profile/artist_availability/data/datasources/availability_remote_datasource.dart';
-import 'package:app/features/profile/artist_availability/data/repositories/availability_repository_impl.dart';
-import 'package:app/features/profile/artist_availability/domain/repositories/availability_repository.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/day/create_availability_day_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_day_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/period/open_period_usecase.dart';
-import 'package:app/features/profile/artist_availability/domain/usecases/period/close_period_usecase.dart';
-import 'package:app/features/profile/artist_availability/presentation/bloc/availability_bloc.dart';
-import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
-import 'package:app/features/profile/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
-import 'package:app/features/profile/artist_bank_account/data/repositories/bank_account_repository_impl.dart';
-import 'package:app/features/profile/artist_bank_account/domain/repositories/bank_account_repository.dart';
-import 'package:app/features/profile/artist_bank_account/domain/usecases/delete_bank_account_usecase.dart';
-import 'package:app/features/profile/artist_bank_account/domain/usecases/get_bank_account_usecase.dart';
-import 'package:app/features/profile/artist_bank_account/domain/usecases/save_bank_account_usecase.dart';
-import 'package:app/features/profile/artist_bank_account/presentation/bloc/bank_account_bloc.dart';
-import 'package:app/features/profile/artist_documents/data/datasources/documents_local_datasource.dart';
-import 'package:app/features/profile/artist_documents/data/datasources/documents_remote_datasource.dart';
-import 'package:app/features/profile/artist_documents/data/repositories/documents_repository_impl.dart';
-import 'package:app/features/profile/artist_documents/domain/repositories/documents_repository.dart';
-import 'package:app/features/profile/artist_documents/domain/usecases/get_documents_usecase.dart';
-import 'package:app/features/profile/artist_documents/domain/usecases/set_document_usecase.dart';
-import 'package:app/features/profile/artist_documents/presentation/bloc/documents_bloc.dart';
+import 'package:app/features/artists/artist_availability/data/datasources/availability_local_datasource.dart';
+import 'package:app/features/artists/artist_availability/data/datasources/availability_remote_datasource.dart';
+import 'package:app/features/artists/artist_availability/data/repositories/availability_repository_impl.dart';
+import 'package:app/features/artists/artist_availability/domain/repositories/availability_repository.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/get_all_availabilities_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/day/get_availability_by_date_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/day/update_availability_day_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/day/create_availability_day_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/validation/get_organized_day_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/validation/get_organized_availabilities_after_verification_usecase.dart.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/period/open_period_usecase.dart';
+import 'package:app/features/artists/artist_availability/domain/usecases/period/close_period_usecase.dart';
+import 'package:app/features/artists/artist_availability/presentation/bloc/availability_bloc.dart';
+import 'package:app/features/artists/artist_bank_account/data/datasources/bank_account_local_datasource.dart';
+import 'package:app/features/artists/artist_bank_account/data/datasources/bank_account_remote_datasource.dart';
+import 'package:app/features/artists/artist_bank_account/data/repositories/bank_account_repository_impl.dart';
+import 'package:app/features/artists/artist_bank_account/domain/repositories/bank_account_repository.dart';
+import 'package:app/features/artists/artist_bank_account/domain/usecases/delete_bank_account_usecase.dart';
+import 'package:app/features/artists/artist_bank_account/domain/usecases/get_bank_account_usecase.dart';
+import 'package:app/features/artists/artist_bank_account/domain/usecases/save_bank_account_usecase.dart';
+import 'package:app/features/artists/artist_bank_account/presentation/bloc/bank_account_bloc.dart';
+import 'package:app/features/artists/artist_documents/data/datasources/documents_local_datasource.dart';
+import 'package:app/features/artists/artist_documents/data/datasources/documents_remote_datasource.dart';
+import 'package:app/features/artists/artist_documents/data/repositories/documents_repository_impl.dart';
+import 'package:app/features/artists/artist_documents/domain/repositories/documents_repository.dart';
+import 'package:app/features/artists/artist_documents/domain/usecases/get_documents_usecase.dart';
+import 'package:app/features/artists/artist_documents/domain/usecases/set_document_usecase.dart';
+import 'package:app/features/artists/artist_documents/presentation/bloc/documents_bloc.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/check_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/check_new_email_verified_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/authentication/domain/usecases/reauthenticate_user_usecase.dart';
 import 'package:app/features/authentication/domain/usecases/resend_email_verification_usecase.dart';
-import 'package:app/features/profile/artists/data/datasources/artists_local_datasource.dart';
-import 'package:app/features/profile/artists/data/datasources/artists_remote_datasource.dart';
-import 'package:app/features/profile/artists/data/repositories/artists_repository_impl.dart';
-import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
-import 'package:app/features/profile/artists/domain/usecases/add_artist_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/check_artist_completeness_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/get_artist_completeness_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_incomplete_sections_usecase.dart';
-import 'package:app/features/profile/clients/data/datasources/clients_local_datasource.dart';
-import 'package:app/features/profile/clients/data/datasources/clients_remote_datasource.dart';
-import 'package:app/features/profile/clients/data/repositories/clients_repository_impl.dart';
-import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
-import 'package:app/features/profile/clients/domain/usecases/add_client_usecase.dart';
+import 'package:app/features/artists/artists/data/datasources/artists_local_datasource.dart';
+import 'package:app/features/artists/artists/data/datasources/artists_remote_datasource.dart';
+import 'package:app/features/artists/artists/data/repositories/artists_repository_impl.dart';
+import 'package:app/features/artists/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/artists/artists/domain/usecases/add_artist_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/check_artist_completeness_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/get_artist_completeness_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_incomplete_sections_usecase.dart';
+import 'package:app/features/clients/data/datasources/clients_local_datasource.dart';
+import 'package:app/features/clients/data/datasources/clients_remote_datasource.dart';
+import 'package:app/features/clients/data/repositories/clients_repository_impl.dart';
+import 'package:app/features/clients/domain/repositories/clients_repository.dart';
+import 'package:app/features/clients/domain/usecases/add_client_usecase.dart';
 import 'package:app/features/profile/shared/domain/usecases/switch_to_artist_usecase.dart';
 import 'package:app/features/profile/shared/domain/usecases/switch_to_client_usecase.dart';
 import 'package:app/firebase_options.dart';
@@ -186,24 +215,24 @@ import 'package:app/features/addresses/domain/usecases/delete_address_usecase.da
 import 'package:app/features/addresses/domain/usecases/set_primary_address_usecase.dart';
 
 // Clients imports
-import 'package:app/features/profile/clients/presentation/bloc/clients_bloc.dart';
-import 'package:app/features/profile/clients/domain/usecases/get_client_usecase.dart';
-import 'package:app/features/profile/clients/domain/usecases/update_client_usecase.dart';
-import 'package:app/features/profile/clients/domain/usecases/update_client_preferences_usecase.dart';
-import 'package:app/features/profile/clients/domain/usecases/update_client_profile_picture_usecase.dart';
-import 'package:app/features/profile/clients/domain/usecases/update_client_agreement_usecase.dart';
+import 'package:app/features/clients/presentation/bloc/clients_bloc.dart';
+import 'package:app/features/clients/domain/usecases/get_client_usecase.dart';
+import 'package:app/features/clients/domain/usecases/update_client_usecase.dart';
+import 'package:app/features/clients/domain/usecases/update_client_preferences_usecase.dart';
+import 'package:app/features/clients/domain/usecases/update_client_profile_picture_usecase.dart';
+import 'package:app/features/clients/domain/usecases/update_client_agreement_usecase.dart';
 
 // Artists imports
-import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/profile/artists/domain/usecases/get_artist_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_profile_picture_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_name_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_professional_info_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_agreement_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_active_status_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
-import 'package:app/features/profile/artists/domain/usecases/check_artist_name_exists_usecase.dart';
+import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_profile_picture_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_name_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_professional_info_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_agreement_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_active_status_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/update_artist_presentation_medias_usecase.dart';
+import 'package:app/features/artists/artists/domain/usecases/check_artist_name_exists_usecase.dart';
 
 // Users imports
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
@@ -725,58 +754,133 @@ FavoritesBloc _createFavoritesBloc(
 EnsembleBloc _createEnsembleBloc(
   IEnsembleRepository ensembleRepository,
   IMembersRepository membersRepository,
+  IStorageService storageService,
   GetUserUidUseCase getUserUidUseCase,
+  SyncEnsembleCompletenessIfChangedUseCase syncEnsembleCompletenessIfChangedUseCase,
 ) {
-  final getAllEnsemblesByArtistUseCase = GetAllEnsemblesByArtistUseCase(repository: ensembleRepository);
-  final getEnsembleByIdUseCase = GetEnsembleByIdUseCase(repository: ensembleRepository);
   final createEmptyEnsembleUseCase = CreateEmptyEnsembleUseCase(repository: ensembleRepository);
-  final getAllMembersByArtistUseCase = GetAllMembersByArtistUseCase(
-    ensembleRepository: ensembleRepository,
-    membersRepository: membersRepository,
+  final getAllEnsemblesUseCase = GetAllEnsemblesUseCase(repository: ensembleRepository);
+  final getEnsembleUseCase = GetEnsembleUseCase(repository: ensembleRepository);
+  final updateEnsembleUseCase = UpdateEnsembleUseCase(
+    repository: ensembleRepository,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
   );
-  final getMemberByCpfUseCase = GetMemberByCpfUseCase(
-    getAllMembersByArtistUseCase: getAllMembersByArtistUseCase,
-  );
-  final createMemberUseCase = CreateMemberUseCase(repository: membersRepository);
-  final updateEnsembleUseCase = UpdateEnsembleUseCase(repository: ensembleRepository);
+  final getMemberUseCase = GetMemberUseCase(repository: membersRepository);
+  final updateMemberUseCase = UpdateMemberUseCase(repository: membersRepository);
   final createEnsembleUseCase = CreateEnsembleUseCase(
+    repository: ensembleRepository,
     createEmptyEnsembleUseCase: createEmptyEnsembleUseCase,
-    getMemberByCpfUseCase: getMemberByCpfUseCase,
-    createMemberUseCase: createMemberUseCase,
     updateEnsembleUseCase: updateEnsembleUseCase,
+    updateMemberUseCase: updateMemberUseCase,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
   );
-  final deleteEnsembleUseCase = DeleteEnsembleUseCase(repository: ensembleRepository);
-  return EnsembleBloc(
-    getAllEnsemblesByArtistUseCase: getAllEnsemblesByArtistUseCase,
-    getEnsembleByIdUseCase: getEnsembleByIdUseCase,
-    createEnsembleUseCase: createEnsembleUseCase,
+  final updateEnsembleProfilePhotoUseCase = UpdateEnsembleProfilePhotoUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase, storageService: storageService);
+  final updateEnsemblePresentationVideoUseCase = UpdateEnsemblePresentationVideoUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase, storageService: storageService);
+  final updateEnsembleProfessionalInfoUseCase = UpdateEnsembleProfessionalInfoUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase);
+  final updateEnsembleMembersUseCase = UpdateEnsembleMembersUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
     updateEnsembleUseCase: updateEnsembleUseCase,
-    deleteEnsembleUseCase: deleteEnsembleUseCase,
+    getMemberUseCase: getMemberUseCase,
+    updateMemberUseCase: updateMemberUseCase,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
+  );
+  final updateEnsembleMemberTalentsUseCase = UpdateEnsembleMemberTalentsUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase);
+  final updateEnsembleActiveStatusUseCase = UpdateEnsembleActiveStatusUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase);
+  final deleteEnsembleUseCase = DeleteEnsembleUseCase(repository: ensembleRepository, getEnsembleByIdUseCase: getEnsembleUseCase, storageService: storageService);
+  return EnsembleBloc(
+    getAllEnsemblesUseCase: getAllEnsemblesUseCase, 
+    getEnsembleUseCase: getEnsembleUseCase, 
+    createEnsembleUseCase: createEnsembleUseCase, 
+    updateEnsembleUseCase: updateEnsembleUseCase, 
+    updateEnsembleProfilePhotoUseCase: updateEnsembleProfilePhotoUseCase, 
+    updateEnsemblePresentationVideoUseCase: updateEnsemblePresentationVideoUseCase, 
+    updateEnsembleProfessionalInfoUseCase: updateEnsembleProfessionalInfoUseCase, 
+    updateEnsembleMembersUseCase: updateEnsembleMembersUseCase, 
+    updateEnsembleMemberTalentsUseCase: updateEnsembleMemberTalentsUseCase,
+    updateEnsembleActiveStatusUseCase: updateEnsembleActiveStatusUseCase,
+    deleteEnsembleUseCase: deleteEnsembleUseCase, 
     getUserUidUseCase: getUserUidUseCase,
   );
 }
 
 MembersBloc _createMembersBloc(
-  IEnsembleRepository ensembleRepository,
   IMembersRepository membersRepository,
+  IEnsembleRepository ensembleRepository,
+  IUsersRepository usersRepository,
   GetUserUidUseCase getUserUidUseCase,
+  IDocumentsRepository documentsRepository,
+  IBankAccountRepository bankAccountRepository,
+  IMemberDocumentsRepository memberDocumentsRepository,
 ) {
-  final getAllMembersByEnsembleUseCase = GetAllMembersByEnsembleUseCase(repository: membersRepository);
-  final getAllMembersByArtistUseCase = GetAllMembersByArtistUseCase(
-    ensembleRepository: ensembleRepository,
-    membersRepository: membersRepository,
-  );
-  final getMemberByIdUseCase = GetMemberByIdUseCase(repository: membersRepository);
-  final createMemberUseCase = CreateMemberUseCase(repository: membersRepository);
+  final getUserDataUseCase = GetUserDataUseCase(usersRepository: usersRepository);
+  final getAllMembersUseCase = GetAllMembersUseCase(membersRepository: membersRepository);
+  final getMemberUseCase = GetMemberUseCase(repository: membersRepository);
+  final createMemberUseCase = CreateMemberUseCase(repository: membersRepository, getUserDataUseCase: getUserDataUseCase);
   final updateMemberUseCase = UpdateMemberUseCase(repository: membersRepository);
-  final deleteMemberUseCase = DeleteMemberUseCase(repository: membersRepository);
+  final getEnsembleUseCase = GetEnsembleUseCase(repository: ensembleRepository);
+  final checkEnsembleCompletenessUseCase = CheckEnsembleCompletenessUseCase();
+  final getAllMemberDocumentsUseCase = GetAllMemberDocumentsUseCase(repository: memberDocumentsRepository);
+  final getEnsembleCompletenessUseCase = GetEnsembleCompletenessUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    documentsRepository: documentsRepository,
+    bankAccountRepository: bankAccountRepository,
+    getAllMemberDocumentsUseCase: getAllMemberDocumentsUseCase,
+    checkEnsembleCompletenessUseCase: checkEnsembleCompletenessUseCase,
+  );
+  final updateEnsembleIncompleteSectionsUseCase = UpdateEnsembleIncompleteSectionsUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    repository: ensembleRepository,
+  );
+  final syncEnsembleCompletenessIfChangedUseCase = SyncEnsembleCompletenessIfChangedUseCase(
+    getEnsembleCompletenessUseCase: getEnsembleCompletenessUseCase,
+    getEnsembleUseCase: getEnsembleUseCase,
+    updateEnsembleIncompleteSectionsUseCase: updateEnsembleIncompleteSectionsUseCase,
+  );
+  final updateEnsembleUseCase = UpdateEnsembleUseCase(
+    repository: ensembleRepository,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
+  );
+  final updateEnsembleMembersUseCase = UpdateEnsembleMembersUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    updateEnsembleUseCase: updateEnsembleUseCase,
+    getMemberUseCase: getMemberUseCase,
+    updateMemberUseCase: updateMemberUseCase,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
+  );
+  final deleteMemberUseCase = DeleteMemberUseCase(
+    repository: membersRepository,
+    getMemberUseCase: getMemberUseCase,
+    getEnsembleUseCase: getEnsembleUseCase,
+    updateEnsembleMembersUseCase: updateEnsembleMembersUseCase,
+  );
   return MembersBloc(
-    getAllMembersByEnsembleUseCase: getAllMembersByEnsembleUseCase,
-    getAllMembersByArtistUseCase: getAllMembersByArtistUseCase,
-    getMemberByIdUseCase: getMemberByIdUseCase,
+    getAllMembersUseCase: getAllMembersUseCase,
+    getMemberUseCase: getMemberUseCase,
     createMemberUseCase: createMemberUseCase,
     updateMemberUseCase: updateMemberUseCase,
     deleteMemberUseCase: deleteMemberUseCase,
+    getUserUidUseCase: getUserUidUseCase,
+  );
+}
+
+MemberDocumentsBloc _createMemberDocumentsBloc(
+  IMemberDocumentsRepository memberDocumentsRepository,
+  GetUserUidUseCase getUserUidUseCase,
+  IStorageService storageService,
+  SyncEnsembleCompletenessIfChangedUseCase syncEnsembleCompletenessIfChangedUseCase,
+) {
+  
+  final getAllMemberDocumentsUseCase = GetAllMemberDocumentsUseCase(repository: memberDocumentsRepository);
+  final getMemberDocumentUseCase = GetMemberDocumentUseCase(repository: memberDocumentsRepository);
+  final saveMemberDocumentUseCase = SaveMemberDocumentUseCase(
+    repository: memberDocumentsRepository,
+    storageService: storageService,
+    syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
+  );
+  return MemberDocumentsBloc(
+    getAllMemberDocumentsUseCase: getAllMemberDocumentsUseCase,
+    getMemberDocumentUseCase: getMemberDocumentUseCase,
+    saveMemberDocumentUseCase: saveMemberDocumentUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );
 }
@@ -920,7 +1024,28 @@ PendingContractsCountBloc _createPendingContractsCountBloc(
   );
 }
 
-
+/// Factory function para criar o EnsembleAvailabilityBloc com todas as dependências
+EnsembleAvailabilityBloc _createEnsembleAvailabilityBloc(
+  IEnsembleAvailabilityRepository ensembleAvailabilityRepository,
+  GetUserUidUseCase getUserUidUseCase,
+) {
+  final getAllAvailabilitiesUseCase = GetAllEnsembleAvailabilitiesUseCase(repository: ensembleAvailabilityRepository);
+  final getEnsembleAvailabilityByDateUseCase = GetEnsembleAvailabilityByDateUseCase(repository: ensembleAvailabilityRepository);
+  final getOrganizedDayAfterVerificationUseCase = GetOrganizedEnsembleDayAfterVerificationUseCase(getEnsembleAvailabilityByDateUseCase: getEnsembleAvailabilityByDateUseCase);
+  final getOrganizedAvailabilitiesAfterVerificationUseCase = GetOrganizedEnsembleAvailabilitesAfterVerificationUseCase(getOrganizedDayAfterVerificationUseCase: getOrganizedDayAfterVerificationUseCase);
+  final createEnsembleAvailabilityDayUseCase = CreateEnsembleAvailabilityDayUseCase(repository: ensembleAvailabilityRepository);
+  final updateEnsembleAvailabilityDayUseCase = UpdateEnsembleAvailabilityDayUseCase(getByDate: getEnsembleAvailabilityByDateUseCase, repository: ensembleAvailabilityRepository);
+  final openPeriodUseCase = OpenEnsemblePeriodUseCase(createEnsembleAvailabilityDayUseCase: createEnsembleAvailabilityDayUseCase, updateEnsembleAvailabilityDayUseCase: updateEnsembleAvailabilityDayUseCase);
+  final closePeriodUseCase = CloseEnsemblePeriodUseCase(updateAvailabilityDayUseCase: updateEnsembleAvailabilityDayUseCase);
+  return EnsembleAvailabilityBloc(
+    getAllAvailabilitiesUseCase: getAllAvailabilitiesUseCase,
+    getOrganizedDayAfterVerificationUseCase: getOrganizedDayAfterVerificationUseCase,
+    getOrganizedAvailabilitiesAfterVerificationUseCase: getOrganizedAvailabilitiesAfterVerificationUseCase,
+    openPeriodUseCase: openPeriodUseCase,
+    closePeriodUseCase: closePeriodUseCase,
+    updateAvailabilityDayUseCase: updateEnsembleAvailabilityDayUseCase,
+  );
+}
 
 Future <void> main() async {
 
@@ -989,7 +1114,6 @@ Future <void> main() async {
   final clientsRemoteDataSource = ClientsRemoteDataSourceImpl(firestore: firestore);
   final clientsRepository = ClientsRepositoryImpl(localDataSource: clientsLocalDataSource, remoteDataSource: clientsRemoteDataSource);
 
-
   // Documents
   final documentsLocalDataSource = DocumentsLocalDataSourceImpl(autoCacheService: localCacheService);
   final documentsRemoteDataSource = DocumentsRemoteDataSourceImpl(firestore: firestore);
@@ -1004,7 +1128,6 @@ Future <void> main() async {
   final bankAccountLocalDataSource = BankAccountLocalDataSourceImpl(autoCacheService: localCacheService);
   final bankAccountRemoteDataSource = BankAccountRemoteDataSourceImpl(firestore: firestore);
   final bankAccountRepository = BankAccountRepositoryImpl(localDataSource: bankAccountLocalDataSource, remoteDataSource: bankAccountRemoteDataSource);
-
 
   final checkArtistCompletenessUseCase = CheckArtistCompletenessUseCase();
 
@@ -1048,6 +1171,41 @@ Future <void> main() async {
   final membersRepository = MembersRepositoryImpl(
     remoteDataSource: membersRemoteDataSource,
     localDataSource: membersLocalDataSource,
+  );
+
+  // Member Documents (documentos do integrante)
+  final memberDocumentsLocalDataSource = MemberDocumentsLocalDataSourceImpl(localCacheService: localCacheService);
+  final memberDocumentsRemoteDataSource = MemberDocumentsRemoteDataSourceImpl(firestore: firestore);
+  final memberDocumentsRepository = MemberDocumentsRepositoryImpl(
+    localDataSource: memberDocumentsLocalDataSource,
+    remoteDataSource: memberDocumentsRemoteDataSource,
+  );
+
+  // Ensemble Availability
+  final ensembleAvailabilityLocalDataSource = EnsembleAvailabilityLocalDataSourceImpl(localCacheService: localCacheService);
+  final ensembleAvailabilityRemoteDataSource = EnsembleAvailabilityRemoteDataSourceImpl(firestore: firestore);
+  final ensembleAvailabilityRepository = EnsembleAvailabilityRepositoryImpl(localDataSource: ensembleAvailabilityLocalDataSource, remoteDataSource: ensembleAvailabilityRemoteDataSource);
+
+  // Sync Ensemble Completeness If Changed UseCase
+  
+  final getAllMemberDocumentsUseCase = GetAllMemberDocumentsUseCase(repository: memberDocumentsRepository);
+  final checkEnsembleCompletenessUseCase = CheckEnsembleCompletenessUseCase();
+  final getEnsembleUseCase = GetEnsembleUseCase(repository: ensembleRepository);
+  final updateEnsembleIncompleteSectionsUseCase = UpdateEnsembleIncompleteSectionsUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    repository: ensembleRepository,
+  );
+  final getEnsembleCompletenessUseCase = GetEnsembleCompletenessUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    documentsRepository: documentsRepository,
+    bankAccountRepository: bankAccountRepository,
+    getAllMemberDocumentsUseCase: getAllMemberDocumentsUseCase,
+    checkEnsembleCompletenessUseCase: checkEnsembleCompletenessUseCase,
+  );
+  final syncEnsembleCompletenessIfChangedUseCase = SyncEnsembleCompletenessIfChangedUseCase(
+    getEnsembleCompletenessUseCase: getEnsembleCompletenessUseCase,
+    getEnsembleUseCase: getEnsembleUseCase,
+    updateEnsembleIncompleteSectionsUseCase: updateEnsembleIncompleteSectionsUseCase,
   );
 
   // CalculateAddressGeohashUseCase (compartilhado entre Addresses e Explore)
@@ -1192,13 +1350,33 @@ Future <void> main() async {
             create: (context) => _createEnsembleBloc(
               ensembleRepository,
               membersRepository,
+              storageService,
               getUserUidUseCase,
+              syncEnsembleCompletenessIfChangedUseCase,
             ),
           ),
           BlocProvider(
             create: (context) => _createMembersBloc(
-              ensembleRepository,
               membersRepository,
+              ensembleRepository,
+              usersRepository,
+              getUserUidUseCase,
+              documentsRepository,
+              bankAccountRepository,
+              memberDocumentsRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createMemberDocumentsBloc(
+              memberDocumentsRepository,
+              getUserUidUseCase,
+              storageService,
+              syncEnsembleCompletenessIfChangedUseCase,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => _createEnsembleAvailabilityBloc(
+              ensembleAvailabilityRepository,
               getUserUidUseCase,
             ),
           ),

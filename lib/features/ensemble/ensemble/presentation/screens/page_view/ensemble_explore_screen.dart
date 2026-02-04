@@ -4,6 +4,8 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/core/shared/widgets/artist_footer.dart';
@@ -16,9 +18,12 @@ import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
 import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
-import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
-import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
-import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
+import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/ensemble_availability_bloc.dart';
+import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/events/ensemble_availability_events.dart';
+import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/states/ensemble_availability_states.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_availability_calendar.dart';
 import 'package:auto_route/auto_route.dart';
@@ -26,13 +31,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Nomes mockados dos integrantes do conjunto (para UI).
-List<String> _mockMemberNames() => ['Maria Silva', 'João Santos', 'Ana Costa'];
-
 @RoutePage(deferredLoading: true)
 class EnsembleExploreScreen extends StatefulWidget {
   final String ensembleId;
-  final ArtistEntity artist;
+  final ArtistEntity? artist;
   final bool isFavorite;
   final bool viewOnly;
   final DateTime? selectedDate;
@@ -41,7 +43,7 @@ class EnsembleExploreScreen extends StatefulWidget {
   const EnsembleExploreScreen({
     super.key,
     required this.ensembleId,
-    required this.artist,
+    this.artist,
     this.isFavorite = false,
     this.viewOnly = false,
     this.selectedDate,
@@ -54,18 +56,22 @@ class EnsembleExploreScreen extends StatefulWidget {
 
 class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
   AddressInfoEntity? _selectedAddress;
+  EnsembleEntity? _currentEnsemble;
 
   @override
   void initState() {
     super.initState();
-    
-    // Se veio com endereço selecionado, usar ele
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<EnsembleBloc>().add(GetEnsembleByIdEvent(ensembleId: widget.ensembleId));
+      }
+    });
     if (widget.selectedAddress != null) {
       _selectedAddress = widget.selectedAddress;
       _loadAvailabilities();
     } else {
-      // Buscar endereços do AddressesBloc
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         final addressesState = context.read<AddressesBloc>().state;
         if (addressesState is! GetAddressesSuccess) {
           context.read<AddressesBloc>().add(GetAddressesEvent());
@@ -99,14 +105,11 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     }
   }
 
-  /// Carrega disponibilidades para o endereço selecionado
+  /// Carrega disponibilidades do conjunto para o endereço selecionado
   void _loadAvailabilities() {
-    if (_selectedAddress != null && widget.artist.uid != null) {
-      context.read<ExploreBloc>().add(
-        GetArtistAllAvailabilitiesEvent(
-          artistId: widget.artist.uid!,
-          userAddress: _selectedAddress,
-        ),
+    if (_selectedAddress != null && widget.ensembleId.isNotEmpty) {
+      context.read<EnsembleAvailabilityBloc>().add(
+        GetAllAvailabilitiesEvent(ensembleId: widget.ensembleId),
       );
     }
   }
@@ -153,11 +156,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final router = context.router;
     
     if (_selectedAddress == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione um endereço antes de solicitar'),
-        ),
-      );
+      context.showError('Selecione um endereço antes de solicitar');
       return;
     }
 
@@ -165,7 +164,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
       RequestRoute(
         selectedDate: widget.selectedDate ?? DateTime.now(),
         selectedAddress: _selectedAddress!,
-        artist: widget.artist,
+        artist: widget.artist!,
       ),
     );
   }
@@ -178,8 +177,38 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final onPrimary = colorScheme.onPrimary;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final artist = widget.artist;
+    final ensemble = _currentEnsemble;
+    final profilePhotoUrl = ensemble?.profilePhotoUrl ?? artist?.profilePicture;
+    final additionalMembersCount = ensemble?.members?.length ?? 0;
+    final totalDisplayMembers = 1 + additionalMembersCount;
+    final displayTitle = '${artist?.artistName ?? 'Artista'}${additionalMembersCount > 0 ? ' +$additionalMembersCount' : ''}';
+    final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
+    final bio = professionalInfo?.bio;
 
-    return BasePage(
+    return BlocConsumer<EnsembleBloc, EnsembleState>(
+      listenWhen: (previous, current) =>
+          current is GetAllEnsemblesSuccess || current is GetEnsembleByIdFailure,
+      listener: (context, state) {
+        if (state is GetAllEnsemblesSuccess &&
+            state.currentEnsemble?.id == widget.ensembleId) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _currentEnsemble = state.currentEnsemble);
+          });
+        }
+      },
+      buildWhen: (previous, current) =>
+          current is GetAllEnsemblesSuccess || current is GetEnsembleByIdFailure,
+      builder: (context, state) {
+        if (state is GetAllEnsemblesSuccess &&
+            state.currentEnsemble?.id == widget.ensembleId &&
+            _currentEnsemble == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _currentEnsemble == null) {
+              setState(() => _currentEnsemble = state.currentEnsemble);
+            }
+          });
+        }
+        return BasePage(
       horizontalPadding: 0,
       verticalPadding: 0,
       child: Stack(
@@ -190,20 +219,20 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                 // Foto de perfil com gradiente
                 Stack(
                   children: [
-                    // Imagem de perfil
+                    // Imagem de perfil (conjunto ou artista)
                     Container(
                       height: DSSize.height(300),
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        image: artist.profilePicture != null
+                        image: profilePhotoUrl != null
                             ? DecorationImage(
                                 image: CachedNetworkImageProvider(
-                                  artist.profilePicture!,
+                                  profilePhotoUrl,
                                 ),
                                 fit: BoxFit.cover,
                               )
                             : null,
-                        color: artist.profilePicture == null
+                        color: profilePhotoUrl == null
                             ? colorScheme.surfaceContainerHighest
                             : null,
                       ),
@@ -264,9 +293,9 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                     children: [
                       DSSizedBoxSpacing.vertical(16),
 
-                      // Nome artístico
+                      // Nome do grupo: artista + (N integrantes) — sem chips de talento
                       Text(
-                        artist.artistName ?? 'Artista',
+                        displayTitle,
                         style: textTheme.headlineLarge?.copyWith(
                           color: onPrimary,
                           fontWeight: FontWeight.bold,
@@ -275,36 +304,28 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
 
                       DSSizedBoxSpacing.vertical(12),
 
-                      // Talentos (Specialty)
-                      if (artist.professionalInfo?.specialty?.isNotEmpty ?? false) ...[
-                        Wrap(
-                          spacing: DSSize.width(8),
-                          runSpacing: DSSize.height(8),
-                          children: artist.professionalInfo!.specialty!.map(
-                            (talent) => GenreChip(label: talent),
-                          ).toList(),
-                        ),
-                        SizedBox(height: DSSize.height(16)),
-                      ],
+                      // Linha superior: Conjunto + X Integrantes (estilo talentos/GenreChip)
+                      Wrap(
+                        spacing: DSSize.width(8),
+                        runSpacing: DSSize.height(8),
+                        children: [
+                          GenreChip(label: 'Conjunto'),
+                          GenreChip(label: totalDisplayMembers == 1 ? '1 Integrante' : '$totalDisplayMembers Integrantes'),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(12),
 
-                      // Badges de avaliação, contratos, integrantes (grupo) e favorito
+                      // Linha inferior: rating, contratos e favorito
                       Row(
                         children: [
-                          CustomBadge(value: artist.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
+                          CustomBadge(value: artist?.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
                           DSSizedBoxSpacing.horizontal(8),
-                          CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
-                          DSSizedBoxSpacing.horizontal(8),
-                          CustomBadge(
-                            title: 'Integrantes',
-                            value: '${_mockMemberNames().length}',
-                            icon: Icons.people_outline,
-                            color: onPrimaryContainer,
-                          ),
+                          CustomBadge(title: 'Contratos', value: artist?.rateCount?.toString() ?? '0', color: onPrimaryContainer),
                           const Spacer(),
                           if (!widget.viewOnly) ...[
-                          FavoriteButton(
-                            isFavorite: widget.isFavorite,
-                            onTap: () {
+                            FavoriteButton(
+                              isFavorite: widget.isFavorite,
+                              onTap: () {
                                 // TODO: Implementar toggle de favorito
                               },
                             ),
@@ -314,10 +335,9 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
 
                       DSSizedBoxSpacing.vertical(16),
 
-                      // Bio completa
-                      if (artist.professionalInfo?.bio != null) ...[
+                      if (bio != null && bio.isNotEmpty) ...[
                         Text(
-                          artist.professionalInfo!.bio!,
+                          bio,
                           style: textTheme.bodyMedium?.copyWith(
                             color: onSurfaceVariant,
                             height: 1.5,
@@ -326,11 +346,11 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                         DSSizedBoxSpacing.vertical(24),
                       ],
 
-                      // Tabs de Estilos/Talentos/Integrantes (grupo)/Calendário
                       TabsSection(
-                        artist: widget.artist,
+                        artist: widget.artist!,
                         onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
-                        memberNames: _mockMemberNames(),
+                        ensemble: ensemble,
+                        ownerDisplayName: artist?.artistName,
                         calendarTab: _buildCalendarTab(colorScheme, textTheme),
                       ),
 
@@ -355,6 +375,8 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
           ],
         ],
       ),
+    );
+      },
     );
   }
 
@@ -416,7 +438,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
             ),
             DSSizedBoxSpacing.vertical(8),
             Text(
-              'Para visualizar as disponibilidades do artista, selecione um endereço acima',
+              'Para visualizar as disponibilidades do conjunto, selecione um endereço acima',
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant.withOpacity(0.7),
               ),
@@ -428,11 +450,11 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     );
   }
 
-  /// Conteúdo do calendário baseado no estado do ExploreBloc
+  /// Conteúdo do calendário baseado no estado do EnsembleAvailabilityBloc
   Widget _buildCalendarContent(ColorScheme colorScheme, TextTheme textTheme) {
-    return BlocBuilder<ExploreBloc, ExploreState>(
+    return BlocBuilder<EnsembleAvailabilityBloc, EnsembleAvailabilityState>(
       builder: (context, state) {
-        if (state is GetArtistAllAvailabilitiesLoading) {
+        if (state is GetAllAvailabilitiesLoading) {
           return Center(
             child: Padding(
               padding: EdgeInsets.all(DSSize.width(24)),
@@ -443,7 +465,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
           );
         }
 
-        if (state is GetArtistAllAvailabilitiesFailure) {
+        if (state is GetAllAvailabilitiesFailure) {
           return Center(
             child: Padding(
               padding: EdgeInsets.all(DSSize.width(24)),
@@ -457,7 +479,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                   ),
                   DSSizedBoxSpacing.vertical(16),
                   Text(
-                    'Erro ao carregar disponibilidades',
+                    'Erro ao carregar disponibilidades do conjunto',
                     style: textTheme.titleMedium?.copyWith(
                       color: colorScheme.error,
                     ),
@@ -477,9 +499,9 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
           );
         }
 
-        if (state is GetArtistsWithAvailabilitiesSuccess) {
-          final availabilities = state.availabilities ?? [];
-          
+        if (state is GetAllAvailabilitiesSuccess) {
+          final availabilities = state.availabilities;
+
           if (availabilities.isEmpty) {
             return Center(
               child: Padding(
@@ -494,7 +516,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                     ),
                     DSSizedBoxSpacing.vertical(16),
                     Text(
-                      'Artista não atende neste endereço',
+                      'Conjunto não atende neste endereço',
                       style: textTheme.titleMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -502,7 +524,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                     ),
                     DSSizedBoxSpacing.vertical(8),
                     Text(
-                      'Este artista não possui disponibilidades para o endereço selecionado. Tente selecionar outro endereço.',
+                      'Este conjunto não possui disponibilidades para o endereço selecionado. Tente selecionar outro endereço.',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant.withOpacity(0.7),
                       ),
@@ -519,13 +541,12 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
               availabilities: availabilities,
               selectedDate: widget.selectedDate,
               onDateSelected: (date) {
-                // Navegar para tela de solicitação com data selecionada
                 if (_selectedAddress != null && !widget.viewOnly) {
                   context.router.push(
                     RequestRoute(
                       selectedDate: date,
                       selectedAddress: _selectedAddress!,
-                      artist: widget.artist,
+                      artist: widget.artist!,
                     ),
                   );
                 }
@@ -538,7 +559,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
           child: Padding(
             padding: EdgeInsets.all(DSSize.width(32)),
             child: Text(
-              'Selecione um endereço para ver as disponibilidades',
+              'Selecione um endereço para ver as disponibilidades do conjunto',
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant.withOpacity(0.6),
               ),

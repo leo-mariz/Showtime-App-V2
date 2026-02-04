@@ -5,9 +5,9 @@ import 'package:app/core/shared/widgets/document_validation_indicator.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
-import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
+import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/artists/artists/presentation/bloc/events/artists_events.dart';
+import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
 
 /// Campo de nome artístico com validação em tempo real
 class ArtistNameField extends StatefulWidget {

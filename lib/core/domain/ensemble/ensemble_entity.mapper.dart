@@ -97,6 +97,22 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     _$updatedAt,
     opt: true,
   );
+  static double? _$rating(EnsembleEntity v) => v.rating;
+  static const Field<EnsembleEntity, double> _f$rating = Field(
+    'rating',
+    _$rating,
+    opt: true,
+  );
+  static int? _$rateCount(EnsembleEntity v) => v.rateCount;
+  static const Field<EnsembleEntity, int> _f$rateCount = Field(
+    'rateCount',
+    _$rateCount,
+    opt: true,
+  );
+  static List<String>? _$contractsRatedUids(EnsembleEntity v) =>
+      v.contractsRatedUids;
+  static const Field<EnsembleEntity, List<String>> _f$contractsRatedUids =
+      Field('contractsRatedUids', _$contractsRatedUids, opt: true);
 
   @override
   final MappableFields<EnsembleEntity> fields = const {
@@ -112,6 +128,9 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     #incompleteSections: _f$incompleteSections,
     #createdAt: _f$createdAt,
     #updatedAt: _f$updatedAt,
+    #rating: _f$rating,
+    #rateCount: _f$rateCount,
+    #contractsRatedUids: _f$contractsRatedUids,
   };
 
   static EnsembleEntity _instantiate(DecodingData data) {
@@ -128,6 +147,9 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
       incompleteSections: data.dec(_f$incompleteSections),
       createdAt: data.dec(_f$createdAt),
       updatedAt: data.dec(_f$updatedAt),
+      rating: data.dec(_f$rating),
+      rateCount: data.dec(_f$rateCount),
+      contractsRatedUids: data.dec(_f$contractsRatedUids),
     );
   }
 
@@ -212,6 +234,8 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     ObjectCopyWith<$R, List<String>, List<String>>
   >?
   get incompleteSections;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids;
   $R call({
     String? id,
     String? ownerArtistId,
@@ -225,6 +249,9 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     Map<String, List<String>>? incompleteSections,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? rating,
+    int? rateCount,
+    List<String>? contractsRatedUids,
   });
   EnsembleEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -276,6 +303,15 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
+  get contractsRatedUids => $value.contractsRatedUids != null
+      ? ListCopyWith(
+          $value.contractsRatedUids!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(contractsRatedUids: v),
+        )
+      : null;
+  @override
   $R call({
     Object? id = $none,
     String? ownerArtistId,
@@ -289,6 +325,9 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     Object? incompleteSections = $none,
     Object? createdAt = $none,
     Object? updatedAt = $none,
+    Object? rating = $none,
+    Object? rateCount = $none,
+    Object? contractsRatedUids = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != $none) #id: id,
@@ -305,6 +344,9 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
       if (incompleteSections != $none) #incompleteSections: incompleteSections,
       if (createdAt != $none) #createdAt: createdAt,
       if (updatedAt != $none) #updatedAt: updatedAt,
+      if (rating != $none) #rating: rating,
+      if (rateCount != $none) #rateCount: rateCount,
+      if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
     }),
   );
   @override
@@ -333,6 +375,12 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     ),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     updatedAt: data.get(#updatedAt, or: $value.updatedAt),
+    rating: data.get(#rating, or: $value.rating),
+    rateCount: data.get(#rateCount, or: $value.rateCount),
+    contractsRatedUids: data.get(
+      #contractsRatedUids,
+      or: $value.contractsRatedUids,
+    ),
   );
 
   @override

@@ -129,7 +129,17 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       );
       final map = ensemble.toMap()..remove(EnsembleEntityKeys.id);
       _setTimestamps(map, create: false);
-      await docRef.set(map, SetOptions(merge: true));
+      // Usar update() em vez de set(merge: true) para que campos map (ex.: incompleteSections)
+      // sejam substituídos por inteiro. Com merge, chaves antigas do mapa permanecem.
+      final updateData = <String, dynamic>{};
+      for (final entry in map.entries) {
+        if (entry.value == null) {
+          updateData[entry.key] = FieldValue.delete();
+        } else {
+          updateData[entry.key] = entry.value;
+        }
+      }
+      await docRef.update(updateData);
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
         'Erro ao atualizar conjunto: ${e.message}',

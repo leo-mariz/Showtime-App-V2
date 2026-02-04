@@ -1,32 +1,30 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
-import 'package:app/core/shared/extensions/context_notification_extension.dart';
-import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
-import 'package:app/features/profile/artists/presentation/widgets/forms/artists/professional_info_form.dart';
-import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/profile/artists/presentation/bloc/events/artists_events.dart';
-import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
-import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
-import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
-import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
-import 'package:flutter/material.dart';
+import 'package:app/features/artists/artists/presentation/widgets/forms/artists/professional_info_form.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 
 @RoutePage(deferredLoading: true)
 class EnsembleProfessionalInfoScreen extends StatefulWidget {
-  const EnsembleProfessionalInfoScreen({super.key});
+  final String ensembleId;
+
+  const EnsembleProfessionalInfoScreen({super.key, required this.ensembleId});
 
   @override
   EnsembleProfessionalInfoScreenState createState() => EnsembleProfessionalInfoScreenState();
 }
 
 class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfoScreen> {
-  final TextEditingController talentController = TextEditingController();
   final TextEditingController genrePreferencesController = TextEditingController();
   final TextEditingController minimumShowDurationController = TextEditingController();
   final TextEditingController preparationTimeController = TextEditingController();
@@ -41,74 +39,41 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
 
   // Valores iniciais para comparação
   ProfessionalInfoEntity? _initialProfessionalInfo;
-  
-  // Lista de talentos obtida do AppListsBloc
-  List<String> _talentOptions = [];
+
+  /// Conjunto carregado (para salvar com copyWith).
+  EnsembleEntity? _currentEnsemble;
 
   @override
   void initState() {
     super.initState();
-    // Define duração mínima padrão de 30 minutos (será sobrescrito se houver dados)
     _selectedMinimumDuration = const Duration(minutes: 30);
     minimumShowDurationController.text = _formatDuration(_selectedMinimumDuration!);
-    
-    // Define tempo de preparação padrão de 15 minutos (será sobrescrito se houver dados)
     _selectedPreparationTime = const Duration(minutes: 15);
     preparationTimeController.text = _formatDuration(_selectedPreparationTime!);
-    
-    // Adicionar listeners para detectar mudanças
-    talentController.addListener(_onFieldChanged);
     genrePreferencesController.addListener(_onFieldChanged);
     minimumShowDurationController.addListener(_onFieldChanged);
     preparationTimeController.addListener(_onFieldChanged);
     bioController.addListener(_onFieldChanged);
-    
-    // Carregar dados do artista após o frame ser construído
+    requestMinimumEarlinessController.addListener(_onFieldChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleGetArtist(forceRefresh: false);
-      // Buscar lista de talentos do AppListsBloc
-      _loadTalents();
+      if (mounted) {
+        context.read<EnsembleBloc>().add(GetEnsembleByIdEvent(ensembleId: widget.ensembleId));
+      }
     });
   }
 
   void _onFieldChanged() {
-    // Atualizar estado para verificar se há mudanças
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _loadTalents() {
-    // Buscar talentos do AppListsBloc
-    context.read<AppListsBloc>().add(GetTalentsEvent());
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    talentController.dispose();
     genrePreferencesController.dispose();
     minimumShowDurationController.dispose();
     preparationTimeController.dispose();
     bioController.dispose();
+    requestMinimumEarlinessController.dispose();
     super.dispose();
-  }
-
-  void _handleGetArtist({bool forceRefresh = false}) {
-    final artistsBloc = context.read<ArtistsBloc>();
-    // Sempre buscar quando forçado (após logout/login ou atualização)
-    if (forceRefresh) {
-      setState(() {
-        _hasLoadedData = false; // Resetar flag para permitir recarregar
-      });
-      artistsBloc.add(GetArtistEvent());
-    } else if (artistsBloc.state is GetArtistSuccess) {
-      // Se já tem dados e não foi forçado, carregar diretamente
-      final state = artistsBloc.state as GetArtistSuccess;
-      _loadProfessionalInfo(state.artist.professionalInfo);
-    } else {
-      // Se não tem dados, buscar
-      artistsBloc.add(GetArtistEvent());
-    }
   }
 
   void _loadProfessionalInfo(ProfessionalInfoEntity? professionalInfo) {
@@ -119,13 +84,6 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
 
       // Armazenar valores iniciais para comparação
       _initialProfessionalInfo = professionalInfo;
-
-      // Carregar specialty (talentos)
-      if (professionalInfo?.specialty != null && professionalInfo!.specialty!.isNotEmpty) {
-        talentController.text = professionalInfo.specialty!.join(', ');
-      } else {
-        talentController.text = '';
-      }
 
       // Carregar genrePreferences
       if (professionalInfo?.genrePreferences != null && professionalInfo!.genrePreferences!.isNotEmpty) {
@@ -157,6 +115,15 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
         bioController.text = professionalInfo.bio!;
       } else {
         bioController.text = '';
+      }
+
+      // Carregar requestMinimumEarliness
+      if (professionalInfo?.requestMinimumEarliness != null) {
+        _selectedRequestMinimumEarliness = Duration(minutes: professionalInfo!.requestMinimumEarliness!);
+        requestMinimumEarlinessController.text = _formatDuration(_selectedRequestMinimumEarliness!);
+      } else {
+        _selectedRequestMinimumEarliness = null;
+        requestMinimumEarlinessController.text = '';
       }
     });
   }
@@ -246,38 +213,27 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
   }
 
   bool _hasChanges() {
-    // Converter valores atuais
-    final currentSpecialty = talentController.text.trim().isEmpty
-        ? null
-        : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
-    
     final currentGenrePreferences = genrePreferencesController.text.trim().isEmpty
         ? null
         : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
-    
     final currentMinimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final currentPreparationTime = _selectedPreparationTime?.inMinutes;
     final currentRequestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
     final currentBio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
-
-    // Comparar com valores iniciais
-    final initialSpecialty = _initialProfessionalInfo?.specialty;
     final initialGenrePreferences = _initialProfessionalInfo?.genrePreferences;
     final initialMinimumShowDuration = _initialProfessionalInfo?.minimumShowDuration;
     final initialPreparationTime = _initialProfessionalInfo?.preparationTime;
     final initialBio = _initialProfessionalInfo?.bio;
     final initialRequestMinimumEarliness = _initialProfessionalInfo?.requestMinimumEarliness;
 
-    // Verificar se há mudanças
-    final specialtyChanged = _compareLists(currentSpecialty, initialSpecialty);
     final genrePreferencesChanged = _compareLists(currentGenrePreferences, initialGenrePreferences);
     final durationChanged = currentMinimumShowDuration != initialMinimumShowDuration;
     final preparationTimeChanged = currentPreparationTime != initialPreparationTime;
     final bioChanged = currentBio != initialBio;
     final requestMinimumEarlinessChanged = currentRequestMinimumEarliness != initialRequestMinimumEarliness;
 
-    return specialtyChanged || genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
+    return genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
   }
 
   bool _compareLists(List<String>? list1, List<String>? list2) {
@@ -296,11 +252,6 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
   }
 
   void _handleSave() {
-    // Converter dados dos controllers para ProfessionalInfoEntity
-    final specialty = talentController.text.trim().isEmpty
-        ? null
-        : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
-
     final genrePreferences = genrePreferencesController.text.trim().isEmpty
         ? null
         : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
@@ -312,7 +263,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
     final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
     final professionalInfo = ProfessionalInfoEntity(
-      specialty: specialty,
+      specialty: null,
       genrePreferences: genrePreferences,
       minimumShowDuration: minimumShowDuration,
       preparationTime: preparationTime,
@@ -320,9 +271,12 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
       bio: bio,
     );
 
-    // Disparar evento de atualização
-    context.read<ArtistsBloc>().add(
-      UpdateArtistProfessionalInfoEvent(professionalInfo: professionalInfo),
+    if (_currentEnsemble == null) return;
+    context.read<EnsembleBloc>().add(
+      UpdateEnsembleProfessionalInfoEvent(
+        ensembleId: widget.ensembleId,
+        professionalInfo: professionalInfo,
+      ),
     );
   }
 
@@ -330,35 +284,25 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        BlocListener<ArtistsBloc, ArtistsState>(
+        BlocListener<EnsembleBloc, EnsembleState>(
           listener: (context, state) {
-            if (state is GetArtistLoading) {
-              setState(() {
-                _isLoading = true;
-              });
-            } else if (state is GetArtistSuccess) {
+            if (state is GetAllEnsemblesSuccess && state.currentEnsemble == null) {
+              setState(() => _isLoading = true);
+            } else if (state is GetAllEnsemblesSuccess && state.currentEnsemble != null) {
               setState(() {
                 _isLoading = false;
+                _currentEnsemble = state.currentEnsemble;
               });
-              // Carregar dados profissionais do artista
-              _loadProfessionalInfo(state.artist.professionalInfo);
-            } else if (state is GetArtistFailure) {
-              setState(() {
-                _isLoading = false;
-              });
+              _loadProfessionalInfo(state.currentEnsemble?.professionalInfo);
+            } else if (state is GetEnsembleByIdFailure) {
+              setState(() => _isLoading = false);
               context.showError(state.error);
-            } else if (state is UpdateArtistProfessionalInfoLoading) {
-              setState(() {
-                _isLoading = true;
-              });
-            } else if (state is UpdateArtistProfessionalInfoSuccess) {
+            } else if (state is UpdateEnsembleLoading || state is UpdateEnsembleProfessionalInfoLoading) {
+              setState(() => _isLoading = true);
+            } else if (state is UpdateEnsembleSuccess || state is UpdateEnsembleProfessionalInfoSuccess) {
               setState(() {
                 _isLoading = false;
-                _hasLoadedData = false; // Resetar flag para permitir recarregar após atualização
-                // Atualizar valores iniciais com os novos valores salvos
-                final specialty = talentController.text.trim().isEmpty
-                    ? null
-                    : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
+                _hasLoadedData = false;
                 final genrePreferences = genrePreferencesController.text.trim().isEmpty
                     ? null
                     : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
@@ -367,7 +311,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                 final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
                 final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
                 _initialProfessionalInfo = ProfessionalInfoEntity(
-                  specialty: specialty,
+                  specialty: null,
                   genrePreferences: genrePreferences,
                   minimumShowDuration: minimumShowDuration,
                   preparationTime: preparationTime,
@@ -375,41 +319,75 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                   requestMinimumEarliness: requestMinimumEarliness,
                 );
               });
-              // Recarregar dados atualizados antes de voltar
-              _handleGetArtist(forceRefresh: false);
               context.showSuccess('Informações profissionais salvas com sucesso!');
-              // Voltar para a tela anterior após salvar
               Navigator.of(context).pop();
-            } else if (state is UpdateArtistProfessionalInfoFailure) {
-              setState(() {
-                _isLoading = false;
-              });
-              context.showError(state.error);
-            }
-          },
-        ),
-        BlocListener<AppListsBloc, AppListsState>(
-          listener: (context, state) {
-            if (state is GetTalentsSuccess) {
-              // Extrair nomes dos talentos e ordenar alfabeticamente
-              final talentNames = state.talents
-                  .map((talent) => talent.name)
-                  .toList()
-                ..sort();
-              
-              setState(() {
-                _talentOptions = talentNames;
-              });
-            } else if (state is GetTalentsFailure) {
-              // Em caso de erro, manter lista vazia (o form usará a lista padrão)
-              setState(() {
-                _talentOptions = [];
-              });
+            } else if (state is UpdateEnsembleFailure || state is UpdateEnsembleProfessionalInfoFailure) {
+              setState(() => _isLoading = false);
+              context.showError(state is UpdateEnsembleFailure ? state.error : (state as UpdateEnsembleProfessionalInfoFailure).error);
             }
           },
         ),
       ],
-      child: BasePage(
+      child: BlocBuilder<EnsembleBloc, EnsembleState>(
+        buildWhen: (previous, current) =>
+            current is GetAllEnsemblesSuccess ||
+            current is GetEnsembleByIdFailure,
+        builder: (context, state) {
+          // Sincronizar _currentEnsemble quando o estado já tem o ensemble (ex.: veio da área do conjunto)
+          if (state is GetAllEnsemblesSuccess &&
+              state.currentEnsemble?.id == widget.ensembleId &&
+              _currentEnsemble == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _currentEnsemble == null) {
+                setState(() => _currentEnsemble = state.currentEnsemble);
+                _loadProfessionalInfo(state.currentEnsemble?.professionalInfo);
+              }
+            });
+          }
+          if (state is GetAllEnsemblesSuccess && state.currentEnsemble == null && _currentEnsemble == null) {
+            return BasePage(
+              showAppBar: true,
+              appBarTitle: 'Dados Profissionais',
+              showAppBarBackButton: true,
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is GetEnsembleByIdFailure && _currentEnsemble == null) {
+            return BasePage(
+              showAppBar: true,
+              appBarTitle: 'Dados Profissionais',
+              showAppBarBackButton: true,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      state.error,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {
+                        context.read<EnsembleBloc>().add(
+                              GetEnsembleByIdEvent(ensembleId: widget.ensembleId),
+                            );
+                      },
+                      child: const Text('Tentar novamente'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return _buildFormContent(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFormContent(BuildContext context) {
+    return BasePage(
         showAppBar: true,
         appBarTitle: 'Dados Profissionais',
         showAppBarBackButton: true,
@@ -445,7 +423,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                   ),
                   DSSizedBoxSpacing.vertical(16),
                   ProfessionalInfoForm(
-                    talentController: talentController,
+                    talentController: null,
                     genrePreferencesController: genrePreferencesController,
                     minimumShowDurationController: minimumShowDurationController,
                     preparationTimeController: preparationTimeController,
@@ -462,7 +440,6 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                     requestMinimumEarlinessDisplayValue: requestMinimumEarlinessController.text.isEmpty
                         ? 'Selecione'
                         : requestMinimumEarlinessController.text,
-                    talentOptions: _talentOptions.isNotEmpty ? _talentOptions : null,
                   ),
                   DSSizedBoxSpacing.vertical(48),
                   CustomButton(
@@ -478,7 +455,6 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
           ],
         ),
         ),
-      ),
     );
   }
 
@@ -564,15 +540,6 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                   _buildLegendItem(
                     label: 'Minha Bio',
                     description: 'Conte mais sobre você, seu estilo, experiência e o que torna sua apresentação única. Esta informação será visível para os clientes.',
-                    colorScheme: colorScheme,
-                    textTheme: textTheme,
-                  ),
-
-                  SizedBox(height: DSSize.height(20)),
-
-                  _buildLegendItem(
-                    label: 'Talentos',
-                    description: 'Selecione os talentos ou especialidades que você possui. Cada talento poderá ter um vídeo de apresentação na área de apresentações.',
                     colorScheme: colorScheme,
                     textTheme: textTheme,
                   ),

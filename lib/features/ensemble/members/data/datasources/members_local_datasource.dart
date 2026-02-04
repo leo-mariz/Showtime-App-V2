@@ -4,39 +4,33 @@ import 'package:app/core/services/auto_cache_service.dart';
 
 /// Interface do DataSource local para Members (integrantes).
 ///
-/// Cache local por artistId + ensembleId. REGRAS:
+/// Cache local por artistId. REGRAS:
 /// - Retorna lista vazia / null quando não há cache
 /// - Lança [CacheException] em caso de erro de escrita/leitura
 abstract class IMembersLocalDataSource {
-  /// Lista integrantes cacheados do conjunto.
-  Future<List<EnsembleMemberEntity>> getAllByEnsemble(
-    String artistId,
-    String ensembleId,
-  );
+  /// Lista integrantes cacheados do artista.
+  Future<List<EnsembleMemberEntity>> getAll(String artistId);
 
   /// Busca um integrante cacheado por ID.
   Future<EnsembleMemberEntity?> getById(
     String artistId,
-    String ensembleId,
     String memberId,
   );
 
   /// Salva/atualiza um integrante no cache.
   Future<void> cacheMember(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   );
 
   /// Remove um integrante do cache.
   Future<void> removeMember(
     String artistId,
-    String ensembleId,
     String memberId,
   );
 
-  /// Limpa o cache de integrantes do conjunto.
-  Future<void> clearCache(String artistId, String ensembleId);
+  /// Limpa o cache de integrantes do artista.
+  Future<void> clearCache(String artistId);
 }
 
 /// Implementação usando [ILocalCacheService].
@@ -49,16 +43,12 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
   static const String _cachePrefix = 'ensemble_members';
   static const String _membersKey = 'members';
 
-  String _cacheKey(String artistId, String ensembleId) =>
-      '${_cachePrefix}_${artistId}_$ensembleId';
+  String _cacheKey(String artistId) => '${_cachePrefix}_$artistId';
 
   @override
-  Future<List<EnsembleMemberEntity>> getAllByEnsemble(
-    String artistId,
-    String ensembleId,
-  ) async {
+  Future<List<EnsembleMemberEntity>> getAll(String artistId) async {
     try {
-      final key = _cacheKey(artistId, ensembleId);
+      final key = _cacheKey(artistId);
       final data = await localCacheService.getCachedDataString(key);
       if (data.isEmpty || !data.containsKey(_membersKey)) return [];
       final list = data[_membersKey] as List<dynamic>;
@@ -68,7 +58,7 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
           .toList();
     } catch (e) {
       if (_isMapperOrFormatError(e)) {
-        await clearCache(artistId, ensembleId);
+        await clearCache(artistId);
       }
       return [];
     }
@@ -77,11 +67,10 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
   @override
   Future<EnsembleMemberEntity?> getById(
     String artistId,
-    String ensembleId,
     String memberId,
   ) async {
     try {
-      final list = await getAllByEnsemble(artistId, ensembleId);
+      final list = await getAll(artistId);
       try {
         return list.firstWhere((e) => e.id == memberId);
       } catch (_) {
@@ -95,14 +84,13 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
   @override
   Future<void> cacheMember(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   ) async {
     try {
-      final list = await getAllByEnsemble(artistId, ensembleId);
+      final list = await getAll(artistId);
       list.removeWhere((e) => e.id == member.id);
       list.add(member);
-      await _saveAll(artistId, ensembleId, list);
+      await _saveAll(artistId, list);
     } catch (e) {
       throw CacheException('Erro ao cachear integrante: $e');
     }
@@ -111,23 +99,21 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
   @override
   Future<void> removeMember(
     String artistId,
-    String ensembleId,
     String memberId,
   ) async {
     try {
-      final list = await getAllByEnsemble(artistId, ensembleId);
+      final list = await getAll(artistId);
       list.removeWhere((e) => e.id == memberId);
-      await _saveAll(artistId, ensembleId, list);
+      await _saveAll(artistId, list);
     } catch (e) {
       throw CacheException('Erro ao remover integrante do cache: $e');
     }
   }
 
   @override
-  Future<void> clearCache(String artistId, String ensembleId) async {
+  Future<void> clearCache(String artistId) async {
     try {
-      await localCacheService
-          .deleteCachedDataString(_cacheKey(artistId, ensembleId));
+      await localCacheService.deleteCachedDataString(_cacheKey(artistId));
     } catch (e) {
       throw CacheException('Erro ao limpar cache de integrantes: $e');
     }
@@ -135,10 +121,9 @@ class MembersLocalDataSourceImpl implements IMembersLocalDataSource {
 
   Future<void> _saveAll(
     String artistId,
-    String ensembleId,
     List<EnsembleMemberEntity> members,
   ) async {
-    final key = _cacheKey(artistId, ensembleId);
+    final key = _cacheKey(artistId);
     final jsonList = members.map((e) => e.toMap()).toList();
     await localCacheService.cacheDataString(key, {_membersKey: jsonList});
   }

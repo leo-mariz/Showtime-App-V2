@@ -1,8 +1,25 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Service para seleção e capturade imagens
+/// Resultado da seleção/captura de imagem.
+/// [file] preenchido em sucesso; [errorMessage] preenchido quando usuário cancelou ou negou permissão.
+class PickImageResult {
+  final File? file;
+  final String? errorMessage;
+
+  const PickImageResult({this.file, this.errorMessage});
+
+  bool get isPermissionDenied => errorMessage != null &&
+      (errorMessage!.contains('permissão') ||
+          errorMessage!.contains('permission') ||
+          errorMessage!.toLowerCase().contains('denied') ||
+          errorMessage!.toLowerCase().contains('access_denied'));
+}
+
+/// Service para seleção e captura de imagens.
+/// Em caso de permissão negada ou cancelamento, retorna [PickImageResult] com [errorMessage] para exibir ao usuário.
 class ImagePickerService {
   static final ImagePickerService _instance = ImagePickerService._internal();
   factory ImagePickerService() => _instance;
@@ -10,9 +27,28 @@ class ImagePickerService {
 
   final ImagePicker _picker = ImagePicker();
 
-  /// Seleciona uma imagem da galeria
-  /// Retorna null se o usuário cancelar ou houver erro
-  Future<File?> pickImageFromGallery() async {
+  String? _messageFromException(Object e, {required String contextLabel}) {
+    if (e is PlatformException) {
+      final code = e.code.toLowerCase();
+      final message = e.message ?? '';
+      if (code.contains('camera_access_denied') ||
+          code.contains('photo_access_denied') ||
+          code.contains('permission') ||
+          message.toLowerCase().contains('permission') ||
+          message.toLowerCase().contains('denied')) {
+        return 'Acesso negado. Habilite câmera ou fotos nas configurações do app para continuar.';
+      }
+      if (code.contains('cancel') || message.toLowerCase().contains('cancel')) {
+        return null; // cancelamento não precisa de mensagem
+      }
+      return message.isNotEmpty ? message : 'Não foi possível acessar $contextLabel.';
+    }
+    return 'Não foi possível acessar $contextLabel. Tente novamente.';
+  }
+
+  /// Seleciona uma imagem da galeria.
+  /// Retorna [PickImageResult.file] em sucesso; [PickImageResult.errorMessage] se permissão negada ou erro.
+  Future<PickImageResult> pickImageFromGallery() async {
     try {
       if (kDebugMode) {
         print('📷 ImagePickerService: Abrindo galeria...');
@@ -20,8 +56,8 @@ class ImagePickerService {
 
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 85, // Compressão para otimizar tamanho
-        maxWidth: 1024,   // Tamanho máximo para evitar arquivos muito grandes
+        imageQuality: 85,
+        maxWidth: 1024,
         maxHeight: 1024,
       );
 
@@ -29,24 +65,26 @@ class ImagePickerService {
         if (kDebugMode) {
           print('✅ ImagePickerService: Imagem selecionada da galeria: ${pickedFile.path}');
         }
-        return File(pickedFile.path);
+        return PickImageResult(file: File(pickedFile.path));
       } else {
         if (kDebugMode) {
           print('❌ ImagePickerService: Seleção cancelada pelo usuário');
         }
-        return null;
+        return const PickImageResult(errorMessage: null); // cancelamento
       }
     } catch (e) {
       if (kDebugMode) {
         print('❌ ImagePickerService: Erro ao selecionar imagem da galeria: $e');
       }
-      return null;
+      return PickImageResult(
+        errorMessage: _messageFromException(e, contextLabel: 'a galeria'),
+      );
     }
   }
 
-  /// Captura uma imagem usando a câmera
-  /// Retorna null se o usuário cancelar ou houver erro
-  Future<File?> captureImageFromCamera() async {
+  /// Captura uma imagem usando a câmera.
+  /// Retorna [PickImageResult.file] em sucesso; [PickImageResult.errorMessage] se permissão negada ou erro.
+  Future<PickImageResult> captureImageFromCamera() async {
     try {
       if (kDebugMode) {
         print('📸 ImagePickerService: Abrindo câmera...');
@@ -54,8 +92,8 @@ class ImagePickerService {
 
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 85, // Compressão para otimizar tamanho
-        maxWidth: 1024,   // Tamanho máximo para evitar arquivos muito grandes
+        imageQuality: 85,
+        maxWidth: 1024,
         maxHeight: 1024,
       );
 
@@ -63,18 +101,20 @@ class ImagePickerService {
         if (kDebugMode) {
           print('✅ ImagePickerService: Foto capturada: ${pickedFile.path}');
         }
-        return File(pickedFile.path);
+        return PickImageResult(file: File(pickedFile.path));
       } else {
         if (kDebugMode) {
           print('❌ ImagePickerService: Captura cancelada pelo usuário');
         }
-        return null;
+        return const PickImageResult(errorMessage: null); // cancelamento
       }
     } catch (e) {
       if (kDebugMode) {
         print('❌ ImagePickerService: Erro ao capturar imagem: $e');
       }
-      return null;
+      return PickImageResult(
+        errorMessage: _messageFromException(e, contextLabel: 'a câmera'),
+      );
     }
   }
 

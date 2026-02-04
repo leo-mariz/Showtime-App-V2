@@ -44,11 +44,15 @@ class GetMemberDocumentEvent extends MemberDocumentsEvent {
 
 class SaveMemberDocumentEvent extends MemberDocumentsEvent {
   final MemberDocumentEntity document;
+  final String? localFilePath;
 
-  SaveMemberDocumentEvent({required this.document});
+  SaveMemberDocumentEvent({
+    required this.document,
+    this.localFilePath,
+  });
 
   @override
-  List<Object?> get props => [document];
+  List<Object?> get props => [document, localFilePath];
 }
 
 // ==================== DELETE MEMBER DOCUMENT ====================

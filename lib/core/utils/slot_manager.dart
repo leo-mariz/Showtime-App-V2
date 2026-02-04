@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:app/core/domain/artist/availability/time_slot_entity.dart';
+import 'package:app/core/domain/availability/time_slot_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:uuid/uuid.dart';
 

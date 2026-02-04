@@ -15,6 +15,7 @@ import 'package:app/features/contracts/presentation/widgets/cancel_contract_dial
 import 'package:app/features/contracts/presentation/widgets/confirmation_code_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:app/features/contracts/presentation/widgets/rating_section.dart';
+import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -393,8 +394,8 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextButton(
-                          onPressed: isCanceling ? null : () {
-                            // TODO: Implementar tela de ajuda
+                          onPressed: () {
+                            context.router.push(SupportRoute(contract: _contract));
                           },
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.symmetric(

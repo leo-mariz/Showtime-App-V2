@@ -8,8 +8,8 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
-import 'package:app/features/profile/artists/domain/repositories/artists_repository.dart';
-import 'package:app/features/profile/clients/domain/repositories/clients_repository.dart';
+import 'package:app/features/artists/artists/domain/repositories/artists_repository.dart';
+import 'package:app/features/clients/domain/repositories/clients_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Login de usuário

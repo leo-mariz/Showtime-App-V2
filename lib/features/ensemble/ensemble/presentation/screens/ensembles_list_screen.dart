@@ -2,22 +2,20 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
+import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/options_modal.dart';
-import 'package:app/features/ensemble/ensemble/domain/inputs/create_ensemble_input.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
 import 'package:app/features/ensemble/ensemble/presentation/screens/new_ensemble_modal.dart';
 import 'package:app/features/ensemble/ensemble/presentation/widgets/empty_ensembles_placeholder.dart';
 import 'package:app/features/ensemble/ensemble/presentation/widgets/ensemble_card.dart';
-import 'package:app/features/ensemble/members/domain/entities/ensemble_member_input.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
-import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/profile/artists/presentation/bloc/states/artists_states.dart';
+import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -41,49 +39,24 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _onGetAllEnsembles();
-    _onLoadAvailableMembers();
   }
 
   void _onGetAllEnsembles() {
     final currentState = context.read<EnsembleBloc>().state;
     if (currentState is! GetAllEnsemblesSuccess) {
       context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent());
+    } else {
+      final ensembles = currentState.ensembles;
+      if (ensembles.isEmpty) {
+        context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
+      }
     }
-  }
-
-  void _onLoadAvailableMembers() {
-    final membersState = context.read<MembersBloc>().state;
-    if (membersState is! GetAvailableMembersSuccess) {
-      context.read<MembersBloc>().add(GetAvailableMembersForNewEnsembleEvent());
-    }
-  }
-
-  /// Lista de integrantes disponíveis para o modal (obtida do MembersBloc).
-  List<EnsembleMemberEntity> _getAvailableMembersForNewEnsemble() {
-    final membersState = context.read<MembersBloc>().state;
-    if (membersState is GetAvailableMembersSuccess) {
-      return membersState.members;
-    }
-    return [];
   }
 
   void _onAddEnsemble() async {
-    final availableMembers = _getAvailableMembersForNewEnsemble();
-    final selected = await NewEnsembleModal.show(
-      context: context,
-      availableMembers: availableMembers,
-    );
+    final selected = await NewEnsembleModal.show(context: context);
     if (selected != null && mounted) {
-      final input = CreateEnsembleInput(
-        members: selected
-            .map((m) => EnsembleMemberInput(
-                  name: m.name ?? '',
-                  cpf: m.cpf ?? '',
-                  email: m.email ?? '',
-                ))
-            .toList(),
-      );
-      context.read<EnsembleBloc>().add(CreateEnsembleEvent(input: input));
+      context.read<EnsembleBloc>().add(CreateEnsembleEvent(members: selected));
     }
   }
 
@@ -94,24 +67,17 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   void _onDeleteEnsemble(EnsembleEntity ensemble) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Excluir conjunto', style: Theme.of(context).textTheme.titleMedium),
-        content: const Text(
-          'Tem certeza que deseja excluir este conjunto? Esta ação não pode ser desfeita.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.read<EnsembleBloc>().add(DeleteEnsembleEvent(ensembleId: ensemble.id ?? ''));
-            },
-            child: Text('Excluir', style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
-          ),
-        ],
+      builder: (ctx) => ConfirmationDialog(
+        title: 'Excluir conjunto',
+        message: 'Tem certeza que deseja excluir este conjunto? Esta ação não pode ser desfeita.',
+        confirmText: 'Excluir',
+        cancelText: 'Cancelar',
+        confirmButtonColor: Theme.of(context).colorScheme.error,
+        confirmButtonTextColor: Theme.of(context).colorScheme.onError,
+        onConfirm: () {
+          AutoRouter.of(context).maybePop();
+          context.read<EnsembleBloc>().add(DeleteEnsembleEvent(ensembleId: ensemble.id ?? ''));
+        },
       ),
     );
   }
@@ -122,7 +88,6 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         label: 'Editar',
         icon: Icons.edit,
         onPressed: () {
-          Navigator.of(context).pop();
           _onEditEnsemble(ensemble);
         },
       ),
@@ -133,12 +98,11 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         textColor: Theme.of(context).colorScheme.onError,
         iconColor: Theme.of(context).colorScheme.onError,
         onPressed: () {
-          Navigator.of(context).pop();
           _onDeleteEnsemble(ensemble);
         },
       ),
     ];
-    OptionsModal.show(context: context, title: 'Opções', actions: actions);
+    OptionsModal.show(context: context, title: 'Conjunto +${_totalMembersCount(ensemble)}', actions: actions);
   }
 
   String _getArtistName() {
@@ -149,10 +113,32 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     return 'Artista';
   }
 
+  /// Total de integrantes: artista (1) + apenas membros que não são dono (evita contar dono duas vezes).
+  int _totalMembersCount(EnsembleEntity e) {
+    final nonOwnerCount = e.members?.where((m) => !m.isOwner).length ?? 0;
+    return (nonOwnerCount < 0 ? 0 : nonOwnerCount);
+  }
+
+  /// Primeiros nomes dos integrantes que não são dono, separados por vírgula.
+  String? _membersFirstNames(EnsembleEntity e) {
+    final members = e.members ?? [];
+    final names = <String>[];
+    for (final m in members) {
+      if (m.isOwner) continue;
+      final full = m.name?.trim();
+      if (full == null || full.isEmpty) continue;
+      final first = full.split(RegExp(r'\s+')).first;
+      if (first.isNotEmpty) names.add(first);
+    }
+    if (names.isEmpty) return null;
+    return names.join(', ');
+  }
+
+  /// Título do card: apenas "Nome + num" (sem a palavra "integrantes").
   String _ensembleDisplayName(EnsembleEntity e) {
     final artistName = _getArtistName();
-    final membersCount = e.members?.length ?? 0;
-    return '$artistName + $membersCount';
+    final total = _totalMembersCount(e);
+    return '$artistName + $total';
   }
 
   @override
@@ -165,27 +151,24 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
           current is DeleteEnsembleSuccess ||
           current is DeleteEnsembleFailure,
       listener: (context, state) {
+        if (state is EnsembleInitial) {
+          _onGetAllEnsembles();
+        }
         if (state is GetAllEnsemblesFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
-          );
+          context.showError(state.error);
         }
         if (state is CreateEnsembleSuccess) {
           context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
-          context.read<MembersBloc>().add(GetAvailableMembersForNewEnsembleEvent(forceRemote: true));
+          context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: true));
         }
         if (state is CreateEnsembleFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
-          );
+          context.showError(state.error);
         }
         if (state is DeleteEnsembleSuccess) {
           context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
         }
         if (state is DeleteEnsembleFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
-          );
+          context.showError(state.error);
         }
       },
       child: BasePage(
@@ -201,8 +184,10 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
             if (state is GetAllEnsemblesLoading) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (state is GetAllEnsemblesSuccess) {
-              final ensembles = state.ensembles;
+            final ensembles = state is GetAllEnsemblesSuccess
+                ? state.ensembles
+                : null;
+            if (ensembles != null) {
               final isEmpty = ensembles.isEmpty;
               if (isEmpty) {
                 return EmptyEnsemblesPlaceholder(
@@ -219,13 +204,12 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
                       itemCount: ensembles.length,
                       itemBuilder: (context, index) {
                         final e = ensembles[index];
-                        final membersCount = e.members?.length ?? 0;
                         return Padding(
                           padding: EdgeInsets.only(bottom: DSSize.height(12)),
                           child: EnsembleCard(
                             displayName: _ensembleDisplayName(e),
                             photoUrl: e.profilePhotoUrl,
-                            membersCount: membersCount,
+                            membersFirstNames: _membersFirstNames(e),
                             allApproved: e.allMembersApproved ?? false,
                             onTap: () => _onEditEnsemble(e),
                             onOptionsTap: () => _showOptionsModalFor(context, e),

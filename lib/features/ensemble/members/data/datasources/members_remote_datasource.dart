@@ -6,42 +6,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Interface do DataSource remoto para Members (integrantes).
 ///
 /// Operações CRUD no Firestore. Caminho: EnsembleMembers/{artistId}/Members/{memberId}.
-/// Listar por conjunto: query onde ensembleId == ensembleId.
 /// REGRAS:
 /// - Lança exceções tipadas (ServerException, NotFoundException, etc.)
-/// - NÃO faz validações de negócio
+/// - NÃO faz validações de negócio. Toda validação de CPF, duplicidade etc.
+///   fica nos usecases/camada superior.
 abstract class IMembersRemoteDataSource {
-  /// Cria um integrante. Retorna a entidade com id.
+  /// Cria um integrante no pool do artista. Retorna a entidade com ID preenchido.
   Future<EnsembleMemberEntity> create(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   );
 
   /// Busca um integrante por ID.
   Future<EnsembleMemberEntity?> getById(
     String artistId,
-    String ensembleId,
     String memberId,
   );
 
-  /// Lista todos os integrantes do conjunto.
-  Future<List<EnsembleMemberEntity>> getAllByEnsemble(
-    String artistId,
-    String ensembleId,
-  );
+  /// Lista todos os integrantes do artista (pool).
+  Future<List<EnsembleMemberEntity>> getAll(String artistId);
 
   /// Atualiza um integrante.
   Future<void> update(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   );
 
   /// Remove um integrante.
   Future<void> delete(
     String artistId,
-    String ensembleId,
     String memberId,
   );
 }
@@ -52,23 +45,33 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
 
   MembersRemoteDataSourceImpl({required this.firestore});
 
+  CollectionReference _membersCollection(String artistId) {
+    return EnsembleMemberEntityReference.firebaseMembersCollectionReference(
+      firestore,
+      artistId,
+      '',
+    );
+  }
+
   @override
   Future<EnsembleMemberEntity> create(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   ) async {
     try {
-      _validateIds(artistId, ensembleId);
-      final ref = EnsembleMemberEntityReference
-          .firebaseMembersCollectionReference(firestore, artistId, ensembleId);
-      final data = member.toMap()..remove(EnsembleMemberEntityKeys.id);
+      _validateArtistId(artistId);
+      final ref = _membersCollection(artistId);
+      final data = member.toMap()
+        ..remove(EnsembleMemberEntityKeys.id)
+        ..[EnsembleMemberEntityKeys.ensembleId] =
+            member.ensembleIds?.isEmpty ?? true ? '' : member.ensembleIds?.join(',') ?? '';
       final docRef = await ref.add(data);
+      await docRef.update({EnsembleMemberEntityKeys.id: docRef.id});
       final snapshot = await docRef.get();
-      final raw = snapshot.data()! as Map<String, dynamic>;
-      final map = _fromFirestoreMap(raw);
+      final raw = snapshot.data() ?? {};
+      final map = _fromFirestoreMap(raw as Map<dynamic, dynamic>);
       map[EnsembleMemberEntityKeys.id] = docRef.id;
-      map[EnsembleMemberEntityKeys.ensembleId] = ensembleId;
+      _ensureEnsembleIdsList(map);
       return EnsembleMemberEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
@@ -83,16 +86,15 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
   @override
   Future<EnsembleMemberEntity?> getById(
     String artistId,
-    String ensembleId,
     String memberId,
   ) async {
     try {
-      _validateIds(artistId, ensembleId);
+      _validateArtistId(artistId);
       if (memberId.isEmpty) return null;
       final docRef = EnsembleMemberEntityReference.firebaseMemberReference(
         firestore,
         artistId,
-        ensembleId,
+        '',
         memberId,
       );
       final snapshot = await docRef.get();
@@ -100,7 +102,7 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       final raw = snapshot.data()! as Map<String, dynamic>;
       final map = _fromFirestoreMap(raw);
       map[EnsembleMemberEntityKeys.id] = snapshot.id;
-      map[EnsembleMemberEntityKeys.ensembleId] = ensembleId;
+      _ensureEnsembleIdsList(map);
       return EnsembleMemberEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
@@ -113,28 +115,22 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
   }
 
   @override
-  Future<List<EnsembleMemberEntity>> getAllByEnsemble(
-    String artistId,
-    String ensembleId,
-  ) async {
+  Future<List<EnsembleMemberEntity>> getAll(String artistId) async {
     try {
-      _validateIds(artistId, ensembleId);
-      final ref = EnsembleMemberEntityReference
-          .firebaseMembersCollectionReference(firestore, artistId, ensembleId);
-      final snapshot = await ref
-          .where(EnsembleMemberEntityKeys.ensembleId, isEqualTo: ensembleId)
-          .get();
+      _validateArtistId(artistId);
+      final ref = _membersCollection(artistId);
+      final snapshot = await ref.get();
       if (snapshot.docs.isEmpty) return [];
       return snapshot.docs.map((doc) {
         final raw = doc.data() as Map<String, dynamic>;
         final map = _fromFirestoreMap(raw);
         map[EnsembleMemberEntityKeys.id] = doc.id;
-        map[EnsembleMemberEntityKeys.ensembleId] = ensembleId;
+        _ensureEnsembleIdsList(map);
         return EnsembleMemberEntityMapper.fromMap(map);
       }).toList();
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
-        'Erro ao listar integrantes: ${e.message}',
+        'Erro ao listar integrantes do artista: ${e.message}',
         statusCode: ErrorHandler.getStatusCode(e),
         originalError: e,
         stackTrace: stackTrace,
@@ -145,11 +141,10 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
   @override
   Future<void> update(
     String artistId,
-    String ensembleId,
     EnsembleMemberEntity member,
   ) async {
     try {
-      _validateIds(artistId, ensembleId);
+      _validateArtistId(artistId);
       final memberId = member.id;
       if (memberId == null || memberId.isEmpty) {
         throw const ValidationException('ID do integrante é obrigatório');
@@ -157,7 +152,7 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       final docRef = EnsembleMemberEntityReference.firebaseMemberReference(
         firestore,
         artistId,
-        ensembleId,
+        '',
         memberId,
       );
       final snapshot = await docRef.get();
@@ -186,18 +181,17 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
   @override
   Future<void> delete(
     String artistId,
-    String ensembleId,
     String memberId,
   ) async {
     try {
-      _validateIds(artistId, ensembleId);
+      _validateArtistId(artistId);
       if (memberId.isEmpty) {
         throw const ValidationException('memberId não pode ser vazio');
       }
       final docRef = EnsembleMemberEntityReference.firebaseMemberReference(
         firestore,
         artistId,
-        ensembleId,
+        '',
         memberId,
       );
       final snapshot = await docRef.get();
@@ -222,12 +216,9 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
     }
   }
 
-  void _validateIds(String artistId, String ensembleId) {
+  void _validateArtistId(String artistId) {
     if (artistId.isEmpty) {
       throw const ValidationException('artistId não pode ser vazio');
-    }
-    if (ensembleId.isEmpty) {
-      throw const ValidationException('ensembleId não pode ser vazio');
     }
   }
 
@@ -245,5 +236,16 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       }
     }
     return result;
+  }
+
+  /// Garante que o map tenha 'ensembleIds' como List<String> para o mapper.
+  /// No Firestore pode estar gravado como 'ensembleId' (string com vírgulas).
+  static void _ensureEnsembleIdsList(Map<String, dynamic> map) {
+    if (map['ensembleIds'] != null && map['ensembleIds'] is List) return;
+    final raw = map[EnsembleMemberEntityKeys.ensembleId];
+    if (raw == null) return;
+    final str = raw is String ? raw : raw.toString();
+    if (str.isEmpty) return;
+    map['ensembleIds'] = str.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
   }
 }

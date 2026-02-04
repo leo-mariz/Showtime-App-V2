@@ -2,7 +2,7 @@ import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/artist/availability/availability_day_entity.dart';
+import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

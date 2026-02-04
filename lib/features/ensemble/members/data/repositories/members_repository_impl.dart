@@ -20,25 +20,19 @@ class MembersRepositoryImpl implements IMembersRepository {
   });
 
   @override
-  Future<Either<Failure, List<EnsembleMemberEntity>>> getAllByEnsemble({
+  Future<Either<Failure, List<EnsembleMemberEntity>>> getAll({
     required String artistId,
-    required String ensembleId,
     bool forceRemote = false,
   }) async {
     try {
       if (!forceRemote) {
-        final cached = await localDataSource.getAllByEnsemble(
-          artistId,
-          ensembleId,
-        );
+        final cached = await localDataSource.getAll(artistId);
         if (cached.isNotEmpty) return Right(cached);
       }
-      final list = await remoteDataSource.getAllByEnsemble(
-        artistId,
-        ensembleId,
-      );
+      final list = await remoteDataSource.getAll(artistId);
+      await localDataSource.clearCache(artistId);
       for (final m in list) {
-        await localDataSource.cacheMember(artistId, ensembleId, m);
+        await localDataSource.cacheMember(artistId, m);
       }
       return Right(list);
     } catch (e) {
@@ -49,23 +43,23 @@ class MembersRepositoryImpl implements IMembersRepository {
   @override
   Future<Either<Failure, EnsembleMemberEntity?>> getById({
     required String artistId,
-    required String ensembleId,
     required String memberId,
+    bool forceRemote = false,
   }) async {
     try {
-      final cached = await localDataSource.getById(
-        artistId,
-        ensembleId,
-        memberId,
-      );
-      if (cached != null) return Right(cached);
+      if (!forceRemote) {
+        final cached = await localDataSource.getById(
+          artistId,
+          memberId,
+        );
+        if (cached != null) return Right(cached);
+      }
       final entity = await remoteDataSource.getById(
         artistId,
-        ensembleId,
         memberId,
       );
       if (entity != null) {
-        await localDataSource.cacheMember(artistId, ensembleId, entity);
+        await localDataSource.cacheMember(artistId, entity);
       }
       return Right(entity);
     } catch (e) {
@@ -76,16 +70,14 @@ class MembersRepositoryImpl implements IMembersRepository {
   @override
   Future<Either<Failure, EnsembleMemberEntity>> create({
     required String artistId,
-    required String ensembleId,
     required EnsembleMemberEntity member,
   }) async {
     try {
       final created = await remoteDataSource.create(
         artistId,
-        ensembleId,
         member,
       );
-      await localDataSource.cacheMember(artistId, ensembleId, created);
+      await localDataSource.cacheMember(artistId, created);
       return Right(created);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
@@ -95,12 +87,11 @@ class MembersRepositoryImpl implements IMembersRepository {
   @override
   Future<Either<Failure, void>> update({
     required String artistId,
-    required String ensembleId,
     required EnsembleMemberEntity member,
   }) async {
     try {
-      await remoteDataSource.update(artistId, ensembleId, member);
-      await localDataSource.cacheMember(artistId, ensembleId, member);
+      await remoteDataSource.update(artistId, member);
+      await localDataSource.cacheMember(artistId, member);
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
@@ -110,12 +101,11 @@ class MembersRepositoryImpl implements IMembersRepository {
   @override
   Future<Either<Failure, void>> delete({
     required String artistId,
-    required String ensembleId,
     required String memberId,
   }) async {
     try {
-      await remoteDataSource.delete(artistId, ensembleId, memberId);
-      await localDataSource.removeMember(artistId, ensembleId, memberId);
+      await remoteDataSource.delete(artistId, memberId);
+      await localDataSource.removeMember(artistId, memberId);
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
@@ -125,10 +115,9 @@ class MembersRepositoryImpl implements IMembersRepository {
   @override
   Future<Either<Failure, void>> clearCache({
     required String artistId,
-    required String ensembleId,
   }) async {
     try {
-      await localDataSource.clearCache(artistId, ensembleId);
+      await localDataSource.clearCache(artistId);
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

@@ -52,7 +52,7 @@ class _AddMemberFormModalState extends State<AddMemberFormModal> {
     final cpf = _cpfController.text.replaceAll(RegExp(r'[^\d]'), '');
     final member = EnsembleMemberEntity(
       id: 'new_${DateTime.now().millisecondsSinceEpoch}',
-      ensembleId: '',
+      ensembleIds: [],
       isOwner: false,
       name: name.isEmpty ? null : name,
       cpf: cpf.isEmpty ? null : cpf,

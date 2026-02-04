@@ -102,22 +102,26 @@ class MemberListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                if (isApproved && !isOwner) ...[
+                if (!isOwner) ...[
                   DSSizedBoxSpacing.vertical(4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.check_circle,
+                        isApproved ? Icons.check_circle : Icons.warning_amber_rounded,
                         size: DSSize.width(14),
-                        color: colorScheme.onSecondaryContainer,
+                        color: isApproved
+                            ? colorScheme.onSecondaryContainer
+                            : colorScheme.onTertiaryContainer,
                       ),
                       DSSizedBoxSpacing.horizontal(4),
                       Text(
-                        'Aprovado',
+                        isApproved ? 'Aprovado' : 'Pendente',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: isApproved
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

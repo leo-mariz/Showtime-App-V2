@@ -12,7 +12,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
-import 'package:app/features/profile/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/users/domain/entities/user_entity.dart';

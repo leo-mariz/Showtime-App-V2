@@ -1,7 +1,7 @@
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
-import 'package:app/features/profile/clients/domain/usecases/get_client_usecase.dart';
+import 'package:app/features/clients/domain/usecases/get_client_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Verificar se o usuário pode trocar para perfil de cliente

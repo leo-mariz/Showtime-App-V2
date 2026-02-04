@@ -26,19 +26,23 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ArtistEventDetailRoute.page, path: '/artist-event-detail'),
 
     //Artist Profile Routes
-    AutoRoute(page: ArtistExploreRoute.page, path: '/artist-explore'),
+    AutoRoute(page: ArtistExploreRoute.page, path: '/artist-explore/:artistId'),
     AutoRoute(page: ArtistAreaRoute.page, path: '/artist-area'),
     AutoRoute(page: RegisterDataAreaRoute.page, path: '/register-data-area'),
-    AutoRoute(page: ProfessionalInfoRoute.page, path: '/professional-info'),
-    AutoRoute(page: PresentationsRoute.page, path: '/presentations'),
-    AutoRoute(page: DocumentsRoute.page, path: '/documents'),
-    AutoRoute(page: BankAccountRoute.page, path: '/bank-account'),
+    AutoRoute(page: ProfessionalInfoRoute.page, path: '/professional-info/:artistId'),
+    AutoRoute(page: PresentationsRoute.page, path: '/presentations/:artistId'),
+    AutoRoute(page: DocumentsRoute.page, path: '/documents/:artistId'),
+    AutoRoute(page: BankAccountRoute.page, path: '/bank-account/:artistId'),
 
     // Ensemble (Conjuntos) Routes
     AutoRoute(page: EnsemblesListRoute.page, path: '/ensembles-list'),
+    AutoRoute(page: EnsembleExploreRoute.page, path: '/ensemble-explore/:ensembleId'),
     AutoRoute(page: EnsembleAreaRoute.page, path: '/ensemble-area/:ensembleId'),
     AutoRoute(page: EnsembleMembersRoute.page, path: '/ensemble-members/:ensembleId'),
     AutoRoute(page: EnsemblePresentationsRoute.page, path: '/ensemble-presentations/:ensembleId'),
+    AutoRoute(page: EnsembleProfessionalInfoRoute.page, path: '/ensemble-professional-info/:ensembleId'),
+    AutoRoute(page: EnsembleAvailabilityCalendarRoute.page, path: '/ensemble-availability-calendar/:ensembleId'),
+    AutoRoute(page: MemberDocumentsRoute.page, path: '/member-documents/:ensembleId/:memberId'),
 
     //Profile Routes
     AutoRoute(page: PersonalInfoRoute.page, path: '/personal-info'),

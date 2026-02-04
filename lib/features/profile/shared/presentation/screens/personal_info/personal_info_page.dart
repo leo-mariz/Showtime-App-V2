@@ -30,8 +30,11 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
 
   void _handleGetUserData({bool forceRefresh = false}) {
     final usersBloc = context.read<UsersBloc>();
+    final currentState = usersBloc.state;
+    print('currentState: $currentState');
     // Buscar apenas se não tiver dados carregados ou se forçado a atualizar
-    if (forceRefresh || usersBloc.state is! GetUserDataSuccess) {
+    if (forceRefresh || currentState is! GetUserDataSuccess) {
+      print('GetUserDataEvent');
       usersBloc.add(GetUserDataEvent());
     }
   }
@@ -52,11 +55,20 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                 ? usersState.user
                 : null;
 
+            if (user == null) {
+              return BasePage(
+                showAppBar: true,
+                appBarTitle: 'Informações Pessoais',
+                showAppBarBackButton: true,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            }
+
             // Verificar se é CNPJ: primeiro pelo flag, depois pela presença de dados
-            final isCnpj = user?.isCnpj == true || 
-                          (user?.isCnpj != false && user?.cnpjUser != null);
-            final hasCnpjData = user?.cnpjUser != null;
-            final hasCpfData = user?.cpfUser != null;
+            final isCnpj = user.isCnpj == true ||
+                (user.isCnpj != false && user.cnpjUser != null);
+            final hasCnpjData = user.cnpjUser != null;
+            final hasCpfData = user.cpfUser != null;
 
             return BasePage(
               showAppBar: true,
@@ -70,7 +82,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
                     DSSizedBoxSpacing.vertical(16),
                     NonEditableField(
                       title: 'E-mail',
-                      value: user!.email,
+                      value: user.email,
                     ),
                     if (isCnpj && hasCnpjData)
                       Column(

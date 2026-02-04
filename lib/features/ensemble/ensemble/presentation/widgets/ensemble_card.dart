@@ -7,12 +7,12 @@ import 'package:flutter/material.dart';
 /// Card de UI pura para exibir um conjunto (ensemble).
 /// Recebe apenas dados de exibição e callbacks.
 class EnsembleCard extends StatelessWidget {
-  /// Nome ou título do conjunto para exibição
+  /// Nome ou título do conjunto para exibição (ex.: "Nome + 2")
   final String displayName;
   /// URL da foto do conjunto (opcional)
   final String? photoUrl;
-  /// Quantidade de integrantes
-  final int membersCount;
+  /// Primeiros nomes dos integrantes (exceto dono), separados por vírgula; exibido como "+ João, Maria"
+  final String? membersFirstNames;
   /// Se todos os integrantes estão aprovados
   final bool allApproved;
   /// Callback ao tocar no card
@@ -24,7 +24,7 @@ class EnsembleCard extends StatelessWidget {
     super.key,
     required this.displayName,
     this.photoUrl,
-    required this.membersCount,
+    this.membersFirstNames,
     this.allApproved = false,
     this.onTap,
     this.onOptionsTap,
@@ -65,23 +65,17 @@ class EnsembleCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                DSSizedBoxSpacing.vertical(4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.people,
-                      size: DSSize.width(16),
-                      color: onPrimaryContainer,
+                if (membersFirstNames != null && membersFirstNames!.isNotEmpty) ...[
+                  DSSizedBoxSpacing.vertical(4),
+                  Text(
+                    '+ ${membersFirstNames!}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.9),
                     ),
-                    DSSizedBoxSpacing.horizontal(4),
-                    Text(
-                      '$membersCount integrante${membersCount == 1 ? '' : 's'}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 if (allApproved) ...[
                   DSSizedBoxSpacing.vertical(8),
                   Row(

@@ -31,28 +31,6 @@ class GetAllMembersFailure extends MembersState {
   List<Object?> get props => [error];
 }
 
-// ==================== GET AVAILABLE MEMBERS (para novo conjunto) ====================
-
-class GetAvailableMembersLoading extends MembersState {}
-
-class GetAvailableMembersSuccess extends MembersState {
-  final List<EnsembleMemberEntity> members;
-
-  GetAvailableMembersSuccess({required this.members});
-
-  @override
-  List<Object?> get props => [members];
-}
-
-class GetAvailableMembersFailure extends MembersState {
-  final String error;
-
-  GetAvailableMembersFailure({required this.error});
-
-  @override
-  List<Object?> get props => [error];
-}
-
 // ==================== GET MEMBER BY ID ====================
 
 class GetMemberByIdLoading extends MembersState {}
@@ -136,19 +114,6 @@ class DeleteMemberFailure extends MembersState {
   final String error;
 
   DeleteMemberFailure({required this.error});
-
-  @override
-  List<Object?> get props => [error];
-}
-
-// ==================== CLEAR CACHE ====================
-
-class ClearMembersCacheSuccess extends MembersState {}
-
-class ClearMembersCacheFailure extends MembersState {
-  final String error;
-
-  ClearMembersCacheFailure({required this.error});
 
   @override
   List<Object?> get props => [error];

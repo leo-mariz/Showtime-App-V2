@@ -28,10 +28,6 @@ class ProfessionalInfoEntityMapper
     _$specialty,
     opt: true,
   );
-  static List<String>? _$genrePreferences(ProfessionalInfoEntity v) =>
-      v.genrePreferences;
-  static const Field<ProfessionalInfoEntity, List<String>> _f$genrePreferences =
-      Field('genrePreferences', _$genrePreferences, opt: true);
   static int? _$minimumShowDuration(ProfessionalInfoEntity v) =>
       v.minimumShowDuration;
   static const Field<ProfessionalInfoEntity, int> _f$minimumShowDuration =
@@ -52,33 +48,23 @@ class ProfessionalInfoEntityMapper
     _$bio,
     opt: true,
   );
-  static double? _$hourlyRate(ProfessionalInfoEntity v) => v.hourlyRate;
-  static const Field<ProfessionalInfoEntity, double> _f$hourlyRate = Field(
-    'hourlyRate',
-    _$hourlyRate,
-    opt: true,
-  );
 
   @override
   final MappableFields<ProfessionalInfoEntity> fields = const {
     #specialty: _f$specialty,
-    #genrePreferences: _f$genrePreferences,
     #minimumShowDuration: _f$minimumShowDuration,
     #preparationTime: _f$preparationTime,
     #requestMinimumEarliness: _f$requestMinimumEarliness,
     #bio: _f$bio,
-    #hourlyRate: _f$hourlyRate,
   };
 
   static ProfessionalInfoEntity _instantiate(DecodingData data) {
     return ProfessionalInfoEntity(
       specialty: data.dec(_f$specialty),
-      genrePreferences: data.dec(_f$genrePreferences),
       minimumShowDuration: data.dec(_f$minimumShowDuration),
       preparationTime: data.dec(_f$preparationTime),
       requestMinimumEarliness: data.dec(_f$requestMinimumEarliness),
       bio: data.dec(_f$bio),
-      hourlyRate: data.dec(_f$hourlyRate),
     );
   }
 
@@ -153,16 +139,12 @@ abstract class ProfessionalInfoEntityCopyWith<
 >
     implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get specialty;
-  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
-  get genrePreferences;
   $R call({
     List<String>? specialty,
-    List<String>? genrePreferences,
     int? minimumShowDuration,
     int? preparationTime,
     int? requestMinimumEarliness,
     String? bio,
-    double? hourlyRate,
   });
   ProfessionalInfoEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -188,40 +170,26 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
-  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
-  get genrePreferences => $value.genrePreferences != null
-      ? ListCopyWith(
-          $value.genrePreferences!,
-          (v, t) => ObjectCopyWith(v, $identity, t),
-          (v) => call(genrePreferences: v),
-        )
-      : null;
-  @override
   $R call({
     Object? specialty = $none,
-    Object? genrePreferences = $none,
     Object? minimumShowDuration = $none,
     Object? preparationTime = $none,
     Object? requestMinimumEarliness = $none,
     Object? bio = $none,
-    Object? hourlyRate = $none,
   }) => $apply(
     FieldCopyWithData({
       if (specialty != $none) #specialty: specialty,
-      if (genrePreferences != $none) #genrePreferences: genrePreferences,
       if (minimumShowDuration != $none)
         #minimumShowDuration: minimumShowDuration,
       if (preparationTime != $none) #preparationTime: preparationTime,
       if (requestMinimumEarliness != $none)
         #requestMinimumEarliness: requestMinimumEarliness,
       if (bio != $none) #bio: bio,
-      if (hourlyRate != $none) #hourlyRate: hourlyRate,
     }),
   );
   @override
   ProfessionalInfoEntity $make(CopyWithData data) => ProfessionalInfoEntity(
     specialty: data.get(#specialty, or: $value.specialty),
-    genrePreferences: data.get(#genrePreferences, or: $value.genrePreferences),
     minimumShowDuration: data.get(
       #minimumShowDuration,
       or: $value.minimumShowDuration,
@@ -232,7 +200,6 @@ class _ProfessionalInfoEntityCopyWithImpl<$R, $Out>
       or: $value.requestMinimumEarliness,
     ),
     bio: data.get(#bio, or: $value.bio),
-    hourlyRate: data.get(#hourlyRate, or: $value.hourlyRate),
   );
 
   @override

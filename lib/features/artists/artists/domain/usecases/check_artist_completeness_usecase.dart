@@ -1,6 +1,5 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/documents/documents_entity.dart';
-import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/enums/document_status_enum.dart';
 import 'package:app/core/enums/document_type_enum.dart';
@@ -10,91 +9,59 @@ import 'package:app/features/artists/artists/domain/enums/artist_info_category_e
 import 'package:app/features/artists/artists/domain/enums/artist_info_type_enum.dart';
 
 /// UseCase: Verificar completude do perfil do artista
-/// 
-/// RESPONSABILIDADES:
-/// - Verificar se todos os documentos obrigatórios estão presentes e aprovados
-/// - Verificar se há informações bancárias (PIX ou conta bancária)
-/// - Verificar se há foto de perfil
-/// - Verificar se há pelo menos uma disponibilidade ativa
-/// - Verificar se há informações profissionais e apresentações (opcionais)
-/// - Calcular score de completude (0-100)
-/// - Retornar entidade agregada com status de cada informação
+///
+/// Divisão (padrão ensemble): Aprovação e Visibilidade.
+/// - Aprovação: documentos, dados bancários (PIX ou Ag/Conta).
+/// - Visibilidade: foto de perfil, dados profissionais completos, um vídeo de apresentação por talento.
 class CheckArtistCompletenessUseCase {
   const CheckArtistCompletenessUseCase();
 
   /// Verifica a completude do perfil do artista
-  /// 
+  ///
   /// [artist] - Entidade do artista
   /// [documents] - Lista de documentos do artista
   /// [bankAccount] - Conta bancária do artista (opcional)
-  /// [availabilities] - Lista de disponibilidades do artista
-  /// 
-  /// Retorna [ArtistCompletenessEntity] com o status completo de todas as informações
   ArtistCompletenessEntity call({
     required ArtistEntity artist,
     required List<DocumentsEntity> documents,
     BankAccountEntity? bankAccount,
-    required List<AvailabilityDayEntity> availabilities,
   }) {
-    // Lista de todos os status de informações
     final List<ArtistInfoStatusEntity> infoStatuses = [];
 
-    // 1. Verificar DOCUMENTS (approvalRequired)
     final documentsStatus = _checkDocuments(documents);
     infoStatuses.add(documentsStatus);
 
-    // 2. Verificar BANK_ACCOUNT (approvalRequired)
     final bankAccountStatus = _checkBankAccount(bankAccount);
     infoStatuses.add(bankAccountStatus);
 
-    // 3. Verificar PROFILE_PICTURE (exploreRequired)
     final profilePictureStatus = _checkProfilePicture(artist);
     infoStatuses.add(profilePictureStatus);
 
-    // 4. Verificar AVAILABILITY (exploreRequired)
-    final availabilityStatus = _checkAvailability(availabilities);
-    infoStatuses.add(availabilityStatus);
-
-    // 5. Verificar PROFESSIONAL_INFO (optional)
     final professionalInfoStatus = _checkProfessionalInfo(artist);
     infoStatuses.add(professionalInfoStatus);
 
-    // 6. Verificar PRESENTATIONS (optional)
     final presentationsStatus = _checkPresentations(artist);
     infoStatuses.add(presentationsStatus);
 
-    // Calcular status por categoria
-    final approvalRequiredStatuses = infoStatuses.where(
-      (status) => status.category == ArtistInfoCategory.approvalRequired,
+    final approvalStatuses = infoStatuses.where(
+      (s) => s.category == ArtistInfoCategory.approvalRequired,
     ).toList();
-    final exploreRequiredStatuses = infoStatuses.where(
-      (status) => status.category == ArtistInfoCategory.exploreRequired,
-    ).toList();
-    final optionalStatuses = infoStatuses.where(
-      (status) => status.category == ArtistInfoCategory.optional,
-    ).toList();
+    final canBeApproved = approvalStatuses.every((s) => s.isComplete);
 
-    // Verificar se todas as categorias estão completas
-    final canBeApproved = approvalRequiredStatuses.every((status) => status.isComplete);
-    final canAppearInExplore = exploreRequiredStatuses.every((status) => status.isComplete);
+    // Visibilidade = foto + dados profissionais + apresentações (1 vídeo por talento)
+    final canAppearInExplore = profilePictureStatus.isComplete &&
+        professionalInfoStatus.isComplete &&
+        presentationsStatus.isComplete;
 
-    // Mapa de status por categoria
     final categoryStatus = <ArtistInfoCategory, bool>{
       ArtistInfoCategory.approvalRequired: canBeApproved,
       ArtistInfoCategory.exploreRequired: canAppearInExplore,
-      ArtistInfoCategory.optional: optionalStatuses.every((status) => status.isComplete),
+      ArtistInfoCategory.optional: true,
     };
 
-    // Calcular score de completude (0-100)
-    // - 50 pontos: Informações de aprovação completas
-    // - 30 pontos: Informações de explorar completas
-    // - 10 pontos: Informações profissionais completas
-    // - 10 pontos: Apresentações completas
     int completenessScore = 0;
     if (canBeApproved) completenessScore += 50;
-    if (canAppearInExplore) completenessScore += 30;
-    if (professionalInfoStatus.isComplete) completenessScore += 10;
-    if (presentationsStatus.isComplete) completenessScore += 10;
+    if (canAppearInExplore) completenessScore += 50;
 
     return ArtistCompletenessEntity(
       canBeApproved: canBeApproved,
@@ -152,13 +119,10 @@ class CheckArtistCompletenessUseCase {
 
   /// Verifica se as informações bancárias estão completas.
   ///
-  /// Obrigatório sempre:
-  /// - Nome do titular (fullName)
-  /// - CPF ou CNPJ (cpfOrCnpj)
-  ///
+  /// Obrigatório sempre: Nome do titular (fullName) e CPF/CNPJ (cpfOrCnpj).
   /// E pelo menos um dos dois:
-  /// - PIX: pixKey e pixType preenchidos
-  /// - Conta: agência, número da conta e tipo de conta preenchidos
+  /// - PIX: tipo PIX + chave PIX preenchidos
+  /// - Conta: agência + número da conta + tipo de conta + nome do banco preenchidos
   ArtistInfoStatusEntity _checkBankAccount(BankAccountEntity? bankAccount) {
     if (bankAccount == null) {
       return const ArtistInfoStatusEntity(
@@ -184,7 +148,9 @@ class CheckArtistCompletenessUseCase {
         bankAccount.accountNumber != null &&
         bankAccount.accountNumber!.trim().isNotEmpty &&
         bankAccount.accountType != null &&
-        bankAccount.accountType!.trim().isNotEmpty;
+        bankAccount.accountType!.trim().isNotEmpty &&
+        bankAccount.bankName != null &&
+        bankAccount.bankName!.trim().isNotEmpty;
 
     final hasRequiredBase = hasHolderName && hasCpfOrCnpj;
     final hasPixOrAccount = hasPix || hasBankAccount;
@@ -213,31 +179,6 @@ class CheckArtistCompletenessUseCase {
       category: ArtistInfoCategory.exploreRequired,
       isComplete: hasProfilePicture,
       missingItems: hasProfilePicture ? [] : ['Foto de perfil'],
-    );
-  }
-
-  /// Verifica se há pelo menos uma disponibilidade ativa
-  /// 
-  /// Uma disponibilidade é considerada ativa se:
-  /// - dataFim >= hoje (disponibilidade futura)
-  ArtistInfoStatusEntity _checkAvailability(List<AvailabilityDayEntity> availabilities) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final hasActiveAvailability = availabilities.any((availability) {
-      final endDate = DateTime(
-        availability.date.year,
-        availability.date.month,
-        availability.date.day,
-      );
-      return endDate.isAfter(today) || endDate.isAtSameMomentAs(today);
-    });
-
-    return ArtistInfoStatusEntity(
-      type: ArtistInfoType.availability,
-      category: ArtistInfoCategory.exploreRequired,
-      isComplete: hasActiveAvailability,
-      missingItems: hasActiveAvailability ? [] : ['Pelo menos uma disponibilidade ativa'],
     );
   }
 
@@ -290,16 +231,25 @@ class CheckArtistCompletenessUseCase {
     );
   }
 
-  /// Verifica se há apresentações
+  /// Verifica se há pelo menos um vídeo de apresentação por talento (especialidade).
+  /// Se houver N especialidades em dados profissionais, é necessário N vídeos.
   ArtistInfoStatusEntity _checkPresentations(ArtistEntity artist) {
-    final hasPresentations = artist.presentationMedias != null &&
-        artist.presentationMedias!.isNotEmpty;
+    final specialties = artist.professionalInfo?.specialty;
+    final count = specialties?.length ?? 0;
+    final medias = artist.presentationMedias;
+    final hasEnough = medias != null && medias.length >= count;
 
     return ArtistInfoStatusEntity(
       type: ArtistInfoType.presentations,
       category: ArtistInfoCategory.optional,
-      isComplete: hasPresentations,
-      missingItems: hasPresentations ? [] : ['Apresentações'],
+      isComplete: hasEnough,
+      missingItems: hasEnough
+          ? []
+          : [
+              count == 0
+                  ? 'É necessário ao menos um vídeo de apresentação.'
+                  : 'É necessário um vídeo de apresentação para cada talento (${count} especialidade(s)).',
+            ],
     );
   }
 

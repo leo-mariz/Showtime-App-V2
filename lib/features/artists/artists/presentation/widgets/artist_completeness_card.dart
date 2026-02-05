@@ -1,55 +1,45 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
-import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:flutter/material.dart';
 
-/// Card exibido quando o conjunto tem informações incompletas.
-/// Mostra "Conjunto não habilitado", contagem de pendências e detalhes
-/// (Aprovação / Visibilidade) em conteúdo expandível.
-class EnsembleCompletenessCard extends StatefulWidget {
-  final EnsembleEntity ensemble;
+/// Card exibido quando o artista tem informações incompletas.
+/// Mostra "Perfil com informações pendentes", contagem de pendências e detalhes
+/// (Aprovação / Visibilidade) em conteúdo expandível, no mesmo padrão do ensemble.
+class ArtistCompletenessCard extends StatefulWidget {
+  final ArtistEntity artist;
 
-  const EnsembleCompletenessCard({
+  const ArtistCompletenessCard({
     super.key,
-    required this.ensemble,
+    required this.artist,
   });
 
   @override
-  State<EnsembleCompletenessCard> createState() => _EnsembleCompletenessCardState();
+  State<ArtistCompletenessCard> createState() => _ArtistCompletenessCardState();
 }
 
-class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
+class _ArtistCompletenessCardState extends State<ArtistCompletenessCard> {
   bool _isExpanded = false;
 
-  int _pendingCount(EnsembleEntity e) {
+  int _pendingCount(ArtistEntity e) {
     final sections = e.incompleteSections;
     if (sections == null) return 0;
     return sections.values.fold<int>(0, (sum, list) => sum + list.length);
   }
 
-  // bool _hasIncomplete(EnsembleEntity e, String type) {
-  //   final sections = e.incompleteSections;
-  //   if (sections == null) return false;
-  //   return sections.values.any((list) => list.contains(type));
-  // }
-
-  /// Uma mensagem por verificação incompleta (chave = tipo em incompleteSections).
   static const Map<String, String> _approvalMessages = {
-    'memberDocuments': 'Cada integrante deve ter documentos (identidade e antecedentes) enviados ou aprovados.',
-    'ownerDocuments': 'O administrador deve ter todos os documentos enviados.',
-    'ownerBankAccount': 'O administrador deve ter PIX ou conta bancária preenchidos.',
+    'documents': 'É necessário realizar o envio de todos os documentos obrigatórios para fazermos a verificação de sua identidade.',
+    'bankAccount': 'É necessário cadastrar seu PIX ou conta bancária (agência, conta e tipo) para que possamos realizar os pagamentos.',
   };
 
   static const Map<String, String> _visibilityMessages = {
-    'members': 'O grupo precisa de pelo menos um integrante (além do administrador).',
-    'profilePhoto': 'É necessário foto de perfil do grupo.',
-    'presentations': 'É necessário o vídeo de apresentação do conjunto.',
-    'professionalInfo': 'É necessário preencher todos os dados profissionais do conjunto.',
+    'profilePicture': 'É necessário realizar o envio de uma foto de perfil.',
+    'professionalInfo': 'É necessário preencher todos os dados profissionais (especialidade, duração mínima, tempo de preparação, bio).',
+    'presentations': 'É necessário um vídeo de apresentação para cada talento cadastrado nos dados profissionais.',
   };
 
-  /// Mensagens de Aprovação: seções incompletas relacionadas a documentos/aprovação.
-  List<String> _approvalItems(EnsembleEntity e) {
+  List<String> _approvalItems(ArtistEntity e) {
     final sections = e.incompleteSections;
     if (sections == null) return [];
     return sections.keys
@@ -58,8 +48,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
         .toList();
   }
 
-  /// Mensagens de Visibilidade: seções incompletas que impedem visibilidade.
-  List<String> _visibilityItems(EnsembleEntity e) {
+  List<String> _visibilityItems(ArtistEntity e) {
     final sections = e.incompleteSections;
     if (sections == null) return [];
     return sections.keys
@@ -72,10 +61,10 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final ensemble = widget.ensemble;
-    final count = _pendingCount(ensemble);
-    final approvalItems = _approvalItems(ensemble);
-    final visibilityItems = _visibilityItems(ensemble);
+    final artist = widget.artist;
+    final count = _pendingCount(artist);
+    final approvalItems = _approvalItems(artist);
+    final visibilityItems = _visibilityItems(artist);
 
     return CustomCard(
       child: Column(
@@ -94,7 +83,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
                   child: Icon(
                     Icons.warning_amber_rounded,
                     size: DSSize.width(24),
-                    color: colorScheme.error,
+                    color: colorScheme.onTertiaryContainer,
                   ),
                 ),
                 DSSizedBoxSpacing.horizontal(12),
@@ -103,7 +92,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Conjunto com informações pendentes',
+                        'Perfil com informações pendentes',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: colorScheme.onSurface,
@@ -131,8 +120,9 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
             if (approvalItems.isNotEmpty) ...[
               _Section(
                 title: 'Aprovação',
+                sectionName: 'Em Dados Cadastrais:',
                 icon: Icons.verified_user_outlined,
-                iconColor: colorScheme.onTertiaryContainer,
+                iconColor: colorScheme.onSecondaryContainer,
                 items: approvalItems,
               ),
               DSSizedBoxSpacing.vertical(16),
@@ -140,6 +130,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
             if (visibilityItems.isNotEmpty) ...[
               _Section(
                 title: 'Visibilidade',
+                sectionName: 'Em Área do Artista:',
                 icon: Icons.visibility_outlined,
                 iconColor: colorScheme.onPrimaryContainer,
                 items: visibilityItems,
@@ -147,7 +138,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
               DSSizedBoxSpacing.vertical(16),
             ],
             Text(
-              'Prezamos pela excelência dos artistas presentes no app. Enquanto todas as informações não estiverem completas, o conjunto não poderá estar ativo no app.',
+              'Prezamos pela excelência dos artistas presentes no Showtime. Enquanto todas as informações não estiverem completas, o perfil não poderá estar ativo no app.',
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
@@ -162,12 +153,14 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
 
 class _Section extends StatelessWidget {
   final String title;
+  final String sectionName;
   final IconData icon;
   final Color iconColor;
   final List<String> items;
 
   const _Section({
     required this.title,
+    required this.sectionName,
     required this.icon,
     required this.iconColor,
     required this.items,
@@ -194,17 +187,23 @@ class _Section extends StatelessWidget {
             ),
           ],
         ),
+        Text(
+          '$sectionName:',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
         DSSizedBoxSpacing.vertical(8),
         ...items.map(
           (item) => Padding(
-            padding: EdgeInsets.only(left: DSSize.width(26), bottom: DSSize.height(4)),
+            padding: EdgeInsets.only(left: DSSize.width(12), bottom: DSSize.height(4)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '→ ',
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.primary,
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

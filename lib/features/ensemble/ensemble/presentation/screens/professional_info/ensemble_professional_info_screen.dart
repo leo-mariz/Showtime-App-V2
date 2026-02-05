@@ -25,7 +25,7 @@ class EnsembleProfessionalInfoScreen extends StatefulWidget {
 }
 
 class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfoScreen> {
-  final TextEditingController genrePreferencesController = TextEditingController();
+  final TextEditingController specialtyController = TextEditingController();
   final TextEditingController minimumShowDurationController = TextEditingController();
   final TextEditingController preparationTimeController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
@@ -50,7 +50,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
     minimumShowDurationController.text = _formatDuration(_selectedMinimumDuration!);
     _selectedPreparationTime = const Duration(minutes: 15);
     preparationTimeController.text = _formatDuration(_selectedPreparationTime!);
-    genrePreferencesController.addListener(_onFieldChanged);
+    specialtyController.addListener(_onFieldChanged);
     minimumShowDurationController.addListener(_onFieldChanged);
     preparationTimeController.addListener(_onFieldChanged);
     bioController.addListener(_onFieldChanged);
@@ -68,7 +68,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
 
   @override
   void dispose() {
-    genrePreferencesController.dispose();
+    specialtyController.dispose();
     minimumShowDurationController.dispose();
     preparationTimeController.dispose();
     bioController.dispose();
@@ -86,10 +86,10 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
       _initialProfessionalInfo = professionalInfo;
 
       // Carregar genrePreferences
-      if (professionalInfo?.genrePreferences != null && professionalInfo!.genrePreferences!.isNotEmpty) {
-        genrePreferencesController.text = professionalInfo.genrePreferences!.join(', ');
+      if (professionalInfo?.specialty != null && professionalInfo!.specialty!.isNotEmpty) {
+        specialtyController.text = professionalInfo.specialty!.join(', ');
       } else {
-        genrePreferencesController.text = '';
+        specialtyController.text = '';
       }
 
       // Carregar minimumShowDuration
@@ -199,7 +199,8 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
         initialHours: hours,
         initialMinutes: minutes,
         type: WheelPickerType.duration,
-        minimumDuration: const Duration(minutes: 0), // Pode ser zero
+        minimumDuration: const Duration(minutes: 0),
+        maxHours: 96,
       ),
     );
 
@@ -213,27 +214,27 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
   }
 
   bool _hasChanges() {
-    final currentGenrePreferences = genrePreferencesController.text.trim().isEmpty
+    final currentSpecialty = specialtyController.text.trim().isEmpty
         ? null
-        : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
+        : specialtyController.text.split(', ').where((e) => e.isNotEmpty).toList();
     final currentMinimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final currentPreparationTime = _selectedPreparationTime?.inMinutes;
     final currentRequestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
     final currentBio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
-    final initialGenrePreferences = _initialProfessionalInfo?.genrePreferences;
+    final initialSpecialty = _initialProfessionalInfo?.specialty;
     final initialMinimumShowDuration = _initialProfessionalInfo?.minimumShowDuration;
     final initialPreparationTime = _initialProfessionalInfo?.preparationTime;
     final initialBio = _initialProfessionalInfo?.bio;
     final initialRequestMinimumEarliness = _initialProfessionalInfo?.requestMinimumEarliness;
 
-    final genrePreferencesChanged = _compareLists(currentGenrePreferences, initialGenrePreferences);
+    final specialtyChanged = _compareLists(currentSpecialty, initialSpecialty);
     final durationChanged = currentMinimumShowDuration != initialMinimumShowDuration;
     final preparationTimeChanged = currentPreparationTime != initialPreparationTime;
     final bioChanged = currentBio != initialBio;
     final requestMinimumEarlinessChanged = currentRequestMinimumEarliness != initialRequestMinimumEarliness;
 
-    return genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
+    return specialtyChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
   }
 
   bool _compareLists(List<String>? list1, List<String>? list2) {
@@ -252,9 +253,9 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
   }
 
   void _handleSave() {
-    final genrePreferences = genrePreferencesController.text.trim().isEmpty
+    final specialty = specialtyController.text.trim().isEmpty
         ? null
-        : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
+        : specialtyController.text.split(', ').where((e) => e.isNotEmpty).toList();
 
     final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final preparationTime = _selectedPreparationTime?.inMinutes;
@@ -263,8 +264,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
     final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
 
     final professionalInfo = ProfessionalInfoEntity(
-      specialty: null,
-      genrePreferences: genrePreferences,
+      specialty: specialty,
       minimumShowDuration: minimumShowDuration,
       preparationTime: preparationTime,
       requestMinimumEarliness: requestMinimumEarliness,
@@ -303,16 +303,15 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
               setState(() {
                 _isLoading = false;
                 _hasLoadedData = false;
-                final genrePreferences = genrePreferencesController.text.trim().isEmpty
+                final specialty = specialtyController.text.trim().isEmpty
                     ? null
-                    : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
+                    : specialtyController.text.split(', ').where((e) => e.isNotEmpty).toList();
                 final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
                 final preparationTime = _selectedPreparationTime?.inMinutes;
                 final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
                 final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
                 _initialProfessionalInfo = ProfessionalInfoEntity(
-                  specialty: null,
-                  genrePreferences: genrePreferences,
+                  specialty: specialty,
                   minimumShowDuration: minimumShowDuration,
                   preparationTime: preparationTime,
                   bio: bio,
@@ -423,8 +422,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                   ),
                   DSSizedBoxSpacing.vertical(16),
                   ProfessionalInfoForm(
-                    talentController: null,
-                    genrePreferencesController: genrePreferencesController,
+                    talentController: specialtyController,
                     minimumShowDurationController: minimumShowDurationController,
                     preparationTimeController: preparationTimeController,
                     bioController: bioController,

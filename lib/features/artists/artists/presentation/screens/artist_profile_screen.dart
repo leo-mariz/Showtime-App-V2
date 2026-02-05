@@ -307,7 +307,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),
-                                        // onEditName: () {},
+                                        showPhotoIncompleteBadge: _isSectionIncomplete(ArtistIncompleteInfoType.profilePicture),
                                       )
                                     else
                                       // Fallback: mostrar skeleton se não tiver dados nem cache

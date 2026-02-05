@@ -17,7 +17,8 @@ import 'package:app/features/artists/artist_dashboard/presentation/widgets/next_
 import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/artists/artists/presentation/bloc/events/artists_events.dart';
 import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
-import 'package:app/features/artists/artists/presentation/widgets/profile_completeness_card_simple.dart';
+import 'package:app/features/artists/artists/presentation/widgets/artist_area_activation_card.dart';
+import 'package:app/features/artists/artists/presentation/widgets/artist_completeness_card.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
 import 'package:flutter/material.dart';
@@ -163,10 +164,12 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
           // Listener para mudanças no artista que afetam o dashboard
           BlocListener<ArtistsBloc, ArtistsState>(
             listener: (context, state) {
-              // Recarregar dashboard quando houver mudanças relevantes no artista
-              // Não escutamos GetArtistSuccess para evitar recarregar no primeiro carregamento
-              // Apenas escutamos estados de atualização que indicam mudanças reais
-              if (state is UpdateArtistSuccess ||
+              if (state is UpdateArtistActiveStatusSuccess) {
+                context.showSuccess('Visibilidade do perfil atualizada.');
+                _refreshDashboard();
+              } else if (state is UpdateArtistActiveStatusFailure) {
+                context.showError(state.error);
+              } else if (state is UpdateArtistSuccess ||
                   state is UpdateArtistProfilePictureSuccess ||
                   state is UpdateArtistNameSuccess ||
                   state is UpdateArtistProfessionalInfoSuccess) {
@@ -192,9 +195,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                   final artistPhoto = artist?.profilePicture;
                   final isActive = artist?.isActive ?? false;
                   final hasIncompleteSections = artist?.hasIncompleteSections ?? false;
-                  final isAprooved = artist?.approved ?? false;
-                  print('isAprooved: $isAprooved');
-                  print('isActive: $isActive');
+                  final isApproved = artist?.approved ?? false;
+                  final isUpdatingActiveStatus = artistsState is UpdateArtistActiveStatusLoading;
 
                   // Obter estatísticas
                   final stats = dashboardState is GetArtistDashboardStatsSuccess
@@ -219,14 +221,34 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                           artistName,
                           artistPhoto,
                           isActive,
-                          isAprooved,
+                          isApproved,
                           hasIncompleteSections,
                         ),
                         DSSizedBoxSpacing.vertical(24),
 
-                        // Completude do perfil
-                        if (artist != null && artist.hasIncompleteSections == true) ...[
-                          ProfileCompletenessCardSimple(artist: artist),
+                        // Incompleto: card de pendências. Completo e não aprovado: pendente de aprovação. Completo e aprovado: ativar/desativar.
+                        if (artist != null && hasIncompleteSections) ...[
+                          ArtistCompletenessCard(artist: artist),
+                          DSSizedBoxSpacing.vertical(24),
+                        ] else if (artist != null && !isApproved) ...[
+                          _ArtistPendingApprovalCard(iconColor: colorScheme.onPrimaryContainer),
+                          DSSizedBoxSpacing.vertical(24),
+                        ] else if (artist != null && isApproved) ...[
+                          ArtistAreaActivationCard(
+                            title: 'Ativar visualização',
+                            description: isActive
+                                ? 'Seu perfil está ativo e visível para clientes.'
+                                : 'Ative seu perfil para aparecer nas buscas.',
+                            icon: Icons.public_outlined,
+                            iconColor: colorScheme.onPrimaryContainer,
+                            isActive: isActive,
+                            isEnabled: !isUpdatingActiveStatus,
+                            onChanged: (value) {
+                              context.read<ArtistsBloc>().add(
+                                UpdateArtistActiveStatusEvent(isActive: value),
+                              );
+                            },
+                          ),
                           DSSizedBoxSpacing.vertical(24),
                         ],
 
@@ -283,21 +305,20 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
     String artistName,
     String? artistPhoto,
     bool isActive,
-    bool isAprooved,
+    bool isApproved,
     bool hasIncompleteSections,
   ) {
-
     var statusIcon = Icons.error;
     var statusText = '';
     var statusColor = colorScheme.error;
 
-    if (isAprooved) {
+    if (isApproved) {
       if (isActive && !hasIncompleteSections) {
         statusIcon = Icons.check_circle;
         statusText = 'Perfil completo';
         statusColor = colorScheme.onSecondaryContainer;
       } else if (hasIncompleteSections) {
-        statusIcon = Icons.warning_amber_rounded;
+        statusIcon = Icons.error_outline;
         statusText = 'Perfil incompleto';
         statusColor = colorScheme.onTertiaryContainer;
       } else {
@@ -747,6 +768,56 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
     return Text(
       title,
       style: textTheme.titleMedium?.copyWith(
+      ),
+    );
+  }
+}
+
+/// Card exibido quando o perfil está completo mas ainda não aprovado (documentos em análise).
+class _ArtistPendingApprovalCard extends StatelessWidget {
+  final Color iconColor;
+
+  const _ArtistPendingApprovalCard({required this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceContainerHighest = colorScheme.surfaceContainerHighest;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: DSSize.width(24),
+        vertical: DSSize.height(24),
+      ),
+      decoration: BoxDecoration(
+        color: surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(DSSize.width(12)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.hourglass_empty_rounded, color: iconColor, size: DSSize.width(24)),
+          DSSizedBoxSpacing.horizontal(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Perfil pendente de aprovação',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+                Text(
+                  'Seu perfil está em análise. Você poderá ativá-lo quando a verificação dos documentos for concluída.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

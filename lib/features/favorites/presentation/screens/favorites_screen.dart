@@ -165,11 +165,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
               : favoriteArtists.where((artist) {
                   final searchLower = _searchQuery.toLowerCase();
                   final artistName = artist.artistName?.toLowerCase() ?? '';
-                  final genres = artist.professionalInfo?.genrePreferences?.join(' ').toLowerCase() ?? '';
+                  final talents = artist.professionalInfo?.specialty?.join(' ').toLowerCase() ?? '';
                   final bio = artist.professionalInfo?.bio?.toLowerCase() ?? '';
                   
                   return artistName.contains(searchLower) ||
-                         genres.contains(searchLower) ||
+                         talents.contains(searchLower) ||
                          bio.contains(searchLower);
                 }).toList();
 
@@ -253,14 +253,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
               final isFavorite = _favoriteArtistIds.contains(artistId);
 
               // Obter gêneros do professionalInfo
-              final genres = artist.professionalInfo?.genrePreferences?.join(', ') ?? 'Sem gêneros definidos';
+              final talents = artist.professionalInfo?.specialty?.join(', ') ?? 'Sem talentos definidos';
 
               // Obter descrição/bio
               final description = artist.professionalInfo?.bio ?? 'Sem descrição disponível';
 
               return ArtistCard(
                 musicianName: artist.artistName ?? 'Artista sem nome',
-                genres: genres,
+                talents: talents,
                 description: description,
                 contracts: artist.rateCount ?? 0,
                 rating: artist.rating ?? 0.0,

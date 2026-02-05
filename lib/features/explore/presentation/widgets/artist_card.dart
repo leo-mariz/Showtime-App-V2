@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// Exibe foto, informações, avaliação e botão de solicitar
 class ArtistCard extends StatelessWidget {
   final String musicianName;
-  final String genres;
+  final String talents;
   final String description;
   final int contracts;
   final double rating;
@@ -24,7 +24,7 @@ class ArtistCard extends StatelessWidget {
   const ArtistCard({
     super.key,
     required this.musicianName,
-    required this.genres,
+    required this.talents,
     required this.description,
     required this.contracts,
     required this.rating,
@@ -119,7 +119,7 @@ class ArtistCard extends StatelessWidget {
             
             // Gêneros musicais
             Text(
-              genres,
+              talents,
               style: textTheme.bodySmall?.copyWith(
                 color: onSurfaceVariantColor,
                 fontWeight: FontWeight.w600,

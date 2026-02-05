@@ -6,21 +6,17 @@ part 'professional_info_entity.mapper.dart';
 @MappableClass()
 class ProfessionalInfoEntity with ProfessionalInfoEntityMappable {
   final List<String>? specialty;
-  final List<String>? genrePreferences;
   final int? minimumShowDuration;
   final int? preparationTime;
   final int? requestMinimumEarliness;
   final String? bio;
-  final double? hourlyRate;
 
   const ProfessionalInfoEntity({
     this.specialty,
-    this.genrePreferences,
     this.minimumShowDuration,
     this.preparationTime,
     this.requestMinimumEarliness,
     this.bio,
-    this.hourlyRate,
   });
 
 }

@@ -269,6 +269,7 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
                           IUsersRepository usersRepository, 
                           IArtistsRepository artistsRepository, 
                           IClientsRepository clientsRepository,
+                          SaveBankAccountUseCase saveBankAccountUseCase,
                           SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase) {
 
   // 5. Criar UseCases
@@ -297,6 +298,7 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
     clientsRepository: clientsRepository,
     authServices: authServices,
     sendWelcomeEmailUsecase: sendWelcomeEmailUsecase,
+    saveBankAccountUseCase: saveBankAccountUseCase,
     syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
   final sendPasswordResetEmailUseCase = SendPasswordResetEmailUseCase(
@@ -489,6 +491,8 @@ ArtistsBloc _createArtistsBloc(
   IArtistsRepository artistsRepository,
   GetUserUidUseCase getUserUidUseCase,
   IStorageService storageService,
+  SaveBankAccountUseCase saveBankAccountUseCase,
+  GetUserDataUseCase getUserDataUseCase,  
   SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
 ) {
   // Criar UseCases
@@ -527,7 +531,7 @@ ArtistsBloc _createArtistsBloc(
     storageService: storageService,
     syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase,
   );
-  final addArtistUseCase = AddArtistUseCase(repository: artistsRepository); 
+  final addArtistUseCase = AddArtistUseCase(repository: artistsRepository, saveBankAccountUseCase: saveBankAccountUseCase, getUserDataUseCase: getUserDataUseCase); 
 
   // Criar e retornar ArtistsBloc
   return ArtistsBloc(
@@ -1104,6 +1108,9 @@ Future <void> main() async {
   final usersRemoteDataSource = UsersRemoteDataSourceImpl(firestore: firestore);
   final usersRepository = UsersRepositoryImpl(localDataSource: usersLocalDataSource, remoteDataSource: usersRemoteDataSource);
 
+  // GetUserDataUseCase
+  final getUserDataUseCase = GetUserDataUseCase(usersRepository: usersRepository);
+
   // Artists
   final artistsLocalDataSource = ArtistsLocalDataSourceImpl(autoCacheService: localCacheService);
   final artistsRemoteDataSource = ArtistsRemoteDataSourceImpl(firestore: firestore);
@@ -1128,7 +1135,6 @@ Future <void> main() async {
   final bankAccountLocalDataSource = BankAccountLocalDataSourceImpl(autoCacheService: localCacheService);
   final bankAccountRemoteDataSource = BankAccountRemoteDataSourceImpl(firestore: firestore);
   final bankAccountRepository = BankAccountRepositoryImpl(localDataSource: bankAccountLocalDataSource, remoteDataSource: bankAccountRemoteDataSource);
-
   final checkArtistCompletenessUseCase = CheckArtistCompletenessUseCase();
 
   // SyncArtistCompletenessIfChangedUseCase
@@ -1137,7 +1143,6 @@ Future <void> main() async {
       getArtistUseCase: GetArtistUseCase(repository: artistsRepository),
       documentsRepository: documentsRepository,
       bankAccountRepository: bankAccountRepository,
-      availabilityRepository: availabilityRepository,
       getUserUidUseCase: getUserUidUseCase,
       checkArtistCompletenessUseCase: checkArtistCompletenessUseCase,
     ),
@@ -1148,6 +1153,9 @@ Future <void> main() async {
     getArtistUseCase: GetArtistUseCase(repository: artistsRepository),
     getUserUidUseCase: getUserUidUseCase,
   );
+
+  // SaveBankAccountUseCase
+  final saveBankAccountUseCase = SaveBankAccountUseCase(repository: bankAccountRepository, syncArtistCompletenessIfChangedUseCase: syncArtistCompletenessIfChangedUseCase);
 
   // Explore
   final exploreLocalDataSource = ExploreLocalDataSourceImpl(autoCacheService: localCacheService);
@@ -1264,6 +1272,7 @@ Future <void> main() async {
               usersRepository,
               artistsRepository,
               clientsRepository,
+              saveBankAccountUseCase, 
               syncArtistCompletenessIfChangedUseCase,
             ),
           ),
@@ -1287,6 +1296,8 @@ Future <void> main() async {
               artistsRepository,
               getUserUidUseCase,
               storageService,
+              saveBankAccountUseCase,
+              getUserDataUseCase,
               syncArtistCompletenessIfChangedUseCase,
             ),
           ),

@@ -1,7 +1,9 @@
+import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/artists/artist_bank_account/domain/usecases/save_bank_account_usecase.dart';
 import 'package:app/features/authentication/domain/entities/register_entity.dart';
 import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:app/features/authentication/domain/usecases/send_welcome_email_usecase.dart';
@@ -26,6 +28,7 @@ class RegisterOnboardingUseCase {
   final IArtistsRepository artistsRepository;
   final IAuthServices authServices;
   final SendWelcomeEmailUsecase sendWelcomeEmailUsecase;
+  final SaveBankAccountUseCase saveBankAccountUseCase;
   final SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase;
 
   RegisterOnboardingUseCase({
@@ -35,6 +38,7 @@ class RegisterOnboardingUseCase {
     required this.artistsRepository,
     required this.authServices,
     required this.sendWelcomeEmailUsecase,
+    required this.saveBankAccountUseCase,
     required this.syncArtistCompletenessIfChangedUseCase,
   });
 
@@ -50,11 +54,11 @@ class RegisterOnboardingUseCase {
       
       // Se não encontrar no Firebase Auth, tenta buscar do cache
       if (uid == null || uid.isEmpty) {
-      final uidResult = await authRepository.getUserUid();
+        final uidResult = await authRepository.getUserUid();
         uid = uidResult.fold(
           (failure) => null,
           (cachedUid) => cachedUid,
-      );
+        );
       }
 
       if (uid == null || uid.isEmpty) {
@@ -135,6 +139,25 @@ class RegisterOnboardingUseCase {
 
         final saveArtistResult = await artistsRepository.addArtist(uid, artist);
         saveArtistResult.fold(
+          (failure) => throw failure,
+          (_) => null,
+        );
+
+        var bankAccount = BankAccountEntity();
+        if (isCnpj) {
+          bankAccount = BankAccountEntity(
+            fullName: user.cnpjUser?.fantasyName ?? '',
+            cpfOrCnpj: user.cnpjUser?.cnpj ?? '',
+          );
+        } else {
+          bankAccount = BankAccountEntity(
+            fullName: '${user.cpfUser?.firstName ?? ''} ${user.cpfUser?.lastName ?? ''}'.trim(),
+            cpfOrCnpj: user.cpfUser?.cpf ?? '',
+          );
+        }
+        // Salvar conta bancária
+        final saveBankAccountResult = await saveBankAccountUseCase.call(uid, bankAccount);
+        saveBankAccountResult.fold(
           (failure) => throw failure,
           (_) => null,
         );

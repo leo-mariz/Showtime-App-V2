@@ -52,7 +52,7 @@ class IconMenuButton extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.priority_high_outlined,
+                      Icons.error_outline,
                       size: DSSize.width(14),
                       color: onPrimary ,
                     ),

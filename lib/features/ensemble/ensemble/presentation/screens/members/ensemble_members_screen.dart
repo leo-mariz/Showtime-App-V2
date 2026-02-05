@@ -2,7 +2,6 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/domain/ensemble/member_documents/member_document_entity.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
-import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/ensemble/member_documents/presentation/bloc/events/member_documents_events.dart';
@@ -10,7 +9,7 @@ import 'package:app/features/ensemble/member_documents/presentation/bloc/member_
 import 'package:app/features/ensemble/member_documents/presentation/bloc/states/member_documents_states.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
-import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/core/shared/widgets/select_talents_sheet.dart';
 import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
 import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
 import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
@@ -138,12 +137,14 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
             current is UpdateEnsembleMemberTalentsSuccess ||
             current is UpdateEnsembleMemberTalentsFailure ||
             current is GetAllEnsemblesSuccess,
-        builder: (ctx, state) => EditMemberTalentsSheet(
-          memberName: member.name ?? 'Integrante',
+        builder: (ctx, state) => SelectTalentsSheet(
+          title: 'Talentos de ${member.name ?? "Integrante"}',
+          subtitle: 'Selecione os talentos deste integrante neste conjunto. O mesmo integrante pode ter talentos diferentes em outros conjuntos.',
           talentNames: talentNames,
           initialSelected: member.specialty ?? [],
           loading: state is UpdateEnsembleMemberTalentsLoading,
-          onSave: (selected) {
+          confirmButtonLabel: 'Salvar',
+          onConfirm: (selected) {
             context.read<EnsembleBloc>().add(
               UpdateEnsembleMemberTalentsEvent(
                 ensembleId: widget.ensembleId,
@@ -436,197 +437,5 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
     ),
     ),
   );
-  }
-}
-
-/// Sheet de UI pura para seleção de talentos do integrante.
-/// A lista de talentos é obtida pela screen e passada aqui.
-class EditMemberTalentsSheet extends StatefulWidget {
-  final String memberName;
-  final List<String> talentNames;
-  final List<String> initialSelected;
-  final bool loading;
-  final void Function(List<String> selected) onSave;
-
-  const EditMemberTalentsSheet({
-    super.key,
-    required this.memberName,
-    required this.talentNames,
-    required this.initialSelected,
-    required this.loading,
-    required this.onSave,
-  });
-
-  @override
-  State<EditMemberTalentsSheet> createState() => _EditMemberTalentsSheetState();
-}
-
-class _EditMemberTalentsSheetState extends State<EditMemberTalentsSheet> {
-  late Set<String> _selected;
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = Set<String>.from(widget.initialSelected);
-    _searchController.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final query = _searchController.text.trim().toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.talentNames
-        : widget.talentNames
-            .where((name) => name.toLowerCase().contains(query))
-            .toList();
-
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-      ),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(DSSize.width(20)),
-          topRight: Radius.circular(DSSize.width(20)),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              margin: EdgeInsets.only(
-                top: DSSize.height(12),
-                bottom: DSSize.height(8),
-              ),
-              width: DSSize.width(40),
-              height: DSSize.height(4),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(DSSize.width(2)),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
-            child: Text(
-              'Talentos de ${widget.memberName}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          DSSizedBoxSpacing.vertical(8),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
-            child: Text(
-              'Selecione os talentos deste integrante neste conjunto. O mesmo integrante pode ter talentos diferentes em outros conjuntos.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          DSSizedBoxSpacing.vertical(12),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar talento...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DSSize.width(8)),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: DSSize.width(12),
-                  vertical: DSSize.height(10),
-                ),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-          DSSizedBoxSpacing.vertical(12),
-          Flexible(
-            child: widget.talentNames.isEmpty
-                ? Padding(
-                    padding: EdgeInsets.all(DSSize.width(24)),
-                    child: Center(
-                      child: Text(
-                        'Nenhum talento disponível.',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  )
-                : filtered.isEmpty
-                    ? Padding(
-                        padding: EdgeInsets.all(DSSize.width(24)),
-                        child: Center(
-                          child: Text(
-                            'Nenhum talento encontrado para "$query".',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: DSSize.width(24)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: filtered.map((name) {
-                            final isSelected = _selected.contains(name);
-                            return CheckboxListTile(
-                              value: isSelected,
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selected.add(name);
-                                  } else {
-                                    _selected.remove(name);
-                                  }
-                                });
-                              },
-                              title: Text(
-                                name,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              controlAffinity: ListTileControlAffinity.leading,
-                              contentPadding: EdgeInsets.zero,
-                            );
-                          }).toList(),
-                        ),
-                      ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              DSSize.width(24),
-              DSSize.height(16),
-              DSSize.width(24),
-              DSSize.height(24) + MediaQuery.of(context).padding.bottom,
-            ),
-            child: CustomButton(
-              label: widget.loading ? 'Salvando...' : 'Salvar',
-              isLoading: widget.loading,
-              onPressed: widget.loading ? null : () => widget.onSave(_selected.toList()..sort()),
-              backgroundColor: colorScheme.onPrimaryContainer,
-              textColor: colorScheme.primaryContainer,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

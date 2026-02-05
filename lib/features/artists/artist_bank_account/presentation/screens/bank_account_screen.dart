@@ -407,7 +407,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
                             controller: _fullNameController,
                             label: 'Nome do Titular',
                             validator: Validators.validateIsNull,
-                            enabled: !isLoading,
+                            enabled: false,
                           ),
                           
                           DSSizedBoxSpacing.vertical(16),
@@ -418,7 +418,7 @@ class _BankAccountScreenState extends State<BankAccountScreen> {
                             validator: Validators.validateCPForCNPJ,
                             inputFormatters: _getCpfCnpjFormatters(),
                             keyboardType: TextInputType.number,
-                            enabled: !isLoading,
+                            enabled: false,
                           ),
                           
                           DSSizedBoxSpacing.vertical(24),

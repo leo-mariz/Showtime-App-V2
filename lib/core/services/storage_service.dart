@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:app/core/errors/exceptions.dart';
 
 abstract class IStorageService {
@@ -52,20 +54,29 @@ class StorageService implements IStorageService {
       final downloadUrl = await storageRef.getDownloadURL();
       return downloadUrl;
     } on AppException {
-      // Re-lança exceções já tipadas
       rethrow;
+    } on SocketException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao fazer upload do arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on TimeoutException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao fazer upload do arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on HandshakeException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao fazer upload do arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
-      // Verificar se é erro de rede
-      if (e.toString().contains('network') || 
-          e.toString().contains('connection') ||
-          e.toString().contains('timeout')) {
-        throw NetworkException(
-          'Erro de conexão ao fazer upload do arquivo',
-          originalError: e,
-          stackTrace: stackTrace,
-        );
+      if (e is FirebaseException && e.code == 'object-not-found') {
+        throw const NotFoundException('Arquivo não encontrado no Firebase Storage');
       }
-      
       throw ServerException(
         'Erro ao fazer upload do arquivo para o Firebase Storage',
         originalError: e,
@@ -88,26 +99,29 @@ class StorageService implements IStorageService {
       // Deletar arquivo
       await fileReference.delete();
     } on AppException {
-      // Re-lança exceções já tipadas
       rethrow;
+    } on SocketException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao deletar arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on TimeoutException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao deletar arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } on HandshakeException catch (e, stackTrace) {
+      throw NetworkException(
+        'Erro de conexão ao deletar arquivo',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
-      // Verificar se é erro de rede
-      if (e.toString().contains('network') || 
-          e.toString().contains('connection') ||
-          e.toString().contains('timeout')) {
-        throw NetworkException(
-          'Erro de conexão ao deletar arquivo',
-          originalError: e,
-          stackTrace: stackTrace,
-        );
-      }
-
-      // Verificar se o arquivo não foi encontrado
-      if (e.toString().contains('not found') || 
-          e.toString().contains('object-not-found')) {
+      if (e is FirebaseException && e.code == 'object-not-found') {
         throw const NotFoundException('Arquivo não encontrado no Firebase Storage');
       }
-
       throw ServerException(
         'Erro ao deletar arquivo do Firebase Storage',
         originalError: e,

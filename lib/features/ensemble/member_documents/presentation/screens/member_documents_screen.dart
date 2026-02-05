@@ -67,7 +67,9 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
     return documentType.toLowerCase();
   }
 
-  void _handleSaveDocument(DocumentsEntity document, String? localFilePath) {
+  /// Dispara o envio e aguarda o resultado. Retorna true em sucesso, false em falha.
+  Future<bool> _handleSaveDocument(DocumentsEntity document, String? localFilePath) async {
+    final bloc = context.read<MemberDocumentsBloc>();
     final memberDoc = MemberDocumentEntity(
       artistId: '',
       ensembleId: widget.ensembleId,
@@ -76,12 +78,14 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
       status: document.status,
       url: document.url,
     );
-    context.read<MemberDocumentsBloc>().add(
-          SaveMemberDocumentEvent(
-            document: memberDoc,
-            localFilePath: localFilePath,
-          ),
-        );
+    bloc.add(SaveMemberDocumentEvent(
+      document: memberDoc,
+      localFilePath: localFilePath,
+    ));
+    final result = await bloc.stream
+        .where((s) => s is SaveMemberDocumentSuccess || s is SaveMemberDocumentFailure)
+        .first;
+    return result is SaveMemberDocumentSuccess;
   }
 
   @override
@@ -124,8 +128,7 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
       },
       child: BlocBuilder<MemberDocumentsBloc, MemberDocumentsState>(
         builder: (context, state) {
-          final isLoading = state is GetAllMemberDocumentsLoading ||
-              state is SaveMemberDocumentLoading;
+          final isLoading = state is GetAllMemberDocumentsLoading;
 
           return BasePage(
             showAppBar: true,
@@ -174,9 +177,7 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
     DocumentModals.showIdentityModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 
@@ -185,9 +186,7 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
     DocumentModals.showAntecedentsModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 }

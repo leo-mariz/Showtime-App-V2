@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/custom_message_field.dart';
 import 'package:app/core/shared/widgets/custom_multi_select_field.dart';
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 class ProfessionalInfoForm extends StatelessWidget {
   /// Quando null, o campo de talentos não é exibido (ex.: dados profissionais do conjunto).
   final TextEditingController? talentController;
-  final TextEditingController genrePreferencesController;
   final TextEditingController minimumShowDurationController;
   final TextEditingController preparationTimeController;
   final TextEditingController bioController;
@@ -19,11 +19,13 @@ class ProfessionalInfoForm extends StatelessWidget {
   final String preparationTimeDisplayValue;
   final String requestMinimumEarlinessDisplayValue;
   final List<String>? talentOptions;
+  /// Quando informado, o campo de talentos abre a seleção via este callback (ex.: modal/sheet).
+  /// Se null, usa o comportamento padrão do [CustomMultiSelectField] (diálogo).
+  final VoidCallback? onTalentsTap;
 
   const ProfessionalInfoForm({
     super.key,
     this.talentController,
-    required this.genrePreferencesController,
     required this.minimumShowDurationController,
     required this.preparationTimeController,
     required this.bioController,
@@ -34,6 +36,7 @@ class ProfessionalInfoForm extends StatelessWidget {
     required this.preparationTimeDisplayValue,
     required this.requestMinimumEarlinessDisplayValue,
     this.talentOptions,
+    this.onTalentsTap,
   });
 
   @override
@@ -53,12 +56,18 @@ class ProfessionalInfoForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (talentController != null) ...[
-          CustomMultiSelectField(
-            controller: talentController!,
-            items: talentOptionsList,
-            labelText: 'Talentos',
-            hintText: 'Selecione seus talentos',
-          ),
+          onTalentsTap != null
+              ? _TalentFieldWithTap(
+                  controller: talentController!,
+                  hintText: 'Selecione seus talentos',
+                  onTap: onTalentsTap!,
+                )
+              : CustomMultiSelectField(
+                  controller: talentController!,
+                  items: talentOptionsList,
+                  labelText: 'Talentos',
+                  hintText: 'Selecione seus talentos',
+                ),
           DSSizedBoxSpacing.vertical(16),
         ],
         // DSSizedBoxSpacing.vertical(16),
@@ -95,6 +104,57 @@ class ProfessionalInfoForm extends StatelessWidget {
           onTap: onRequestMinimumEarlinessTap,
         ),
       ],
+    );
+  }
+}
+
+/// Campo de talentos com mesma aparência do multi-select, mas abre seleção via callback (ex.: sheet).
+class _TalentFieldWithTap extends StatelessWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final VoidCallback onTap;
+
+  const _TalentFieldWithTap({
+    required this.controller,
+    required this.hintText,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textColor = colorScheme.onPrimary;
+    final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final surfaceContainerColor = colorScheme.surfaceContainerHighest;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AbsorbPointer(
+        child: TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'Talentos',
+            labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor),
+            hintText: hintText,
+            hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(color: onPrimaryContainer),
+            filled: true,
+            fillColor: surfaceContainerColor,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(DSSize.width(15)),
+              borderSide: BorderSide(color: surfaceContainerColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(DSSize.width(15)),
+              borderSide: BorderSide(color: textColor),
+            ),
+            suffixIcon: Icon(
+              Icons.arrow_drop_down,
+              size: DSSize.width(24),
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

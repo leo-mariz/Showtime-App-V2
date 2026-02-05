@@ -101,80 +101,39 @@ class SyncArtistCompletenessIfChangedUseCase {
     }
   }
 
-  /// Compara se a completude mudou em relação ao que está salvo no ArtistEntity
-  /// 
-  /// Verifica:
-  /// - hasIncompleteSections mudou?
-  /// - incompleteSections mudou? (comparação profunda do Map)
+  /// Compara se a completude mudou em relação ao que está salvo no ArtistEntity.
+  /// Usa o mesmo formato de [UpdateArtistIncompleteSectionsUseCase]: chave = type.name.
   bool _hasCompletenessChanged(
     ArtistEntity currentArtist,
     ArtistCompletenessEntity newCompleteness,
   ) {
-    // Construir o Map de seções incompletas esperado
     final expectedIncompleteSections = <String, List<String>>{};
-
     for (final status in newCompleteness.incompleteStatuses) {
-      final categoryName = status.category.name;
-      if (!expectedIncompleteSections.containsKey(categoryName)) {
-        expectedIncompleteSections[categoryName] = [];
-      }
-      expectedIncompleteSections[categoryName]!.add(status.type.name);
+      final key = status.type.name;
+      expectedIncompleteSections[key] = [key];
     }
 
-    // Ordenar listas para comparação
-    for (final key in expectedIncompleteSections.keys) {
-      expectedIncompleteSections[key]!.sort();
-    }
-
-    // Comparar hasIncompleteSections
     final expectedHasIncomplete = expectedIncompleteSections.isNotEmpty;
     if (currentArtist.hasIncompleteSections != expectedHasIncomplete) {
-      return true; // Mudou
+      return true;
     }
 
-    // Comparar incompleteSections (comparação profunda)
-    final currentIncompleteSections = currentArtist.incompleteSections ?? <String, List<String>>{};
-
-    // Ordenar listas do current para comparação
-    final currentIncompleteSectionsSorted = <String, List<String>>{};
-    for (final entry in currentIncompleteSections.entries) {
-      final sortedList = List<String>.from(entry.value)..sort();
-      currentIncompleteSectionsSorted[entry.key] = sortedList;
+    final current = currentArtist.incompleteSections ?? <String, List<String>>{};
+    if (current.length != expectedIncompleteSections.length) {
+      return true;
     }
-
-    // Comparar tamanho dos maps
-    if (currentIncompleteSectionsSorted.length != expectedIncompleteSections.length) {
-      return true; // Mudou
-    }
-
-    // Comparar cada categoria
-    for (final categoryName in expectedIncompleteSections.keys) {
-      if (!currentIncompleteSectionsSorted.containsKey(categoryName)) {
-        return true; // Categoria nova adicionada
-      }
-
-      final expectedList = expectedIncompleteSections[categoryName]!;
-      final currentList = currentIncompleteSectionsSorted[categoryName]!;
-
-      // Comparar listas
-      if (expectedList.length != currentList.length) {
-        return true; // Tamanho diferente
-      }
-
-      for (int i = 0; i < expectedList.length; i++) {
-        if (expectedList[i] != currentList[i]) {
-          return true; // Item diferente
-        }
+    for (final key in expectedIncompleteSections.keys) {
+      if (!current.containsKey(key)) return true;
+      final curList = current[key]!;
+      final expList = expectedIncompleteSections[key]!;
+      if (curList.length != expList.length) return true;
+      for (int i = 0; i < curList.length; i++) {
+        if (curList[i] != expList[i]) return true;
       }
     }
-
-    // Verificar se há categorias removidas
-    for (final categoryName in currentIncompleteSectionsSorted.keys) {
-      if (!expectedIncompleteSections.containsKey(categoryName)) {
-        return true; // Categoria removida
-      }
+    for (final key in current.keys) {
+      if (!expectedIncompleteSections.containsKey(key)) return true;
     }
-
-    return false; // Não mudou
+    return false;
   }
 }

@@ -24,11 +24,12 @@ enum DocumentFileSource {
 }
 
 class DocumentModals {
-  /// Modal para documento de identidade
+  /// Modal para documento de identidade.
+  /// [onSave] deve retornar true em caso de sucesso (modal será fechado) e false em caso de erro.
   static Future<void> showIdentityModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity, String?) onSave,
+    required Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -41,11 +42,12 @@ class DocumentModals {
     );
   }
 
-  /// Modal para comprovante de residência
+  /// Modal para comprovante de residência.
+  /// [onSave] deve retornar true em sucesso, false em erro.
   static Future<void> showResidenceModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity, String?) onSave,
+    required Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -58,11 +60,12 @@ class DocumentModals {
     );
   }
 
-  /// Modal para currículo
+  /// Modal para currículo.
+  /// [onSave] deve retornar true em sucesso, false em erro.
   static Future<void> showCurriculumModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity, String?) onSave,
+    required Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -75,11 +78,12 @@ class DocumentModals {
     );
   }
 
-  /// Modal para certidão de antecedentes
+  /// Modal para certidão de antecedentes.
+  /// [onSave] deve retornar true em sucesso, false em erro.
   static Future<void> showAntecedentsModal({
     required BuildContext context,
     required DocumentsEntity document,
-    required Function(DocumentsEntity, String?) onSave,
+    required Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -96,7 +100,7 @@ class DocumentModals {
 // Modal de Identidade
 class _IdentityDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity, String?) onSave;
+  final Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave;
 
   const _IdentityDocumentModal({
     required this.document,
@@ -115,6 +119,7 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
   final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -228,32 +233,31 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
   }
 
   Future<void> _handleSubmit() async {
-    // Validar formulário apenas quando clicar no botão
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_selectedDocumentOption == null) {
       context.showError('Selecione o tipo de documento');
       return;
     }
-
     if (_selectedFile == null) {
       context.showError('Selecione um arquivo');
       return;
     }
-
-    if (mounted) {
-        final document = DocumentsEntity(
-          documentType: widget.document.documentType,
-          documentOption: _selectedDocumentOption!,
-        url: widget.document.url, // Mantém URL original (será atualizada após upload)
-          status: 1,
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    bool ok = false;
+    try {
+      final document = DocumentsEntity(
+        documentType: widget.document.documentType,
+        documentOption: _selectedDocumentOption!,
+        url: widget.document.url,
+        status: 1,
         idNumber: _idNumberController.text.trim(),
-        );
-      widget.onSave(document, _selectedFile!.path);
-        Navigator.of(context).pop();
+      );
+      ok = await widget.onSave(document, _selectedFile!.path);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted && ok) Navigator.of(context).pop();
   }
 
   @override
@@ -468,7 +472,8 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
                   label: 'Enviar',
                   icon: Icons.send,
                   iconOnLeft: true,
-                  onPressed: _isFormValid ? _handleSubmit : null,
+                  isLoading: _isSubmitting,
+                  onPressed: (_isFormValid && !_isSubmitting) ? _handleSubmit : null,
                 ),
               ),
             ),
@@ -483,7 +488,7 @@ class _IdentityDocumentModalState extends State<_IdentityDocumentModal> {
 // Modal de Residência
 class _ResidenceDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity, String?) onSave;
+  final Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave;
 
   const _ResidenceDocumentModal({
     required this.document,
@@ -508,6 +513,7 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
   final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -642,44 +648,41 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
   }
 
   Future<void> _handleSubmit() async {
-    // Validar formulário apenas quando clicar no botão
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_selectedDocumentOption == null) {
       context.showError('Selecione o tipo de documento');
       return;
     }
-
     if (_selectedFile == null) {
       context.showError('Selecione um arquivo');
       return;
     }
-
-    if (mounted) {
-        final address = AddressInfoEntity(
-          title: 'Residência',
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    bool ok = false;
+    try {
+      final address = AddressInfoEntity(
+        title: 'Residência',
         zipCode: _zipController.text.trim(),
         street: _streetController.text.trim(),
         number: _numberController.text.trim(),
-        complement: _complementController.text.trim().isEmpty 
-            ? null 
-            : _complementController.text.trim(),
+        complement: _complementController.text.trim().isEmpty ? null : _complementController.text.trim(),
         city: _cityController.text.trim(),
         state: _stateController.text.trim(),
         district: _districtController.text.trim(),
-        );
-        final document = DocumentsEntity(
-          documentType: widget.document.documentType,
-          documentOption: _selectedDocumentOption!,
-        url: widget.document.url, // Mantém URL original (será atualizada após upload)
-          status: 1,
-          address: address,
-        );
-      widget.onSave(document, _selectedFile!.path);
-        Navigator.of(context).pop();
+      );
+      final document = DocumentsEntity(
+        documentType: widget.document.documentType,
+        documentOption: _selectedDocumentOption!,
+        url: widget.document.url,
+        status: 1,
+        address: address,
+      );
+      ok = await widget.onSave(document, _selectedFile!.path);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted && ok) Navigator.of(context).pop();
   }
 
   @override
@@ -957,7 +960,8 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
                   label: 'Enviar Documento',
                   icon: Icons.upload_file,
                   iconOnLeft: true,
-                  onPressed: _isFormValid ? _handleSubmit : null,
+                  isLoading: _isSubmitting,
+                  onPressed: (_isFormValid && !_isSubmitting) ? _handleSubmit : null,
                 ),
               ),
             ),
@@ -972,7 +976,7 @@ class _ResidenceDocumentModalState extends State<_ResidenceDocumentModal> {
 // Modal de Currículo
 class _CurriculumDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity, String?) onSave;
+  final Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave;
 
   const _CurriculumDocumentModal({
     required this.document,
@@ -989,6 +993,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
   final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
+  bool _isSubmitting = false;
 
   bool get _isFormValid {
     return _selectedDocumentOption != null && _selectedFile != null;
@@ -1087,17 +1092,21 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
 
   Future<void> _handleSubmit() async {
     if (!_isFormValid) return;
-
-    if (_selectedFile != null && mounted) {
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    bool ok = false;
+    try {
       final document = DocumentsEntity(
         documentType: widget.document.documentType,
         documentOption: _selectedDocumentOption!,
-        url: widget.document.url, // Mantém URL original (será atualizada após upload)
+        url: widget.document.url,
         status: 1,
       );
-      widget.onSave(document, _selectedFile!.path);
-      Navigator.of(context).pop();
+      ok = await widget.onSave(document, _selectedFile!.path);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted && ok) Navigator.of(context).pop();
   }
 
   @override
@@ -1297,7 +1306,8 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
                 label: 'Enviar Documento',
                 icon: Icons.upload_file,
                 iconOnLeft: true,
-                onPressed: _isFormValid ? _handleSubmit : null,
+                isLoading: _isSubmitting,
+                onPressed: (_isFormValid && !_isSubmitting) ? _handleSubmit : null,
               ),
             ),
           ),
@@ -1311,7 +1321,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
 // Modal de Antecedentes
 class _AntecedentsDocumentModal extends StatefulWidget {
   final DocumentsEntity document;
-  final Function(DocumentsEntity, String?) onSave;
+  final Future<bool> Function(DocumentsEntity document, String? localFilePath) onSave;
 
   const _AntecedentsDocumentModal({
     required this.document,
@@ -1326,6 +1336,7 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
   final ImagePickerService _imagePicker = ImagePickerService();
   File? _selectedFile;
   String? _fileName;
+  bool _isSubmitting = false;
 
   bool get _isFormValid {
     return _selectedFile != null;
@@ -1424,17 +1435,21 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
 
   Future<void> _handleSubmit() async {
     if (!_isFormValid) return;
-
-    if (_selectedFile != null && mounted) {
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    bool ok = false;
+    try {
       final document = DocumentsEntity(
         documentType: widget.document.documentType,
-        documentOption: widget.document.documentOption,
-        url: widget.document.url, // Mantém URL original (será atualizada após upload)
+        documentOption: widget.document.documentOption ?? '',
+        url: widget.document.url,
         status: 1,
       );
-      widget.onSave(document, _selectedFile!.path);
-      Navigator.of(context).pop();
+      ok = await widget.onSave(document, _selectedFile!.path);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+    if (mounted && ok) Navigator.of(context).pop();
   }
 
   @override
@@ -1652,7 +1667,8 @@ class _AntecedentsDocumentModalState extends State<_AntecedentsDocumentModal> {
                 label: 'Enviar Certidão',
                 icon: Icons.upload_file,
                 iconOnLeft: true,
-                onPressed: _isFormValid ? _handleSubmit : null,
+                isLoading: _isSubmitting,
+                onPressed: (_isFormValid && !_isSubmitting) ? _handleSubmit : null,
               ),
             ),
           ),

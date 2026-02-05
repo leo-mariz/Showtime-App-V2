@@ -354,9 +354,11 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
                     showPhotoIncompleteBadge: _hasIncompleteSection(ensemble, EnsembleInfoType.profilePhoto.name),
                   ),
                   DSSizedBoxSpacing.vertical(16),
-                  // Incompleto: card com mensagem e detalhes. Completo: só o botão de ativar/desativar.
+                  // Incompleto: card com mensagem e detalhes. Completo e aprovado: botão de ativar. Completo e não aprovado: mensagem "em análise".
                   if (hasIncompleteSections) ...[
                     EnsembleCompletenessCard(ensemble: ensemble),
+                  ] else if (ensemble.allMembersApproved != true) ...[
+                    _EnsembleUnderReviewCard(iconColor: onPrimaryContainer),
                   ] else ...[
                     ArtistAreaActivationCard(
                       title: 'Ativar visualização',
@@ -452,6 +454,56 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Card exibido quando o conjunto está completo mas ainda não aprovado (documentos em análise).
+class _EnsembleUnderReviewCard extends StatelessWidget {
+  final Color iconColor;
+
+  const _EnsembleUnderReviewCard({required this.iconColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceContainerHighest = colorScheme.surfaceContainerHighest;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: DSSize.width(24),
+        vertical: DSSize.height(24),
+      ),
+      decoration: BoxDecoration(
+        color: surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(DSSize.width(12)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.hourglass_empty_rounded, color: iconColor, size: DSSize.width(24)),
+          DSSizedBoxSpacing.horizontal(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Conjunto em análise',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+                Text(
+                  'Seu conjunto está em análise. Você poderá ativá-lo quando a verificação dos documentos for concluída.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

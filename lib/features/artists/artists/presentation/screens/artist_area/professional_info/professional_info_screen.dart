@@ -2,6 +2,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/core/shared/widgets/select_talents_sheet.dart';
 import 'package:app/core/shared/widgets/wheel_picker_dialog.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
@@ -27,7 +28,6 @@ class ProfessionalInfoScreen extends StatefulWidget {
 
 class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
   final TextEditingController talentController = TextEditingController();
-  final TextEditingController genrePreferencesController = TextEditingController();
   final TextEditingController minimumShowDurationController = TextEditingController();
   final TextEditingController preparationTimeController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
@@ -58,7 +58,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     
     // Adicionar listeners para detectar mudanças
     talentController.addListener(_onFieldChanged);
-    genrePreferencesController.addListener(_onFieldChanged);
     minimumShowDurationController.addListener(_onFieldChanged);
     preparationTimeController.addListener(_onFieldChanged);
     bioController.addListener(_onFieldChanged);
@@ -79,14 +78,44 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
   }
 
   void _loadTalents() {
-    // Buscar talentos do AppListsBloc
     context.read<AppListsBloc>().add(GetTalentsEvent());
+  }
+
+  void _openTalentsSheet() {
+    final options = _talentOptions.isNotEmpty ? _talentOptions : [
+      'Cantor',
+      'Dançarino',
+      'Músico',
+      'Atores',
+      'Comediantes',
+      'Outros',
+    ];
+    final initial = talentController.text
+        .split(', ')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SelectTalentsSheet(
+        title: 'Talentos',
+        subtitle: 'Selecione seus talentos. Cada talento poderá ter um vídeo de apresentação na área de apresentações.',
+        talentNames: options,
+        initialSelected: initial,
+        confirmButtonLabel: 'Confirmar',
+        onConfirm: (selected) {
+          talentController.text = selected.join(', ');
+          if (ctx.mounted) Navigator.of(ctx).pop();
+        },
+      ),
+    );
   }
 
   @override
   void dispose() {
     talentController.dispose();
-    genrePreferencesController.dispose();
     minimumShowDurationController.dispose();
     preparationTimeController.dispose();
     bioController.dispose();
@@ -125,13 +154,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         talentController.text = professionalInfo.specialty!.join(', ');
       } else {
         talentController.text = '';
-      }
-
-      // Carregar genrePreferences
-      if (professionalInfo?.genrePreferences != null && professionalInfo!.genrePreferences!.isNotEmpty) {
-        genrePreferencesController.text = professionalInfo.genrePreferences!.join(', ');
-      } else {
-        genrePreferencesController.text = '';
       }
 
       // Carregar minimumShowDuration
@@ -232,7 +254,8 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         initialHours: hours,
         initialMinutes: minutes,
         type: WheelPickerType.duration,
-        minimumDuration: const Duration(minutes: 0), // Pode ser zero
+        minimumDuration: const Duration(minutes: 0),
+        maxHours: 96,
       ),
     );
 
@@ -251,10 +274,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         ? null
         : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
     
-    final currentGenrePreferences = genrePreferencesController.text.trim().isEmpty
-        ? null
-        : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
-    
     final currentMinimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final currentPreparationTime = _selectedPreparationTime?.inMinutes;
     final currentRequestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
@@ -263,7 +282,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
     // Comparar com valores iniciais
     final initialSpecialty = _initialProfessionalInfo?.specialty;
-    final initialGenrePreferences = _initialProfessionalInfo?.genrePreferences;
     final initialMinimumShowDuration = _initialProfessionalInfo?.minimumShowDuration;
     final initialPreparationTime = _initialProfessionalInfo?.preparationTime;
     final initialBio = _initialProfessionalInfo?.bio;
@@ -271,13 +289,12 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
     // Verificar se há mudanças
     final specialtyChanged = _compareLists(currentSpecialty, initialSpecialty);
-    final genrePreferencesChanged = _compareLists(currentGenrePreferences, initialGenrePreferences);
     final durationChanged = currentMinimumShowDuration != initialMinimumShowDuration;
     final preparationTimeChanged = currentPreparationTime != initialPreparationTime;
     final bioChanged = currentBio != initialBio;
     final requestMinimumEarlinessChanged = currentRequestMinimumEarliness != initialRequestMinimumEarliness;
 
-    return specialtyChanged || genrePreferencesChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
+    return specialtyChanged || durationChanged || preparationTimeChanged || bioChanged || requestMinimumEarlinessChanged;
   }
 
   bool _compareLists(List<String>? list1, List<String>? list2) {
@@ -301,10 +318,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         ? null
         : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
 
-    final genrePreferences = genrePreferencesController.text.trim().isEmpty
-        ? null
-        : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
-
     final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
     final preparationTime = _selectedPreparationTime?.inMinutes;
     final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
@@ -313,7 +326,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
 
     final professionalInfo = ProfessionalInfoEntity(
       specialty: specialty,
-      genrePreferences: genrePreferences,
       minimumShowDuration: minimumShowDuration,
       preparationTime: preparationTime,
       requestMinimumEarliness: requestMinimumEarliness,
@@ -359,16 +371,12 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                 final specialty = talentController.text.trim().isEmpty
                     ? null
                     : talentController.text.split(', ').where((e) => e.isNotEmpty).toList();
-                final genrePreferences = genrePreferencesController.text.trim().isEmpty
-                    ? null
-                    : genrePreferencesController.text.split(', ').where((e) => e.isNotEmpty).toList();
                 final minimumShowDuration = _selectedMinimumDuration?.inMinutes;
                 final preparationTime = _selectedPreparationTime?.inMinutes;
                 final bio = bioController.text.trim().isEmpty ? null : bioController.text.trim();
                 final requestMinimumEarliness = _selectedRequestMinimumEarliness?.inMinutes;
                 _initialProfessionalInfo = ProfessionalInfoEntity(
                   specialty: specialty,
-                  genrePreferences: genrePreferences,
                   minimumShowDuration: minimumShowDuration,
                   preparationTime: preparationTime,
                   bio: bio,
@@ -446,7 +454,6 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                   DSSizedBoxSpacing.vertical(16),
                   ProfessionalInfoForm(
                     talentController: talentController,
-                    genrePreferencesController: genrePreferencesController,
                     minimumShowDurationController: minimumShowDurationController,
                     preparationTimeController: preparationTimeController,
                     bioController: bioController,
@@ -463,6 +470,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
                         ? 'Selecione'
                         : requestMinimumEarlinessController.text,
                     talentOptions: _talentOptions.isNotEmpty ? _talentOptions : null,
+                    onTalentsTap: _openTalentsSheet,
                   ),
                   DSSizedBoxSpacing.vertical(48),
                   CustomButton(

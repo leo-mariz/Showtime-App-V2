@@ -462,22 +462,14 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
                 .reduce((a, b) => a + b);
             final averageValue = totalValue / availableSlots.length;
             pricePerHour = 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(averageValue)}/hora';
-          } else if (artist.professionalInfo?.hourlyRate != null) {
-            pricePerHour = 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(artist.professionalInfo!.hourlyRate!)}/hora';
-          }
-        } else if (artist.professionalInfo?.hourlyRate != null) {
-          pricePerHour = 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(artist.professionalInfo!.hourlyRate!)}/hora';
-        }
-
-        // Obter gêneros do professionalInfo
-        final genres = artist.professionalInfo?.genrePreferences?.join(', ') ?? 'Sem gêneros definidos';
-
+          } 
+        } 
         // Obter descrição/bio
         final description = artist.professionalInfo?.bio ?? 'Sem descrição disponível';
 
         return ArtistCard(
           musicianName: artist.artistName ?? 'Artista sem nome',
-          genres: genres,
+          talents: artist.professionalInfo?.specialty?.join(', ') ?? 'Sem talentos definidos',
           description: description,
           contracts: artist.rateCount ?? 0,
           rating: artist.rating ?? 0.0,
@@ -582,12 +574,8 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
             .map((slot) => slot.valorHora!)
             .reduce((a, b) => a + b);
         pricePerHour = totalValue / availableSlots.length;
-      } else if (artist.professionalInfo?.hourlyRate != null) {
-        pricePerHour = artist.professionalInfo!.hourlyRate!;
-      }
-    } else if (artist.professionalInfo?.hourlyRate != null) {
-      pricePerHour = artist.professionalInfo!.hourlyRate!;
-    }
+      } 
+    } 
 
     if (_selectedAddress == null) {
       context.showError('Selecione um endereço antes de solicitar');

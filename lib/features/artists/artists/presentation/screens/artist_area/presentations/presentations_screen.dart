@@ -180,7 +180,9 @@ class _PresentationsScreenState extends State<PresentationsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (hasProgress) ...[
-                    Row(children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                       Text(
                         '$current/$total',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(

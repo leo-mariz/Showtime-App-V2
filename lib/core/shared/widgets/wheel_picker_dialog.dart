@@ -16,6 +16,8 @@ class WheelPickerDialog extends StatefulWidget {
   final WheelPickerType type;
   final Duration? minimumDuration; // Apenas para type.duration
   final int? minimumTimeInMinutes; // Horário mínimo em minutos (apenas para type.time)
+  /// Máximo de horas (apenas para type.duration). Ex.: 96 para antecedência até 96h. Padrão 24.
+  final int? maxHours;
 
   const WheelPickerDialog({
     super.key,
@@ -26,6 +28,7 @@ class WheelPickerDialog extends StatefulWidget {
     required this.type,
     this.minimumDuration,
     this.minimumTimeInMinutes,
+    this.maxHours,
   });
 
   @override
@@ -38,7 +41,10 @@ class _WheelPickerDialogState extends State<WheelPickerDialog> {
   late FixedExtentScrollController _hoursController;
   late FixedExtentScrollController _minutesController;
 
-  int get _maxHours => widget.type == WheelPickerType.time ? 23 : 24;
+  int get _maxHours {
+    if (widget.type == WheelPickerType.time) return 23;
+    return widget.maxHours ?? 24;
+  }
   int get _minutesStep => 15;
   int get _minutesCount => 4; // 0, 15, 30, 45
 

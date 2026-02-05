@@ -9,6 +9,8 @@ import 'package:app/features/artists/artist_documents/presentation/bloc/events/d
 import 'package:app/features/artists/artist_documents/presentation/bloc/states/documents_states.dart';
 import 'package:app/features/artists/artist_documents/presentation/widgets/document_card.dart';
 import 'package:app/features/artists/artist_documents/presentation/widgets/document_modals.dart';
+import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
+import 'package:app/features/artists/artists/presentation/bloc/events/artists_events.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,13 +52,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     return document;
   }
 
-  void _handleSaveDocument(DocumentsEntity document, String? localFilePath) {
-    context.read<DocumentsBloc>().add(
-          SetDocumentEvent(
-            document: document,
-            localFilePath: localFilePath,
-          ),
-        );
+  /// Dispara o envio e aguarda o resultado. Retorna true em sucesso, false em falha.
+  Future<bool> _handleSaveDocument(DocumentsEntity document, String? localFilePath) async {
+    final bloc = context.read<DocumentsBloc>();
+    bloc.add(SetDocumentEvent(
+      document: document,
+      localFilePath: localFilePath,
+    ));
+    final result = await bloc.stream
+        .where((s) => s is SetDocumentSuccess || s is SetDocumentFailure)
+        .first;
+    return result is SetDocumentSuccess;
   }
 
   @override
@@ -83,13 +89,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           context.showSuccess('Documento salvo com sucesso!');
           // Buscar documentos atualizados após salvar
           context.read<DocumentsBloc>().add(GetDocumentsEvent());
+          // Atualiza o artista no bloc para a UI refletir incompleteSections (Firestore já atualizou).
+          if (mounted) {
+            context.read<ArtistsBloc>().add(GetArtistEvent());
+          }
         } else if (state is SetDocumentFailure) {
           context.showError(state.error);
         }
       },
       child: BlocBuilder<DocumentsBloc, DocumentsState>(
         builder: (context, state) {
-          final isLoading = state is GetDocumentsLoading || state is SetDocumentLoading;
+          final isLoading = state is GetDocumentsLoading;
 
           return BasePage(
             showAppBar: true,
@@ -158,9 +168,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     DocumentModals.showIdentityModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 
@@ -169,9 +177,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     DocumentModals.showResidenceModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 
@@ -180,9 +186,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     DocumentModals.showCurriculumModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 
@@ -191,9 +195,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     DocumentModals.showAntecedentsModal(
       context: context,
       document: document,
-      onSave: (updatedDocument, localFilePath) {
-        _handleSaveDocument(updatedDocument, localFilePath);
-      },
+      onSave: _handleSaveDocument,
     );
   }
 }

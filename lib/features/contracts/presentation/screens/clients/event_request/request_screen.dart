@@ -80,8 +80,6 @@ class _RequestScreenState extends State<RequestScreen> {
       ? Duration(minutes: widget.artist.professionalInfo!.minimumShowDuration!)
       : const Duration(minutes: 30);
 
-  double get _defaultPricePerHour => widget.artist.professionalInfo?.hourlyRate ?? 0.0;
-
   @override
   void initState() {
     super.initState();
@@ -203,7 +201,7 @@ class _RequestScreenState extends State<RequestScreen> {
   double get _totalValue {
     if (_selectedDuration == null) return 0.0;
     // Usar o valor do slot selecionado, se disponível
-    final pricePerHour = _selectedPricePerHour ?? _defaultPricePerHour;
+    final pricePerHour = _selectedPricePerHour ?? 0;
     // Calcular valor por minuto: pricePerHour / 60
     final valorPorMinuto = pricePerHour / 60;
     // Total = valorPorMinuto * duração em minutos
@@ -787,7 +785,7 @@ class _RequestScreenState extends State<RequestScreen> {
                 label: 'Valor/h',
                 value: _selectedPricePerHour != null
                     ? 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(_selectedPricePerHour!)}'
-                    : 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(_defaultPricePerHour)}',
+                    : 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(_selectedPricePerHour!)}',
               ),
               
               DSSizedBoxSpacing.vertical(16),

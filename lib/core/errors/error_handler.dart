@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 /// Utilitário centralizado para conversão de exceções para failures
 /// 
@@ -23,8 +27,9 @@ class ErrorHandler {
   /// Ordem de verificação:
   /// 1. AppException (custom exceptions)
   /// 2. FirebaseAuthException (Firebase específico)
-  /// 3. Exception genérica
-  /// 4. Objeto desconhecido
+  /// 3. Exceções de rede (SocketException, TimeoutException, etc.)
+  /// 4. Exception genérica
+  /// 5. Objeto desconhecido
   static Failure handle(dynamic error) {
     // 1. Nossas exceções customizadas
     if (error is AppException) {
@@ -36,7 +41,25 @@ class ErrorHandler {
       return _handleFirebaseAuthException(error);
     }
     
-    // 3. Exceções genéricas
+    // 3. Exceções de rede (sem conexão, timeout, falha de conexão)
+    if (error is SocketException ||
+        error is TimeoutException ||
+        error is HandshakeException ||
+        error is http.ClientException) {
+      return NetworkFailure(
+        'Sem conexão. Verifique sua internet e tente novamente.',
+        originalError: error,
+      );
+    }
+    if (error is FirebaseException &&
+        (error.code == 'unavailable' || error.code == 'deadline-exceeded')) {
+      return NetworkFailure(
+        'Sem conexão. Verifique sua internet e tente novamente.',
+        originalError: error,
+      );
+    }
+    
+    // 4. Exceções genéricas
     if (error is Exception) {
       return UnknownFailure(
         'Erro inesperado: ${error.toString()}',
@@ -44,7 +67,7 @@ class ErrorHandler {
       );
     }
     
-    // 4. Objetos desconhecidos
+    // 5. Objetos desconhecidos
     return UnknownFailure(
       'Erro desconhecido: ${error.toString()}',
       originalError: error,

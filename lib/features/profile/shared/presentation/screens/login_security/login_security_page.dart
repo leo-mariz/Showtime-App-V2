@@ -84,21 +84,27 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
   }
 
   Future<bool?> _showDisableDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryContainer = colorScheme.primaryContainer;
     return ConfirmationDialog.show(
       context: context,
       title: 'Desabilitar Biometria',
       message: 'Para ativar novamente a biometria, você precisará fazer logout e login novamente. Deseja continuar?',
       confirmText: 'Confirmar',
+      confirmButtonTextColor: primaryContainer,
       cancelText: 'Cancelar',
     );
   }
 
   Future<bool?> _showEnableDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryContainer = colorScheme.primaryContainer;
     return ConfirmationDialog.show(
       context: context,
       title: 'Habilitar Biometria',
       message: 'Para habilitar a biometria, você precisará fazer login novamente. Deseja continuar?',
       confirmText: 'Confirmar',
+      confirmButtonTextColor: primaryContainer,
       cancelText: 'Cancelar',
     );
   }

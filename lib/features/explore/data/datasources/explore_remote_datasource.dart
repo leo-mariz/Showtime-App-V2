@@ -1,9 +1,12 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_availability_day_reference.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
-import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface do DataSource remoto (Firestore) para Explore
 /// Responsável APENAS por operações de busca no Firestore para explorar
@@ -46,6 +49,22 @@ abstract class IExploreRemoteDataSource {
   /// O filtro de isActive e slots available será feito no UseCase
   Future<List<AvailabilityDayEntity>> getArtistAllAvailabilities(
     String artistId,
+  );
+
+  // ==================== ENSEMBLES (CONJUNTOS) ====================
+
+  /// Busca todos os conjuntos ativos, sem seções incompletas e com todos os membros aprovados.
+  Future<List<EnsembleEntity>> getActiveApprovedEnsembles();
+
+  /// Busca disponibilidade de um dia específico de um conjunto.
+  Future<AvailabilityDayEntity?> getEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+  );
+
+  /// Busca todas as disponibilidades de um conjunto.
+  Future<List<AvailabilityDayEntity>> getEnsembleAllAvailabilities(
+    String ensembleId,
   );
 }
 
@@ -213,6 +232,197 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  // ==================== ENSEMBLES (CONJUNTOS) ====================
+
+  static const String _firestoreFieldEnsembleIsActive = 'isActive';
+  static const String _firestoreFieldHasIncompleteSections =
+      'hasIncompleteSections';
+  static const String _firestoreFieldAllMembersApproved = 'allMembersApproved';
+
+  @override
+  Future<List<EnsembleEntity>> getActiveApprovedEnsembles() async {
+    try {
+      final ref =
+          EnsembleEntityReference.firebaseEnsemblesCollectionReference(
+        firestore,
+      );
+      final querySnapshot = await ref
+          .where(_firestoreFieldEnsembleIsActive, isEqualTo: true)
+          .where(_firestoreFieldHasIncompleteSections, isEqualTo: false)
+          .where(_firestoreFieldAllMembersApproved, isEqualTo: true)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return [];
+      }
+
+      final results = <EnsembleEntity>[];
+      for (var i = 0; i < querySnapshot.docs.length; i++) {
+        final doc = querySnapshot.docs[i];
+        try {
+          final map = doc.data() as Map<String, dynamic>;
+          final cleanedMap = _convertFirestoreTimestampsForMapper(map);
+          final ensemble = EnsembleEntityMapper.fromMap(cleanedMap);
+          results.add(ensemble.copyWith(id: doc.id));
+        } catch (e, stackTrace) {
+          debugPrint(
+            '[ExploreRemote] getActiveApprovedEnsembles: erro ao mapear doc[$i] id=${doc.id}: $e',
+          );
+          debugPrint(stackTrace.toString());
+          throw ServerException(
+            'Erro ao mapear conjunto "${doc.id}": $e',
+            originalError: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      return results;
+    } on FirebaseException catch (e, stackTrace) {
+      debugPrint('[ExploreRemote] getActiveApprovedEnsembles FirebaseException: ${e.message}');
+      throw ServerException(
+        'Erro ao buscar conjuntos no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('[ExploreRemote] getActiveApprovedEnsembles: $e');
+      debugPrint(stackTrace.toString());
+      throw ServerException(
+        'Erro inesperado ao buscar conjuntos para explorar: $e',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<AvailabilityDayEntity?> getEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+  ) async {
+    try {
+      if (ensembleId.isEmpty) {
+        throw const ValidationException(
+          'ID do conjunto não pode ser vazio',
+        );
+      }
+
+      final year = date.year.toString().padLeft(4, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final day = date.day.toString().padLeft(2, '0');
+      final dayId = '$year-$month-$day';
+
+      final docRef = EnsembleAvailabilityDayReference.firestoreDocument(
+        firestore,
+        ensembleId,
+        dayId,
+      );
+
+      final snapshot = await docRef.get();
+
+      if (!snapshot.exists) {
+        return null;
+      }
+
+      final dayMap = snapshot.data() as Map<String, dynamic>;
+      final cleanedMap = _convertTimestamps(dayMap);
+      final availabilityDay =
+          AvailabilityDayEntityMapper.fromMap(cleanedMap);
+      return availabilityDay.copyWith(id: dayId);
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar disponibilidade do dia do conjunto no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      throw ServerException(
+        'Erro inesperado ao buscar disponibilidade do dia do conjunto para explorar',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<List<AvailabilityDayEntity>> getEnsembleAllAvailabilities(
+    String ensembleId,
+  ) async {
+    try {
+      if (ensembleId.isEmpty) {
+        throw const ValidationException(
+          'ID do conjunto não pode ser vazio',
+        );
+      }
+
+      final collectionRef =
+          EnsembleAvailabilityDayReference.firestoreCollection(
+        firestore,
+        ensembleId,
+      );
+
+      final querySnapshot = await collectionRef.get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return [];
+      }
+
+      final availabilities = <AvailabilityDayEntity>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          final dayMap = doc.data() as Map<String, dynamic>;
+          final cleanedMap = _convertTimestamps(dayMap);
+          final availabilityDay =
+              AvailabilityDayEntityMapper.fromMap(cleanedMap);
+          availabilities.add(availabilityDay.copyWith(id: doc.id));
+        } catch (e, stackTrace) {
+          print(
+            '🔴 [REMOTE_DS] Erro ao processar documento conjunto ${doc.id}: $e $stackTrace',
+          );
+        }
+      }
+      return availabilities;
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar todas as disponibilidades do conjunto no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      if (e is ValidationException) rethrow;
+      throw ServerException(
+        'Erro inesperado ao buscar todas as disponibilidades do conjunto para explorar',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Converte Timestamps do Firestore para milissegundos (int).
+  /// Usado em mapas que serão passados ao dart_mappable, que espera String ou num para DateTime.
+  Map<String, dynamic> _convertFirestoreTimestampsForMapper(Map<String, dynamic> data) {
+    final converted = Map<String, dynamic>.from(data);
+    for (final key in converted.keys.toList()) {
+      final value = converted[key];
+      if (value is Timestamp) {
+        converted[key] = value.millisecondsSinceEpoch;
+      } else if (value is Map<String, dynamic>) {
+        converted[key] = _convertFirestoreTimestampsForMapper(value);
+      } else if (value is List) {
+        converted[key] = value.map((e) {
+          if (e is Timestamp) return e.millisecondsSinceEpoch;
+          if (e is Map<String, dynamic>) return _convertFirestoreTimestampsForMapper(e);
+          return e;
+        }).toList();
+      }
+    }
+    return converted;
   }
 
   /// Converte timestamps do Firestore para DateTime

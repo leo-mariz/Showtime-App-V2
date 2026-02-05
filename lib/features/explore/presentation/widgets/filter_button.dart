@@ -11,13 +11,13 @@ class FilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
       return CustomIconButton(
-        icon: Icons.tune,
+        icon: Icons.filter_alt_outlined,
         onPressed: onPressed,
-        color: colorScheme.onPrimary,
-        size: DSSize.width(28),
-        backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
+        color: colorScheme.onPrimaryContainer,
+        size: DSSize.width(20),
+        backgroundColor: colorScheme.surface,
         padding: EdgeInsets.all(DSSize.width(12)),
-        sizeBackground: Size(DSSize.width(48), DSSize.height(48)),
+        sizeBackground: Size(DSSize.width(30), DSSize.height(30)),
         showNotification: false,
       );
     }

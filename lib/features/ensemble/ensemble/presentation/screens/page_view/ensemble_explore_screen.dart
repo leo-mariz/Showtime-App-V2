@@ -154,9 +154,13 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
 
   void _onRequestPressed(BuildContext context) {
     final router = context.router;
-    
+
     if (_selectedAddress == null) {
       context.showError('Selecione um endereço antes de solicitar');
+      return;
+    }
+    if (widget.artist == null) {
+      context.showError('Solicitação indisponível para este conjunto no momento');
       return;
     }
 
@@ -181,7 +185,8 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final profilePhotoUrl = ensemble?.profilePhotoUrl ?? artist?.profilePicture;
     final additionalMembersCount = ensemble?.members?.length ?? 0;
     final totalDisplayMembers = 1 + additionalMembersCount;
-    final displayTitle = '${artist?.artistName ?? 'Artista'}${additionalMembersCount > 0 ? ' +$additionalMembersCount' : ''}';
+    // Título: só o nome do artista/dono; número de integrantes fica no badge abaixo
+    final displayTitle = artist?.artistName ?? 'Conjunto';
     final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final bio = professionalInfo?.bio;
 
@@ -346,13 +351,22 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                         DSSizedBoxSpacing.vertical(24),
                       ],
 
-                      TabsSection(
-                        artist: widget.artist!,
-                        onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
-                        ensemble: ensemble,
-                        ownerDisplayName: artist?.artistName,
-                        calendarTab: _buildCalendarTab(colorScheme, textTheme),
-                      ),
+                      // Só monta TabsSection quando já temos artist ou ensemble (ensemble carrega de forma assíncrona)
+                      if (artist != null || ensemble != null)
+                        TabsSection(
+                          artist: widget.artist,
+                          onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
+                          ensemble: ensemble,
+                          ownerDisplayName: artist?.artistName,
+                          calendarTab: _buildCalendarTab(colorScheme, textTheme),
+                        )
+                      else
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: DSSize.height(24)),
+                          child: Center(
+                            child: CircularProgressIndicator(color: colorScheme.primary),
+                          ),
+                        ),
 
                       DSSizedBoxSpacing.vertical(100), // Espaço para o footer
                     ],
@@ -541,7 +555,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
               availabilities: availabilities,
               selectedDate: widget.selectedDate,
               onDateSelected: (date) {
-                if (_selectedAddress != null && !widget.viewOnly) {
+                if (_selectedAddress != null && !widget.viewOnly && widget.artist != null) {
                   context.router.push(
                     RequestRoute(
                       selectedDate: date,
@@ -551,6 +565,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                   );
                 }
               },
+              requestMinimumEarlinessMinutes: _currentEnsemble?.professionalInfo?.requestMinimumEarliness,
             ),
           );
         }

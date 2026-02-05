@@ -94,7 +94,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
                   child: Icon(
                     Icons.warning_amber_rounded,
                     size: DSSize.width(24),
-                    color: colorScheme.error,
+                    color: colorScheme.onTertiaryContainer,
                   ),
                 ),
                 DSSizedBoxSpacing.horizontal(12),
@@ -132,7 +132,7 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
               _Section(
                 title: 'Aprovação',
                 icon: Icons.verified_user_outlined,
-                iconColor: colorScheme.onTertiaryContainer,
+                iconColor: colorScheme.onSecondaryContainer,
                 items: approvalItems,
               ),
               DSSizedBoxSpacing.vertical(16),
@@ -204,7 +204,7 @@ class _Section extends StatelessWidget {
                 Text(
                   '→ ',
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.primary,
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

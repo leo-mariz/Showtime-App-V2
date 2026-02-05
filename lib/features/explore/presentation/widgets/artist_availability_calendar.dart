@@ -3,23 +3,29 @@ import 'package:app/core/design_system/padding/ds_padding.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/availability/time_slot_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
+import 'package:app/core/utils/minimum_earliness_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Widget de calendário simplificado para mostrar disponibilidades do artista
 /// 
-/// Mostra os dias disponíveis destacados e os preços médios
+/// Mostra os dias disponíveis destacados e os preços médios.
+/// Respeita antecedência mínima: só considera slots a partir de [now + requestMinimumEarlinessMinutes].
 class ArtistAvailabilityCalendar extends StatelessWidget {
   final List<AvailabilityDayEntity> availabilities;
   final DateTime? selectedDate;
   final Function(DateTime)? onDateSelected;
+  /// Antecedência mínima em minutos (ex.: 720 = 12h). Só slots a partir de agora + este valor contam.
+  final int? requestMinimumEarlinessMinutes;
 
   const ArtistAvailabilityCalendar({
     super.key,
     required this.availabilities,
     this.selectedDate,
     this.onDateSelected,
+    this.requestMinimumEarlinessMinutes,
   });
 
   /// Retorna chave de data no formato YYYY-MM-DD
@@ -39,27 +45,40 @@ class ArtistAvailabilityCalendar extends StatelessWidget {
     }
   }
 
-  /// Verifica se o dia tem disponibilidade
+  /// Cutoff: primeiro momento em que um slot pode ser considerado (agora + antecedência mínima).
+  DateTime _slotCutoff() {
+    return slotCutoffDateTime(requestMinimumEarlinessMinutes);
+  }
+
+  /// Verifica se o slot está disponível e no ou após o cutoff de antecedência.
+  bool _isSlotAvailableAndAfterCutoff(AvailabilityDayEntity dayEntity, TimeSlot slot, DateTime dayOnly) {
+    if (slot.status != TimeSlotStatusEnum.available) return false;
+    if (requestMinimumEarlinessMinutes == null || requestMinimumEarlinessMinutes! <= 0) return true;
+    return isSlotAtOrAfterCutoff(dayOnly, slot.startTime, _slotCutoff());
+  }
+
+  /// Verifica se o dia tem disponibilidade (considerando antecedência mínima).
   bool _hasAvailability(DateTime day) {
     try {
       final availability = _getAvailabilityForDay(day);
-      return availability != null && 
-             availability.isActive &&
-             (availability.slots?.any((slot) => slot.status == TimeSlotStatusEnum.available) ?? false);
+      if (availability == null || !availability.isActive) return false;
+      final dayOnly = DateTime(day.year, day.month, day.day);
+      return availability.slots?.any((slot) => _isSlotAvailableAndAfterCutoff(availability, slot, dayOnly)) ?? false;
     } catch (_) {
       return false;
     }
   }
 
-  /// Calcula preço médio para um dia
+  /// Calcula preço médio para um dia (apenas slots disponíveis e após o cutoff).
   double? _getAveragePrice(DateTime day) {
     try {
       final availability = _getAvailabilityForDay(day);
       if (availability == null) return null;
+      final dayOnly = DateTime(day.year, day.month, day.day);
 
       final availableSlots = availability.slots
-          ?.where((slot) => 
-              slot.status == TimeSlotStatusEnum.available && 
+          ?.where((slot) =>
+              _isSlotAvailableAndAfterCutoff(availability, slot, dayOnly) &&
               slot.valorHora != null)
           .toList() ?? [];
 
@@ -68,7 +87,7 @@ class ArtistAvailabilityCalendar extends StatelessWidget {
       final totalValue = availableSlots
           .map((slot) => slot.valorHora!)
           .reduce((a, b) => a + b);
-      
+
       return totalValue / availableSlots.length;
     } catch (_) {
       return null;

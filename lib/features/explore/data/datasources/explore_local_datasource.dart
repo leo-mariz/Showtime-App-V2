@@ -1,8 +1,10 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/auto_cache_service.dart';
-import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 
 /// Interface do DataSource local (cache) para Explore
 /// Responsável APENAS por operações de cache com timestamp
@@ -83,6 +85,40 @@ abstract class IExploreLocalDataSource {
   /// [artistId]: ID do artista
   Future<bool> isAllAvailabilitiesCacheValid(String artistId);
 
+  // ==================== ENSEMBLES CACHE ====================
+
+  Future<List<EnsembleEntity>?> getCachedEnsembles();
+  Future<bool> isEnsemblesCacheValid();
+  Future<void> cacheEnsembles(List<EnsembleEntity> ensembles);
+
+  /// [ensembleId]: ID do conjunto. [date]: Data.
+  Future<AvailabilityDayEntity?> getCachedEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+  );
+  Future<bool> isEnsembleAvailabilityDayCacheValid(
+    String ensembleId,
+    DateTime date,
+  );
+  Future<void> cacheEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+    AvailabilityDayEntity? availabilityDay,
+  );
+  Future<void> clearEnsembleAvailabilityDayCache(
+    String ensembleId,
+    DateTime date,
+  );
+  Future<void> clearAllEnsembleAvailabilitiesCache(String ensembleId);
+
+  Future<List<DateTime>?> getCachedAllEnsembleAvailabilities(
+    String ensembleId,
+  );
+  Future<void> cacheAllEnsembleAvailabilities(
+    String ensembleId,
+    List<DateTime> allAvailabilities,
+  );
+  Future<bool> isAllEnsembleAvailabilitiesCacheValid(String ensembleId);
 
   /// Limpa todo o cache de explorar
   Future<void> clearExploreCache();
@@ -101,7 +137,10 @@ class ExploreLocalDataSourceImpl implements IExploreLocalDataSource {
 
   /// Chave do campo 'allAvailabilities' dentro do objeto de cache
   static const String _cacheFieldAllAvailabilities = 'artistDaysAvailable';
-  
+
+  /// Chave do campo 'ensembles' no cache de conjuntos
+  static const String _cacheFieldEnsembles = 'ensembles';
+
   /// Chave do campo 'timestamp' dentro do objeto de cache
   static const String _cacheFieldTimestamp = 'timestamp';
 
@@ -393,14 +432,259 @@ class ExploreLocalDataSourceImpl implements IExploreLocalDataSource {
     }
   }
 
+  // ==================== ENSEMBLES CACHE ====================
+
+  @override
+  Future<List<EnsembleEntity>?> getCachedEnsembles() async {
+    try {
+      if (!await isEnsemblesCacheValid()) return null;
+      final cached = await autoCacheService.getCachedDataString(
+        EnsembleWithAvailabilitiesEntityReference.ensemblesCacheKey,
+      );
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldEnsembles)) {
+        return null;
+      }
+      final list = cached[_cacheFieldEnsembles] as List<dynamic>;
+      return list
+          .map((json) =>
+              EnsembleEntityMapper.fromMap(json as Map<String, dynamic>))
+          .toList();
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao buscar conjuntos do cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> isEnsemblesCacheValid() async {
+    try {
+      final cached = await autoCacheService.getCachedDataString(
+        EnsembleWithAvailabilitiesEntityReference.ensemblesCacheKey,
+      );
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldTimestamp)) {
+        return false;
+      }
+      final timestamp = cached[_cacheFieldTimestamp] as int;
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      return DateTime.now().difference(cacheTime) <
+          EnsembleWithAvailabilitiesEntityReference.ensemblesCacheValidity;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> cacheEnsembles(List<EnsembleEntity> ensembles) async {
+    try {
+      final json = ensembles.map((e) => e.toMap()).toList();
+      await autoCacheService.cacheDataString(
+        EnsembleWithAvailabilitiesEntityReference.ensemblesCacheKey,
+        {
+          _cacheFieldEnsembles: json,
+          _cacheFieldTimestamp: DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao salvar conjuntos no cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  String _getEnsembleAvailabilityDayCacheKey(String ensembleId, DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    final dayId = '$year-$month-$day';
+    return '${EnsembleWithAvailabilitiesEntityReference.availabilitiesCacheKeyPrefix}${ensembleId}_$dayId';
+  }
+
+  @override
+  Future<AvailabilityDayEntity?> getCachedEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+  ) async {
+    try {
+      if (!await isEnsembleAvailabilityDayCacheValid(ensembleId, date)) {
+        return null;
+      }
+      final key = _getEnsembleAvailabilityDayCacheKey(ensembleId, date);
+      final cached = await autoCacheService.getCachedDataString(key);
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldAvailabilityDay)) {
+        return null;
+      }
+      final data = cached[_cacheFieldAvailabilityDay];
+      if (data == null) return null;
+      return AvailabilityDayEntityMapper.fromMap(
+        data as Map<String, dynamic>,
+      );
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao buscar disponibilidade do dia do conjunto do cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> isEnsembleAvailabilityDayCacheValid(
+    String ensembleId,
+    DateTime date,
+  ) async {
+    try {
+      final key = _getEnsembleAvailabilityDayCacheKey(ensembleId, date);
+      final cached = await autoCacheService.getCachedDataString(key);
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldTimestamp)) {
+        return false;
+      }
+      final timestamp = cached[_cacheFieldTimestamp] as int;
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      return DateTime.now().difference(cacheTime) <
+          EnsembleWithAvailabilitiesEntityReference.availabilitiesCacheValidity;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> cacheEnsembleAvailabilityDay(
+    String ensembleId,
+    DateTime date,
+    AvailabilityDayEntity? availabilityDay,
+  ) async {
+    try {
+      final key = _getEnsembleAvailabilityDayCacheKey(ensembleId, date);
+      await autoCacheService.cacheDataString(key, {
+        _cacheFieldAvailabilityDay: availabilityDay?.toMap(),
+        _cacheFieldTimestamp: DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao salvar disponibilidade do dia do conjunto no cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> clearEnsembleAvailabilityDayCache(
+    String ensembleId,
+    DateTime date,
+  ) async {
+    try {
+      final key = _getEnsembleAvailabilityDayCacheKey(ensembleId, date);
+      await autoCacheService.deleteCachedDataString(key);
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao limpar cache de disponibilidade do dia do conjunto',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  String _getAllEnsembleAvailabilitiesCacheKey(String ensembleId) {
+    return '${EnsembleWithAvailabilitiesEntityReference.availabilitiesCacheKeyPrefix}${ensembleId}_ensembleDaysAvailable';
+  }
+
+  @override
+  Future<void> clearAllEnsembleAvailabilitiesCache(String ensembleId) async {
+    try {
+      await autoCacheService.deleteCachedDataString(
+        _getAllEnsembleAvailabilitiesCacheKey(ensembleId),
+      );
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao limpar cache de todas as disponibilidades do conjunto',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<List<DateTime>?> getCachedAllEnsembleAvailabilities(
+    String ensembleId,
+  ) async {
+    try {
+      if (!await isAllEnsembleAvailabilitiesCacheValid(ensembleId)) {
+        return null;
+      }
+      final key = _getAllEnsembleAvailabilitiesCacheKey(ensembleId);
+      final cached = await autoCacheService.getCachedDataString(key);
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldAllAvailabilities)) {
+        return null;
+      }
+      final list = cached[_cacheFieldAllAvailabilities] as List<dynamic>;
+      return list.map((d) {
+        if (d is int) return DateTime.fromMillisecondsSinceEpoch(d);
+        if (d is String) return DateTime.parse(d);
+        throw const FormatException('Formato de data inválido no cache');
+      }).toList();
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao buscar todas as disponibilidades do conjunto do cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> cacheAllEnsembleAvailabilities(
+    String ensembleId,
+    List<DateTime> allAvailabilities,
+  ) async {
+    try {
+      final key = _getAllEnsembleAvailabilitiesCacheKey(ensembleId);
+      final timestamps =
+          allAvailabilities.map((d) => d.millisecondsSinceEpoch).toList();
+      await autoCacheService.cacheDataString(key, {
+        _cacheFieldAllAvailabilities: timestamps,
+        _cacheFieldTimestamp: DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e, stackTrace) {
+      throw CacheException(
+        'Erro ao salvar todas as disponibilidades do conjunto no cache',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> isAllEnsembleAvailabilitiesCacheValid(String ensembleId) async {
+    try {
+      final key = _getAllEnsembleAvailabilitiesCacheKey(ensembleId);
+      final cached = await autoCacheService.getCachedDataString(key);
+      if (cached.isEmpty || !cached.containsKey(_cacheFieldTimestamp)) {
+        return false;
+      }
+      final timestamp = cached[_cacheFieldTimestamp] as int;
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      return DateTime.now().difference(cacheTime) <
+          EnsembleWithAvailabilitiesEntityReference.availabilitiesCacheValidity;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   Future<void> clearExploreCache() async {
     try {
       await autoCacheService.deleteCachedDataString(
         ArtistWithAvailabilitiesEntityReference.artistsCacheKey,
       );
-      // Nota: Não limpa disponibilidades individuais aqui
-      // Elas expiram naturalmente ou podem ser limpas individualmente
+      await autoCacheService.deleteCachedDataString(
+        EnsembleWithAvailabilitiesEntityReference.ensemblesCacheKey,
+      );
     } catch (e, stackTrace) {
       throw CacheException(
         'Erro ao limpar cache de explorar',

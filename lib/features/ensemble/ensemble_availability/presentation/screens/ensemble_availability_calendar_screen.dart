@@ -240,6 +240,17 @@ class _EnsembleAvailabilityCalendarScreenState
                     ),
                     child: Row(
                       children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          icon: Icon(
+                            Icons.arrow_back_ios_new_outlined,
+                            size: DSSize.width(22),
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          tooltip: 'Voltar',
+                        ),
                         DSSizedBoxSpacing.horizontal(8),
                         // Botão limpar seleção (aparece quando tem seleção múltipla)
                         Text('Disponibilidades', 
@@ -316,7 +327,7 @@ class _EnsembleAvailabilityCalendarScreenState
     // ════════════════════════════════════════════════════════════════
     // LOADING
     // ════════════════════════════════════════════════════════════════
-    if (state is GetAllAvailabilitiesLoading) {
+    if (state is GetAllAvailabilitiesLoading || state is GetOrganizedDayAfterVerificationLoading || state is OpenPeriodLoading || state is ClosePeriodLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

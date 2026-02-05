@@ -54,8 +54,9 @@ class ArtistCard extends StatelessWidget {
         : rating.toStringAsFixed(1);
 
     return CustomCard(
-      borderRadius: 12,
+      borderRadius: DSSize.width(12),
       margin: EdgeInsets.only(bottom: DSSize.height(16)),
+      padding: EdgeInsets.only(top: DSSize.height(8), bottom: DSSize.height(12), left: DSSize.width(12), right: DSSize.width(12)),
       onTap: onTap,
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

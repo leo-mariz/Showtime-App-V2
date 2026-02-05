@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 
 /// Seção de tabs para Show, Vídeos e Disponibilidades.
 /// Para grupos (ensemble), passe [ensemble] e [ownerDisplayName] para exibir dados do grupo e tab "Integrantes" com nome + talentos.
+/// [artist] é opcional quando [ensemble] está presente (ex.: tela do conjunto aberta pela aba Conjuntos).
 class TabsSection extends StatelessWidget {
-  final ArtistEntity artist;
+  final ArtistEntity? artist;
   final Function(String videoUrl)? onVideoTap;
   final Widget? calendarTab; // Tab customizada para calendário
   /// Nomes dos integrantes (para artista com lista simples); quando não vazio, adiciona tab "Integrantes"
@@ -21,18 +22,18 @@ class TabsSection extends StatelessWidget {
 
   const TabsSection({
     super.key,
-    required this.artist,
+    this.artist,
     this.onVideoTap,
     this.calendarTab,
     this.memberNames,
     this.ensemble,
     this.ownerDisplayName,
-  });
+  }) : assert(artist != null || ensemble != null, 'Informe artist ou ensemble');
 
   bool get _hasTalents =>
       ensemble != null
           ? (ensemble!.presentationVideoUrl != null && ensemble!.presentationVideoUrl!.isNotEmpty)
-          : (artist.presentationMedias?.isNotEmpty ?? false);
+          : (artist?.presentationMedias?.isNotEmpty ?? false);
 
   bool get _hasMembersTab =>
       ensemble != null
@@ -193,7 +194,7 @@ class TabsSection extends StatelessWidget {
   Widget _buildGenresTab(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final professionalInfo = ensemble?.professionalInfo ?? artist.professionalInfo;
+    final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final isEnsemble = ensemble != null;
 
     // Para conjunto não exibimos specialty (talento é por integrante)
@@ -312,7 +313,7 @@ class TabsSection extends StatelessWidget {
     if (ensemble != null && ensemble!.presentationVideoUrl != null && ensemble!.presentationVideoUrl!.isNotEmpty) {
       talents = {'Apresentação': ensemble!.presentationVideoUrl!};
     } else {
-      talents = artist.presentationMedias ?? {};
+      talents = artist?.presentationMedias ?? {};
     }
 
     if (talents.isEmpty) {

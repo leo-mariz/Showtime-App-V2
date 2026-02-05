@@ -30,8 +30,9 @@ import 'package:app/features/explore/data/datasources/explore_local_datasource.d
 import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
 import 'package:app/features/explore/data/repositories/explore_repository_impl.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
-import 'package:app/features/explore/domain/usecases/get_artist_active_availabilities_usecase.dart';
-import 'package:app/features/explore/domain/usecases/get_artists_with_availabilities_filtered_usecase.dart';
+import 'package:app/features/explore/domain/usecases/artists/get_artist_active_availabilities_usecase.dart';
+import 'package:app/features/explore/domain/usecases/artists/get_artists_with_availabilities_filtered_usecase.dart';
+import 'package:app/features/explore/domain/usecases/ensembles/get_ensembles_with_availabilities_filtered_usecase.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/ensemble/ensemble/data/datasources/ensemble_local_datasource.dart';
 import 'package:app/features/ensemble/ensemble/data/datasources/ensemble_remote_datasource.dart';
@@ -679,7 +680,12 @@ ExploreBloc _createExploreBloc(
     calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
   );
 
-  // Criar UseCase para buscar todas as disponibilidades ativas de um artista
+  final getEnsemblesWithAvailabilitiesFilteredUseCase =
+      GetEnsemblesWithAvailabilitiesFilteredUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+  );
+
   final getArtistActiveAvailabilitiesUseCase = GetArtistActiveAvailabilitiesUseCase(
     repository: exploreRepository,
     calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
@@ -687,6 +693,7 @@ ExploreBloc _createExploreBloc(
 
   return ExploreBloc(
     getArtistsWithAvailabilitiesFilteredUseCase: getArtistsWithAvailabilitiesFilteredUseCase,
+    getEnsemblesWithAvailabilitiesFilteredUseCase: getEnsemblesWithAvailabilitiesFilteredUseCase,
     getArtistActiveAvailabilitiesUseCase: getArtistActiveAvailabilitiesUseCase,
     getUserUidUseCase: getUserUidUseCase,
   );

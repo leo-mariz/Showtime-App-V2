@@ -38,6 +38,9 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
   late PageController _chartPageController;
   int _currentChartIndex = 0;
   bool _hasLoadedInitialData = false;
+  /// Último artista conhecido; evita remontar a tela ao alternar ativar/desativar
+  /// (quando o bloc emite GetArtistLoading após UpdateArtistActiveStatusSuccess).
+  dynamic _lastArtist;
 
   final List<String> _chartTitles = [
     'Receita',
@@ -166,7 +169,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
             listener: (context, state) {
               if (state is UpdateArtistActiveStatusSuccess) {
                 context.showSuccess('Visibilidade do perfil atualizada.');
-                _refreshDashboard();
+                // Não chamar _refreshDashboard(): o bloc já dispara GetArtistEvent
+                // e não queremos remontar a tela; apenas o botão reflete o novo estado.
               } else if (state is UpdateArtistActiveStatusFailure) {
                 context.showError(state.error);
               } else if (state is UpdateArtistSuccess ||
@@ -185,12 +189,18 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
             builder: (context, artistsState) {
               return BlocBuilder<ArtistDashboardBloc, ArtistDashboardState>(
                 builder: (context, dashboardState) {
-                  // Verificar se está carregando
-                  final isLoading = dashboardState is GetArtistDashboardStatsLoading ||
-                      artistsState is GetArtistLoading;
-
-                  // Obter dados do artista
-                  final artist = artistsState is GetArtistSuccess ? artistsState.artist : null;
+                  // Manter último artista para não remontar a tela ao alternar ativar/desativar.
+                  if (artistsState is GetArtistSuccess) {
+                    _lastArtist = artistsState.artist;
+                  }
+                  final artist = artistsState is GetArtistSuccess
+                      ? artistsState.artist
+                      : _lastArtist;
+                  final stats = dashboardState is GetArtistDashboardStatsSuccess
+                      ? dashboardState.stats
+                      : null;
+                  final isLoading = (dashboardState is GetArtistDashboardStatsLoading && stats == null) ||
+                      (artistsState is GetArtistLoading && _lastArtist == null);
                   final artistName = artist?.artistName ?? '';
                   final artistPhoto = artist?.profilePicture;
                   final isActive = artist?.isActive ?? false;
@@ -198,12 +208,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                   final isApproved = artist?.approved ?? false;
                   final isUpdatingActiveStatus = artistsState is UpdateArtistActiveStatusLoading;
 
-                  // Obter estatísticas
-                  final stats = dashboardState is GetArtistDashboardStatsSuccess
-                      ? dashboardState.stats
-                      : null;
-
-                  if (isLoading && stats == null) {
+                  if (isLoading) {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
@@ -231,15 +236,15 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                           ArtistCompletenessCard(artist: artist),
                           DSSizedBoxSpacing.vertical(24),
                         ] else if (artist != null && !isApproved) ...[
-                          _ArtistPendingApprovalCard(iconColor: colorScheme.onPrimaryContainer),
+                          _ArtistPendingApprovalCard(iconColor: colorScheme.onTertiaryContainer),
                           DSSizedBoxSpacing.vertical(24),
                         ] else if (artist != null && isApproved) ...[
                           ArtistAreaActivationCard(
-                            title: 'Ativar visualização',
+                            title: isActive ? 'Visualização ativada' : 'Ativar visualização',
                             description: isActive
                                 ? 'Seu perfil está ativo e visível para clientes.'
                                 : 'Ative seu perfil para aparecer nas buscas.',
-                            icon: Icons.public_outlined,
+                            icon: isActive ? Icons.public_outlined : Icons.visibility_off_outlined,
                             iconColor: colorScheme.onPrimaryContainer,
                             isActive: isActive,
                             isEnabled: !isUpdatingActiveStatus,
@@ -264,7 +269,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                             NextShowCard(
                               nextShow: stats.nextShow!,
                               onTap: () {
-                                // TODO: Navegar para detalhes do show
+
                               },
                             ),
                             DSSizedBoxSpacing.vertical(24),
@@ -328,7 +333,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
       }
     } else {
       if (!hasIncompleteSections) {
-        statusIcon = Icons.pending_actions;
+        statusIcon = Icons.hourglass_empty_rounded;
         statusText = 'Pendente de aprovação';
         statusColor = colorScheme.onTertiaryContainer;
       } else {
@@ -428,9 +433,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
           value: '${stats.pendingRequests}',
           label: 'Solicitações pendentes',
           subtitle: stats.pendingRequests > 0 ? 'Requerem atenção' : null,
-          iconColor: stats.pendingRequests > 0
-              ? colorScheme.onTertiaryContainer
-              : colorScheme.onPrimaryContainer,
+          iconColor: colorScheme.onTertiaryContainer
         ),
       ],
     );

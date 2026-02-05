@@ -261,7 +261,6 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
                         artist.artistName ?? 'Artista',
                         style: textTheme.headlineLarge?.copyWith(
                           color: onPrimary,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
@@ -514,6 +513,7 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
                   );
                 }
               },
+              requestMinimumEarlinessMinutes: widget.artist.professionalInfo?.requestMinimumEarliness,
             ),
           );
         }

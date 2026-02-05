@@ -12,13 +12,15 @@ import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
 import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
-import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
+import 'package:app/features/explore/presentation/widgets/ensemble_card.dart';
 import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
@@ -36,27 +38,29 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveClientMixin {
+class _ExploreScreenState extends State<ExploreScreen>
+    with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  
+  late TabController _tabController;
+  late ScrollController _scrollControllerArtists;
+  late ScrollController _scrollControllerEnsembles;
+
   AddressInfoEntity? _selectedAddress;
   DateTime _selectedDate = DateTime.now();
-  int _nextIndex = 0;
-  bool _hasMore = false;
-  bool _isLoadingMore = false;
   static const int _pageSize = 10;
-  
-  // Tamanho anterior da lista para detectar se é nova busca ou apenas atualização
-  int _previousListSize = 0;
-  
-  // Set com IDs dos artistas favoritos (sincronizado com FavoritesBloc)
+
+  int _artistsNextIndex = 0;
+  bool _artistsHasMore = false;
+  bool _isLoadingMoreArtists = false;
+  int _previousArtistsListSize = 0;
+
+  int _ensemblesNextIndex = 0;
+  bool _ensemblesHasMore = false;
+  bool _isLoadingMoreEnsembles = false;
+  int _previousEnsemblesListSize = 0;
+
   Set<String> _favoriteArtistIds = {};
-  
-  // Query de busca atual
   String _searchQuery = '';
-  
-  // Timer para debounce da busca
   Timer? _searchDebounceTimer;
 
   @override
@@ -72,72 +76,65 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   @override
   void initState() {
     super.initState();
-    
-    // Buscar endereços se ainda não foram buscados
+    _tabController = TabController(length: 2, vsync: this);
+    _scrollControllerArtists = ScrollController();
+    _scrollControllerEnsembles = ScrollController();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final addressesState = context.read<AddressesBloc>().state;      
+      final addressesState = context.read<AddressesBloc>().state;
       if (addressesState is! GetAddressesSuccess) {
         context.read<AddressesBloc>().add(GetAddressesEvent());
       } else {
         _getPrimaryAddressFromState(addressesState);
       }
-      
-      // Buscar lista de favoritos
       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
     });
 
-    // Scroll listener para carregar mais ao chegar no fim
-    _scrollController.addListener(() {
-      if (_hasMore &&
-          !_isLoadingMore &&
-          _scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 200) {
-        _loadMore();
+    _scrollControllerArtists.addListener(() {
+      if (_artistsHasMore &&
+          !_isLoadingMoreArtists &&
+          _scrollControllerArtists.hasClients &&
+          _scrollControllerArtists.position.pixels >=
+              _scrollControllerArtists.position.maxScrollExtent - 200) {
+        _loadMoreArtists();
+      }
+    });
+    _scrollControllerEnsembles.addListener(() {
+      if (_ensemblesHasMore &&
+          !_isLoadingMoreEnsembles &&
+          _scrollControllerEnsembles.hasClients &&
+          _scrollControllerEnsembles.position.pixels >=
+              _scrollControllerEnsembles.position.maxScrollExtent - 200) {
+        _loadMoreEnsembles();
       }
     });
   }
 
-  /// Obtém endereço primário do estado do AddressesBloc
   void _getPrimaryAddressFromState(GetAddressesSuccess state) {
-    
     if (state.addresses.isEmpty) {
-      // Sem endereço, buscar sem filtro geográfico
-      _onGetArtistsWithAvailabilitiesFiltered();
+      _onApplyFilters();
       return;
     }
-
     AddressInfoEntity primaryAddress;
     try {
       primaryAddress = state.addresses.firstWhere(
         (address) => address.isPrimary,
       );
     } catch (e) {
-      // Se não encontrar primário, usar o primeiro endereço
       primaryAddress = state.addresses.first;
     }
-
     if (_selectedAddress == null) {
-      setState(() {
-        _selectedAddress = primaryAddress;
-      });
-      // Buscar artistas filtrados com endereço primário e data atual
-      _onGetArtistsWithAvailabilitiesFiltered();
+      setState(() => _selectedAddress = primaryAddress);
+      _onApplyFilters();
     }
   }
 
-  /// Busca artistas com filtros aplicados (data, endereço e busca)
-  /// 
-  /// Usa o endereço selecionado (_selectedAddress), a data selecionada (_selectedDate)
-  /// e a query de busca (_searchQuery)
-  /// Se não houver endereço selecionado, busca sem filtro geográfico
-  void _onGetArtistsWithAvailabilitiesFiltered() {
-    if (!mounted) {
-      return;
-    }
-
-    final forceRefresh = true; // Mudado para false para usar cache
-    
-    // Sempre disparar o evento (removida a verificação de estado de sucesso)
+  /// Aplica filtros atuais (data, endereço, busca) em ambas as abas.
+  /// Search bar está acima das abas: ao trocar de aba, a outra já vem com o mesmo resultado.
+  void _onApplyFilters() {
+    if (!mounted) return;
+    const forceRefresh = true;
+    final query = _searchQuery.isNotEmpty ? _searchQuery : null;
     context.read<ExploreBloc>().add(
       GetArtistsWithAvailabilitiesFilteredEvent(
         selectedDate: _selectedDate,
@@ -146,7 +143,18 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
         startIndex: 0,
         pageSize: _pageSize,
         append: false,
-        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+        searchQuery: query,
+      ),
+    );
+    context.read<ExploreBloc>().add(
+      GetEnsemblesWithAvailabilitiesFilteredEvent(
+        selectedDate: _selectedDate,
+        userAddress: _selectedAddress,
+        forceRefresh: forceRefresh,
+        startIndex: 0,
+        pageSize: _pageSize,
+        append: false,
+        searchQuery: query,
       ),
     );
   }
@@ -162,17 +170,22 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
   @override
   void dispose() {
     _searchController.dispose();
-    _scrollController.dispose();
-    _searchDebounceTimer?.cancel(); // Cancelar timer ao dispor
+    _tabController.dispose();
+    _scrollControllerArtists.dispose();
+    _scrollControllerEnsembles.dispose();
+    _searchDebounceTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // Necessário quando usar AutomaticKeepAliveClientMixin
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final onSurfaceVariant = colorScheme.onSurfaceVariant;
     return BasePage(
-      showAppBar: true,
-      appBarTitle: 'Explorar',
+      // showAppBar: true,
+      // appBarTitle: 'Explorar',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [          
@@ -200,82 +213,127 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
           ),
           DSSizedBoxSpacing.vertical(8),
           
-          // Search Bar + Filtro
+          // Search Bar + Filtro (acima das abas: mesma busca em Individual e Conjuntos)
           Row(
-            children: [          
+            children: [
               Expanded(
                 child: SearchBarWidget(
                   controller: _searchController,
-                  hintText: 'Buscar artistas...',
+                  hintText: 'Buscar artistas e conjuntos...',
                   onChanged: _onSearchChanged,
                   onClear: _onSearchCleared,
                 ),
               ),
               DSSizedBoxSpacing.horizontal(12),
-              FilterButton(
-                onPressed: _onFilterTapped,
-              ),
+              FilterButton(onPressed: _onFilterTapped),
             ],
           ),
-          
-          DSSizedBoxSpacing.vertical(24),
-          
-          // Lista de artistas
+          DSSizedBoxSpacing.vertical(8),
+          Container(
+            height: DSSize.height(30),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(DSSize.width(12)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: colorScheme.onPrimaryContainer,
+                borderRadius: BorderRadius.circular(DSSize.width(12)),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: colorScheme.primaryContainer,
+              unselectedLabelColor: onSurfaceVariant,
+              labelStyle: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onPrimary,
+              ),
+              unselectedLabelStyle: textTheme.bodyMedium,
+              dividerColor: Colors.transparent,
+              tabAlignment: TabAlignment.fill,
+              padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
+              labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
+              tabs: [
+                Tab(
+                  child: const Text('Individual'),
+                ),
+                Tab(
+                child: const Text('Conjuntos'),
+                ),
+              ],
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(12),
           Expanded(
             child: MultiBlocListener(
               listeners: [
-                // Escutar mudanças no AddressesBloc para obter endereço primário
                 BlocListener<AddressesBloc, AddressesState>(
                   listener: (context, state) {
-                    if (state is GetAddressesSuccess && _selectedAddress == null) {
+                    if (state is GetAddressesSuccess &&
+                        _selectedAddress == null) {
                       _getPrimaryAddressFromState(state);
                     }
                   },
                 ),
-                // Escutar ExploreBloc para atualizar paginação
                 BlocListener<ExploreBloc, ExploreState>(
                   listener: (context, state) {
                     if (state is GetArtistsWithAvailabilitiesSuccess) {
-                      final currentListSize = state.artistsWithAvailabilities.length;
-                      _nextIndex = state.nextIndex;
-                      _hasMore = state.hasMore;
-                      if (state.append) {
-                        _isLoadingMore = false;
-                      } else {
-                        // Reset de scroll apenas se for uma nova busca (tamanho mudou)
-                        // Se o tamanho for o mesmo, é apenas atualização de favorito, não faz scroll
-                        if (currentListSize != _previousListSize && _scrollController.hasClients) {
-                          _scrollController.animateTo(
-                            0,
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOut,
-                          );
+                      setState(() {
+                        final n = state.artistsWithAvailabilities.length;
+                        _artistsNextIndex = state.nextIndex;
+                        _artistsHasMore = state.hasMore;
+                        if (state.append) {
+                          _isLoadingMoreArtists = false;
+                        } else {
+                          if (n != _previousArtistsListSize &&
+                              _scrollControllerArtists.hasClients) {
+                            _scrollControllerArtists.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            );
+                          }
                         }
-                      }
-                      _previousListSize = currentListSize;
+                        _previousArtistsListSize = n;
+                      });
+                    } else if (state is GetEnsemblesWithAvailabilitiesSuccess) {
+                      setState(() {
+                        final n = state.ensemblesWithAvailabilities.length;
+                        _ensemblesNextIndex = state.nextIndex;
+                        _ensemblesHasMore = state.hasMore;
+                        if (state.append) {
+                          _isLoadingMoreEnsembles = false;
+                        } else {
+                          if (n != _previousEnsemblesListSize &&
+                              _scrollControllerEnsembles.hasClients) {
+                            _scrollControllerEnsembles.animateTo(
+                              0,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            );
+                          }
+                        }
+                        _previousEnsemblesListSize = n;
+                      });
                     }
                   },
                 ),
-                // Escutar FavoritesBloc para atualizar lista de IDs e feedback
                 BlocListener<FavoritesBloc, FavoritesState>(
                   listener: (context, state) {
                     if (state is GetFavoriteArtistsSuccess) {
-                      // Atualizar lista de IDs de favoritos
                       setState(() {
                         _favoriteArtistIds = state.artists
-                            .map((artist) => artist.uid ?? '')
+                            .map((a) => a.uid ?? '')
                             .where((id) => id.isNotEmpty)
                             .toSet();
                       });
                     } else if (state is AddFavoriteSuccess) {
                       context.showSuccess('Artista adicionado aos favoritos');
-                      // Recarregar lista de favoritos para sincronizar
                       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
                     } else if (state is AddFavoriteFailure) {
                       context.showError(state.error);
                     } else if (state is RemoveFavoriteSuccess) {
                       context.showSuccess('Artista removido dos favoritos');
-                      // Recarregar lista de favoritos para sincronizar
                       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
                     } else if (state is RemoveFavoriteFailure) {
                       context.showError(state.error);
@@ -283,139 +341,155 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
                   },
                 ),
               ],
-              child: BlocBuilder<ExploreBloc, ExploreState>(
-                builder: (context, state) {
-                  if (state is GetArtistsWithAvailabilitiesLoading) {
-                    return const Center(
-                      child: CustomLoadingIndicator(),
-                    );
-                  }
-
-                if (state is GetArtistsWithAvailabilitiesFailure) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: DSSize.width(48),
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        DSSizedBoxSpacing.vertical(16),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                          child: Text(
-                            'Erro ao carregar artistas',
-                            style: Theme.of(context).textTheme.titleMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        DSSizedBoxSpacing.vertical(8),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                          child: Text(
-                            state.error,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        DSSizedBoxSpacing.vertical(16),
-                        ElevatedButton(
-                          onPressed: () {
-                            _onGetArtistsWithAvailabilitiesFiltered();
-                          },
-                          child: const Text('Tentar novamente'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                if (state is GetArtistsWithAvailabilitiesSuccess) {
-                  // A busca agora é feita no UseCase, então usamos diretamente a lista do estado
-                  final artists = state.artistsWithAvailabilities;
-                  
-                  if (artists.isEmpty) {
-                    // Se houver query de busca, mostrar mensagem específica
-                    if (_searchQuery.isNotEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: DSSize.width(48),
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                            DSSizedBoxSpacing.vertical(16),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                              child: Text(
-                                'Nenhum resultado encontrado',
-                                style: Theme.of(context).textTheme.titleMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            DSSizedBoxSpacing.vertical(8),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                              child: Text(
-                                'Não encontramos artistas que correspondam à sua busca',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    // Se não houver query, mostrar mensagem padrão
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: DSSize.width(48),
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          DSSizedBoxSpacing.vertical(16),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                            child: Text(
-                              'Nenhum artista encontrado',
-                              style: Theme.of(context).textTheme.titleMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          DSSizedBoxSpacing.vertical(8),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
-                            child: Text(
-                              'Não há artistas disponíveis para a data e endereço selecionados no momento.',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return _buildArtistsList(artists);
-                }
-
-                // Estado inicial - mostrar loading
-                return const Center(
-                  child: CustomLoadingIndicator(),
-                );
-              },
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildArtistsTabContent(),
+                  _buildEnsemblesTabContent(),
+                ],
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArtistsTabContent() {
+    return BlocBuilder<ExploreBloc, ExploreState>(
+      buildWhen: (prev, curr) =>
+          curr.currentArtists != prev.currentArtists ||
+          curr is GetArtistsWithAvailabilitiesLoading ||
+          curr is GetArtistsWithAvailabilitiesFailure,
+      builder: (context, state) {
+        final loading = state is GetArtistsWithAvailabilitiesLoading &&
+            (state.currentArtists == null || state.currentArtists!.isEmpty);
+        if (loading) {
+          return const Center(child: CustomLoadingIndicator());
+        }
+        if (state is GetArtistsWithAvailabilitiesFailure) {
+          return _buildErrorCenter(
+            'Erro ao carregar artistas',
+            state.error,
+            _onApplyFilters,
+          );
+        }
+        final artists = state.currentArtists ?? [];
+        if (artists.isEmpty) {
+          return _buildEmptyCenter(
+            _searchQuery.isNotEmpty
+                ? 'Nenhum resultado encontrado'
+                : 'Nenhum artista encontrado',
+            _searchQuery.isNotEmpty
+                ? 'Não encontramos artistas que correspondam à sua busca'
+                : 'Não há artistas disponíveis para a data e endereço selecionados no momento.',
+          );
+        }
+        return _buildArtistsList(artists);
+      },
+    );
+  }
+
+  Widget _buildEnsemblesTabContent() {
+    return BlocBuilder<ExploreBloc, ExploreState>(
+      buildWhen: (prev, curr) =>
+          curr.currentEnsembles != prev.currentEnsembles ||
+          curr is GetEnsemblesWithAvailabilitiesLoading ||
+          curr is GetEnsemblesWithAvailabilitiesFailure,
+      builder: (context, state) {
+        final loading = state is GetEnsemblesWithAvailabilitiesLoading &&
+            (state.currentEnsembles == null || state.currentEnsembles!.isEmpty);
+        if (loading) {
+          return const Center(child: CustomLoadingIndicator());
+        }
+        if (state is GetEnsemblesWithAvailabilitiesFailure) {
+          return _buildErrorCenter(
+            'Erro ao carregar conjuntos',
+            state.error,
+            _onApplyFilters,
+          );
+        }
+        final ensembles = state.currentEnsembles ?? [];
+        if (ensembles.isEmpty) {
+          return _buildEmptyCenter(
+            _searchQuery.isNotEmpty
+                ? 'Nenhum resultado encontrado'
+                : 'Nenhum conjunto encontrado',
+            _searchQuery.isNotEmpty
+                ? 'Não encontramos conjuntos que correspondam à sua busca'
+                : 'Não há conjuntos disponíveis para a data e endereço selecionados no momento.',
+          );
+        }
+        return _buildEnsemblesList(ensembles);
+      },
+    );
+  }
+
+  Widget _buildEmptyCenter(String title, String subtitle) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: DSSize.width(48),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(8),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+            child: Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCenter(String title, String error, VoidCallback onRetry) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: DSSize.width(48),
+            color: Theme.of(context).colorScheme.error,
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(8),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+            child: Text(
+              error,
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+          ElevatedButton(
+            onPressed: onRetry,
+            child: const Text('Tentar novamente'),
           ),
         ],
       ),
@@ -426,8 +500,8 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
     List<ArtistWithAvailabilitiesEntity> artistsWithAvailabilities,
   ) {
     return ListView.builder(
-      controller: _scrollController,
-      itemCount: _hasMore
+      controller: _scrollControllerArtists,
+      itemCount: _artistsHasMore
           ? artistsWithAvailabilities.length + 1
           : artistsWithAvailabilities.length,
       itemBuilder: (context, index) {
@@ -485,6 +559,66 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
     );
   }
 
+  Widget _buildEnsemblesList(
+    List<EnsembleWithAvailabilitiesEntity> ensemblesWithAvailabilities,
+  ) {
+    return ListView.builder(
+      controller: _scrollControllerEnsembles,
+      itemCount: _ensemblesHasMore
+          ? ensemblesWithAvailabilities.length + 1
+          : ensemblesWithAvailabilities.length,
+      itemBuilder: (context, index) {
+        if (index >= ensemblesWithAvailabilities.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CustomLoadingIndicator()),
+          );
+        }
+        final item = ensemblesWithAvailabilities[index];
+        final ensemble = item.ensemble;
+        final availabilities = item.availabilities;
+        final info = ensemble.professionalInfo;
+        String? pricePerHour;
+        if (availabilities.isNotEmpty) {
+          final day = availabilities.first;
+          final slots = day.availableSlots
+              .where((s) => s.valorHora != null)
+              .toList();
+          if (slots.isNotEmpty) {
+            final total =
+                slots.map((s) => s.valorHora!).reduce((a, b) => a + b);
+            pricePerHour =
+                'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(total / slots.length)}/hora';
+          }
+        }
+        final description = info?.bio ?? 'Sem descrição disponível';
+        final ensembleId = ensemble.id ?? '';
+        return EnsembleCard(
+          groupName: 'Conjunto',
+          talents: info?.specialty?.join(', ') ?? 'Sem talentos definidos',
+          description: description,
+          contracts: ensemble.rateCount ?? 0,
+          rating: ensemble.rating ?? 0.0,
+          pricePerHour: pricePerHour,
+          imageUrl: ensemble.profilePhotoUrl,
+          ensembleId: ensembleId,
+          onHirePressed: () => _onEnsembleCardTapped(item),
+          onTap: () => _onEnsembleCardTapped(item),
+        );
+      },
+    );
+  }
+
+  void _onEnsembleCardTapped(EnsembleWithAvailabilitiesEntity item) {
+    final router = AutoRouter.of(context);
+    final ensembleId = item.ensemble.id ?? '';
+    router.push(EnsembleExploreRoute(
+      ensembleId: ensembleId,
+      selectedDate: _selectedDate,
+      selectedAddress: _selectedAddress,
+    ));
+  }
+
   void _onAddressSelected() async {
     final selectedAddress = await AddressesModal.show(
       context: context,
@@ -492,12 +626,8 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
     );
 
     if (selectedAddress != null && selectedAddress != _selectedAddress) {
-      setState(() {
-        _selectedAddress = selectedAddress;
-      });
-      // Buscar artistas filtrados com novo endereço
-      _onGetArtistsWithAvailabilitiesFiltered();
-    } else {
+      setState(() => _selectedAddress = selectedAddress);
+      _onApplyFilters();
     }
   }
 
@@ -508,40 +638,26 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    
     if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-      // Buscar artistas filtrados com nova data
-      _onGetArtistsWithAvailabilitiesFiltered();
-    } else {
+      setState(() => _selectedDate = picked);
+      _onApplyFilters();
     }
   }
 
   void _onSearchChanged(String query) {
-    // Cancelar timer anterior se existir
     _searchDebounceTimer?.cancel();
-    
-    // Criar novo timer com debounce de 500ms
     _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        setState(() {
-          _searchQuery = query.trim();
-        });
-        // Buscar artistas com a nova query de busca
-        _onGetArtistsWithAvailabilitiesFiltered();
+        setState(() => _searchQuery = query.trim());
+        _onApplyFilters();
       }
     });
   }
 
   void _onSearchCleared() {
-    setState(() {
-      _searchQuery = '';
-    });
+    setState(() => _searchQuery = '');
     _searchController.clear();
-    // Buscar artistas sem a query de busca
-    _onGetArtistsWithAvailabilitiesFiltered();
+    _onApplyFilters();
   }
 
   void _onFilterTapped() {
@@ -602,16 +718,32 @@ class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveCl
     ));
   }
 
-  void _loadMore() {
-    if (!_hasMore || _isLoadingMore) return;
-    _isLoadingMore = true;
+  void _loadMoreArtists() {
+    if (!_artistsHasMore || _isLoadingMoreArtists) return;
+    _isLoadingMoreArtists = true;
     context.read<ExploreBloc>().add(
       GetArtistsWithAvailabilitiesFilteredEvent(
         selectedDate: _selectedDate,
         userAddress: _selectedAddress,
-        startIndex: _nextIndex,
+        startIndex: _artistsNextIndex,
         pageSize: _pageSize,
         append: true,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
+      ),
+    );
+  }
+
+  void _loadMoreEnsembles() {
+    if (!_ensemblesHasMore || _isLoadingMoreEnsembles) return;
+    _isLoadingMoreEnsembles = true;
+    context.read<ExploreBloc>().add(
+      GetEnsemblesWithAvailabilitiesFilteredEvent(
+        selectedDate: _selectedDate,
+        userAddress: _selectedAddress,
+        startIndex: _ensemblesNextIndex,
+        pageSize: _pageSize,
+        append: true,
+        searchQuery: _searchQuery.isNotEmpty ? _searchQuery : null,
       ),
     );
   }

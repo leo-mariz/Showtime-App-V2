@@ -70,6 +70,40 @@ class GetArtistAllAvailabilitiesEvent extends ExploreEvent {
   List<Object?> get props => [artistId, userAddress, forceRefresh];
 }
 
+// ==================== GET ENSEMBLES WITH AVAILABILITIES FILTERED EVENT ====================
+
+/// Evento para buscar conjuntos com disponibilidades filtradas (mesmos parâmetros que artistas).
+class GetEnsemblesWithAvailabilitiesFilteredEvent extends ExploreEvent {
+  final DateTime selectedDate;
+  final AddressInfoEntity? userAddress;
+  final bool forceRefresh;
+  final int startIndex;
+  final int pageSize;
+  final bool append;
+  final String? searchQuery;
+
+  GetEnsemblesWithAvailabilitiesFilteredEvent({
+    required this.selectedDate,
+    this.userAddress,
+    this.forceRefresh = false,
+    this.startIndex = 0,
+    this.pageSize = 10,
+    this.append = false,
+    this.searchQuery,
+  });
+
+  @override
+  List<Object?> get props => [
+        selectedDate,
+        userAddress,
+        forceRefresh,
+        startIndex,
+        pageSize,
+        append,
+        searchQuery,
+      ];
+}
+
 // ==================== RESET EVENT ====================
 
 class ResetExploreEvent extends ExploreEvent {}

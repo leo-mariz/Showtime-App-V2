@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:flutter/material.dart';
 
 class SearchBarWidget extends StatelessWidget {
@@ -34,17 +35,17 @@ class SearchBarWidget extends StatelessWidget {
           color: surfaceColor,
           borderRadius: BorderRadius.circular(16), // Deixa a barra arredondada
         ),
-        height: 48,
+        height: DSSize.height(36),
         child: TextField(
           controller: controller,
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(color: hintColor), // Estilo do hint text
-            prefixIcon: Icon(searchIcon, color: searchIconColor), // Ícone de busca
+            hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: hintColor), // Estilo do hint text
+            prefixIcon: Icon(searchIcon, color: searchIconColor, size: DSSize.width(20)), // Ícone de busca
             suffixIcon: controller.text.isNotEmpty
                 ? IconButton(
-                    icon: Icon(clearIcon, color: searchIconColor), // Ícone de limpar
+                    icon: Icon(clearIcon, color: searchIconColor, size: DSSize.width(20)), // Ícone de limpar
                     onPressed: () {
                       controller.clear();
                       if (onClear != null) {

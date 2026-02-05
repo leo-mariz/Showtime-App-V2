@@ -5,8 +5,9 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/distance_helper.dart';
 import 'package:app/core/utils/geohash_helper.dart';
+import 'package:app/core/utils/minimum_earliness_helper.dart';
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
-import 'package:app/features/explore/domain/entities/artist_with_availabilities_entity.dart';
+import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
 import 'package:dartz/dartz.dart';
 
@@ -21,9 +22,10 @@ import 'package:dartz/dartz.dart';
 /// 
 /// FILTROS APLICADOS (todos em memória):
 /// 1. Data: Busca apenas a disponibilidade do dia específico (otimizado no Firestore)
-/// 2. Geohash: Filtra disponibilidades com geohash dentro do range do usuário
-/// 3. Distância: Filtra usando Haversine (distância <= raioAtuacao)
-/// 4. Busca: Filtra por nome, talentos (specialty) e bio (quando searchQuery fornecida)
+/// 2. Antecedência mínima: O dia selecionado deve estar a pelo menos [requestMinimumEarliness] minutos de "hoje"
+/// 3. Geohash: Filtra disponibilidades com geohash dentro do range do usuário
+/// 4. Distância: Filtra usando Haversine (distância <= raioAtuacao)
+/// 5. Busca: Filtra por nome, talentos (specialty) e bio (quando searchQuery fornecida)
 /// 
 /// OBSERVAÇÕES:
 /// - Busca apenas o dia específico do Firestore (1 read por artista)
@@ -174,6 +176,13 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
                 return null;
               }
 
+              // Filtro: antecedência mínima (dia selecionado deve respeitar requestMinimumEarliness do artista)
+              if (!respectsMinimumEarliness(
+                selectedDate,
+                artist.professionalInfo?.requestMinimumEarliness,
+              )) {
+                return null;
+              }
 
               // Aplicar filtros em memória
               bool isValid = true;
@@ -282,14 +291,7 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
     }
   }
 
-  /// Verifica se um artista corresponde à query de busca
-  /// 
-  /// Busca case-insensitive em:
-  /// - Nome do artista (artistName)
-  /// - Talentos (professionalInfo.specialty)
-  /// - Bio (professionalInfo.bio)
-  /// 
-  /// Retorna true se o artista corresponde à busca, false caso contrário
+  /// Retorna true se o artista corresponde à query de busca (nome, talentos, bio).
   bool _matchesSearch(ArtistEntity artist, String searchQuery) {
     if (searchQuery.isEmpty) {
       return true; // Sem busca, aceita todos

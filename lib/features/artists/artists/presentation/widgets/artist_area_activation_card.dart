@@ -64,6 +64,7 @@ class ArtistAreaActivationCard extends StatelessWidget {
           Switch(
             value: isActive,
             onChanged: isEnabled ? onChanged : null,
+            activeThumbColor: colorScheme.onPrimaryContainer,
           ),
         ],
       ),

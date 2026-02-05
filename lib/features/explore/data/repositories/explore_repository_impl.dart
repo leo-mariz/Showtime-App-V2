@@ -1,11 +1,13 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/explore/data/datasources/explore_local_datasource.dart';
 import 'package:app/features/explore/data/datasources/explore_remote_datasource.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 /// Implementação do Repository de Explore
 /// 
@@ -191,6 +193,130 @@ class ExploreRepositoryImpl implements IExploreRepository {
       // 5. Ordenar por data antes de retornar
       availabilities.sort((a, b) => a.date.compareTo(b.date));
       
+      return Right(availabilities);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  // ==================== ENSEMBLES (CONJUNTOS) ====================
+
+  @override
+  Future<Either<Failure, List<EnsembleEntity>>> getEnsemblesForExplore({
+    bool forceRefresh = false,
+  }) async {
+    try {
+      if (!forceRefresh) {
+        if (await exploreLocalDataSource.isEnsemblesCacheValid()) {
+          final cached =
+              await exploreLocalDataSource.getCachedEnsembles();
+          if (cached != null && cached.isNotEmpty) {
+            return Right(cached);
+          }
+        }
+      }
+      debugPrint('[ExploreRepo] getEnsemblesForExplore: buscando do remote');
+      final ensembles =
+          await exploreRemoteDataSource.getActiveApprovedEnsembles();
+      await exploreLocalDataSource.cacheEnsembles(ensembles);
+      return Right(ensembles);
+    } catch (e, stackTrace) {
+      debugPrint('[ExploreRepo] getEnsemblesForExplore erro: $e');
+      debugPrint(stackTrace.toString());
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AvailabilityDayEntity?>>
+      getEnsembleAvailabilityDayForExplore(
+    String ensembleId,
+    DateTime date, {
+    bool forceRefresh = false,
+  }) async {
+    try {
+      if (ensembleId.isEmpty) {
+        return const Left(
+          ValidationFailure('ID do conjunto não pode ser vazio'),
+        );
+      }
+      if (!forceRefresh) {
+        if (await exploreLocalDataSource
+            .isEnsembleAvailabilityDayCacheValid(ensembleId, date)) {
+          final cached = await exploreLocalDataSource
+              .getCachedEnsembleAvailabilityDay(ensembleId, date);
+          return Right(cached);
+        }
+      }
+      final day = await exploreRemoteDataSource.getEnsembleAvailabilityDay(
+        ensembleId,
+        date,
+      );
+      await exploreLocalDataSource.cacheEnsembleAvailabilityDay(
+        ensembleId,
+        date,
+        day,
+      );
+      return Right(day);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<AvailabilityDayEntity>>>
+      getEnsembleAllAvailabilitiesForExplore(
+    String ensembleId, {
+    bool forceRefresh = false,
+  }) async {
+    try {
+      if (ensembleId.isEmpty) {
+        return const Left(
+          ValidationFailure('ID do conjunto não pode ser vazio'),
+        );
+      }
+      if (!forceRefresh) {
+        if (await exploreLocalDataSource
+            .isAllEnsembleAvailabilitiesCacheValid(ensembleId)) {
+          final cached = await exploreLocalDataSource
+              .getCachedAllEnsembleAvailabilities(ensembleId);
+          if (cached != null && cached.isNotEmpty) {
+            final availabilities = <AvailabilityDayEntity>[];
+            for (final day in cached) {
+              if (await exploreLocalDataSource
+                  .isEnsembleAvailabilityDayCacheValid(ensembleId, day)) {
+                final cachedDay = await exploreLocalDataSource
+                    .getCachedEnsembleAvailabilityDay(ensembleId, day);
+                if (cachedDay != null) availabilities.add(cachedDay);
+              } else {
+                break;
+              }
+            }
+            if (availabilities.length == cached.length) {
+              availabilities.sort((a, b) => a.date.compareTo(b.date));
+              return Right(availabilities);
+            }
+          } else if (cached != null && cached.isEmpty) {
+            return const Right([]);
+          }
+        }
+      }
+      final availabilities =
+          await exploreRemoteDataSource.getEnsembleAllAvailabilities(
+        ensembleId,
+      );
+      for (final a in availabilities) {
+        await exploreLocalDataSource.cacheEnsembleAvailabilityDay(
+          ensembleId,
+          a.date,
+          a,
+        );
+      }
+      await exploreLocalDataSource.cacheAllEnsembleAvailabilities(
+        ensembleId,
+        availabilities.map((a) => a.date).toList(),
+      );
+      availabilities.sort((a, b) => a.date.compareTo(b.date));
       return Right(availabilities);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

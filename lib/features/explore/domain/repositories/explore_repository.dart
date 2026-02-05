@@ -1,5 +1,6 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:dartz/dartz.dart';
 
@@ -53,6 +54,30 @@ abstract class IExploreRepository {
   /// O filtro de isActive e slots available será feito no UseCase
   Future<Either<Failure, List<AvailabilityDayEntity>>> getArtistAllAvailabilitiesForExplore(
     String artistId, {
+    bool forceRefresh = false,
+  });
+
+  // ==================== ENSEMBLES (CONJUNTOS) ====================
+
+  /// Busca todos os conjuntos ativos, aprovados e completos para explorar.
+  /// Equivalente a [getArtistsForExplore] para conjuntos.
+  /// Usa cache agressivo (2 horas). [forceRefresh] ignora o cache.
+  Future<Either<Failure, List<EnsembleEntity>>> getEnsemblesForExplore({
+    bool forceRefresh = false,
+  });
+
+  /// Busca disponibilidade de um dia específico de um conjunto.
+  /// [ensembleId]: ID do conjunto. [date]: Data. [forceRefresh]: ignora cache.
+  Future<Either<Failure, AvailabilityDayEntity?>> getEnsembleAvailabilityDayForExplore(
+    String ensembleId,
+    DateTime date, {
+    bool forceRefresh = false,
+  });
+
+  /// Busca todas as disponibilidades de um conjunto.
+  /// [ensembleId]: ID do conjunto. [forceRefresh]: ignora cache.
+  Future<Either<Failure, List<AvailabilityDayEntity>>> getEnsembleAllAvailabilitiesForExplore(
+    String ensembleId, {
     bool forceRefresh = false,
   });
 }

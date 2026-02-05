@@ -241,6 +241,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final onPrimaryContainer = colorScheme.onPrimaryContainer;
+    final onTertiaryContainer = colorScheme.onTertiaryContainer;
 
     return BlocBuilder<EnsembleBloc, EnsembleState>(
       buildWhen: (previous, current) =>
@@ -299,9 +300,9 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
 
         final ensemble = currentEnsemble;
         final displayName = _displayName(ensemble);
-        final appBarTitle = displayName.length > 24
-            ? '${displayName.substring(0, 24)}...'
-            : displayName;
+        // final appBarTitle = displayName.length > 24
+        //     ? '${displayName.substring(0, 24)}...'
+        //     : displayName;
         final membersCount = _additionalMembersCount(ensemble)+1;
 
         final hasIncompleteSections = ensemble.hasIncompleteSections ?? true;
@@ -337,7 +338,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
           },
           child: BasePage(
             showAppBar: true,
-            appBarTitle: appBarTitle,
+            appBarTitle: 'Área do Conjunto',
             showAppBarBackButton: true,
             child: SingleChildScrollView(
               child: Column(
@@ -358,14 +359,14 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
                   if (hasIncompleteSections) ...[
                     EnsembleCompletenessCard(ensemble: ensemble),
                   ] else if (ensemble.allMembersApproved != true) ...[
-                    _EnsembleUnderReviewCard(iconColor: onPrimaryContainer),
+                    _EnsembleUnderReviewCard(iconColor: onTertiaryContainer),
                   ] else ...[
                     ArtistAreaActivationCard(
-                      title: 'Ativar visualização',
+                      title: isActive ? 'Visualização ativada' : 'Ativar visualização',
                       description: isActive
                           ? 'Seu conjunto está ativo e visível para clientes.'
                           : 'Ative seu conjunto para aparecer nas buscas.',
-                      icon: Icons.public_outlined,
+                      icon: isActive ? Icons.public_outlined : Icons.visibility_off_outlined,
                       iconColor: onPrimaryContainer,
                       isActive: isActive,
                       isEnabled: !_isUpdatingActiveStatus,

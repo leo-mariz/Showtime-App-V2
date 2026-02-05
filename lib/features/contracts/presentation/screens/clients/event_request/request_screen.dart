@@ -785,7 +785,7 @@ class _RequestScreenState extends State<RequestScreen> {
                 label: 'Valor/h',
                 value: _selectedPricePerHour != null
                     ? 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(_selectedPricePerHour!)}'
-                    : 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(_selectedPricePerHour!)}',
+                    : '--',
               ),
               
               DSSizedBoxSpacing.vertical(16),

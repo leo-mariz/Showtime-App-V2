@@ -422,7 +422,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
                   ),
                   DSSizedBoxSpacing.vertical(16),
                   ProfessionalInfoForm(
-                    talentController: specialtyController,
+                    talentController: null,
                     minimumShowDurationController: minimumShowDurationController,
                     preparationTimeController: preparationTimeController,
                     bioController: bioController,

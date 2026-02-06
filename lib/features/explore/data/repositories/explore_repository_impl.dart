@@ -62,6 +62,28 @@ class ExploreRepositoryImpl implements IExploreRepository {
   }
 
   @override
+  Future<Either<Failure, ArtistEntity?>> getArtistForExplore(
+    String artistId, {
+    bool forceRefresh = false,
+  }) async {
+    try {
+      if (artistId.isEmpty) {
+        return const Right(null);
+      }
+      if (!forceRefresh && await exploreLocalDataSource.isArtistsCacheValid()) {
+        final cached =
+            await exploreLocalDataSource.getCachedArtistById(artistId);
+        if (cached != null) return Right(cached);
+      }
+      final artist =
+          await exploreRemoteDataSource.getArtistById(artistId);
+      return Right(artist);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, AvailabilityDayEntity?>> getArtistAvailabilityDayForExplore(
     String artistId,
     DateTime date, {

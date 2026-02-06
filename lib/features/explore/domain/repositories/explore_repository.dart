@@ -25,7 +25,15 @@ abstract class IExploreRepository {
   Future<Either<Failure, List<ArtistEntity>>> getArtistsForExplore({
     bool forceRefresh = false,
   });
-  
+
+  /// Busca um artista pelo ID para exibição no explore (ex.: dono de um conjunto).
+  /// Primeiro tenta o cache de artistas do explore (fonte de verdade da feature); se não achar ou [forceRefresh], busca no remote.
+  /// Retorna null se o artista não existir.
+  Future<Either<Failure, ArtistEntity?>> getArtistForExplore(
+    String artistId, {
+    bool forceRefresh = false,
+  });
+
   /// Busca disponibilidade de um dia específico de um artista
   /// Usa cache agressivo específico de explore (2 horas de validade)
   /// Busca diretamente do Firestore via explore remote datasource

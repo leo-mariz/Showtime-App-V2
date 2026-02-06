@@ -124,7 +124,7 @@ class _EnsembleAvailabilityCalendarScreenState
         // ════════════════════════════════════════════════════════════════
         if (state is ToggleAvailabilityStatusSuccess) {
           context.showSuccess('Status atualizado com sucesso');
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
         } else if (state is ToggleAvailabilityStatusFailure) {
           context.showError(state.error);
         }
@@ -164,14 +164,14 @@ class _EnsembleAvailabilityCalendarScreenState
             state is UpdateTimeSlotSuccess || 
             state is DeleteTimeSlotSuccess) {
           context.showSuccess('Alteração realizada com sucesso');
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
           // Fechar bottom sheet se estiver aberto
           if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           }
         } else if (state is UpdateAddressAndRadiusSuccess) {
           context.showSuccess('Endereço e raio atualizados com sucesso');
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
           // Não fechar o bottom sheet automaticamente para update de endereço/raio
           // O usuário pode querer continuar editando
         } else if (state is AddTimeSlotFailure) {
@@ -191,7 +191,7 @@ class _EnsembleAvailabilityCalendarScreenState
           // Atualizar cache local imediatamente com os dias criados/atualizados
           _updateAvailabilitiesCache(state.days);
           // Recarregar do servidor para garantir sincronização
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
           context.showSuccess('Período aberto com sucesso');
         } else if (state is OpenPeriodFailure) {
           context.showError(state.error);
@@ -204,7 +204,7 @@ class _EnsembleAvailabilityCalendarScreenState
           // Atualizar cache local imediatamente com os dias atualizados
           _updateAvailabilitiesCache(state.days);
           // Recarregar do servidor para garantir sincronização
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
           context.showSuccess('Período fechado com sucesso');
         } else if (state is ClosePeriodFailure) {
           context.showError(state.error);
@@ -327,7 +327,7 @@ class _EnsembleAvailabilityCalendarScreenState
     // ════════════════════════════════════════════════════════════════
     // LOADING
     // ════════════════════════════════════════════════════════════════
-    if (state is GetAllAvailabilitiesLoading || state is GetOrganizedDayAfterVerificationLoading || state is OpenPeriodLoading || state is ClosePeriodLoading) {
+    if (state is GetAllAvailabilitiesLoading || state is GetOrganizedDayAfterVerificationLoading || state is OpenPeriodLoading || state is ClosePeriodLoading || state is GetOrganizedAvailabilitiesAfterVerificationLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -5,6 +5,7 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// UseCase: Adicionar novo contrato
 /// 
@@ -22,41 +23,36 @@ class AddContractUseCase {
     this.updateContractsIndexUseCase,
   });
 
-  /// Combina data (DateTime) e horário (String "HH:mm") em um DateTime completo
-  DateTime _combineDateAndTime(DateTime date, String time) {
+  static tz.Location get _saoPaulo => tz.getLocation('America/Sao_Paulo');
+
+  /// Converte data + horário (interpretados como São Paulo) para DateTime UTC.
+  DateTime _eventDateTimeUtc(DateTime date, String time) {
     final timeParts = time.split(':');
-    if (timeParts.length != 2) {
-      // Se formato inválido, retorna a data original
-      return date;
-    }
-    
+    if (timeParts.length != 2) return DateTime.utc(date.year, date.month, date.day);
     final hour = int.tryParse(timeParts[0]) ?? 0;
     final minute = int.tryParse(timeParts[1]) ?? 0;
-    
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      hour,
-      minute,
-    );
+    final eventSp = tz.TZDateTime(_saoPaulo, date.year, date.month, date.day, hour, minute);
+    return DateTime.fromMillisecondsSinceEpoch(eventSp.millisecondsSinceEpoch, isUtc: true);
   }
 
-  /// Calcula o deadline para aceitar a solicitação baseado na regra:
-  /// - Se evento é nas próximas 36h: prazo de 1h30min
-  /// - Caso contrário: prazo de 24h
-  DateTime _calculateAcceptDeadline(DateTime createdAt, DateTime eventDateTime) {
-    // Calcular diferença entre criação e evento
-    final timeUntilEvent = eventDateTime.difference(createdAt);
-    
-    // Se evento é nas próximas 36 horas (ou menos)
-    if (timeUntilEvent.inHours <= 36) {
-      // Prazo de 1h30min
-      return createdAt.add(const Duration(hours: 1, minutes: 30));
-    } else {
-      // Prazo de 24h
-      return createdAt.add(const Duration(hours: 24));
-    }
+  /// True se a data do evento é hoje ou amanhã no fuso America/Sao_Paulo.
+  bool _isEventSameOrNextDayInSp(DateTime eventDate, tz.TZDateTime nowSp) {
+    final tomorrowSp = nowSp.add(const Duration(days: 1));
+    final sameDay = eventDate.year == nowSp.year && eventDate.month == nowSp.month && eventDate.day == nowSp.day;
+    final nextDay = eventDate.year == tomorrowSp.year && eventDate.month == tomorrowSp.month && eventDate.day == tomorrowSp.day;
+    return sameDay || nextDay;
+  }
+
+  /// Calcula o acceptDeadline em fuso America/Sao_Paulo e retorna em UTC.
+  /// Regra: evento no mesmo dia ou no dia seguinte → prazo 1h30; caso contrário → 24h.
+  DateTime _calculateAcceptDeadlineUtc(DateTime createdAtUtc, DateTime eventDateTimeUtc, DateTime eventDate) {
+    final nowSp = tz.TZDateTime.now(_saoPaulo);
+    final shortDeadline = _isEventSameOrNextDayInSp(eventDate, nowSp);
+    final duration = shortDeadline
+        ? const Duration(hours: 1, minutes: 30)
+        : const Duration(hours: 24);
+    final deadlineSp = nowSp.add(duration);
+    return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);
   }
 
   Future<Either<Failure, String>> call(ContractEntity contract) async {
@@ -82,10 +78,9 @@ class AddContractUseCase {
         artistId = null;
       }
 
-      // Validar data e horário do evento (deve ser no futuro)
-      // Combinar data + horário para validação correta
-      final eventDateTime = _combineDateAndTime(contract.date, contract.time);
-      if (eventDateTime.isBefore(DateTime.now())) {
+      // Validar data e horário do evento (deve ser no futuro), interpretados em SP
+      final eventDateTimeUtc = _eventDateTimeUtc(contract.date, contract.time);
+      if (eventDateTimeUtc.isBefore(DateTime.now().toUtc())) {
         return const Left(ValidationFailure('Data e horário do evento não podem ser no passado'));
       }
 
@@ -135,14 +130,14 @@ class AddContractUseCase {
       //   }
       // }
 
-      // Calcular deadline para aceitar a solicitação
-      final createdAt = contract.createdAt ?? DateTime.now();
-      final acceptDeadline = _calculateAcceptDeadline(createdAt, eventDateTime);
-      
-      // Criar contrato com deadline calculado
+      // Calcular deadline em America/Sao_Paulo e armazenar em UTC
+      final createdAtUtc = contract.createdAt ?? DateTime.now().toUtc();
+      final acceptDeadlineUtc = _calculateAcceptDeadlineUtc(createdAtUtc, eventDateTimeUtc, contract.date);
+
+      // Criar contrato com deadline calculado (sempre UTC)
       final contractWithDeadline = contract.copyWith(
-        acceptDeadline: acceptDeadline,
-        createdAt: createdAt,
+        acceptDeadline: acceptDeadlineUtc,
+        createdAt: createdAtUtc,
       );
 
       // Adicionar contrato

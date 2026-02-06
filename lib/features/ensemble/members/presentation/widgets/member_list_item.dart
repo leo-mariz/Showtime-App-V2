@@ -119,9 +119,7 @@ class MemberListItem extends StatelessWidget {
                       Text(
                         isApproved ? 'Aprovado' : 'Pendente',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: isApproved
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

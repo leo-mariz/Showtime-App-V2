@@ -163,6 +163,40 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     ],
                   ),
 
+                  // Indicador quando a solicitação é para um conjunto
+                  if (_contract.isGroupContract && _contract.nameGroup != null && _contract.nameGroup!.isNotEmpty) ...[
+                    DSSizedBoxSpacing.vertical(12),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: DSSize.width(12),
+                        vertical: DSSize.width(8),
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(DSSize.width(8)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.groups_rounded,
+                            size: DSSize.width(20),
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          DSSizedBoxSpacing.horizontal(8),
+                          Expanded(
+                            child: Text(
+                              'Solicitação para o conjunto ${_contract.nameGroup}',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   DSSizedBoxSpacing.vertical(24),
 
                   // Tipo de Evento

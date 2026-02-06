@@ -576,8 +576,22 @@ class _ExploreScreenState extends State<ExploreScreen>
         }
         final item = ensemblesWithAvailabilities[index];
         final ensemble = item.ensemble;
+        final ownerArtist = item.ownerArtist;
         final availabilities = item.availabilities;
         final info = ensemble.professionalInfo;
+        final memberCount = ensemble.members?.length ?? 0;
+        final groupName = memberCount > 0
+            ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount-1}'
+            : (ownerArtist?.artistName ?? 'Conjunto');
+        var talentsSource = [];
+        if (ownerArtist?.professionalInfo?.specialty != null) {
+          talentsSource.addAll(ownerArtist?.professionalInfo?.specialty ?? []);
+        }
+        for (final member in ensemble.members ?? []) {
+          if (member.specialty != null) {
+            talentsSource.addAll(member.specialty ?? []);
+          }
+        }
         String? pricePerHour;
         if (availabilities.isNotEmpty) {
           final day = availabilities.first;
@@ -594,15 +608,16 @@ class _ExploreScreenState extends State<ExploreScreen>
         final description = info?.bio ?? 'Sem descrição disponível';
         final ensembleId = ensemble.id ?? '';
         return EnsembleCard(
-          groupName: 'Conjunto',
-          talents: info?.specialty?.join(', ') ?? 'Sem talentos definidos',
+          groupName: groupName,
+          totalMembers: memberCount,
+          talents: talentsSource.join(', '),
           description: description,
           contracts: ensemble.rateCount ?? 0,
           rating: ensemble.rating ?? 0.0,
           pricePerHour: pricePerHour,
           imageUrl: ensemble.profilePhotoUrl,
           ensembleId: ensembleId,
-          onHirePressed: () => _onEnsembleCardTapped(item),
+          onHirePressed: () => _onEnsembleRequestTapped(item),
           onTap: () => _onEnsembleCardTapped(item),
         );
       },
@@ -614,8 +629,27 @@ class _ExploreScreenState extends State<ExploreScreen>
     final ensembleId = item.ensemble.id ?? '';
     router.push(EnsembleExploreRoute(
       ensembleId: ensembleId,
+      artist: item.ownerArtist,
       selectedDate: _selectedDate,
       selectedAddress: _selectedAddress,
+    ));
+  }
+
+  void _onEnsembleRequestTapped(EnsembleWithAvailabilitiesEntity item) {
+    if (_selectedAddress == null) {
+      context.showError('Selecione um endereço antes de solicitar');
+      return;
+    }
+    if (item.ownerArtist == null) {
+      context.showError('Solicitação indisponível para este conjunto no momento');
+      return;
+    }
+    final router = AutoRouter.of(context);
+    router.push(RequestRoute(
+      selectedDate: _selectedDate,
+      selectedAddress: _selectedAddress!,
+      artist: item.ownerArtist!,
+      ensemble: item,
     ));
   }
 

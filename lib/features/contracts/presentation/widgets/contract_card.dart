@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
@@ -42,6 +43,18 @@ class ContractCard extends StatelessWidget {
 
   String _formatCurrency(double value) {
     return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
+  }
+
+  /// Exibe endereço no formato "Bairro, Cidade" (ex: Leblon, Rio de Janeiro).
+  String _formatAddressShort(AddressInfoEntity address) {
+    final district = address.district?.trim();
+    final city = address.city?.trim();
+    if ((district != null && district.isNotEmpty) && (city != null && city.isNotEmpty)) {
+      return '$district, $city';
+    }
+    if (city != null && city.isNotEmpty) return city;
+    if (district != null && district.isNotEmpty) return district;
+    return address.title;
   }
 
   /// Constrói o indicador de prazo para aceitar
@@ -256,8 +269,15 @@ class ContractCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        DSSizedBoxSpacing.vertical(4),      
                         Text(
-                          isArtist ? 'Anfitrião' : 'Artista',
+                          isArtist
+                            ? (contract.isGroupContract && contract.nameGroup != null && contract.nameGroup!.isNotEmpty
+                                ? 'Anfitrião · Conjunto: ${contract.nameGroup}'
+                                : 'Anfitrião')
+                            : (contract.isGroupContract && contract.nameGroup != null && contract.nameGroup!.isNotEmpty
+                                ? 'Conjunto'
+                                : 'Artista'),
                           style: textTheme.bodySmall?.copyWith(
                             color: onSurfaceVariant,
                           ),
@@ -301,7 +321,7 @@ class ContractCard extends StatelessWidget {
                   DSSizedBoxSpacing.horizontal(6),
                   Expanded(
                     child: Text(
-                      contract.address.title,
+                      _formatAddressShort(contract.address),
                       style: textTheme.bodyMedium?.copyWith(
                         color: onPrimary,
                       ),

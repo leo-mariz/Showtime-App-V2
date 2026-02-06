@@ -239,8 +239,7 @@ class ExploreBloc extends Bloc<ExploreEvent, ExploreState> {
       ensemblesHasMore = newInstance.hasMore;
     }
 
-    emit(GetArtistAllAvailabilitiesLoading());
-
+    // Não emite Loading aqui para não apagar a lista do explore ao abrir RequestScreen
     final result = await getArtistActiveAvailabilitiesUseCase.call(
       artistId: event.artistId,
       userAddress: event.userAddress,

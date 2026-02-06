@@ -3,6 +3,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:app/core/domain/availability/time_slot_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
@@ -23,10 +24,10 @@ import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events
 import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/request_availabilities_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/events/request_availabilities_events.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/states/request_availabilities_states.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
-import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
-import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
-import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
 import 'package:app/features/clients/presentation/bloc/clients_bloc.dart';
 import 'package:app/features/clients/presentation/bloc/events/clients_events.dart';
 import 'package:app/features/clients/presentation/bloc/states/clients_states.dart';
@@ -40,12 +41,15 @@ class RequestScreen extends StatefulWidget {
   final DateTime selectedDate;
   final AddressInfoEntity selectedAddress;
   final ArtistEntity artist;
+  /// Quando preenchido, a solicitação é para o conjunto (contrato tipo grupo).
+  final EnsembleWithAvailabilitiesEntity? ensemble;
 
   const RequestScreen({
     super.key,
     required this.selectedDate,
     required this.selectedAddress,
     required this.artist,
+    this.ensemble,
   });
 
   @override
@@ -66,7 +70,7 @@ class _RequestScreenState extends State<RequestScreen> {
   List<String> _eventTypes = [];
   bool _isLoadingEventTypes = false;
 
-  // Disponibilidades do artista (obtidas via ExploreBloc)
+  // Disponibilidades do artista/conjunto (obtidas via RequestAvailabilitiesBloc)
   List<AvailabilityDayEntity>? _availabilities;
   bool _isLoadingAvailabilities = false;
 
@@ -102,13 +106,22 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   void _loadAvailabilities() {
-    final exploreBloc = context.read<ExploreBloc>();
-    exploreBloc.add(
-      GetArtistAllAvailabilitiesEvent(
-        artistId: widget.artist.uid!,
-        userAddress: widget.selectedAddress,
-      ),
-    );
+    final bloc = context.read<RequestAvailabilitiesBloc>();
+    if (widget.ensemble != null) {
+      bloc.add(
+        LoadEnsembleAvailabilitiesEvent(
+          ensembleId: widget.ensemble!.ensemble.id!,
+          userAddress: widget.selectedAddress,
+        ),
+      );
+    } else {
+      bloc.add(
+        LoadArtistAvailabilitiesEvent(
+          artistId: widget.artist.uid!,
+          userAddress: widget.selectedAddress,
+        ),
+      );
+    }
   }
 
   @override
@@ -584,17 +597,27 @@ class _RequestScreenState extends State<RequestScreen> {
 
     final clientRating =_getClientRating();
 
-    // Criar ContractEntity
+    final isGroup = widget.ensemble != null;
+    final ensemble = widget.ensemble;
+    final membersCount = ensemble?.ensemble.members?.length ?? 0 - 1;
+    final nameGroup = ensemble != null
+        ? '${ensemble.ownerArtist?.artistName ?? 'Conjunto'} + $membersCount'
+        : null;
+
+    // Criar ContractEntity (artista individual ou conjunto)
     final contract = ContractEntity(
       date: _selectedDate!,
       time: _timeController.text,
       duration: _selectedDuration!.inMinutes,
       preparationTime: widget.artist.professionalInfo?.preparationTime,
       address: address,
-      contractorType: ContractorTypeEnum.artist,
+      contractorType: isGroup ? ContractorTypeEnum.group : ContractorTypeEnum.artist,
       refClient: clientUid,
-      refArtist: widget.artist.uid,
-      nameArtist: widget.artist.artistName,
+      refArtist: isGroup ? null : widget.artist.uid,
+      refGroup: isGroup ? (ensemble!.ensemble.id) : null,
+      refArtistOwner: isGroup ? widget.artist.uid : null,
+      nameArtist: isGroup ? null : widget.artist.artistName,
+      nameGroup: nameGroup,
       nameClient: nameClient,
       clientRating: clientRating,
       eventType: eventType,
@@ -653,22 +676,18 @@ class _RequestScreenState extends State<RequestScreen> {
             }
           },
         ),
-        // Listener para ExploreBloc - disponibilidades
-        BlocListener<ExploreBloc, ExploreState>(
+        // Listener para RequestAvailabilitiesBloc - disponibilidades (artista ou conjunto)
+        BlocListener<RequestAvailabilitiesBloc, RequestAvailabilitiesState>(
           listener: (context, state) {
-            if (state is GetArtistAllAvailabilitiesLoading) {
-              setState(() {
-                _isLoadingAvailabilities = true;
-              });
-            } else if (state is GetArtistsWithAvailabilitiesSuccess) {
+            if (state is RequestAvailabilitiesLoading) {
+              setState(() => _isLoadingAvailabilities = true);
+            } else if (state is RequestAvailabilitiesSuccess) {
               setState(() {
                 _isLoadingAvailabilities = false;
-                _availabilities = state.availabilities ?? [];
+                _availabilities = state.availabilities;
               });
-            } else if (state is GetArtistAllAvailabilitiesFailure) {
-              setState(() {
-                _isLoadingAvailabilities = false;
-              });
+            } else if (state is RequestAvailabilitiesFailure) {
+              setState(() => _isLoadingAvailabilities = false);
               context.showError('Erro ao carregar disponibilidades: ${state.error}');
             }
           },
@@ -684,9 +703,11 @@ class _RequestScreenState extends State<RequestScreen> {
             children: [
               DSSizedBoxSpacing.vertical(16),
               
-              // Cabeçalho: Solicitando para
+              // Cabeçalho: Solicitando para (artista ou conjunto)
               Text(
-                'Artista: ${widget.artist.artistName}',
+                widget.ensemble != null
+                    ? 'Conjunto: ${widget.ensemble!.ownerArtist?.artistName ?? 'Conjunto'} + ${widget.ensemble!.ensemble.members?.length ?? 0}'
+                    : 'Artista: ${widget.artist.artistName}',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: onPrimary,

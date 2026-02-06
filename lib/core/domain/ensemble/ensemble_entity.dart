@@ -1,5 +1,5 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
-import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:dart_mappable/dart_mappable.dart';
@@ -22,8 +22,8 @@ class EnsembleEntity with EnsembleEntityMappable {
   /// Informações profissionais do conjunto (igual à estrutura do artista)
   final ProfessionalInfoEntity? professionalInfo;
 
-  /// Integrantes do conjunto
-  final List<EnsembleMemberEntity>? members;
+  /// Integrantes do conjunto (referência + talentos no grupo). Dados completos em members feature.
+  final List<EnsembleMember>? members;
 
   /// URL do vídeo de apresentação (até 60s)
   final String? presentationVideoUrl;

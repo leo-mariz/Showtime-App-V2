@@ -19,6 +19,11 @@ class TabsSection extends StatelessWidget {
   final EnsembleEntity? ensemble;
   /// Nome do dono do conjunto (exibido na tab Integrantes para o membro owner)
   final String? ownerDisplayName;
+  /// Nomes dos integrantes na mesma ordem de [ensemble].members (para tab Integrantes).
+  /// Índice i corresponde ao slot ensemble.members[i]; para slot com isOwner usa-se [ownerDisplayName].
+  final List<String>? ensembleMemberDisplayNames;
+  /// Talentos do artista dono do conjunto (exibidos na aba "Sobre o Show" quando [ensemble] está presente).
+  final List<String>? ownerArtistSpecialty;
 
   const TabsSection({
     super.key,
@@ -28,6 +33,8 @@ class TabsSection extends StatelessWidget {
     this.memberNames,
     this.ensemble,
     this.ownerDisplayName,
+    this.ensembleMemberDisplayNames,
+    this.ownerArtistSpecialty,
   }) : assert(artist != null || ensemble != null, 'Informe artist ou ensemble');
 
   bool get _hasTalents =>
@@ -106,17 +113,27 @@ class TabsSection extends StatelessWidget {
 
     if (ensemble != null) {
       final members = ensemble!.members ?? [];
-      final itemCount = 1 + members.length;
+      final displayNames = ensembleMemberDisplayNames;
       return Padding(
         padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
         child: ListView.builder(
           shrinkWrap: true,
-          itemCount: itemCount,
+          itemCount: members.length,
           itemBuilder: (context, index) {
-            final displayName = index == 0
+            final slot = members[index];
+            final displayName = slot.isOwner
                 ? (ownerDisplayName ?? 'Dono')
-                : (members[index - 1].name ?? 'Integrante');
-            final specialties = index == 0 ? <String>[] : (members[index - 1].specialty ?? []);
+                : (displayNames != null && index < displayNames.length
+                    ? displayNames[index]
+                    : 'Integrante');
+            List<String> specialties = [];
+            if (slot.isOwner) {
+              specialties = ownerArtistSpecialty ?? [];
+            } else {
+              specialties = slot.specialty ?? [];
+            }
+
+
             return Padding(
               padding: EdgeInsets.only(bottom: DSSize.height(16)),
               child: Column(
@@ -196,13 +213,13 @@ class TabsSection extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final isEnsemble = ensemble != null;
-
-    // Para conjunto não exibimos specialty (talento é por integrante)
+    // Para conjunto: talentos do dono (ownerArtistSpecialty); para artista: professionalInfo.specialty
+    final hasOwnerSpecialty = isEnsemble && (ownerArtistSpecialty?.isNotEmpty ?? false);
     final hasSpecialty = !isEnsemble && (professionalInfo?.specialty?.isNotEmpty ?? false);
     final hasMinimumDuration = professionalInfo?.minimumShowDuration != null;
     final hasPreparationTime = professionalInfo?.preparationTime != null;
 
-    if (!hasSpecialty && !hasMinimumDuration && !hasPreparationTime) {
+    if (!hasSpecialty && !hasOwnerSpecialty && !hasMinimumDuration && !hasPreparationTime) {
       return Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
@@ -224,6 +241,16 @@ class TabsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // if (hasOwnerSpecialty || hasSpecialty) ...[
+          //   Wrap(
+          //     spacing: DSSize.width(8),
+          //     runSpacing: DSSize.height(6),
+          //     children: (hasOwnerSpecialty ? ownerArtistSpecialty! : professionalInfo!.specialty!)
+          //         .map((t) => GenreChip(label: t))
+          //         .toList(),
+          //   ),
+          //   if (hasMinimumDuration || hasPreparationTime) SizedBox(height: DSSize.height(16)),
+          // ],
           if (hasMinimumDuration || hasPreparationTime) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

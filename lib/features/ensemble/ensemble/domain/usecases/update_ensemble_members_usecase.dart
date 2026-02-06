@@ -1,5 +1,5 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
@@ -10,8 +10,8 @@ import 'package:app/features/ensemble/members/domain/usecases/update_member_usec
 import 'package:dartz/dartz.dart';
 
 /// Use case: atualizar a lista de integrantes vinculados a um conjunto.
-/// Também sincroniza [EnsembleMemberEntity.ensembleIds] em cada documento do membro no Firestore.
-/// Após atualizar, sincroniza a completude do conjunto.
+/// Recebe lista de [EnsembleMember] (memberId + specialty + isOwner).
+/// Sincroniza ensembleIds em cada documento do membro na feature members.
 class UpdateEnsembleMembersUseCase {
   final GetEnsembleUseCase getEnsembleUseCase;
   final UpdateEnsembleUseCase updateEnsembleUseCase;
@@ -30,7 +30,7 @@ class UpdateEnsembleMembersUseCase {
   Future<Either<Failure, EnsembleEntity>> call(
     String artistId,
     String ensembleId,
-    List<EnsembleMemberEntity> members,
+    List<EnsembleMember> members,
   ) async {
     try {
       if (artistId.isEmpty) {
@@ -57,19 +57,19 @@ class UpdateEnsembleMembersUseCase {
           if (failEnsemble != null) return Left(failEnsemble);
 
           final newIds = members
-              .where((m) => !m.isOwner && m.id != null && m.id!.isNotEmpty)
-              .map((m) => m.id!)
+              .where((m) => !m.isOwner)
+              .map((m) => m.memberId)
               .toSet();
           final oldIds = oldMembers
-              .where((m) => !m.isOwner && m.id != null && m.id!.isNotEmpty)
-              .map((m) => m.id!)
+              .where((m) => !m.isOwner)
+              .map((m) => m.memberId)
               .toSet();
 
-          for (final member in members) {
-            if (member.isOwner || member.id == null || member.id!.isEmpty) continue;
+          for (final slot in members) {
+            if (slot.isOwner) continue;
             final getMemberResult = await getMemberUseCase.call(
               artistId,
-              member.id!,
+              slot.memberId,
               forceRemote: true,
             );
             await getMemberResult.fold(
@@ -113,7 +113,6 @@ class UpdateEnsembleMembersUseCase {
 
           await syncEnsembleCompletenessIfChangedUseCase.call(artistId, ensembleId);
 
-          // Retorna o ensemble re-buscado para refletir hasIncompleteSections/incompleteSections atualizados pelo sync.
           final refetch = await getEnsembleUseCase.call(artistId, ensembleId);
           return refetch.fold(
             (_) => Right(updated),

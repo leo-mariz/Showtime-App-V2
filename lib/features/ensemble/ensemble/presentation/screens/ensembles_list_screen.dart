@@ -2,6 +2,7 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
@@ -14,6 +15,7 @@ import 'package:app/features/ensemble/ensemble/presentation/widgets/empty_ensemb
 import 'package:app/features/ensemble/ensemble/presentation/widgets/ensemble_card.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
 import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
 import 'package:auto_route/auto_route.dart';
@@ -39,6 +41,7 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _onGetAllEnsembles();
+    context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
   }
 
   void _onGetAllEnsembles() {
@@ -48,7 +51,7 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     } else {
       final ensembles = currentState.ensembles;
       if (ensembles.isEmpty) {
-        context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
+        context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: false));
       }
     }
   }
@@ -56,7 +59,15 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   void _onAddEnsemble() async {
     final selected = await NewEnsembleModal.show(context: context);
     if (selected != null && mounted) {
-      context.read<EnsembleBloc>().add(CreateEnsembleEvent(members: selected));
+      final slots = selected
+          .where((e) => e.id != null && e.id!.isNotEmpty)
+          .map((e) => EnsembleMember(
+                memberId: e.id!,
+                specialty: e.specialty,
+                isOwner: false,
+              ))
+          .toList();
+      context.read<EnsembleBloc>().add(CreateEnsembleEvent(members: slots));
     }
   }
 
@@ -113,19 +124,19 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     return 'Artista';
   }
 
-  /// Total de integrantes: artista (1) + apenas membros que não são dono (evita contar dono duas vezes).
+  /// Total de integrantes (apenas os que não são dono).
   int _totalMembersCount(EnsembleEntity e) {
-    final nonOwnerCount = e.members?.where((m) => !m.isOwner).length ?? 0;
-    return (nonOwnerCount < 0 ? 0 : nonOwnerCount);
+    final members = e.members ?? [];
+    return members.where((m) => !m.isOwner).length;
   }
 
-  /// Primeiros nomes dos integrantes que não são dono, separados por vírgula.
-  String? _membersFirstNames(EnsembleEntity e) {
+  /// Primeiros nomes dos integrantes que não são dono, resolvidos via [memberIdToName], separados por vírgula.
+  String? _membersFirstNames(EnsembleEntity e, Map<String, String> memberIdToName) {
     final members = e.members ?? [];
     final names = <String>[];
     for (final m in members) {
       if (m.isOwner) continue;
-      final full = m.name?.trim();
+      final full = memberIdToName[m.memberId]?.trim();
       if (full == null || full.isEmpty) continue;
       final first = full.split(RegExp(r'\s+')).first;
       if (first.isNotEmpty) names.add(first);
@@ -158,14 +169,14 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
           context.showError(state.error);
         }
         if (state is CreateEnsembleSuccess) {
-          context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
-          context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: true));
+          context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: false));
+          context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
         }
         if (state is CreateEnsembleFailure) {
           context.showError(state.error);
         }
         if (state is DeleteEnsembleSuccess) {
-          context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: true));
+          context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: false));
         }
         if (state is DeleteEnsembleFailure) {
           context.showError(state.error);
@@ -179,54 +190,64 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
           onPressed: _onAddEnsemble,
           child: const Icon(Icons.add),
         ),
-        child: BlocBuilder<EnsembleBloc, EnsembleState>(
-          builder: (context, state) {
-            if (state is GetAllEnsemblesLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final ensembles = state is GetAllEnsemblesSuccess
-                ? state.ensembles
-                : null;
-            if (ensembles != null) {
-              final isEmpty = ensembles.isEmpty;
-              if (isEmpty) {
+        child: BlocBuilder<MembersBloc, MembersState>(
+          buildWhen: (previous, current) => current is GetAllMembersSuccess || current is GetAllMembersLoading,
+          builder: (context, membersState) {
+            final memberIdToName = membersState is GetAllMembersSuccess
+                ? {
+                    for (final m in membersState.members)
+                      if (m.id != null && m.name != null && m.name!.trim().isNotEmpty)
+                        m.id!: m.name!,
+                  }
+                : <String, String>{};
+            return BlocBuilder<EnsembleBloc, EnsembleState>(
+              builder: (context, state) {
+                if (state is GetAllEnsemblesLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final ensembles = state is GetAllEnsemblesSuccess
+                    ? state.ensembles
+                    : null;
+                if (ensembles != null) {
+                  final isEmpty = ensembles.isEmpty;
+                  if (isEmpty) {
+                    return EmptyEnsemblesPlaceholder(
+                      message: 'Você ainda não possui conjuntos cadastrados.',
+                      buttonLabel: 'Adicionar conjunto',
+                      onButtonPressed: _onAddEnsemble,
+                    );
+                  }
+                  return Column(
+                    children: [
+                      DSSizedBoxSpacing.vertical(16),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: ensembles.length,
+                          itemBuilder: (context, index) {
+                            final e = ensembles[index];
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: DSSize.height(12)),
+                              child: EnsembleCard(
+                                displayName: _ensembleDisplayName(e),
+                                photoUrl: e.profilePhotoUrl,
+                                membersFirstNames: _membersFirstNames(e, memberIdToName),
+                                allApproved: e.allMembersApproved ?? false,
+                                onTap: () => _onEditEnsemble(e),
+                                onOptionsTap: () => _showOptionsModalFor(context, e),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      DSSizedBoxSpacing.vertical(16),
+                    ],
+                  );
+                }
+                // EnsembleInitial ou GetAllEnsemblesFailure (após emitir Initial)
                 return EmptyEnsemblesPlaceholder(
                   message: 'Você ainda não possui conjuntos cadastrados.',
-                  buttonLabel: 'Adicionar conjunto',
-                  onButtonPressed: _onAddEnsemble,
                 );
-              }
-              return Column(
-                children: [
-                  DSSizedBoxSpacing.vertical(16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: ensembles.length,
-                      itemBuilder: (context, index) {
-                        final e = ensembles[index];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: DSSize.height(12)),
-                          child: EnsembleCard(
-                            displayName: _ensembleDisplayName(e),
-                            photoUrl: e.profilePhotoUrl,
-                            membersFirstNames: _membersFirstNames(e),
-                            allApproved: e.allMembersApproved ?? false,
-                            onTap: () => _onEditEnsemble(e),
-                            onOptionsTap: () => _showOptionsModalFor(context, e),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  DSSizedBoxSpacing.vertical(16),
-                ],
-              );
-            }
-            // EnsembleInitial ou GetAllEnsemblesFailure (após emitir Initial)
-            return EmptyEnsemblesPlaceholder(
-              message: 'Você ainda não possui conjuntos cadastrados.',
-              // buttonLabel: 'Adicionar conjunto',
-              // onButtonPressed: _onAddEnsemble,
+              },
             );
           },
         ),

@@ -23,7 +23,11 @@ abstract class IExploreRemoteDataSource {
   /// Retorna lista vazia se não existir nenhum
   /// Lança [ServerException] em caso de erro
   Future<List<ArtistEntity>> getActiveApprovedArtists();
-  
+
+  /// Busca as informações de um artista pelo ID (documento na coleção de artistas).
+  /// Retorna null se o documento não existir. Lança [ServerException] em caso de erro de rede.
+  Future<ArtistEntity?> getArtistById(String artistId);
+
   /// Busca disponibilidade de um dia específico de um artista
   /// Usado para explorar (não para perfil)
   /// Retorna null se não existir disponibilidade para aquele dia
@@ -112,6 +116,34 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao buscar artistas para explorar',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<ArtistEntity?> getArtistById(String artistId) async {
+    try {
+      if (artistId.isEmpty) return null;
+      final artistsCollectionRef = ArtistWithAvailabilitiesEntityReference
+          .artistsCollectionReference(firestore);
+      final docRef = artistsCollectionRef.doc(artistId);
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) return null;
+      final artistMap = snapshot.data() as Map<String, dynamic>;
+      final artist = ArtistEntityMapper.fromMap(artistMap);
+      return artist.copyWith(uid: snapshot.id);
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao buscar artista no Firestore: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao buscar artista',
         originalError: e,
         stackTrace: stackTrace,
       );

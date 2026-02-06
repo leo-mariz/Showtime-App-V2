@@ -19,6 +19,7 @@ class EnsembleWithAvailabilitiesEntityMapper
       );
       EnsembleEntityMapper.ensureInitialized();
       AvailabilityDayEntityMapper.ensureInitialized();
+      ArtistEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -33,20 +34,28 @@ class EnsembleWithAvailabilitiesEntityMapper
   static List<AvailabilityDayEntity> _$availabilities(
     EnsembleWithAvailabilitiesEntity v,
   ) => v.availabilities;
-  static const Field<EnsembleWithAvailabilitiesEntity,
-      List<AvailabilityDayEntity>> _f$availabilities =
-      Field('availabilities', _$availabilities);
+  static const Field<
+    EnsembleWithAvailabilitiesEntity,
+    List<AvailabilityDayEntity>
+  >
+  _f$availabilities = Field('availabilities', _$availabilities);
+  static ArtistEntity? _$ownerArtist(EnsembleWithAvailabilitiesEntity v) =>
+      v.ownerArtist;
+  static const Field<EnsembleWithAvailabilitiesEntity, ArtistEntity>
+  _f$ownerArtist = Field('ownerArtist', _$ownerArtist, opt: true);
 
   @override
   final MappableFields<EnsembleWithAvailabilitiesEntity> fields = const {
     #ensemble: _f$ensemble,
     #availabilities: _f$availabilities,
+    #ownerArtist: _f$ownerArtist,
   };
 
   static EnsembleWithAvailabilitiesEntity _instantiate(DecodingData data) {
     return EnsembleWithAvailabilitiesEntity(
       ensemble: data.dec(_f$ensemble),
       availabilities: data.dec(_f$availabilities),
+      ownerArtist: data.dec(_f$ownerArtist),
     );
   }
 
@@ -139,9 +148,11 @@ abstract class EnsembleWithAvailabilitiesEntityCopyWith<
     >
   >
   get availabilities;
+  ArtistEntityCopyWith<$R, ArtistEntity, ArtistEntity>? get ownerArtist;
   $R call({
     EnsembleEntity? ensemble,
     List<AvailabilityDayEntity>? availabilities,
+    ArtistEntity? ownerArtist,
   });
   EnsembleWithAvailabilitiesEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -184,13 +195,18 @@ class _EnsembleWithAvailabilitiesEntityCopyWithImpl<$R, $Out>
     (v) => call(availabilities: v),
   );
   @override
+  ArtistEntityCopyWith<$R, ArtistEntity, ArtistEntity>? get ownerArtist =>
+      $value.ownerArtist?.copyWith.$chain((v) => call(ownerArtist: v));
+  @override
   $R call({
     EnsembleEntity? ensemble,
     List<AvailabilityDayEntity>? availabilities,
+    Object? ownerArtist = $none,
   }) => $apply(
     FieldCopyWithData({
       if (ensemble != null) #ensemble: ensemble,
       if (availabilities != null) #availabilities: availabilities,
+      if (ownerArtist != $none) #ownerArtist: ownerArtist,
     }),
   );
   @override
@@ -198,6 +214,7 @@ class _EnsembleWithAvailabilitiesEntityCopyWithImpl<$R, $Out>
       EnsembleWithAvailabilitiesEntity(
         ensemble: data.get(#ensemble, or: $value.ensemble),
         availabilities: data.get(#availabilities, or: $value.availabilities),
+        ownerArtist: data.get(#ownerArtist, or: $value.ownerArtist),
       );
 
   @override

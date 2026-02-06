@@ -61,11 +61,11 @@ class GetEnsembleCompletenessUseCase {
 
           final memberDocsMap = <String, List<MemberDocumentEntity>>{};
           final nonOwnerMembers = ensemble.members
-                  ?.where((m) => !m.isOwner && m.id != null && m.id!.isNotEmpty)
+                  ?.where((m) => !m.isOwner && m.memberId.isNotEmpty)
                   .toList() ??
               [];
           for (final member in nonOwnerMembers) {
-            final memberId = member.id!;
+            final memberId = member.memberId;
             final result = await getAllMemberDocumentsUseCase.call(
               artistId,
               ensembleId,

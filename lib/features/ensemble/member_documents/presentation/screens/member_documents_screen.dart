@@ -119,7 +119,7 @@ class _MemberDocumentsScreenState extends State<MemberDocumentsScreen> {
           // Atualiza o ensemble no bloc (sync já atualizou cache) para a UI refletir incompleteSections.
           if (mounted) {
             context.read<EnsembleBloc>().add(
-              GetEnsembleByIdEvent(ensembleId: widget.ensembleId, forceRefresh: true),
+              GetEnsembleByIdEvent(ensembleId: widget.ensembleId, forceRefresh: false),
             );
           }
         } else if (state is SaveMemberDocumentFailure) {

@@ -1,31 +1,34 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/ensemble/ensemble/domain/repositories/ensemble_repository.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/create_empty_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/sync_ensemble_completeness_if_changed_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_usecase.dart';
+import 'package:app/features/ensemble/members/domain/usecases/get_member_usecase.dart';
 import 'package:app/features/ensemble/members/domain/usecases/update_member_usecase.dart';
 import 'package:dartz/dartz.dart';
 
-/// Use case: criar um conjunto a partir do DTO de entrada.
+/// Use case: criar um conjunto a partir da lista de integrantes (slots).
 ///
+/// [otherMembers]: integrantes não-dono (memberId + specialty). O dono é sempre o [artistId].
 /// Lógica:
 /// 1. Cria o grupo (vazio) para obter o ensembleId.
-/// 2. Adiciona o ensembleId à lista ensembleIds de cada membro e atualiza o conjunto.
-/// 3. Persiste o campo ensembleIds em cada documento do membro no Firestore.
-/// 4. Sincroniza completude do conjunto (hasIncompleteSections / incompleteSections) se mudou.
-///
+/// 2. Atualiza o conjunto com a lista de [EnsembleMember] (dono + outros).
+/// 3. Para cada integrante não-dono, atualiza o documento do membro (ensembleIds) na feature members.
+/// 4. Sincroniza completude do conjunto.
 class CreateEnsembleUseCase {
   final CreateEmptyEnsembleUseCase createEmptyEnsembleUseCase;
   final UpdateEnsembleUseCase updateEnsembleUseCase;
+  final GetMemberUseCase getMemberUseCase;
   final UpdateMemberUseCase updateMemberUseCase;
   final SyncEnsembleCompletenessIfChangedUseCase syncEnsembleCompletenessIfChangedUseCase;
 
   CreateEnsembleUseCase({
     required this.createEmptyEnsembleUseCase,
     required this.updateEnsembleUseCase,
+    required this.getMemberUseCase,
     required this.updateMemberUseCase,
     required this.syncEnsembleCompletenessIfChangedUseCase,
     required IEnsembleRepository repository,
@@ -33,7 +36,7 @@ class CreateEnsembleUseCase {
 
   Future<Either<Failure, EnsembleEntity>> call(
     String artistId,
-    List<EnsembleMemberEntity> members,
+    List<EnsembleMember> otherMembers,
   ) async {
     try {
       if (artistId.isEmpty) {
@@ -45,21 +48,14 @@ class CreateEnsembleUseCase {
         (f) async => Left(f),
         (created) async {
           final ensembleId = created.id ?? '';
-          final membersWithEnsembleId = <EnsembleMemberEntity>[];
-          membersWithEnsembleId.add(EnsembleMemberEntity(
+          final ownerSlot = EnsembleMember(
+            memberId: artistId,
+            specialty: null,
             isOwner: true,
-            artistId: artistId,
-            isApproved: true,
-          ));
-          for (final member in members) {
-            final memberWithEnsembleId = member.copyWith(
-              ensembleIds: [...(member.ensembleIds ?? []), ensembleId],
-            );
-            membersWithEnsembleId.add(memberWithEnsembleId);
-          }
+          );
+          final members = [ownerSlot, ...otherMembers];
 
-          final ensembleWithMembers =
-              created.copyWith(members: membersWithEnsembleId);
+          final ensembleWithMembers = created.copyWith(members: members);
           final updateResult = await updateEnsembleUseCase.call(
             artistId,
             ensembleWithMembers,
@@ -67,16 +63,26 @@ class CreateEnsembleUseCase {
           final failUpdate = updateResult.fold((f) => f, (_) => null);
           if (failUpdate != null) return Left(failUpdate);
 
-          for (final member in membersWithEnsembleId) {
-            if (member.isOwner || member.id == null || member.id!.isEmpty) {
-              continue;
-            }
-            final updateMemberResult = await updateMemberUseCase.call(
-              artistId: artistId,
-              member: member,
+          for (final slot in otherMembers) {
+            final getResult = await getMemberUseCase.call(
+              artistId,
+              slot.memberId,
+              forceRemote: true,
             );
-            final failMember = updateMemberResult.fold((f) => f, (_) => null);
-            if (failMember != null) return Left(failMember);
+            await getResult.fold(
+              (_) => null,
+              (current) async {
+                if (current == null) return;
+                final ids = current.ensembleIds ?? [];
+                if (ids.contains(ensembleId)) return;
+                final updatedMember =
+                    current.copyWith(ensembleIds: [...ids, ensembleId]);
+                await updateMemberUseCase.call(
+                  artistId: artistId,
+                  member: updatedMember,
+                );
+              },
+            );
           }
 
           await syncEnsembleCompletenessIfChangedUseCase.call(artistId, ensembleId);

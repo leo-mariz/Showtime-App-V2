@@ -6,6 +6,7 @@ import 'package:app/features/contracts/domain/repositories/contract_repository.d
 import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// UseCase: Aceitar uma solicitação de contrato
 /// 
@@ -28,6 +29,27 @@ class AcceptContractUseCase {
     this.updateContractsIndexUseCase,
     required this.cancelContractUseCase,
   });
+
+  static tz.Location get _saoPaulo => tz.getLocation('America/Sao_Paulo');
+
+  /// True se a data do evento é hoje ou amanhã no fuso America/Sao_Paulo.
+  bool _isEventSameOrNextDayInSp(DateTime eventDate, tz.TZDateTime nowSp) {
+    final tomorrowSp = nowSp.add(const Duration(days: 1));
+    final sameDay = eventDate.year == nowSp.year && eventDate.month == nowSp.month && eventDate.day == nowSp.day;
+    final nextDay = eventDate.year == tomorrowSp.year && eventDate.month == tomorrowSp.month && eventDate.day == tomorrowSp.day;
+    return sameDay || nextDay;
+  }
+
+  /// Calcula o prazo para o anfitrião pagar (America/Sao_Paulo), retorna em UTC.
+  /// Regra: evento no mesmo dia ou no dia seguinte → 1h; caso contrário → 24h.
+  DateTime _calculatePaymentDeadlineUtc(DateTime eventDate) {
+    final nowSp = tz.TZDateTime.now(_saoPaulo);
+    final duration = _isEventSameOrNextDayInSp(eventDate, nowSp)
+        ? const Duration(hours: 1)
+        : const Duration(hours: 24);
+    final deadlineSp = nowSp.add(duration);
+    return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);
+  }
 
   Future<Either<Failure, void>> call({
     required String contractUid,
@@ -77,12 +99,17 @@ class AcceptContractUseCase {
         false,
       );
 
+      // Prazo para o anfitrião pagar (mesmo dia/dia seguinte = 1h; depois = 24h), em UTC
+      final paymentDueDateUtc = _calculatePaymentDeadlineUtc(contract.date);
+      final acceptedAtUtc = DateTime.now().toUtc();
+
       // Criar cópia do contrato com status aceito
       final updatedContract = contract.copyWith(
         status: ContractStatusEnum.paymentPending,
-        acceptedAt: DateTime.now(),
+        acceptedAt: acceptedAtUtc,
         linkPayment: paymentLink,
-        statusChangedAt: DateTime.now(),
+        paymentDueDate: paymentDueDateUtc,
+        statusChangedAt: acceptedAtUtc,
       );
 
       // Atualizar contrato

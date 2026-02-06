@@ -17,6 +17,8 @@ class ContractEntity with ContractEntityMappable {
   // Referências (UIDs)
   final String? refArtist;           // UID do artista (se individual)
   final String? refGroup;             // UID do grupo (se grupo)
+  /// UID do artista dono do conjunto (quando contractorType == group). Usado para atualizar índice do dono.
+  final String? refArtistOwner;
   final String? refClient;            // UID do cliente/anfitrião
   
   // Tipo de contratado
@@ -88,6 +90,7 @@ class ContractEntity with ContractEntityMappable {
     this.uid,
     this.refArtist,
     this.refGroup,
+    this.refArtistOwner,
     this.nameArtist,
     this.nameGroup,
     this.nameClient,
@@ -135,18 +138,42 @@ class ContractEntity with ContractEntityMappable {
   String? get contractorUid => isGroupContract ? refGroup : refArtist;
   String? get contractorName => isGroupContract ? nameGroup : nameArtist;
   
-  /// Verifica se o prazo para aceitar a solicitação expirou
+  /// Verifica se o prazo para aceitar a solicitação expirou (comparação em UTC)
   bool get isAcceptDeadlineExpired {
     if (acceptDeadline == null || !isPending) return false;
-    return DateTime.now().isAfter(acceptDeadline!);
+    final nowUtc = DateTime.now().toUtc();
+    final d = acceptDeadline!;
+    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    return nowUtc.isAfter(deadlineUtc);
   }
-  
-  /// Retorna o tempo restante até o deadline (ou null se expirado)
+
+  /// Retorna o tempo restante até o deadline em UTC (ou null se expirado)
   Duration? get remainingTimeToAccept {
     if (acceptDeadline == null || !isPending) return null;
-    final now = DateTime.now();
-    if (now.isAfter(acceptDeadline!)) return null;
-    return acceptDeadline!.difference(now);
+    final nowUtc = DateTime.now().toUtc();
+    final d = acceptDeadline!;
+    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    if (nowUtc.isAfter(deadlineUtc)) return null;
+    return deadlineUtc.difference(nowUtc);
+  }
+
+  /// Verifica se o prazo para o anfitrião pagar expirou (comparação em UTC)
+  bool get isPaymentDeadlineExpired {
+    if (paymentDueDate == null || !isPaymentPending) return false;
+    final nowUtc = DateTime.now().toUtc();
+    final d = paymentDueDate!;
+    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    return nowUtc.isAfter(deadlineUtc);
+  }
+
+  /// Tempo restante para o anfitrião pagar (UTC), ou null se expirado/não aplicável
+  Duration? get remainingTimeToPay {
+    if (paymentDueDate == null || !isPaymentPending) return null;
+    final nowUtc = DateTime.now().toUtc();
+    final d = paymentDueDate!;
+    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    if (nowUtc.isAfter(deadlineUtc)) return null;
+    return deadlineUtc.difference(nowUtc);
   }
 }
 
@@ -183,6 +210,7 @@ extension ContractEntityReference on ContractEntity {
     'uid',
     'refArtist',
     'refGroup',
+    'refArtistOwner',
     'refClient',
     'contractorType',
     'nameArtist',

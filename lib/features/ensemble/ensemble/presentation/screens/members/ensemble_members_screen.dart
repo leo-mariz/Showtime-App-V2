@@ -1,5 +1,6 @@
 import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:app/core/domain/ensemble/member_documents/member_document_entity.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
@@ -18,6 +19,7 @@ import 'package:app/features/artists/artists/presentation/bloc/states/artists_st
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
 import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
 import 'package:app/features/ensemble/members/presentation/widgets/empty_members_placeholder.dart';
@@ -39,8 +41,10 @@ class EnsembleMembersScreen extends StatefulWidget {
 }
 
 class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
-  /// Quando não null, estamos aguardando GetTalentsSuccess para abrir o sheet deste integrante.
-  EnsembleMemberEntity? _pendingMemberForTalents;
+  /// Slot do integrante cujos talentos vamos editar (aguardando GetTalentsSuccess).
+  EnsembleMember? _pendingSlotForTalents;
+  /// Nome do integrante para o título do sheet de talentos.
+  String? _pendingSlotDisplayName;
   /// Documentos por memberId (carregados via MemberDocumentsBloc).
   Map<String, List<MemberDocumentEntity>> _documentsByMember = {};
   /// Índice do próximo integrante a carregar documentos (carregamento sequencial).
@@ -56,15 +60,16 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     context.read<EnsembleBloc>().add(GetEnsembleByIdEvent(ensembleId: widget.ensembleId));
+    context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
   }
 
-  void _onRemoveMember(EnsembleEntity ensemble, EnsembleMemberEntity member) {
+  void _onRemoveMember(EnsembleEntity ensemble, EnsembleMember slot, String displayName) {
     showDialog(
       context: context,
       builder: (ctx) => ConfirmationDialog(
         title: 'Remover integrante',
         message:
-            'Tem certeza que deseja remover ${member.name ?? "este integrante"} do conjunto?',
+            'Tem certeza que deseja remover $displayName do conjunto?',
         confirmText: 'Remover',
         cancelText: 'Cancelar',
         confirmButtonColor: Theme.of(context).colorScheme.error,
@@ -72,7 +77,7 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
         onConfirm: () {
           Navigator.of(ctx).pop();
           final current = ensemble.members ?? [];
-          final newList = current.where((m) => m.id != member.id).toList();
+          final newList = current.where((m) => m.memberId != slot.memberId).toList();
           context.read<EnsembleBloc>().add(
                 UpdateEnsembleEvent(ensemble: ensemble.copyWith(members: newList)),
               );
@@ -82,8 +87,8 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
     );
   }
 
-  void _onDocumentsTap(EnsembleMemberEntity member) {
-    final memberId = member.id ?? '';
+  void _onDocumentsTap(EnsembleMember slot) {
+    final memberId = slot.memberId;
     if (memberId.isEmpty) return;
     final router = AutoRouter.of(context);
     router.push(MemberDocumentsRoute(ensembleId: widget.ensembleId, memberId: memberId)).then((_) {
@@ -95,20 +100,24 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
         GetAllMemberDocumentsEvent(
           ensembleId: widget.ensembleId,
           memberId: memberId,
-          forceRemote: true,
+          forceRemote: false,
         ),
       );
     });
   }
 
-  void _onEditTalentsTap(EnsembleMemberEntity member) {
-    setState(() => _pendingMemberForTalents = member);
+  void _onEditTalentsTap(EnsembleMember slot, EnsembleMemberEntity? detail) {
+    setState(() {
+      _pendingSlotForTalents = slot;
+      _pendingSlotDisplayName = detail?.name;
+    });
     context.read<AppListsBloc>().add(GetTalentsEvent());
   }
 
   void _showEditTalentsSheetWithList(
     BuildContext context,
-    EnsembleMemberEntity member,
+    EnsembleMember slot,
+    String displayName,
     List<String> talentNames,
   ) {
     showModalBottomSheet<void>(
@@ -138,17 +147,17 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
             current is UpdateEnsembleMemberTalentsFailure ||
             current is GetAllEnsemblesSuccess,
         builder: (ctx, state) => SelectTalentsSheet(
-          title: 'Talentos de ${member.name ?? "Integrante"}',
+          title: 'Talentos de $displayName',
           subtitle: 'Selecione os talentos deste integrante neste conjunto. O mesmo integrante pode ter talentos diferentes em outros conjuntos.',
           talentNames: talentNames,
-          initialSelected: member.specialty ?? [],
+          initialSelected: slot.specialty ?? [],
           loading: state is UpdateEnsembleMemberTalentsLoading,
           confirmButtonLabel: 'Salvar',
           onConfirm: (selected) {
             context.read<EnsembleBloc>().add(
               UpdateEnsembleMemberTalentsEvent(
                 ensembleId: widget.ensembleId,
-                memberId: member.id ?? '',
+                memberId: slot.memberId,
                 talents: selected,
               ),
             );
@@ -169,10 +178,25 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
     final currentEnsemble = ensembleState is GetAllEnsemblesSuccess
         ? ensembleState.currentEnsemble
         : null;
+    final membersState = context.read<MembersBloc>().state;
+    final allMembers = membersState is GetAllMembersSuccess
+        ? membersState.members
+        : <EnsembleMemberEntity>[];
+    final memberDetailsById = {
+      for (final m in allMembers) if (m.id != null) m.id!: m
+    };
     final isThisEnsemble = currentEnsemble?.id == widget.ensembleId;
-    final initialSelected = isThisEnsemble ? (currentEnsemble?.members ?? []) : <EnsembleMemberEntity>[];
+    final slots = isThisEnsemble
+        ? (currentEnsemble!.members ?? []).where((m) => !m.isOwner).toList()
+        : <EnsembleMember>[];
+    final initialSelected = slots
+        .map((s) => memberDetailsById[s.memberId])
+        .whereType<EnsembleMemberEntity>()
+        .toList();
+    final initialSelectedIds = slots.map((s) => s.memberId).toSet();
     _openAddMemberModal(
       initialSelected: initialSelected,
+      initialSelectedIds: initialSelectedIds,
       currentEnsemble: isThisEnsemble ? currentEnsemble : null,
     );
   }
@@ -180,20 +204,36 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
   /// Abre o modal de integrantes (usa MembersBloc internamente para listar/criar/remover).
   Future<void> _openAddMemberModal({
     required List<EnsembleMemberEntity> initialSelected,
+    required Set<String> initialSelectedIds,
     required EnsembleEntity? currentEnsemble,
   }) async {
     final result = await MemberModal.show(
       context: context,
       membersBloc: context.read<MembersBloc>(),
       initialSelected: initialSelected,
+      initialSelectedIds: initialSelectedIds,
     );
     if (!mounted) return;
 
     if (result == null) return;
     if (currentEnsemble == null) return;
 
+    final artistId = context.read<ArtistsBloc>().state is GetArtistSuccess
+        ? (context.read<ArtistsBloc>().state as GetArtistSuccess).artist.uid
+        : null;
+    final ownerSlot = artistId != null
+        ? EnsembleMember(memberId: artistId, specialty: null, isOwner: true)
+        : null;
+    final newMembers = [
+      if (ownerSlot != null) ownerSlot,
+      ...result.map((e) => EnsembleMember(
+            memberId: e.id!,
+            specialty: e.specialty,
+            isOwner: false,
+          )),
+    ];
     context.read<EnsembleBloc>().add(
-          UpdateEnsembleEvent(ensemble: currentEnsemble.copyWith(members: result)),
+          UpdateEnsembleEvent(ensemble: currentEnsemble.copyWith(members: newMembers)),
         );
     _reloadEnsemble();
     if (mounted) {
@@ -207,18 +247,25 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
       listenWhen: (previous, current) =>
           current is GetTalentsSuccess || current is GetTalentsFailure,
       listener: (context, state) {
-        if (state is GetTalentsSuccess && _pendingMemberForTalents != null && mounted) {
-          final member = _pendingMemberForTalents!;
+        if (state is GetTalentsSuccess && _pendingSlotForTalents != null && mounted) {
+          final slot = _pendingSlotForTalents!;
+          final displayName = _pendingSlotDisplayName ?? 'Integrante';
           final talentNames = state.talents
               .map((t) => t.name)
               .where((n) => n.isNotEmpty)
               .toList()
             ..sort();
-          setState(() => _pendingMemberForTalents = null);
-          _showEditTalentsSheetWithList(context, member, talentNames);
+          setState(() {
+            _pendingSlotForTalents = null;
+            _pendingSlotDisplayName = null;
+          });
+          _showEditTalentsSheetWithList(context, slot, displayName, talentNames);
         }
-        if (state is GetTalentsFailure && _pendingMemberForTalents != null && mounted) {
-          setState(() => _pendingMemberForTalents = null);
+        if (state is GetTalentsFailure && _pendingSlotForTalents != null && mounted) {
+          setState(() {
+            _pendingSlotForTalents = null;
+            _pendingSlotDisplayName = null;
+          });
           context.showError(state.error);
         }
       },
@@ -272,25 +319,7 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
       listener: (context, state) {
         if (state is UpdateMemberSuccess) {
           context.showSuccess('Talentos atualizados.');
-          final ensembleState = context.read<EnsembleBloc>().state;
-          final currentEnsemble = ensembleState is GetAllEnsemblesSuccess
-              ? ensembleState.currentEnsemble
-              : null;
-          if (currentEnsemble != null &&
-              currentEnsemble.id == widget.ensembleId &&
-              currentEnsemble.members != null) {
-            final updated = state.member;
-            final newList = currentEnsemble.members!
-                .map((m) => m.id == updated.id ? updated : m)
-                .toList();
-            context.read<EnsembleBloc>().add(
-                  UpdateEnsembleEvent(
-                    ensemble: currentEnsemble.copyWith(members: newList),
-                  ),
-                );
-          } else {
-            _reloadEnsemble();
-          }
+          _reloadEnsemble();
         }
         if (state is UpdateMemberFailure) {
           context.showError(state.error);
@@ -302,134 +331,148 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
           context.showError(state.error);
         }
       },
-      child: BlocBuilder<EnsembleBloc, EnsembleState>(
-        buildWhen: (previous, current) =>
-            current is GetAllEnsemblesSuccess ||
-            current is GetEnsembleByIdFailure ||
-            current is UpdateEnsembleMemberTalentsSuccess ||
-            current is UpdateEnsembleMembersSuccess ||
-            current is UpdateEnsembleSuccess,
-        builder: (context, ensembleState) {
-          if (ensembleState is GetEnsembleByIdFailure) {
-            return BasePage(
-              showAppBar: true,
-              appBarTitle: 'Integrantes',
-              showAppBarBackButton: true,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      ensembleState.error,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
+      child: BlocBuilder<MembersBloc, MembersState>(
+        buildWhen: (previous, current) => current is GetAllMembersSuccess || current is GetAllMembersLoading,
+        builder: (context, _) {
+          return BlocBuilder<EnsembleBloc, EnsembleState>(
+            buildWhen: (previous, current) =>
+                current is GetAllEnsemblesSuccess ||
+                current is GetEnsembleByIdFailure ||
+                current is UpdateEnsembleMemberTalentsSuccess ||
+                current is UpdateEnsembleMembersSuccess ||
+                current is UpdateEnsembleSuccess,
+            builder: (context, ensembleState) {
+              if (ensembleState is GetEnsembleByIdFailure) {
+                return BasePage(
+                  showAppBar: true,
+                  appBarTitle: 'Integrantes',
+                  showAppBarBackButton: true,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          ensembleState.error,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _reloadEnsemble,
+                          child: const Text('Tentar novamente'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: _reloadEnsemble,
-                      child: const Text('Tentar novamente'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-          final currentEnsemble = ensembleState is GetAllEnsemblesSuccess
-              ? ensembleState.currentEnsemble
-              : null;
-          final isThisEnsemble = currentEnsemble?.id == widget.ensembleId;
-          final rawStored = isThisEnsemble ? (currentEnsemble?.members ?? []) : <EnsembleMemberEntity>[];
-          final artistsState = context.read<ArtistsBloc>().state;
-          final ownerDisplayName = artistsState is GetArtistSuccess
-              ? (artistsState.artist.artistName ?? 'Conta principal')
-              : 'Conta principal';
-          final artistId = artistsState is GetArtistSuccess ? artistsState.artist.uid : null;
-          // Não exibir o dono vindo do Firestore (compatibilidade com dados antigos); o dono vem do ArtistsBloc.
-          final storedMembers = rawStored.where((m) => !m.isOwner && m.id != artistId).toList();
-          final ownerEntity = artistId != null
-              ? EnsembleMemberEntity(
-                  id: artistId,
-                  ensembleIds: [widget.ensembleId],
-                  isOwner: true,
-                  artistId: artistId,
-                  isApproved: true,
-                )
-              : null;
-          final displayMembers = ownerEntity != null
-              ? [ownerEntity, ...storedMembers]
-              : storedMembers;
-          final isEmpty = displayMembers.isEmpty;
-          final memberIds = storedMembers.map((m) => m.id).whereType<String>().toList();
-          if (memberIds.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              final listChanged = _memberIdsToLoad == null ||
-                  _memberIdsToLoad!.length != memberIds.length ||
-                  !listEquals(_memberIdsToLoad, memberIds);
-              if (listChanged) {
-                setState(() {
-                  _memberIdsToLoad = memberIds;
-                  _loadingMemberIndex = 0;
-                  _documentsByMember = {};
-                  _loadingMemberId = memberIds[0];
-                });
-                context.read<MemberDocumentsBloc>().add(
-                  GetAllMemberDocumentsEvent(
-                    ensembleId: widget.ensembleId,
-                    memberId: memberIds[0],
                   ),
                 );
               }
-            });
-          }
+              final currentEnsemble = ensembleState is GetAllEnsemblesSuccess
+                  ? ensembleState.currentEnsemble
+                  : null;
+              final isThisEnsemble = currentEnsemble?.id == widget.ensembleId;
+              final rawStored = isThisEnsemble ? (currentEnsemble?.members ?? []) : <EnsembleMember>[];
+              final artistsState = context.read<ArtistsBloc>().state;
+              final ownerDisplayName = artistsState is GetArtistSuccess
+                  ? (artistsState.artist.artistName ?? 'Conta principal')
+                  : 'Conta principal';
+              final artistId = artistsState is GetArtistSuccess ? artistsState.artist.uid : null;
+              final membersState = context.read<MembersBloc>().state;
+              final allMembers = membersState is GetAllMembersSuccess
+                  ? membersState.members
+                  : <EnsembleMemberEntity>[];
+              final memberDetailsById = {
+                for (final m in allMembers) if (m.id != null) m.id!: m
+              };
+              // Dono primeiro (slot com isOwner ou sintético se artistId presente), depois os demais slots.
+              final ownerSlots = rawStored.where((m) => m.isOwner).toList();
+              final ownerSlot = ownerSlots.isNotEmpty ? ownerSlots.first : (artistId != null ? EnsembleMember(memberId: artistId, specialty: null, isOwner: true) : null);
+              final nonOwnerSlots = rawStored.where((m) => !m.isOwner && m.memberId != artistId).toList();
+              final displayRows = <({EnsembleMember slot, String displayName, String? email, bool isApproved})>[];
+              if (ownerSlot != null) {
+                displayRows.add((slot: ownerSlot, displayName: ownerDisplayName, email: null, isApproved: true));
+              }
+              for (final slot in nonOwnerSlots) {
+                final detail = memberDetailsById[slot.memberId];
+                displayRows.add((
+                  slot: slot,
+                  displayName: detail?.name ?? 'Sem nome',
+                  email: detail?.email,
+                  isApproved: detail?.isApproved ?? false,
+                ));
+              }
+              final isEmpty = displayRows.isEmpty;
+              final memberIds = nonOwnerSlots.map((m) => m.memberId).toList();
+              if (memberIds.isNotEmpty) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  final listChanged = _memberIdsToLoad == null ||
+                      _memberIdsToLoad!.length != memberIds.length ||
+                      !listEquals(_memberIdsToLoad, memberIds);
+                  if (listChanged) {
+                    setState(() {
+                      _memberIdsToLoad = memberIds;
+                      _loadingMemberIndex = 0;
+                      _documentsByMember = {};
+                      _loadingMemberId = memberIds[0];
+                    });
+                    context.read<MemberDocumentsBloc>().add(
+                      GetAllMemberDocumentsEvent(
+                        ensembleId: widget.ensembleId,
+                        memberId: memberIds[0],
+                      ),
+                    );
+                  }
+                });
+              }
 
-          return BasePage(
-            showAppBar: true,
-            appBarTitle: 'Integrantes',
-            showAppBarBackButton: true,
-            floatingActionButton: FloatingActionButton(
-              onPressed: _onAddMemberTap,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-              child: const Icon(Icons.add),
-            ),
-            child: isEmpty
-                ? EmptyMembersPlaceholder(
-                    message:
-                        'Nenhum integrante neste conjunto. Adicione integrantes na área do conjunto.',
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.only(
-                      top: DSSize.height(16),
-                      bottom: DSSize.height(24),
-                    ),
-                    itemCount: displayMembers.length,
-                    itemBuilder: (context, index) {
-                      final member = displayMembers[index];
-                      final isOwner = member.isOwner;
-                      final displayName = isOwner
-                          ? ownerDisplayName
-                          : (member.name ?? 'Sem nome');
-
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: DSSize.height(12)),
-                        child: MemberWithDocumentsCard(
-                          name: displayName,
-                          email: member.email,
-                          photoUrl: null,
-                          isOwner: isOwner,
-                          isApproved: member.isApproved,
-                          talents: member.specialty,
-                          memberDocuments: member.id != null ? _documentsByMember[member.id!] : null,
-                          onEditTalentsTap: isOwner ? null : () => _onEditTalentsTap(member),
-                          onDocumentsTap: isOwner ? null : () => _onDocumentsTap(member),
-                          onRemove: isOwner || currentEnsemble == null
-                              ? null
-                              : () => _onRemoveMember(currentEnsemble, member),
+              return BasePage(
+                showAppBar: true,
+                appBarTitle: 'Integrantes',
+                showAppBarBackButton: true,
+                floatingActionButton: FloatingActionButton(
+                  onPressed: _onAddMemberTap,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                  child: const Icon(Icons.add),
+                ),
+                child: isEmpty
+                    ? EmptyMembersPlaceholder(
+                        message:
+                            'Nenhum integrante neste conjunto. Adicione integrantes na área do conjunto.',
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.only(
+                          top: DSSize.height(16),
+                          bottom: DSSize.height(24),
                         ),
-                      );
-                    },
-                  ),
+                        itemCount: displayRows.length,
+                        itemBuilder: (context, index) {
+                          final row = displayRows[index];
+                          final isOwner = row.slot.isOwner;
+
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: DSSize.height(12)),
+                            child: MemberWithDocumentsCard(
+                              name: row.displayName,
+                              email: row.email,
+                              photoUrl: null,
+                              isOwner: isOwner,
+                              isApproved: row.isApproved,
+                              talents: row.slot.specialty,
+                              memberDocuments: _documentsByMember[row.slot.memberId],
+                              onEditTalentsTap: isOwner
+                                  ? null
+                                  : () => _onEditTalentsTap(row.slot, memberDetailsById[row.slot.memberId]),
+                              onDocumentsTap: isOwner ? null : () => _onDocumentsTap(row.slot),
+                              onRemove: isOwner || currentEnsemble == null
+                                  ? null
+                                  : () => _onRemoveMember(currentEnsemble, row.slot, row.displayName),
+                            ),
+                          );
+                        },
+                      ),
+              );
+            },
           );
         },
       ),
@@ -437,5 +480,5 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
     ),
     ),
   );
-  }
+}
 }

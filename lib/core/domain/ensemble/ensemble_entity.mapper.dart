@@ -15,7 +15,7 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = EnsembleEntityMapper._());
       ProfessionalInfoEntityMapper.ensureInitialized();
-      EnsembleMemberEntityMapper.ensureInitialized();
+      EnsembleMemberMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -55,9 +55,12 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     _$presentationVideoUrl,
     opt: true,
   );
-  static List<EnsembleMemberEntity>? _$members(EnsembleEntity v) => v.members;
-  static const Field<EnsembleEntity, List<EnsembleMemberEntity>> _f$members =
-      Field('members', _$members, opt: true);
+  static List<EnsembleMember>? _$members(EnsembleEntity v) => v.members;
+  static const Field<EnsembleEntity, List<EnsembleMember>> _f$members = Field(
+    'members',
+    _$members,
+    opt: true,
+  );
   static bool? _$isActive(EnsembleEntity v) => v.isActive;
   static const Field<EnsembleEntity, bool> _f$isActive = Field(
     'isActive',
@@ -223,8 +226,8 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
   get professionalInfo;
   ListCopyWith<
     $R,
-    EnsembleMemberEntity,
-    EnsembleMemberEntityCopyWith<$R, EnsembleMemberEntity, EnsembleMemberEntity>
+    EnsembleMember,
+    EnsembleMemberCopyWith<$R, EnsembleMember, EnsembleMember>
   >?
   get members;
   MapCopyWith<
@@ -242,7 +245,7 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     String? profilePhotoUrl,
     ProfessionalInfoEntity? professionalInfo,
     String? presentationVideoUrl,
-    List<EnsembleMemberEntity>? members,
+    List<EnsembleMember>? members,
     bool? isActive,
     bool? allMembersApproved,
     bool? hasIncompleteSections,
@@ -278,8 +281,8 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
   @override
   ListCopyWith<
     $R,
-    EnsembleMemberEntity,
-    EnsembleMemberEntityCopyWith<$R, EnsembleMemberEntity, EnsembleMemberEntity>
+    EnsembleMember,
+    EnsembleMemberCopyWith<$R, EnsembleMember, EnsembleMember>
   >?
   get members => $value.members != null
       ? ListCopyWith(

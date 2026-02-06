@@ -1,4 +1,5 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
@@ -187,9 +188,23 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
               }
 
               if (isValid) {
+                ArtistEntity? ownerArtist;
+                final ownerSlots =
+                    ensemble.members?.where((m) => m.isOwner).toList() ?? [];
+                if (ownerSlots.isNotEmpty) {
+                  final ownerId = ownerSlots.first.memberId;
+                  if (ownerId.isNotEmpty) {
+                    final artistResult = await repository.getArtistForExplore(
+                      ownerId,
+                      forceRefresh: forceRefresh,
+                    );
+                    ownerArtist = artistResult.fold((_) => null, (a) => a);
+                  }
+                }
                 return EnsembleWithAvailabilitiesEntity(
                   ensemble: ensemble,
                   availabilities: [availabilityDay],
+                  ownerArtist: ownerArtist,
                 );
               }
               return null;

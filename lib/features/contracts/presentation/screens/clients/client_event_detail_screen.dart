@@ -78,6 +78,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final onPrimary = colorScheme.onPrimary;
     final primaryContainer = colorScheme.primaryContainer;
+    final isGroup = _contract.isGroupContract;
 
     return BlocListener<ContractsBloc, ContractsState>(
       listener: (context, state) {
@@ -159,7 +160,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
             // Informações do Artista
             _buildSectionTitle('Solicitado para', textTheme, onPrimary),
             DSSizedBoxSpacing.vertical(12),
-            _buildArtistInfo(context, colorScheme, textTheme, onPrimary),
+            _buildArtistInfo(context, colorScheme, textTheme, onPrimary, isGroup: isGroup),
 
             DSSizedBoxSpacing.vertical(24),
 
@@ -476,6 +477,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
     ColorScheme colorScheme,
     TextTheme textTheme,
     Color onPrimary,
+    {bool isGroup = false}
   ) {
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
@@ -502,7 +504,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _contract.contractorName ?? 'Artista',
+                   (_contract.contractorName ?? 'Artista'),
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,
@@ -510,7 +512,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                 ),
                 DSSizedBoxSpacing.vertical(4),
                 Text(
-                  'Artista',
+                  isGroup ? 'Conjunto' : 'Artista',
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

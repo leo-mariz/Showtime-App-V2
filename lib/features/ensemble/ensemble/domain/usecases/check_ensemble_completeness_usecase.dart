@@ -54,10 +54,8 @@ class CheckEnsembleCompletenessUseCase {
 
   /// 1. Há pelo menos um integrante além do administrador.
   EnsembleInfoStatusEntity _checkMembers(EnsembleEntity ensemble) {
-    final nonOwner = ensemble.members
-            ?.where((m) => !m.isOwner && m.id != null && m.id!.isNotEmpty)
-            .toList() ??
-        [];
+    final nonOwner =
+        ensemble.members?.where((m) => !m.isOwner).toList() ?? [];
     final isComplete = nonOwner.isNotEmpty;
     return EnsembleInfoStatusEntity(
       type: EnsembleInfoType.members,
@@ -71,10 +69,8 @@ class CheckEnsembleCompletenessUseCase {
     EnsembleEntity ensemble,
     Map<String, List<MemberDocumentEntity>> memberDocumentsByMemberId,
   ) {
-    final nonOwner = ensemble.members
-            ?.where((m) => !m.isOwner && m.id != null && m.id!.isNotEmpty)
-            .toList() ??
-        [];
+    final nonOwner =
+        ensemble.members?.where((m) => !m.isOwner).toList() ?? [];
     if (nonOwner.isEmpty) {
       return const EnsembleInfoStatusEntity(
         type: EnsembleInfoType.memberDocuments,
@@ -84,7 +80,7 @@ class CheckEnsembleCompletenessUseCase {
     }
     final missing = <String>[];
     for (final member in nonOwner) {
-      final memberId = member.id!;
+      final memberId = member.memberId;
       final docs = memberDocumentsByMemberId[memberId] ?? [];
       final identityList = docs.where((d) => d.documentType == MemberDocumentType.identity).toList();
       final antecedentsList = docs.where((d) => d.documentType == MemberDocumentType.antecedents).toList();

@@ -21,6 +21,9 @@ class MemberModal extends StatefulWidget {
   final MembersBloc membersBloc;
   /// Integrantes já selecionados (ex.: vindos do NewEnsembleModal ou do conjunto atual).
   final List<EnsembleMemberEntity> initialSelected;
+  /// IDs já selecionados (alternativa quando só temos os ids, ex.: slots do conjunto).
+  /// Se informado, prevalece sobre initialSelected para preencher _selectedIds.
+  final Set<String>? initialSelectedIds;
   /// Callback ao confirmar com a lista selecionada
   final void Function(List<EnsembleMemberEntity> selected) onConfirm;
 
@@ -28,6 +31,7 @@ class MemberModal extends StatefulWidget {
     super.key,
     required this.membersBloc,
     this.initialSelected = const [],
+    this.initialSelectedIds,
     required this.onConfirm,
   });
 
@@ -36,6 +40,7 @@ class MemberModal extends StatefulWidget {
     required BuildContext context,
     required MembersBloc membersBloc,
     List<EnsembleMemberEntity> initialSelected = const [],
+    Set<String>? initialSelectedIds,
   }) {
     return showModalBottomSheet<List<EnsembleMemberEntity>>(
       context: context,
@@ -46,6 +51,7 @@ class MemberModal extends StatefulWidget {
         child: MemberModal(
           membersBloc: membersBloc,
           initialSelected: initialSelected,
+          initialSelectedIds: initialSelectedIds,
           onConfirm: (selected) => Navigator.of(context).pop(selected),
         ),
       ),
@@ -65,11 +71,12 @@ class _MemberModalState extends State<MemberModal> {
   @override
   void initState() {
     super.initState();
-    _selectedIds = widget.initialSelected
-        .where((m) => m.id != null && !m.isOwner)
-        .map((m) => m.id!)
-        .toSet();
-    widget.membersBloc.add(GetAllMembersEvent(forceRemote: true));
+    _selectedIds = widget.initialSelectedIds ??
+        widget.initialSelected
+            .where((m) => m.id != null && !m.isOwner)
+            .map((m) => m.id!)
+            .toSet();
+    widget.membersBloc.add(GetAllMembersEvent(forceRemote: false));
   }
 
   void _toggleSelection(EnsembleMemberEntity member) {

@@ -7,15 +7,11 @@ extension ContractDeadlineExtension on ContractEntity {
   /// Exemplos: "Você tem até 14:30 para aceitar", "Prazo expira em 2h 15min", "Prazo expirado"
   String? get formattedAcceptDeadline {
     if (acceptDeadline == null || !isPending) return null;
-    
-    final now = DateTime.now();
-    
-    // Se expirado
-    if (now.isAfter(acceptDeadline!)) {
-      return 'Prazo expirado';
-    }
-    
-    final remaining = acceptDeadline!.difference(now);
+    final nowUtc = DateTime.now().toUtc();
+    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : DateTime.utc(acceptDeadline!.year, acceptDeadline!.month, acceptDeadline!.day, acceptDeadline!.hour, acceptDeadline!.minute, acceptDeadline!.second, acceptDeadline!.millisecond);
+
+    if (nowUtc.isAfter(deadlineUtc)) return 'Prazo expirado';
+    final remaining = deadlineUtc.difference(nowUtc);
     
     // Se falta menos de 1 hora, mostrar em minutos
     if (remaining.inHours < 1) {
@@ -36,24 +32,19 @@ extension ContractDeadlineExtension on ContractEntity {
       return 'Prazo expira em ${hours}h';
     }
     
-    // Se falta mais de 24 horas, mostrar data e hora
+    // Se falta mais de 24 horas, mostrar data e hora (em horário local do usuário)
+    final toShow = acceptDeadline!.isUtc ? acceptDeadline!.toLocal() : acceptDeadline!;
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    return 'Você tem até ${dateFormat.format(acceptDeadline!)} para aceitar';
+    return 'Você tem até ${dateFormat.format(toShow)} para aceitar';
   }
-  
+
   /// Retorna uma string curta com o prazo (para badges/indicadores)
-  /// Exemplos: "2h 15min", "45min", "Expirado"
   String? get shortDeadlineText {
     if (acceptDeadline == null || !isPending) return null;
-    
-    final now = DateTime.now();
-    
-    // Se expirado
-    if (now.isAfter(acceptDeadline!)) {
-      return 'Expirado';
-    }
-    
-    final remaining = acceptDeadline!.difference(now);
+    final nowUtc = DateTime.now().toUtc();
+    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : DateTime.utc(acceptDeadline!.year, acceptDeadline!.month, acceptDeadline!.day, acceptDeadline!.hour, acceptDeadline!.minute, acceptDeadline!.second, acceptDeadline!.millisecond);
+    if (nowUtc.isAfter(deadlineUtc)) return 'Expirado';
+    final remaining = deadlineUtc.difference(nowUtc);
     
     // Se falta menos de 1 hora, mostrar em minutos
     if (remaining.inHours < 1) {
@@ -74,9 +65,9 @@ extension ContractDeadlineExtension on ContractEntity {
       return '${hours}h';
     }
     
-    // Se falta mais de 24 horas, mostrar apenas data
+    final toShow = acceptDeadline!.isUtc ? acceptDeadline!.toLocal() : acceptDeadline!;
     final dateFormat = DateFormat('dd/MM HH:mm');
-    return dateFormat.format(acceptDeadline!);
+    return dateFormat.format(toShow);
   }
   
   /// Retorna true se o prazo está próximo do vencimento (menos de 30 minutos)
@@ -95,11 +86,83 @@ extension ContractDeadlineExtension on ContractEntity {
     return remaining.inMinutes < 10;
   }
 
-  /// Texto para exibição ao cliente: data/hora limite em que o artista pode aceitar
-  /// Ex: "O artista tem até 14/02 às 14:30 para responder"
+  /// Texto para exibição ao cliente: data/hora limite em que o artista pode aceitar (horário local)
   String? get formattedAcceptDeadlineForClient {
     if (acceptDeadline == null || !isPending) return null;
+    final toShow = acceptDeadline!.isUtc ? acceptDeadline!.toLocal() : acceptDeadline!;
     final dateFormat = DateFormat("dd/MM 'às' HH:mm");
-    return 'O artista tem até ${dateFormat.format(acceptDeadline!)} para responder';
+    return 'O artista tem até ${dateFormat.format(toShow)} para responder';
+  }
+
+  // ---------- Prazo de pagamento (anfitrião) ----------
+
+  static DateTime? _paymentDeadlineUtc(ContractEntity c) {
+    if (c.paymentDueDate == null || !c.isPaymentPending) return null;
+    final d = c.paymentDueDate!;
+    return d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+  }
+
+  /// Texto formatado do prazo para o anfitrião pagar
+  String? get formattedPaymentDeadline {
+    final deadlineUtc = _paymentDeadlineUtc(this);
+    if (deadlineUtc == null) return null;
+    final nowUtc = DateTime.now().toUtc();
+    if (nowUtc.isAfter(deadlineUtc)) return 'Prazo de pagamento expirado';
+    final remaining = deadlineUtc.difference(nowUtc);
+    if (remaining.inHours < 1) {
+      final minutes = remaining.inMinutes;
+      if (minutes <= 0) return 'Prazo de pagamento expirado';
+      return 'Pagamento expira em ${minutes}min';
+    }
+    if (remaining.inHours < 24) {
+      final hours = remaining.inHours;
+      final minutes = remaining.inMinutes % 60;
+      if (minutes > 0) return 'Pagamento expira em ${hours}h ${minutes}min';
+      return 'Pagamento expira em ${hours}h';
+    }
+    final toShow = paymentDueDate!.isUtc ? paymentDueDate!.toLocal() : paymentDueDate!;
+    return 'Você tem até ${DateFormat('dd/MM/yyyy HH:mm').format(toShow)} para pagar';
+  }
+
+  /// Texto curto do prazo de pagamento (badges)
+  String? get shortPaymentDeadlineText {
+    final deadlineUtc = _paymentDeadlineUtc(this);
+    if (deadlineUtc == null) return null;
+    final nowUtc = DateTime.now().toUtc();
+    if (nowUtc.isAfter(deadlineUtc)) return 'Expirado';
+    final remaining = deadlineUtc.difference(nowUtc);
+    if (remaining.inHours < 1) {
+      final minutes = remaining.inMinutes;
+      if (minutes <= 0) return 'Expirado';
+      return '${minutes}min';
+    }
+    if (remaining.inHours < 24) {
+      final hours = remaining.inHours;
+      final minutes = remaining.inMinutes % 60;
+      if (minutes > 0) return '${hours}h ${minutes}min';
+      return '${hours}h';
+    }
+    final toShow = paymentDueDate!.isUtc ? paymentDueDate!.toLocal() : paymentDueDate!;
+    return DateFormat('dd/MM HH:mm').format(toShow);
+  }
+
+  bool get isPaymentDeadlineNear {
+    if (paymentDueDate == null || !isPaymentPending) return false;
+    final remaining = remainingTimeToPay;
+    return remaining != null && remaining.inMinutes < 30;
+  }
+
+  bool get isPaymentDeadlineCritical {
+    if (paymentDueDate == null || !isPaymentPending) return false;
+    final remaining = remainingTimeToPay;
+    return remaining != null && remaining.inMinutes < 10;
+  }
+
+  /// Para o artista: texto com prazo que o anfitrião tem para pagar
+  String? get formattedPaymentDeadlineForArtist {
+    if (paymentDueDate == null || !isPaymentPending) return null;
+    final toShow = paymentDueDate!.isUtc ? paymentDueDate!.toLocal() : paymentDueDate!;
+    final dateFormat = DateFormat("dd/MM 'às' HH:mm");
+    return 'O anfitrião tem até ${dateFormat.format(toShow)} para pagar';
   }
 }

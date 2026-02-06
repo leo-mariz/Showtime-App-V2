@@ -1,4 +1,5 @@
 import 'package:app/core/domain/availability/availability_day_entity.dart';
+import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 
@@ -11,17 +12,24 @@ class EnsembleWithAvailabilitiesEntity
     with EnsembleWithAvailabilitiesEntityMappable {
   final EnsembleEntity ensemble;
   final List<AvailabilityDayEntity> availabilities;
+  /// Artista dono do conjunto (resolvido via explore repository).
+  final ArtistEntity? ownerArtist;
 
   EnsembleWithAvailabilitiesEntity({
     required this.ensemble,
     required this.availabilities,
+    this.ownerArtist,
   });
 
   /// Factory para criar uma instância com lista vazia de disponibilidades
-  factory EnsembleWithAvailabilitiesEntity.empty(EnsembleEntity ensemble) {
+  factory EnsembleWithAvailabilitiesEntity.empty(
+    EnsembleEntity ensemble, {
+    ArtistEntity? ownerArtist,
+  }) {
     return EnsembleWithAvailabilitiesEntity(
       ensemble: ensemble,
       availabilities: [],
+      ownerArtist: ownerArtist,
     );
   }
 

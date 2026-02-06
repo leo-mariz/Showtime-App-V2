@@ -92,12 +92,12 @@ class DeleteMemberUseCase {
                   }
                   final currentMembers = ensemble.members ?? [];
                   final newMembers =
-                      currentMembers.where((m) => m.id != memberId).toList();
+                      currentMembers.where((m) => m.memberId != memberId).toList();
                   if (kDebugMode) {
                     debugPrint(
                       '$_logTag ensemble $ensembleId: currentMembers.length=${currentMembers.length}, '
                       'newMembers.length=${newMembers.length}, '
-                      'ids atuais=${currentMembers.map((m) => m.id).toList()}',
+                      'ids atuais=${currentMembers.map((m) => m.memberId).toList()}',
                     );
                   }
                   final result = await updateEnsembleMembersUseCase.call(

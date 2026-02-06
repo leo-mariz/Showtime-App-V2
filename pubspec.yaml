@@ -80,6 +80,7 @@ dependencies:
   dart_firebase_admin: ^0.4.1
   cloud_functions: ^6.0.5
   uuid: ^4.5.1
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

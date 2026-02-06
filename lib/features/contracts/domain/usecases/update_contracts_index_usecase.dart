@@ -38,7 +38,7 @@ class UpdateContractsIndexUseCase {
     ContractStatusEnum? oldStatus,
   }) async {
     try {
-      // Atualizar índice do artista (se houver)
+      // Atualizar índice do artista (contrato individual)
       if (contract.refArtist != null) {
         await _updateIndexForUser(
           userId: contract.refArtist!,
@@ -48,10 +48,10 @@ class UpdateContractsIndexUseCase {
         );
       }
 
-      // Atualizar índice do grupo (se houver) - mesmo comportamento de artista
-      if (contract.refGroup != null) {
+      // Atualizar índice do dono do conjunto (contrato de grupo) — usar refArtistOwner, não refGroup
+      if (contract.refGroup != null && contract.refArtistOwner != null) {
         await _updateIndexForUser(
-          userId: contract.refGroup!,
+          userId: contract.refArtistOwner!,
           contract: contract,
           oldStatus: oldStatus,
           isArtist: true,

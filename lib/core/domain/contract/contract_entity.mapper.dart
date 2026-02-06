@@ -73,6 +73,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$refGroup,
     opt: true,
   );
+  static String? _$refArtistOwner(ContractEntity v) => v.refArtistOwner;
+  static const Field<ContractEntity, String> _f$refArtistOwner = Field(
+    'refArtistOwner',
+    _$refArtistOwner,
+    opt: true,
+  );
   static String? _$nameArtist(ContractEntity v) => v.nameArtist;
   static const Field<ContractEntity, String> _f$nameArtist = Field(
     'nameArtist',
@@ -280,6 +286,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #uid: _f$uid,
     #refArtist: _f$refArtist,
     #refGroup: _f$refGroup,
+    #refArtistOwner: _f$refArtistOwner,
     #nameArtist: _f$nameArtist,
     #nameGroup: _f$nameGroup,
     #nameClient: _f$nameClient,
@@ -325,6 +332,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       uid: data.dec(_f$uid),
       refArtist: data.dec(_f$refArtist),
       refGroup: data.dec(_f$refGroup),
+      refArtistOwner: data.dec(_f$refArtistOwner),
       nameArtist: data.dec(_f$nameArtist),
       nameGroup: data.dec(_f$nameGroup),
       nameClient: data.dec(_f$nameClient),
@@ -443,6 +451,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? uid,
     String? refArtist,
     String? refGroup,
+    String? refArtistOwner,
     String? nameArtist,
     String? nameGroup,
     String? nameClient,
@@ -521,6 +530,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? uid = $none,
     Object? refArtist = $none,
     Object? refGroup = $none,
+    Object? refArtistOwner = $none,
     Object? nameArtist = $none,
     Object? nameGroup = $none,
     Object? nameClient = $none,
@@ -564,6 +574,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (uid != $none) #uid: uid,
       if (refArtist != $none) #refArtist: refArtist,
       if (refGroup != $none) #refGroup: refGroup,
+      if (refArtistOwner != $none) #refArtistOwner: refArtistOwner,
       if (nameArtist != $none) #nameArtist: nameArtist,
       if (nameGroup != $none) #nameGroup: nameGroup,
       if (nameClient != $none) #nameClient: nameClient,
@@ -614,6 +625,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     uid: data.get(#uid, or: $value.uid),
     refArtist: data.get(#refArtist, or: $value.refArtist),
     refGroup: data.get(#refGroup, or: $value.refGroup),
+    refArtistOwner: data.get(#refArtistOwner, or: $value.refArtistOwner),
     nameArtist: data.get(#nameArtist, or: $value.nameArtist),
     nameGroup: data.get(#nameGroup, or: $value.nameGroup),
     nameClient: data.get(#nameClient, or: $value.nameClient),

@@ -11,6 +11,8 @@ import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecas
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contracts_for_artist_including_ensembles_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_ids_by_owner_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
@@ -32,6 +34,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final GetContractsByClientUseCase getContractsByClientUseCase;
   final GetContractsByArtistUseCase getContractsByArtistUseCase;
   final GetContractsByGroupUseCase getContractsByGroupUseCase;
+  final GetContractsForArtistIncludingEnsemblesUseCase getContractsForArtistIncludingEnsemblesUseCase;
+  final GetEnsembleIdsByOwnerUseCase getEnsembleIdsByOwnerUseCase;
   final AddContractUseCase addContractUseCase;
   final UpdateContractUseCase updateContractUseCase;
   final DeleteContractUseCase deleteContractUseCase;
@@ -51,6 +55,8 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.getContractsByClientUseCase,
     required this.getContractsByArtistUseCase,
     required this.getContractsByGroupUseCase,
+    required this.getContractsForArtistIncludingEnsemblesUseCase,
+    required this.getEnsembleIdsByOwnerUseCase,
     required this.addContractUseCase,
     required this.updateContractUseCase,
     required this.deleteContractUseCase,
@@ -148,8 +154,26 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     emit(GetContractsByArtistLoading());
 
     final uid = await _getCurrentUserId();
+    if (uid == null || uid.isEmpty) {
+      emit(GetContractsByArtistFailure(error: 'Usuário não identificado'));
+      emit(ContractsInitial());
+      return;
+    }
 
-    final result = await getContractsByArtistUseCase.call(uid!, forceRefresh: event.forceRefresh ?? false);
+    final ensembleIdsResult = await getEnsembleIdsByOwnerUseCase.call(
+      uid,
+      forceRemote: event.forceRefresh ?? false,
+    );
+    final ensembleIds = ensembleIdsResult.fold(
+      (_) => <String>[],
+      (ids) => ids,
+    );
+
+    final result = await getContractsForArtistIncludingEnsemblesUseCase.call(
+      uid,
+      ensembleIds: ensembleIds,
+      forceRefresh: event.forceRefresh ?? false,
+    );
 
     result.fold(
       (failure) {

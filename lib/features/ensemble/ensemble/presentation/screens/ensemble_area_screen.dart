@@ -66,13 +66,10 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
     return null;
   }
 
-  /// Número de integrantes além do dono (o dono não é salvo em members).
+  /// Número de integrantes além do dono.
   int _additionalMembersCount(EnsembleEntity ensemble) {
-    final count = (ensemble.members?.length ?? 0) - 1;
-    if (count < 0) {
-      return 0;
-    }
-    return count;
+    final members = ensemble.members ?? [];
+    return members.where((m) => !m.isOwner).length;
   }
 
   /// Nome de exibição do conjunto: "Nome do Artista" ou "Nome do Artista + N".

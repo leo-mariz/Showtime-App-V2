@@ -69,6 +69,8 @@ import 'package:app/features/ensemble/ensemble_availability/presentation/screens
     deferred as _i15;
 import 'package:app/features/ensemble/member_documents/presentation/screens/member_documents_screen.dart'
     deferred as _i27;
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart'
+    as _i45;
 import 'package:app/features/profile/shared/presentation/screens/login_security/delete_account/delete_account_page.dart'
     deferred as _i11;
 import 'package:app/features/profile/shared/presentation/screens/login_security/login_history/login_history_page.dart'
@@ -1403,6 +1405,7 @@ class RequestRoute extends _i38.PageRouteInfo<RequestRouteArgs> {
     required DateTime selectedDate,
     required _i40.AddressInfoEntity selectedAddress,
     required _i42.ArtistEntity artist,
+    _i45.EnsembleWithAvailabilitiesEntity? ensemble,
     List<_i38.PageRouteInfo>? children,
   }) : super(
          RequestRoute.name,
@@ -1411,6 +1414,7 @@ class RequestRoute extends _i38.PageRouteInfo<RequestRouteArgs> {
            selectedDate: selectedDate,
            selectedAddress: selectedAddress,
            artist: artist,
+           ensemble: ensemble,
          ),
          initialChildren: children,
        );
@@ -1428,6 +1432,7 @@ class RequestRoute extends _i38.PageRouteInfo<RequestRouteArgs> {
           selectedDate: args.selectedDate,
           selectedAddress: args.selectedAddress,
           artist: args.artist,
+          ensemble: args.ensemble,
         ),
       );
     },
@@ -1440,6 +1445,7 @@ class RequestRouteArgs {
     required this.selectedDate,
     required this.selectedAddress,
     required this.artist,
+    this.ensemble,
   });
 
   final _i39.Key? key;
@@ -1450,9 +1456,11 @@ class RequestRouteArgs {
 
   final _i42.ArtistEntity artist;
 
+  final _i45.EnsembleWithAvailabilitiesEntity? ensemble;
+
   @override
   String toString() {
-    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist}';
+    return 'RequestRouteArgs{key: $key, selectedDate: $selectedDate, selectedAddress: $selectedAddress, artist: $artist, ensemble: $ensemble}';
   }
 
   @override
@@ -1462,7 +1470,8 @@ class RequestRouteArgs {
     return key == other.key &&
         selectedDate == other.selectedDate &&
         selectedAddress == other.selectedAddress &&
-        artist == other.artist;
+        artist == other.artist &&
+        ensemble == other.ensemble;
   }
 
   @override
@@ -1470,7 +1479,8 @@ class RequestRouteArgs {
       key.hashCode ^
       selectedDate.hashCode ^
       selectedAddress.hashCode ^
-      artist.hashCode;
+      artist.hashCode ^
+      ensemble.hashCode;
 }
 
 /// generated route for

@@ -19,7 +19,11 @@ abstract class IExploreLocalDataSource {
   /// Busca artistas do cache (se válido)
   /// Retorna null se cache não existir ou estiver expirado
   Future<List<ArtistEntity>?> getCachedArtists();
-  
+
+  /// Busca um artista pelo [artistId] no cache de artistas do explore (fonte de verdade da feature).
+  /// Retorna null se cache não existir, estiver expirado ou o artista não estiver no cache.
+  Future<ArtistEntity?> getCachedArtistById(String artistId);
+
   /// Verifica se cache de artistas é válido (menos de 2 horas)
   Future<bool> isArtistsCacheValid();
   
@@ -174,6 +178,17 @@ class ExploreLocalDataSourceImpl implements IExploreLocalDataSource {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  @override
+  Future<ArtistEntity?> getCachedArtistById(String artistId) async {
+    if (artistId.isEmpty) return null;
+    final list = await getCachedArtists();
+    if (list == null || list.isEmpty) return null;
+    for (final a in list) {
+      if (a.uid == artistId) return a;
+    }
+    return null;
   }
 
   @override

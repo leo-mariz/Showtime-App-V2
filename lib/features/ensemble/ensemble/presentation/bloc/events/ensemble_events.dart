@@ -1,6 +1,6 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
+import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class EnsembleEvent extends Equatable {
@@ -35,7 +35,7 @@ class GetEnsembleByIdEvent extends EnsembleEvent {
 // ==================== CREATE ENSEMBLE ====================
 
 class CreateEnsembleEvent extends EnsembleEvent {
-  final List<EnsembleMemberEntity> members;
+  final List<EnsembleMember> members;
 
   CreateEnsembleEvent({required this.members});
 
@@ -71,7 +71,7 @@ class UpdateEnsembleProfessionalInfoEvent extends EnsembleEvent {
 /// Atualiza a lista de integrantes persistida no conjunto.
 class UpdateEnsembleMembersEvent extends EnsembleEvent {
   final String ensembleId;
-  final List<EnsembleMemberEntity> members;
+  final List<EnsembleMember> members;
 
   UpdateEnsembleMembersEvent({
     required this.ensembleId,

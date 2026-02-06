@@ -2,6 +2,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/favorite_button.dart';
+import 'package:app/core/shared/widgets/genre_chip.dart';
 import 'package:flutter/material.dart';
 
 /// Card de artista na listagem
@@ -56,7 +57,6 @@ class ArtistCard extends StatelessWidget {
     return CustomCard(
       borderRadius: DSSize.width(12),
       margin: EdgeInsets.only(bottom: DSSize.height(16)),
-      padding: EdgeInsets.only(top: DSSize.height(8), bottom: DSSize.height(12), left: DSSize.width(12), right: DSSize.width(12)),
       onTap: onTap,
       child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,30 +117,7 @@ class ArtistCard extends StatelessWidget {
             ),
             
             DSSizedBoxSpacing.vertical(2),
-            
-            // Gêneros musicais
-            Text(
-              talents,
-              style: textTheme.bodySmall?.copyWith(
-                color: onSurfaceVariantColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            
-            DSSizedBoxSpacing.vertical(4),
-            
-            // Descrição (com limite de 2 linhas)
-            Text(
-              description,
-              style: textTheme.bodyMedium?.copyWith(
-                color: onSurfaceVariantColor,
-              ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            DSSizedBoxSpacing.vertical(8),
-            
+
             // Contratos e avaliações
             Row(
               children: [
@@ -178,9 +155,35 @@ class ArtistCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            DSSizedBoxSpacing.vertical(8),
+
+            if (talents.isNotEmpty) ...[
+              Wrap(
+                spacing: DSSize.width(8),
+                runSpacing: DSSize.height(8),
+                children: [
+                  for (final t in talents.split(', '))
+                    GenreChip(label: t),
+                ],
+              )
+            ],
             
-            DSSizedBoxSpacing.vertical(12),
             
+            DSSizedBoxSpacing.vertical(16),
+            
+            // Descrição (com limite de 2 linhas)
+            Text(
+              description,
+              style: textTheme.bodyMedium?.copyWith(
+                color: onSurfaceVariantColor,
+              ),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+            
+            DSSizedBoxSpacing.vertical(16),
+                      
             // Botão Solicitar
             SizedBox(
               width: double.infinity,

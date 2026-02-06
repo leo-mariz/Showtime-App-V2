@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:app/core/services/firebase_functions_service.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
 import 'package:app/core/users/data/repositories/users_repository_impl.dart';
@@ -32,6 +33,7 @@ import 'package:app/features/explore/data/repositories/explore_repository_impl.d
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
 import 'package:app/features/explore/domain/usecases/artists/get_artist_active_availabilities_usecase.dart';
 import 'package:app/features/explore/domain/usecases/artists/get_artists_with_availabilities_filtered_usecase.dart';
+import 'package:app/features/explore/domain/usecases/ensembles/get_ensemble_active_availabilities_usecase.dart';
 import 'package:app/features/explore/domain/usecases/ensembles/get_ensembles_with_availabilities_filtered_usecase.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/ensemble/ensemble/data/datasources/ensemble_local_datasource.dart';
@@ -42,6 +44,7 @@ import 'package:app/features/ensemble/ensemble/domain/usecases/create_empty_ense
 import 'package:app/features/ensemble/ensemble/domain/usecases/create_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/delete_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_all_ensembles_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_ids_by_owner_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_completeness_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_completeness_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
@@ -89,6 +92,7 @@ import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/get_contracts_for_artist_including_ensembles_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
@@ -98,6 +102,7 @@ import 'package:app/features/contracts/domain/usecases/update_contract_usecase.d
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/request_availabilities_bloc.dart';
 import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_acceptance_rate_usecase.dart';
 import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_completed_events_usecase.dart';
 import 'package:app/features/artists/artist_dashboard/domain/usecases/calculate_monthly_earnings_usecase.dart';
@@ -699,12 +704,32 @@ ExploreBloc _createExploreBloc(
   );
 }
 
+/// Bloc da tela de solicitação: carrega disponibilidades sem alterar o ExploreBloc.
+RequestAvailabilitiesBloc _createRequestAvailabilitiesBloc(
+  IExploreRepository exploreRepository,
+  CalculateAddressGeohashUseCase calculateAddressGeohashUseCase,
+) {
+  final getArtistActiveAvailabilitiesUseCase = GetArtistActiveAvailabilitiesUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+  );
+  final getEnsembleActiveAvailabilitiesUseCase = GetEnsembleActiveAvailabilitiesUseCase(
+    repository: exploreRepository,
+    calculateAddressGeohashUseCase: calculateAddressGeohashUseCase,
+  );
+  return RequestAvailabilitiesBloc(
+    getArtistActiveAvailabilitiesUseCase: getArtistActiveAvailabilitiesUseCase,
+    getEnsembleActiveAvailabilitiesUseCase: getEnsembleActiveAvailabilitiesUseCase,
+  );
+}
+
 /// Factory function para criar o ContractsBloc com todas as dependências
 ContractsBloc _createContractsBloc(
   IContractRepository contractRepository,
   GetUserUidUseCase getUserUidUseCase,
   IFirebaseFunctionsService firebaseFunctionsService,
   MercadoPagoService mercadoPagoService,
+  IEnsembleRepository ensembleRepository,
 ) {
   // Criar UseCase de atualização de índice (compartilhado)
   final updateContractsIndexUseCase = UpdateContractsIndexUseCase(repository: contractRepository);
@@ -714,6 +739,8 @@ ContractsBloc _createContractsBloc(
   final getContractsByClientUseCase = GetContractsByClientUseCase(repository: contractRepository);
   final getContractsByArtistUseCase = GetContractsByArtistUseCase(repository: contractRepository);
   final getContractsByGroupUseCase = GetContractsByGroupUseCase(repository: contractRepository);
+  final getEnsembleIdsByOwnerUseCase = GetEnsembleIdsByOwnerUseCase(repository: ensembleRepository);
+  final getContractsForArtistIncludingEnsemblesUseCase = GetContractsForArtistIncludingEnsemblesUseCase(repository: contractRepository);
   final addContractUseCase = AddContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final updateContractUseCase = UpdateContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
@@ -734,6 +761,8 @@ ContractsBloc _createContractsBloc(
     getContractsByClientUseCase: getContractsByClientUseCase,
     getContractsByArtistUseCase: getContractsByArtistUseCase,
     getContractsByGroupUseCase: getContractsByGroupUseCase,
+    getContractsForArtistIncludingEnsemblesUseCase: getContractsForArtistIncludingEnsemblesUseCase,
+    getEnsembleIdsByOwnerUseCase: getEnsembleIdsByOwnerUseCase,
     addContractUseCase: addContractUseCase,
     updateContractUseCase: updateContractUseCase,
     deleteContractUseCase: deleteContractUseCase,
@@ -782,6 +811,7 @@ EnsembleBloc _createEnsembleBloc(
     repository: ensembleRepository,
     createEmptyEnsembleUseCase: createEmptyEnsembleUseCase,
     updateEnsembleUseCase: updateEnsembleUseCase,
+    getMemberUseCase: getMemberUseCase,
     updateMemberUseCase: updateMemberUseCase,
     syncEnsembleCompletenessIfChangedUseCase: syncEnsembleCompletenessIfChangedUseCase,
   );
@@ -1060,7 +1090,8 @@ EnsembleAvailabilityBloc _createEnsembleAvailabilityBloc(
 
 Future <void> main() async {
 
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
+  tz_data.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   // Configurar Firebase App Check
@@ -1344,11 +1375,18 @@ Future <void> main() async {
             ),
           ),
           BlocProvider(
+            create: (context) => _createRequestAvailabilitiesBloc(
+              exploreRepository,
+              calculateAddressGeohashUseCase,
+            ),
+          ),
+          BlocProvider(
             create: (context) => _createContractsBloc(
               contractRepository,
               getUserUidUseCase,
               firebaseFunctionsService,
               mercadoPagoService,
+              ensembleRepository,
             ),
           ),
           BlocProvider(

@@ -5,6 +5,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
@@ -21,6 +22,9 @@ import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
+import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/ensemble_availability_bloc.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/events/ensemble_availability_events.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/states/ensemble_availability_states.dart';
@@ -163,12 +167,22 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
       context.showError('Solicitação indisponível para este conjunto no momento');
       return;
     }
+    if (_currentEnsemble == null || _currentEnsemble!.id == null) {
+      context.showError('Dados do conjunto não carregados. Tente novamente.');
+      return;
+    }
+
+    final ensembleWithAvailabilities = EnsembleWithAvailabilitiesEntity.empty(
+      _currentEnsemble!,
+      ownerArtist: widget.artist,
+    );
 
     router.push(
       RequestRoute(
         selectedDate: widget.selectedDate ?? DateTime.now(),
         selectedAddress: _selectedAddress!,
         artist: widget.artist!,
+        ensemble: ensembleWithAvailabilities,
       ),
     );
   }
@@ -183,10 +197,11 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final artist = widget.artist;
     final ensemble = _currentEnsemble;
     final profilePhotoUrl = ensemble?.profilePhotoUrl ?? artist?.profilePicture;
-    final additionalMembersCount = ensemble?.members?.length ?? 0;
-    final totalDisplayMembers = 1 + additionalMembersCount;
-    // Título: só o nome do artista/dono; número de integrantes fica no badge abaixo
-    final displayTitle = artist?.artistName ?? 'Conjunto';
+    final totalDisplayMembers = (ensemble?.members?.length ?? 0) - 1;
+    // Nome do grupo: nome do artista dono + número de integrantes
+    final displayTitle = totalDisplayMembers > 0
+        ? '${artist?.artistName ?? 'Conjunto'} + $totalDisplayMembers'
+        : (artist?.artistName ?? 'Conjunto');
     final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final bio = professionalInfo?.bio;
 
@@ -197,7 +212,10 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
         if (state is GetAllEnsemblesSuccess &&
             state.currentEnsemble?.id == widget.ensembleId) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _currentEnsemble = state.currentEnsemble);
+            if (mounted) {
+              setState(() => _currentEnsemble = state.currentEnsemble);
+              context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
+            }
           });
         }
       },
@@ -315,7 +333,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                         runSpacing: DSSize.height(8),
                         children: [
                           GenreChip(label: 'Conjunto'),
-                          GenreChip(label: totalDisplayMembers == 1 ? '1 Integrante' : '$totalDisplayMembers Integrantes'),
+                          GenreChip(label: '${totalDisplayMembers+1} Integrantes'),
                         ],
                       ),
                       DSSizedBoxSpacing.vertical(12),
@@ -353,12 +371,33 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
 
                       // Só monta TabsSection quando já temos artist ou ensemble (ensemble carrega de forma assíncrona)
                       if (artist != null || ensemble != null)
-                        TabsSection(
-                          artist: widget.artist,
-                          onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
-                          ensemble: ensemble,
-                          ownerDisplayName: artist?.artistName,
-                          calendarTab: _buildCalendarTab(colorScheme, textTheme),
+                        BlocBuilder<MembersBloc, MembersState>(
+                          buildWhen: (p, c) => c is GetAllMembersSuccess,
+                          builder: (context, membersState) {
+                            List<String>? displayNames;
+                            if (ensemble?.members != null &&
+                                membersState is GetAllMembersSuccess) {
+                              final allMembers = membersState.members;
+                              final byId = {
+                                for (final m in allMembers) if (m.id != null) m.id!: m
+                              };
+                              displayNames = ensemble!.members!.map((slot) {
+                                if (slot.isOwner) {
+                                  return artist?.artistName ?? 'Dono';
+                                }
+                                return byId[slot.memberId]?.name ?? 'Integrante';
+                              }).toList();
+                            }
+                            return TabsSection(
+                              artist: widget.artist,
+                              onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
+                              ensemble: ensemble,
+                              ownerDisplayName: artist?.artistName,
+                              ensembleMemberDisplayNames: displayNames,
+                              ownerArtistSpecialty: artist?.professionalInfo?.specialty,
+                              calendarTab: _buildCalendarTab(colorScheme, textTheme),
+                            );
+                          },
                         )
                       else
                         Padding(

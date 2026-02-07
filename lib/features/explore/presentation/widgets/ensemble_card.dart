@@ -1,6 +1,8 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
+import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/genre_chip.dart';
 import 'package:flutter/material.dart';
 
@@ -18,6 +20,8 @@ class EnsembleCard extends StatelessWidget {
   final VoidCallback onHirePressed;
   final VoidCallback? onTap;
   final String ensembleId;
+  final bool isFavorite;
+  final VoidCallback? onFavoriteToggle;
 
   const EnsembleCard({
     super.key,
@@ -32,6 +36,8 @@ class EnsembleCard extends StatelessWidget {
     required this.onHirePressed,
     this.onTap,
     required this.ensembleId,
+    this.isFavorite = false,
+    this.onFavoriteToggle,
   });
 
   @override
@@ -44,7 +50,7 @@ class EnsembleCard extends StatelessWidget {
     final Color primaryContainer = colorScheme.primaryContainer;
 
     final contractsText =
-        contracts == 0 ? 'Sem contratos' : 'Contratos: $contracts';
+        contracts == 0 ? '0' : 'Contratos: $contracts';
     final ratingText =
         rating == 0 ? 'Sem avaliações' : rating.toStringAsFixed(1);
 
@@ -89,6 +95,15 @@ class EnsembleCard extends StatelessWidget {
                         },
                       ),
               ),
+              if (onFavoriteToggle != null)
+                Positioned(
+                  top: DSSize.height(4),
+                  right: DSSize.width(4),
+                  child: FavoriteButton(
+                    isFavorite: isFavorite,
+                    onTap: onFavoriteToggle!,
+                  ),
+                ),
             ],
           ),
           DSSizedBoxSpacing.vertical(8),
@@ -96,41 +111,19 @@ class EnsembleCard extends StatelessWidget {
             groupName,
             style: textTheme.titleMedium,
           ),
-          DSSizedBoxSpacing.vertical(2),
+          DSSizedBoxSpacing.vertical(4),
           Row(
             children: [
-              Text(
-                contractsText,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: onPrimaryContainer,
+              CustomBadge(value: ratingText, icon: Icons.star, color: onPrimaryContainer, 
+                valueStyle: textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                )
                 ),
-              ),
-              DSSizedBoxSpacing.horizontal(16),
-              Visibility(
-                visible: rating > 0,
-                replacement: Text(
-                  ratingText,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: onPrimaryContainer,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: DSSize.width(16),
-                    ),
-                    DSSizedBoxSpacing.horizontal(4),
-                    Text(
-                      ratingText,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: onPrimaryContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                DSSizedBoxSpacing.horizontal(8),
+                CustomBadge(title: 'Contratos', value: contractsText, color: onPrimaryContainer, valueStyle: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                )
+                ),          
             ],
           ),
           DSSizedBoxSpacing.vertical(8),

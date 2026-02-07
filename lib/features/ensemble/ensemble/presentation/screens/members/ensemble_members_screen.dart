@@ -449,6 +449,9 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
                         itemBuilder: (context, index) {
                           final row = displayRows[index];
                           final isOwner = row.slot.isOwner;
+                          final ownerTalents = artistsState is GetArtistSuccess
+                              ? artistsState.artist.professionalInfo?.specialty
+                              : null;
 
                           return Padding(
                             padding: EdgeInsets.only(bottom: DSSize.height(12)),
@@ -458,7 +461,7 @@ class _EnsembleMembersScreenState extends State<EnsembleMembersScreen> {
                               photoUrl: null,
                               isOwner: isOwner,
                               isApproved: row.isApproved,
-                              talents: row.slot.specialty,
+                              talents: isOwner ? ownerTalents : row.slot.specialty,
                               memberDocuments: _documentsByMember[row.slot.memberId],
                               onEditTalentsTap: isOwner
                                   ? null

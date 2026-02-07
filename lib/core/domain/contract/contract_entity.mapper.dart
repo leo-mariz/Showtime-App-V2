@@ -266,6 +266,18 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$acceptDeadline,
     opt: true,
   );
+  static String? _$clientPhotoUrl(ContractEntity v) => v.clientPhotoUrl;
+  static const Field<ContractEntity, String> _f$clientPhotoUrl = Field(
+    'clientPhotoUrl',
+    _$clientPhotoUrl,
+    opt: true,
+  );
+  static String? _$contractorPhotoUrl(ContractEntity v) => v.contractorPhotoUrl;
+  static const Field<ContractEntity, String> _f$contractorPhotoUrl = Field(
+    'contractorPhotoUrl',
+    _$contractorPhotoUrl,
+    opt: true,
+  );
   static bool? _$isPaying(ContractEntity v) => v.isPaying;
   static const Field<ContractEntity, bool> _f$isPaying = Field(
     'isPaying',
@@ -317,6 +329,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #cancelReason: _f$cancelReason,
     #statusChangedAt: _f$statusChangedAt,
     #acceptDeadline: _f$acceptDeadline,
+    #clientPhotoUrl: _f$clientPhotoUrl,
+    #contractorPhotoUrl: _f$contractorPhotoUrl,
     #isPaying: _f$isPaying,
   };
 
@@ -363,6 +377,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       cancelReason: data.dec(_f$cancelReason),
       statusChangedAt: data.dec(_f$statusChangedAt),
       acceptDeadline: data.dec(_f$acceptDeadline),
+      clientPhotoUrl: data.dec(_f$clientPhotoUrl),
+      contractorPhotoUrl: data.dec(_f$contractorPhotoUrl),
       isPaying: data.dec(_f$isPaying),
     );
   }
@@ -482,6 +498,8 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? cancelReason,
     DateTime? statusChangedAt,
     DateTime? acceptDeadline,
+    String? clientPhotoUrl,
+    String? contractorPhotoUrl,
     bool? isPaying,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
@@ -561,6 +579,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? cancelReason = $none,
     Object? statusChangedAt = $none,
     Object? acceptDeadline = $none,
+    Object? clientPhotoUrl = $none,
+    Object? contractorPhotoUrl = $none,
     Object? isPaying = $none,
   }) => $apply(
     FieldCopyWithData({
@@ -610,6 +630,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (cancelReason != $none) #cancelReason: cancelReason,
       if (statusChangedAt != $none) #statusChangedAt: statusChangedAt,
       if (acceptDeadline != $none) #acceptDeadline: acceptDeadline,
+      if (clientPhotoUrl != $none) #clientPhotoUrl: clientPhotoUrl,
+      if (contractorPhotoUrl != $none) #contractorPhotoUrl: contractorPhotoUrl,
       if (isPaying != $none) #isPaying: isPaying,
     }),
   );
@@ -680,6 +702,11 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     cancelReason: data.get(#cancelReason, or: $value.cancelReason),
     statusChangedAt: data.get(#statusChangedAt, or: $value.statusChangedAt),
     acceptDeadline: data.get(#acceptDeadline, or: $value.acceptDeadline),
+    clientPhotoUrl: data.get(#clientPhotoUrl, or: $value.clientPhotoUrl),
+    contractorPhotoUrl: data.get(
+      #contractorPhotoUrl,
+      or: $value.contractorPhotoUrl,
+    ),
     isPaying: data.get(#isPaying, or: $value.isPaying),
   );
 

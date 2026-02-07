@@ -204,6 +204,7 @@ class _NavigationPageState extends State<NavigationPage> {
             
             return Scaffold(
               key: _navigationPageKey,
+              
               backgroundColor: backgroundColor,
               body: PageView(
                 controller: _pageController,

@@ -1,4 +1,5 @@
 import 'package:app/core/domain/favorites/favorite_entity.dart';
+import 'package:app/core/domain/favorites/favorite_ensemble_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -21,7 +22,22 @@ abstract class IFavoriteRemoteDataSource {
     required String clientId,
   });
 
-  /// Busca um artista favorito de um cliente do Firestore
+  /// Adiciona um conjunto aos favoritos no Firestore
+  Future<void> addFavoriteEnsemble({
+    required String clientId,
+    required FavoriteEnsembleEntity favorite,
+  });
+
+  /// Remove um conjunto dos favoritos no Firestore
+  Future<void> removeFavoriteEnsemble({
+    required String clientId,
+    required String ensembleId,
+  });
+
+  /// Busca todos os conjuntos favoritos de um cliente do Firestore
+  Future<List<FavoriteEnsembleEntity>> getAllFavoriteEnsembles({
+    required String clientId,
+  });
 }
 
 /// Implementação do datasource remoto de favoritos
@@ -99,6 +115,78 @@ class FavoriteRemoteDataSourceImpl implements IFavoriteRemoteDataSource {
       throw ServerException(e.message ?? 'Erro ao buscar favoritos');
     } catch (e) {
       throw ServerException('Erro desconhecido ao buscar favoritos: $e');
+    }
+  }
+
+  @override
+  Future<void> addFavoriteEnsemble({
+    required String clientId,
+    required FavoriteEnsembleEntity favorite,
+  }) async {
+    try {
+      final docRef = FavoriteEnsembleEntityReference.favoriteEnsembleDocument(
+        firestore,
+        clientId,
+        favorite.ensembleId,
+      );
+      await docRef.set(favorite.toMap());
+    } on FirebaseException catch (e) {
+      throw ServerException(
+          e.message ?? 'Erro ao adicionar conjunto aos favoritos');
+    } catch (e) {
+      throw ServerException(
+          'Erro desconhecido ao adicionar conjunto aos favoritos: $e');
+    }
+  }
+
+  @override
+  Future<void> removeFavoriteEnsemble({
+    required String clientId,
+    required String ensembleId,
+  }) async {
+    try {
+      final docRef = FavoriteEnsembleEntityReference.favoriteEnsembleDocument(
+        firestore,
+        clientId,
+        ensembleId,
+      );
+      await docRef.delete();
+    } on FirebaseException catch (e) {
+      throw ServerException(
+          e.message ?? 'Erro ao remover conjunto dos favoritos');
+    } catch (e) {
+      throw ServerException(
+          'Erro desconhecido ao remover conjunto dos favoritos: $e');
+    }
+  }
+
+  @override
+  Future<List<FavoriteEnsembleEntity>> getAllFavoriteEnsembles({
+    required String clientId,
+  }) async {
+    try {
+      final collectionRef =
+          FavoriteEnsembleEntityReference.favoriteEnsemblesCollection(
+        firestore,
+        clientId,
+      );
+      final querySnapshot = await collectionRef
+          .orderBy('addedAt', descending: true)
+          .get();
+      return querySnapshot.docs.map((doc) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          return FavoriteEnsembleEntityMapper.fromMap(data);
+        } catch (e) {
+          return FavoriteEnsembleEntity(ensembleId: doc.id);
+        }
+      }).toList();
+    } on FirebaseException catch (e) {
+      throw ServerException(
+          e.message ?? 'Erro ao buscar conjuntos favoritos');
+    } catch (e) {
+      throw ServerException(
+          'Erro desconhecido ao buscar conjuntos favoritos: $e');
     }
   }
 }

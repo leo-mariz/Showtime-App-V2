@@ -1,4 +1,5 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class FavoritesState extends Equatable {
@@ -39,6 +40,7 @@ class RemoveFavoriteFailure extends FavoritesState {
   List<Object?> get props => [error];
 }
 
+class RemoveFavoriteEnsembleSuccess extends FavoritesState {}
 
 // ==================== GET FAVORITE ARTISTS STATES ====================
 
@@ -55,6 +57,28 @@ class GetFavoriteArtistsFailure extends FavoritesState {
   final String error;
 
   GetFavoriteArtistsFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
+// ==================== GET FAVORITE ENSEMBLES STATES ====================
+
+class GetFavoriteEnsemblesLoading extends FavoritesState {}
+
+class GetFavoriteEnsemblesSuccess extends FavoritesState {
+  final List<EnsembleWithAvailabilitiesEntity> ensembles;
+
+  GetFavoriteEnsemblesSuccess({required this.ensembles});
+
+  @override
+  List<Object?> get props => [ensembles];
+}
+
+class GetFavoriteEnsemblesFailure extends FavoritesState {
+  final String error;
+
+  GetFavoriteEnsemblesFailure({required this.error});
 
   @override
   List<Object?> get props => [error];

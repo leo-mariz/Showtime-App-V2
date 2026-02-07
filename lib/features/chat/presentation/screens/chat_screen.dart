@@ -173,7 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Padding(
             padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
             child: Text(
-              'Nenhuma conversa ainda',
+              'Você ainda não tem conversas',
               style: textTheme.titleMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

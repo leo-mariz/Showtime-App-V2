@@ -11,6 +11,7 @@ import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/utils/minimum_earliness_helper.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/custom_date_picker_dialog.dart';
 import 'package:app/core/shared/widgets/info_row.dart';
@@ -173,6 +174,14 @@ class _RequestScreenState extends State<RequestScreen> {
     return 0;
   }
 
+  String? _getClientPhotoUrl() {
+    final currentClientState = context.read<ClientsBloc>().state;
+    if (currentClientState is GetClientSuccess) {
+      return currentClientState.client.profilePicture;
+    }
+    return null;
+  }
+
   String _formatAddress(AddressInfoEntity address) {
     final parts = <String>[];
     
@@ -321,30 +330,36 @@ class _RequestScreenState extends State<RequestScreen> {
       return;
     }
 
+    // Antecedência mínima do artista ou do conjunto (em minutos)
+    final minEarlinessMinutes = widget.ensemble != null
+        ? widget.ensemble!.ensemble.professionalInfo?.requestMinimumEarliness
+        : widget.artist.professionalInfo?.requestMinimumEarliness;
+
     // Se temos disponibilidades, usar suas restrições de data
     DateTime firstDate = DateTime.now();
     DateTime lastDate = DateTime.now().add(const Duration(days: 365));
     bool Function(DateTime)? selectableDayPredicate;
-    
-    // Criar função para validar dias selecionáveis baseado nas disponibilidades
+
+    // Criar função para validar dias selecionáveis: disponibilidade + antecedência mínima
     selectableDayPredicate = (DateTime date) {
-      return _getAvailabilityForDate(date) != null;
+      if (_getAvailabilityForDate(date) == null) return false;
+      return respectsMinimumEarliness(date, minEarlinessMinutes);
     };
-    
-    // Definir firstDate como a primeira data disponível ou hoje
+
+    // Definir firstDate como a primeira data disponível (>= hoje e que respeite antecedência mínima)
     final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day); // Normalizar para meia-noite
-    
+    final todayDate = DateTime(today.year, today.month, today.day);
+
     final sortedDates = _availabilities!
         .map((a) => a.date)
         .where((date) {
-          // Normalizar a data para meia-noite antes de comparar
           final dateOnly = DateTime(date.year, date.month, date.day);
-          return !dateOnly.isBefore(todayDate);
+          if (dateOnly.isBefore(todayDate)) return false;
+          return respectsMinimumEarliness(dateOnly, minEarlinessMinutes);
         })
         .toList()
       ..sort();
-    
+
     if (sortedDates.isNotEmpty) {
       firstDate = sortedDates.first;
       lastDate = sortedDates.last;
@@ -379,32 +394,46 @@ class _RequestScreenState extends State<RequestScreen> {
   }
 
   Future<void> _selectTime() async {
-    // Validar se há data selecionada
     if (_selectedDate == null) {
       context.showError('Selecione uma data primeiro');
       return;
     }
-    
-    // Buscar slots disponíveis para a data selecionada
+
     final availableSlots = _getAvailableSlotsForDate(_selectedDate!);
-    
     if (availableSlots.isEmpty) {
       context.showError('Nenhum horário disponível para esta data');
       return;
     }
-    
-    // Verificar se a data selecionada é hoje e calcular horário mínimo
+
     final now = DateTime.now();
     final selectedDateOnly = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
     final todayOnly = DateTime(now.year, now.month, now.day);
     final isToday = selectedDateOnly.isAtSameMomentAs(todayOnly);
-    
+
+    // Antecedência mínima: horário de início não pode ser antes de (agora + minEarliness)
+    final minEarlinessMinutes = widget.ensemble != null
+        ? widget.ensemble!.ensemble.professionalInfo?.requestMinimumEarliness
+        : widget.artist.professionalInfo?.requestMinimumEarliness;
+    final cutoff = slotCutoffDateTime(minEarlinessMinutes);
+    final cutoffDateOnly = DateTime(cutoff.year, cutoff.month, cutoff.day);
+
     int? minimumTimeInMinutes;
     if (isToday) {
-      // Adicionar 1 hora de margem ao horário atual
       final minimumTime = now.add(const Duration(hours: 1));
       minimumTimeInMinutes = (minimumTime.hour * 60) + minimumTime.minute;
-      // Arredondar para o próximo intervalo de 30 minutos
+      if (minimumTimeInMinutes % 30 != 0) {
+        minimumTimeInMinutes = ((minimumTimeInMinutes ~/ 30) + 1) * 30;
+      }
+      // Se o cutoff da antecedência cair hoje e for depois, usar o maior dos dois
+      if (selectedDateOnly.isAtSameMomentAs(cutoffDateOnly)) {
+        final cutoffMinutes = cutoff.hour * 60 + cutoff.minute;
+        if (cutoffMinutes > minimumTimeInMinutes) {
+          minimumTimeInMinutes = cutoffMinutes;
+        }
+      }
+    } else if (selectedDateOnly.isAtSameMomentAs(cutoffDateOnly)) {
+      // Dia selecionado é o mesmo do cutoff (ex.: amanhã com 12h → corte às 09:00)
+      minimumTimeInMinutes = cutoff.hour * 60 + cutoff.minute;
       if (minimumTimeInMinutes % 30 != 0) {
         minimumTimeInMinutes = ((minimumTimeInMinutes ~/ 30) + 1) * 30;
       }
@@ -421,25 +450,22 @@ class _RequestScreenState extends State<RequestScreen> {
     for (final slot in availableSlots) {
       String displayStartTime = slot.startTime;
       String displayEndTime = slot.endTime;
-      
-      // Se for hoje, ajustar o horário de início mostrado
-      if (isToday && minimumTimeInMinutes != null) {
+
+      // Aplicar horário mínimo (hoje + 1h ou antecedência mínima, ex.: 09:00 quando cutoff é 12h)
+      if (minimumTimeInMinutes != null) {
         final slotStartMinutes = _timeToMinutes(slot.startTime);
         final slotEndMinutes = _timeToMinutes(slot.endTime);
-        
-        // Se o slot termina antes do horário mínimo, pular completamente
+
         if (slotEndMinutes <= minimumTimeInMinutes) {
           continue;
         }
-        
-        // Se o slot começa antes do horário mínimo, ajustar o horário de início mostrado
         if (slotStartMinutes < minimumTimeInMinutes) {
           final adjustedHours = minimumTimeInMinutes ~/ 60;
           final adjustedMinutes = minimumTimeInMinutes % 60;
           displayStartTime = '${adjustedHours.toString().padLeft(2, '0')}:${adjustedMinutes.toString().padLeft(2, '0')}';
         }
       }
-      
+
       hasAvailableSlots = true;
       final priceFormatted = slot.valorHora != null 
           ? 'R\$ ${NumberFormat('#,##0.00', 'pt_BR').format(slot.valorHora!)}/h'
@@ -448,7 +474,11 @@ class _RequestScreenState extends State<RequestScreen> {
     }
     
     if (!hasAvailableSlots) {
-      context.showError('Nenhum horário disponível para hoje. Todos os horários já passaram.');
+      context.showError(
+        minimumTimeInMinutes != null
+            ? 'Nenhum horário disponível após o horário mínimo (antecedência).'
+            : 'Nenhum horário disponível para hoje. Todos os horários já passaram.',
+      );
       return;
     }
 
@@ -467,12 +497,14 @@ class _RequestScreenState extends State<RequestScreen> {
     if (result != null) {
       final selectedTimeString = '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}';
       
-      // Se for hoje, validar se o horário selecionado é após o mínimo
-      if (isToday && minimumTimeInMinutes != null) {
+      // Validar se o horário está após o mínimo (hoje + 1h ou antecedência mínima)
+      if (minimumTimeInMinutes != null) {
         final selectedTimeInMinutes = (result.hour * 60) + result.minute;
         if (selectedTimeInMinutes < minimumTimeInMinutes) {
           context.showError(
-            'Horário já passou. Por favor, selecione um horário com pelo menos 1 hora de antecedência.'
+            isToday
+                ? 'Horário já passou. Por favor, selecione um horário com pelo menos 1 hora de antecedência.'
+                : 'O horário deve respeitar a antecedência mínima. Selecione um horário a partir do indicado.',
           );
           return;
         }
@@ -536,6 +568,12 @@ class _RequestScreenState extends State<RequestScreen> {
     }
     if (_selectedDate == null) {
       return 'Selecione a data';
+    }
+    final minEarlinessMinutes = widget.ensemble != null
+        ? widget.ensemble!.ensemble.professionalInfo?.requestMinimumEarliness
+        : widget.artist.professionalInfo?.requestMinimumEarliness;
+    if (!respectsMinimumEarliness(_selectedDate!, minEarlinessMinutes)) {
+      return 'A data do show deve respeitar a antecedência mínima (selecione uma data mais distante)';
     }
     if (_timeController.text.isEmpty) {
       return 'Selecione o horário';
@@ -604,6 +642,12 @@ class _RequestScreenState extends State<RequestScreen> {
         ? '${ensemble.ownerArtist?.artistName ?? 'Conjunto'} + $membersCount'
         : null;
 
+    // Fotos em snapshot para exibir no card (anfitrião e artista/conjunto)
+    final clientPhotoUrl = _getClientPhotoUrl();
+    final contractorPhotoUrl = isGroup
+        ? (ensemble!.ensemble.profilePhotoUrl)
+        : widget.artist.profilePicture;
+
     // Criar ContractEntity (artista individual ou conjunto)
     final contract = ContractEntity(
       date: _selectedDate!,
@@ -620,6 +664,8 @@ class _RequestScreenState extends State<RequestScreen> {
       nameGroup: nameGroup,
       nameClient: nameClient,
       clientRating: clientRating,
+      clientPhotoUrl: clientPhotoUrl,
+      contractorPhotoUrl: contractorPhotoUrl,
       eventType: eventType,
       value: _totalValue,
       availabilitySnapshot: _getAvailabilityForDate(_selectedDate!),
@@ -682,9 +728,21 @@ class _RequestScreenState extends State<RequestScreen> {
             if (state is RequestAvailabilitiesLoading) {
               setState(() => _isLoadingAvailabilities = true);
             } else if (state is RequestAvailabilitiesSuccess) {
+              final minEarlinessMinutes = widget.ensemble != null
+                  ? widget.ensemble!.ensemble.professionalInfo?.requestMinimumEarliness
+                  : widget.artist.professionalInfo?.requestMinimumEarliness;
+              final dateRespectsEarliness = _selectedDate == null ||
+                  respectsMinimumEarliness(_selectedDate!, minEarlinessMinutes);
               setState(() {
                 _isLoadingAvailabilities = false;
                 _availabilities = state.availabilities;
+                if (!dateRespectsEarliness) {
+                  _selectedDate = null;
+                  _selectedTime = null;
+                  _timeController.clear();
+                  _selectedSlot = null;
+                  _selectedPricePerHour = null;
+                }
               });
             } else if (state is RequestAvailabilitiesFailure) {
               setState(() => _isLoadingAvailabilities = false);
@@ -759,7 +817,7 @@ class _RequestScreenState extends State<RequestScreen> {
                 onTap: _selectDate,
                 errorMessage: _hasAttemptedSubmit && _selectedDate == null ? 'Selecione a data' : null,
               ),
-              // Aviso de prazo para resposta (regra: hoje/amanhã = 1h30, depois = 24h)
+              // Aviso de prazo para resposta (regra: hoje/amanhã = 1h, depois = 24h)
               
               DSSizedBoxSpacing.vertical(16),
               
@@ -831,7 +889,7 @@ class _RequestScreenState extends State<RequestScreen> {
                     final tomorrow = today.add(const Duration(days: 1));
                     final isTodayOrTomorrow = selectedOnly == today || selectedOnly == tomorrow;
                     final message = isTodayOrTomorrow
-                        ? 'A solicitação será respondida em até 1h30.'
+                        ? 'A solicitação será respondida em até 1h.'
                         : 'A solicitação será respondida em até 24 horas.';
                     final colorScheme = Theme.of(context).colorScheme;
                     final textTheme = Theme.of(context).textTheme;

@@ -1,5 +1,6 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
+import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/core/shared/widgets/favorite_button.dart';
 import 'package:app/core/shared/widgets/genre_chip.dart';
@@ -48,7 +49,7 @@ class ArtistCard extends StatelessWidget {
     final Color primaryContainer = colorScheme.primaryContainer;
     
     final contractsText = contracts == 0 
-        ? 'Sem contratos' 
+        ? '0' 
         : 'Contratos: $contracts';
     final ratingText = rating == 0 
         ? 'Sem avaliações' 
@@ -116,42 +117,20 @@ class ArtistCard extends StatelessWidget {
               style: textTheme.titleMedium
             ),
             
-            DSSizedBoxSpacing.vertical(2),
+            DSSizedBoxSpacing.vertical(4),
 
             // Contratos e avaliações
             Row(
               children: [
-                Text(
-                  contractsText,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: onPrimaryContainer,
-                  ),
+                CustomBadge(value: ratingText, icon: Icons.star, color: onPrimaryContainer, 
+                valueStyle: textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                )
                 ),
-                DSSizedBoxSpacing.horizontal(16),
-                Visibility(
-                  visible: rating > 0,
-                  replacement: Text(
-                    ratingText,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: onPrimaryContainer,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: DSSize.width(16),
-                      ),
-                      DSSizedBoxSpacing.horizontal(4),
-                      Text(
-                        ratingText,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: onPrimaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
+                DSSizedBoxSpacing.horizontal(8),
+                CustomBadge(title: 'Contratos', value: contractsText, color: onPrimaryContainer, valueStyle: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                )
                 ),
               ],
             ),

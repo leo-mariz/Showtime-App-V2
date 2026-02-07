@@ -29,6 +29,9 @@ import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/en
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/events/ensemble_availability_events.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/states/ensemble_availability_states.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
+import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
+import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
 import 'package:app/features/explore/presentation/widgets/artist_availability_calendar.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -68,6 +71,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<EnsembleBloc>().add(GetEnsembleByIdEvent(ensembleId: widget.ensembleId));
+        context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
       }
     });
     if (widget.selectedAddress != null) {
@@ -205,7 +209,21 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final bio = professionalInfo?.bio;
 
-    return BlocConsumer<EnsembleBloc, EnsembleState>(
+    return BlocListener<FavoritesBloc, FavoritesState>(
+      listener: (context, state) {
+        if (state is AddFavoriteSuccess) {
+          context.showSuccess('Conjunto adicionado aos favoritos');
+          context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
+        } else if (state is AddFavoriteFailure) {
+          context.showError(state.error);
+        } else if (state is RemoveFavoriteEnsembleSuccess) {
+          context.showSuccess('Conjunto removido dos favoritos');
+          context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
+        } else if (state is RemoveFavoriteFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BlocConsumer<EnsembleBloc, EnsembleState>(
       listenWhen: (previous, current) =>
           current is GetAllEnsemblesSuccess || current is GetEnsembleByIdFailure,
       listener: (context, state) {
@@ -319,42 +337,68 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                       // Nome do grupo: artista + (N integrantes) — sem chips de talento
                       Text(
                         displayTitle,
-                        style: textTheme.headlineLarge?.copyWith(
+                        style: textTheme.titleLarge?.copyWith(
                           color: onPrimary,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
 
-                      DSSizedBoxSpacing.vertical(12),
-
-                      // Linha superior: Conjunto + X Integrantes (estilo talentos/GenreChip)
-                      Wrap(
-                        spacing: DSSize.width(8),
-                        runSpacing: DSSize.height(8),
-                        children: [
-                          GenreChip(label: 'Conjunto'),
-                          GenreChip(label: '${totalDisplayMembers+1} Integrantes'),
-                        ],
-                      ),
-                      DSSizedBoxSpacing.vertical(12),
-
-                      // Linha inferior: rating, contratos e favorito
+                      DSSizedBoxSpacing.vertical(8),
                       Row(
                         children: [
                           CustomBadge(value: artist?.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
                           DSSizedBoxSpacing.horizontal(8),
                           CustomBadge(title: 'Contratos', value: artist?.rateCount?.toString() ?? '0', color: onPrimaryContainer),
                           const Spacer(),
-                          if (!widget.viewOnly) ...[
-                            FavoriteButton(
-                              isFavorite: widget.isFavorite,
-                              onTap: () {
-                                // TODO: Implementar toggle de favorito
+                          if (!widget.viewOnly)
+                            BlocBuilder<FavoritesBloc, FavoritesState>(
+                              buildWhen: (prev, curr) =>
+                                  curr is GetFavoriteEnsemblesSuccess ||
+                                  curr is AddFavoriteSuccess ||
+                                  curr is RemoveFavoriteEnsembleSuccess,
+                              builder: (context, favState) {
+                                final isFavorite = favState is GetFavoriteEnsemblesSuccess
+                                    ? favState.ensembles.any((e) => e.ensemble.id == widget.ensembleId)
+                                    : widget.isFavorite;
+                                return FavoriteButton(
+                                  isFavorite: isFavorite,
+                                  onTap: () {
+                                    if (widget.ensembleId.isEmpty) return;
+                                    if (isFavorite) {
+                                      context.read<FavoritesBloc>().add(
+                                        RemoveFavoriteEnsembleEvent(ensembleId: widget.ensembleId),
+                                      );
+                                    } else {
+                                      context.read<FavoritesBloc>().add(
+                                        AddFavoriteEnsembleEvent(ensembleId: widget.ensembleId),
+                                      );
+                                    }
+                                  },
+                                );
                               },
                             ),
-                          ],
                         ],
                       ),
+
+                      DSSizedBoxSpacing.vertical(4),
+
+
+                      // Linha superior: Conjunto + X Integrantes (estilo talentos/GenreChip)
+                      Row(
+                        children: [
+                          Wrap(
+                            spacing: DSSize.width(8),
+                            runSpacing: DSSize.height(8),
+                            children: [
+                              GenreChip(label: 'Conjunto'),
+                              GenreChip(label: '${totalDisplayMembers+1} Integrantes'),
+                            ],
+                          ),
+                          
+
+                      ],),
+
+                      // Linha inferior: rating, contratos e favorito
+                      
 
                       DSSizedBoxSpacing.vertical(16),
 
@@ -430,6 +474,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
       ),
     );
       },
+    ),
     );
   }
 

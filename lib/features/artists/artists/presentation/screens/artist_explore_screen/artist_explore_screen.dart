@@ -17,8 +17,12 @@ import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
 import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/events/request_availabilities_events.dart';
+import 'package:app/features/contracts/presentation/bloc/request_availabilities/request_availabilities_bloc.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
-import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
+import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
+import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
 import 'package:app/features/explore/presentation/bloc/states/explore_states.dart';
 import 'package:app/features/explore/presentation/widgets/address_selector.dart';
 import 'package:app/features/explore/presentation/widgets/artist_availability_calendar.dart';
@@ -54,7 +58,11 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
   @override
   void initState() {
     super.initState();
-    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+      }
+    });
     // Se veio com endereço selecionado, usar ele
     if (widget.selectedAddress != null) {
       _selectedAddress = widget.selectedAddress;
@@ -98,8 +106,8 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
   /// Carrega disponibilidades para o endereço selecionado
   void _loadAvailabilities() {
     if (_selectedAddress != null && widget.artist.uid != null) {
-      context.read<ExploreBloc>().add(
-        GetArtistAllAvailabilitiesEvent(
+      context.read<RequestAvailabilitiesBloc>().add(
+        LoadArtistAvailabilitiesEvent(
           artistId: widget.artist.uid!,
           userAddress: _selectedAddress,
         ),
@@ -171,7 +179,21 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final artist = widget.artist;
 
-    return BasePage(
+    return BlocListener<FavoritesBloc, FavoritesState>(
+      listener: (context, state) {
+        if (state is AddFavoriteSuccess) {
+          context.showSuccess('Artista adicionado aos favoritos');
+          context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+        } else if (state is AddFavoriteFailure) {
+          context.showError(state.error);
+        } else if (state is RemoveFavoriteSuccess) {
+          context.showSuccess('Artista removido dos favoritos');
+          context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+        } else if (state is RemoveFavoriteFailure) {
+          context.showError(state.error);
+        }
+      },
+      child: BasePage(
       horizontalPadding: 0,
       verticalPadding: 0,
       child: Stack(
@@ -259,12 +281,51 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
                       // Nome artístico
                       Text(
                         artist.artistName ?? 'Artista',
-                        style: textTheme.headlineLarge?.copyWith(
+                        style: textTheme.titleLarge?.copyWith(
                           color: onPrimary,
                         ),
                       ),
 
-                      DSSizedBoxSpacing.vertical(12),
+                      DSSizedBoxSpacing.vertical(8),
+                      // Badges de avaliação, contratos e favorito
+                      Row(
+                        children: [
+                          CustomBadge(value: artist.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
+                          DSSizedBoxSpacing.horizontal(8),
+                          CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
+                          const Spacer(),
+                          if (!widget.viewOnly)
+                            BlocBuilder<FavoritesBloc, FavoritesState>(
+                              buildWhen: (prev, curr) =>
+                                  curr is GetFavoriteArtistsSuccess ||
+                                  curr is AddFavoriteSuccess ||
+                                  curr is RemoveFavoriteSuccess,
+                              builder: (context, favState) {
+                                final isFavorite = favState is GetFavoriteArtistsSuccess
+                                    ? favState.artists.any((a) => a.uid == artist.uid)
+                                    : widget.isFavorite;
+                                return FavoriteButton(
+                                  isFavorite: isFavorite,
+                                  onTap: () {
+                                    if (artist.uid == null || artist.uid!.isEmpty) return;
+                                    if (isFavorite) {
+                                      context.read<FavoritesBloc>().add(
+                                        RemoveFavoriteEvent(artistId: artist.uid!),
+                                      );
+                                    } else {
+                                      context.read<FavoritesBloc>().add(
+                                        AddFavoriteEvent(artistId: artist.uid!),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(4),
+
+                      
 
                       // Talentos (Specialty)
                       if (artist.professionalInfo?.specialty?.isNotEmpty ?? false) ...[
@@ -275,26 +336,9 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
                             (talent) => GenreChip(label: talent),
                           ).toList(),
                         ),
-                        SizedBox(height: DSSize.height(16)),
                       ],
 
-                      // Badges de avaliação, contratos e favorito
-                      Row(
-                        children: [
-                          CustomBadge(value: artist.rating?.toStringAsFixed(2) ?? '0.0', icon: Icons.star, color: onPrimaryContainer),
-                          DSSizedBoxSpacing.horizontal(8),
-                          CustomBadge(title: 'Contratos', value: artist.rateCount?.toString() ?? '0', color: onPrimaryContainer),
-                          const Spacer(),
-                          if (!widget.viewOnly) ...[
-                          FavoriteButton(
-                            isFavorite: widget.isFavorite,
-                            onTap: () {
-                                // TODO: Implementar toggle de favorito
-                              },
-                            ),
-                          ],
-                        ],
-                      ),
+                      
 
                       DSSizedBoxSpacing.vertical(16),
 
@@ -338,6 +382,7 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
           ],
         ],
       ),
+    ),
     );
   }
 

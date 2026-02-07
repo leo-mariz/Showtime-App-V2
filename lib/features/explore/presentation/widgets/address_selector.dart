@@ -43,7 +43,7 @@ class AddressSelector extends StatelessWidget {
             Expanded(
               child: Text(
                 currentAddress,
-                style: textTheme.bodyMedium?.copyWith(
+                style: textTheme.bodySmall?.copyWith(
                   color: onPrimary,
                   fontWeight: FontWeight.w600,
                 ),

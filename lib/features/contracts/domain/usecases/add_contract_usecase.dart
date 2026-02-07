@@ -44,12 +44,12 @@ class AddContractUseCase {
   }
 
   /// Calcula o acceptDeadline em fuso America/Sao_Paulo e retorna em UTC.
-  /// Regra: evento no mesmo dia ou no dia seguinte → prazo 1h30; caso contrário → 24h.
+  /// Regra: evento no mesmo dia ou no dia seguinte → prazo 1h; caso contrário → 24h.
   DateTime _calculateAcceptDeadlineUtc(DateTime createdAtUtc, DateTime eventDateTimeUtc, DateTime eventDate) {
     final nowSp = tz.TZDateTime.now(_saoPaulo);
     final shortDeadline = _isEventSameOrNextDayInSp(eventDate, nowSp);
     final duration = shortDeadline
-        ? const Duration(hours: 1, minutes: 30)
+        ? const Duration(hours: 1)
         : const Duration(hours: 24);
     final deadlineSp = nowSp.add(duration);
     return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);

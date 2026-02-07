@@ -21,6 +21,7 @@ import 'package:app/features/explore/presentation/widgets/address_selector.dart'
 import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
 import 'package:app/features/explore/presentation/widgets/ensemble_card.dart';
+// ignore: unused_import
 import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
@@ -60,6 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   int _previousEnsemblesListSize = 0;
 
   Set<String> _favoriteArtistIds = {};
+  Set<String> _favoriteEnsembleIds = {};
   String _searchQuery = '';
   Timer? _searchDebounceTimer;
 
@@ -88,6 +90,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         _getPrimaryAddressFromState(addressesState);
       }
       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+      context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
     });
 
     _scrollControllerArtists.addListener(() {
@@ -224,11 +227,11 @@ class _ExploreScreenState extends State<ExploreScreen>
                   onClear: _onSearchCleared,
                 ),
               ),
-              DSSizedBoxSpacing.horizontal(12),
-              FilterButton(onPressed: _onFilterTapped),
+              // DSSizedBoxSpacing.horizontal(12),
+              // FilterButton(onPressed: _onFilterTapped),
             ],
           ),
-          DSSizedBoxSpacing.vertical(8),
+          DSSizedBoxSpacing.vertical(12),
           Container(
             height: DSSize.height(30),
             decoration: BoxDecoration(
@@ -327,14 +330,23 @@ class _ExploreScreenState extends State<ExploreScreen>
                             .where((id) => id.isNotEmpty)
                             .toSet();
                       });
+                    } else if (state is GetFavoriteEnsemblesSuccess) {
+                      setState(() {
+                        _favoriteEnsembleIds = state.ensembles
+                            .map((e) => e.ensemble.id ?? '')
+                            .where((id) => id.isNotEmpty)
+                            .toSet();
+                      });
                     } else if (state is AddFavoriteSuccess) {
-                      context.showSuccess('Artista adicionado aos favoritos');
+                      context.showSuccess('Adicionado aos favoritos');
                       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
                     } else if (state is AddFavoriteFailure) {
                       context.showError(state.error);
                     } else if (state is RemoveFavoriteSuccess) {
-                      context.showSuccess('Artista removido dos favoritos');
+                      context.showSuccess('Removido dos favoritos');
                       context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+                    } else if (state is RemoveFavoriteEnsembleSuccess) {
+                      context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
                     } else if (state is RemoveFavoriteFailure) {
                       context.showError(state.error);
                     }
@@ -583,7 +595,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         final groupName = memberCount > 0
             ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount-1}'
             : (ownerArtist?.artistName ?? 'Conjunto');
-        var talentsSource = [];
+        var talentsSource = <String>[];
         if (ownerArtist?.professionalInfo?.specialty != null) {
           talentsSource.addAll(ownerArtist?.professionalInfo?.specialty ?? []);
         }
@@ -592,6 +604,8 @@ class _ExploreScreenState extends State<ExploreScreen>
             talentsSource.addAll(member.specialty ?? []);
           }
         }
+        talentsSource = talentsSource.toSet().toList();
+
         String? pricePerHour;
         if (availabilities.isNotEmpty) {
           final day = availabilities.first;
@@ -607,6 +621,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         }
         final description = info?.bio ?? 'Sem descrição disponível';
         final ensembleId = ensemble.id ?? '';
+        final isFavorite = _favoriteEnsembleIds.contains(ensembleId);
         return EnsembleCard(
           groupName: groupName,
           totalMembers: memberCount,
@@ -617,6 +632,8 @@ class _ExploreScreenState extends State<ExploreScreen>
           pricePerHour: pricePerHour,
           imageUrl: ensemble.profilePhotoUrl,
           ensembleId: ensembleId,
+          isFavorite: isFavorite,
+          onFavoriteToggle: () => _onEnsembleFavoriteTapped(ensembleId, isFavorite),
           onHirePressed: () => _onEnsembleRequestTapped(item),
           onTap: () => _onEnsembleCardTapped(item),
         );
@@ -624,12 +641,24 @@ class _ExploreScreenState extends State<ExploreScreen>
     );
   }
 
+  void _onEnsembleFavoriteTapped(String ensembleId, bool isFavorite) {
+    if (isFavorite) {
+      context.read<FavoritesBloc>().add(RemoveFavoriteEnsembleEvent(ensembleId: ensembleId));
+      setState(() => _favoriteEnsembleIds = {..._favoriteEnsembleIds}..remove(ensembleId));
+    } else {
+      context.read<FavoritesBloc>().add(AddFavoriteEnsembleEvent(ensembleId: ensembleId));
+      setState(() => _favoriteEnsembleIds = {..._favoriteEnsembleIds, ensembleId});
+    }
+  }
+
   void _onEnsembleCardTapped(EnsembleWithAvailabilitiesEntity item) {
     final router = AutoRouter.of(context);
     final ensembleId = item.ensemble.id ?? '';
+    final isFavorite = _favoriteEnsembleIds.contains(ensembleId);
     router.push(EnsembleExploreRoute(
       ensembleId: ensembleId,
       artist: item.ownerArtist,
+      isFavorite: isFavorite,
       selectedDate: _selectedDate,
       selectedAddress: _selectedAddress,
     ));
@@ -694,8 +723,8 @@ class _ExploreScreenState extends State<ExploreScreen>
     _onApplyFilters();
   }
 
-  void _onFilterTapped() {
-  }
+  // void _onFilterTapped() {
+  // }
 
   void _onFavoriteTapped(String artistId, bool isFavorite) {
     _onUpdateArtistFavoriteStatus(artistId, isFavorite);

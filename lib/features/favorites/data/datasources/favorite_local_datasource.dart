@@ -1,4 +1,5 @@
 import 'package:app/core/domain/favorites/favorite_entity.dart';
+import 'package:app/core/domain/favorites/favorite_ensemble_entity.dart';
 import 'package:app/core/services/auto_cache_service.dart';
 import 'package:flutter/foundation.dart';
 
@@ -22,10 +23,24 @@ abstract class IFavoriteLocalDataSource {
     required FavoriteEntity favorite,
   });
 
+  /// Armazena a lista de conjuntos favoritos em cache
+  Future<void> cacheFavoriteEnsembles({
+    required List<FavoriteEnsembleEntity> favorites,
+  });
+
+  /// Busca a lista de conjuntos favoritos do cache
+  Future<List<FavoriteEnsembleEntity>?> getCachedFavoriteEnsembles();
+
+  /// Remove um conjunto favorito do cache
+  Future<void> removeFavoriteEnsemble({required String ensembleId});
+
+  /// Adiciona um conjunto favorito ao cache
+  Future<void> addFavoriteEnsemble({
+    required FavoriteEnsembleEntity favorite,
+  });
+
   /// Limpa todo o cache de favoritos
   Future<void> clearCache();
-
-  
 }
 
 /// Implementação do datasource local de favoritos
@@ -33,6 +48,8 @@ class FavoriteLocalDataSourceImpl implements IFavoriteLocalDataSource {
   final ILocalCacheService autoCache;
 
   static final String key = FavoriteEntityReference.cachedFavoritesKey();
+  static final String ensembleKey =
+      FavoriteEnsembleEntityReference.cachedFavoriteEnsemblesKey();
   static const String favoritesFieldKey = 'favorites';
   static const String cachedAtFieldKey = 'cachedAt';
 
@@ -151,12 +168,76 @@ class FavoriteLocalDataSourceImpl implements IFavoriteLocalDataSource {
   }
 
   @override
+  Future<void> cacheFavoriteEnsembles({
+    required List<FavoriteEnsembleEntity> favorites,
+  }) async {
+    try {
+      final jsonList = favorites.map((f) => f.toMap()).toList();
+      await autoCache.cacheDataString(
+        ensembleKey,
+        {
+          favoritesFieldKey: jsonList,
+          cachedAtFieldKey: DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e) {
+      await clearCache();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<FavoriteEnsembleEntity>?> getCachedFavoriteEnsembles() async {
+    try {
+      final cachedData = await autoCache.getCachedDataString(ensembleKey);
+      if (cachedData.isEmpty) return null;
+      final jsonList = cachedData[favoritesFieldKey] as List<dynamic>?;
+      if (jsonList == null) return null;
+      return jsonList
+          .map((json) => FavoriteEnsembleEntityMapper.fromMap(
+              json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> removeFavoriteEnsemble({required String ensembleId}) async {
+    try {
+      final cached = await getCachedFavoriteEnsembles();
+      if (cached == null || cached.isEmpty) return;
+      final updated =
+          cached.where((f) => f.ensembleId != ensembleId).toList();
+      await cacheFavoriteEnsembles(favorites: updated);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> addFavoriteEnsemble({
+    required FavoriteEnsembleEntity favorite,
+  }) async {
+    try {
+      final cached = await getCachedFavoriteEnsembles();
+      if (cached == null || cached.isEmpty) {
+        await cacheFavoriteEnsembles(favorites: [favorite]);
+        return;
+      }
+      if (cached.any((f) => f.ensembleId == favorite.ensembleId)) return;
+      await cacheFavoriteEnsembles(favorites: [...cached, favorite]);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> clearCache() async {
     try {
       await autoCache.deleteCachedDataString(key);
+      await autoCache.deleteCachedDataString(ensembleKey);
     } catch (e) {
-      // Erro ao limpar cache - logar mas não propagar
-      // (não é crítico se falhar ao limpar)
       if (kDebugMode) {
         print('Erro ao limpar cache de favoritos: $e');
       }

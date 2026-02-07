@@ -35,6 +35,28 @@ class RemoveFavoriteEvent extends FavoritesEvent {
 
 class GetFavoriteArtistsEvent extends FavoritesEvent {}
 
+// ==================== ENSEMBLE FAVORITES ====================
+
+class AddFavoriteEnsembleEvent extends FavoritesEvent {
+  final String ensembleId;
+
+  AddFavoriteEnsembleEvent({required this.ensembleId});
+
+  @override
+  List<Object?> get props => [ensembleId];
+}
+
+class RemoveFavoriteEnsembleEvent extends FavoritesEvent {
+  final String ensembleId;
+
+  RemoveFavoriteEnsembleEvent({required this.ensembleId});
+
+  @override
+  List<Object?> get props => [ensembleId];
+}
+
+class GetFavoriteEnsemblesEvent extends FavoritesEvent {}
+
 // ==================== RESET EVENT ====================
 
 class ResetFavoritesEvent extends FavoritesEvent {}

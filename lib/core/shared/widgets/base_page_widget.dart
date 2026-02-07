@@ -18,7 +18,7 @@ class BasePage extends StatelessWidget {
   const BasePage({
     super.key,
     required this.child,
-    this.horizontalPadding = 24,
+    this.horizontalPadding = 16,
     this.verticalPadding = 12,
     this.showAppBar = false,
     this.appBarTitle,

@@ -59,7 +59,7 @@ class DateSelector extends StatelessWidget {
             Flexible(
               child: Text(
                 _formatDate(selectedDate),
-                style: textTheme.bodyMedium?.copyWith(
+                style: textTheme.bodySmall?.copyWith(
                   color: onPrimary,
                   fontWeight: FontWeight.w600,
                 ),

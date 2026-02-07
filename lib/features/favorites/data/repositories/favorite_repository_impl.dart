@@ -1,4 +1,5 @@
 import 'package:app/core/domain/favorites/favorite_entity.dart';
+import 'package:app/core/domain/favorites/favorite_ensemble_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/favorites/data/datasources/favorite_local_datasource.dart';
@@ -86,6 +87,61 @@ class FavoriteRepositoryImpl implements IFavoriteRepository {
       );
 
       return Right(favorites);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> addFavoriteEnsemble({
+    required String clientId,
+    required FavoriteEnsembleEntity favorite,
+  }) async {
+    try {
+      await remoteDataSource.addFavoriteEnsemble(
+        clientId: clientId,
+        favorite: favorite,
+      );
+      await localDataSource.addFavoriteEnsemble(favorite: favorite);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeFavoriteEnsemble({
+    required String clientId,
+    required String ensembleId,
+  }) async {
+    try {
+      await remoteDataSource.removeFavoriteEnsemble(
+        clientId: clientId,
+        ensembleId: ensembleId,
+      );
+      await localDataSource.removeFavoriteEnsemble(ensembleId: ensembleId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<FavoriteEnsembleEntity>>> getAllFavoriteEnsembles({
+    required String clientId,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      if (!forceRefresh) {
+        final cached =
+            await localDataSource.getCachedFavoriteEnsembles();
+        if (cached != null) return Right(cached);
+      }
+      final list = await remoteDataSource.getAllFavoriteEnsembles(
+        clientId: clientId,
+      );
+      await localDataSource.cacheFavoriteEnsembles(favorites: list);
+      return Right(list);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

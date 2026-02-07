@@ -75,8 +75,11 @@ import 'package:app/features/favorites/data/datasources/favorite_local_datasourc
 import 'package:app/features/favorites/data/datasources/favorite_remote_datasource.dart';
 import 'package:app/features/favorites/data/repositories/favorite_repository_impl.dart';
 import 'package:app/features/favorites/domain/repositories/favorite_repository.dart';
+import 'package:app/features/favorites/domain/usecases/add_favorite_ensemble_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/add_favorite_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/get_favorite_artists_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/get_favorite_ensembles_usecase.dart';
+import 'package:app/features/favorites/domain/usecases/remove_favorite_ensemble_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
 import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
@@ -784,11 +787,21 @@ FavoritesBloc _createFavoritesBloc(
   IExploreRepository exploreRepository,
   GetUserUidUseCase getUserUidUseCase,
 ) {
-  // Criar UseCases
   final addFavoriteUseCase = AddFavoriteUseCase(repository: favoriteRepository);
   final removeFavoriteUseCase = RemoveFavoriteUseCase(repository: favoriteRepository);
   final getFavoriteArtistsUseCase = GetFavoriteArtistsUseCase(favoriteRepository: favoriteRepository, exploreRepository: exploreRepository);
-  return FavoritesBloc(getUserUidUseCase: getUserUidUseCase, addFavoriteUseCase: addFavoriteUseCase, removeFavoriteUseCase: removeFavoriteUseCase, getFavoriteArtistsUseCase: getFavoriteArtistsUseCase);
+  final addFavoriteEnsembleUseCase = AddFavoriteEnsembleUseCase(repository: favoriteRepository);
+  final removeFavoriteEnsembleUseCase = RemoveFavoriteEnsembleUseCase(repository: favoriteRepository);
+  final getFavoriteEnsemblesUseCase = GetFavoriteEnsemblesUseCase(favoriteRepository: favoriteRepository, exploreRepository: exploreRepository);
+  return FavoritesBloc(
+    getUserUidUseCase: getUserUidUseCase,
+    addFavoriteUseCase: addFavoriteUseCase,
+    removeFavoriteUseCase: removeFavoriteUseCase,
+    getFavoriteArtistsUseCase: getFavoriteArtistsUseCase,
+    addFavoriteEnsembleUseCase: addFavoriteEnsembleUseCase,
+    removeFavoriteEnsembleUseCase: removeFavoriteEnsembleUseCase,
+    getFavoriteEnsemblesUseCase: getFavoriteEnsemblesUseCase,
+  );
 }
 
 EnsembleBloc _createEnsembleBloc(

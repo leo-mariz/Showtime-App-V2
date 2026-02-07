@@ -5,6 +5,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -43,6 +44,29 @@ class ContractCard extends StatelessWidget {
 
   String _formatCurrency(double value) {
     return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
+  }
+
+  /// CircleAvatar com foto (snapshot do contrato) ou inicial do nome.
+  Widget _buildAvatar(
+    BuildContext context, {
+    required String? photoUrl,
+    required String displayName,
+    required ColorScheme colorScheme,
+    required TextTheme? textTheme,
+    required Color onPrimary,
+  }) {
+    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
+    return CircleAvatar(
+      radius: DSSize.width(20),
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      backgroundImage: hasPhoto ? CachedNetworkImageProvider(photoUrl.trim()) : null,
+      child: hasPhoto
+          ? null
+          : Text(
+              displayName.trim().isNotEmpty ? displayName[0].toUpperCase() : 'A',
+              style: textTheme?.bodyMedium?.copyWith(color: onPrimary),
+            ),
+    );
   }
 
   /// Exibe endereço no formato "Bairro, Cidade" (ex: Leblon, Rio de Janeiro).
@@ -120,6 +144,48 @@ class ContractCard extends StatelessWidget {
     );
   }
 
+  /// True quando um deadline expirou e não devemos mostrar botões (aceite ou pagamento).
+  bool get _isDeadlineExpiredNoActions =>
+      (contract.isPending && contract.isAcceptDeadlineExpired) ||
+      (contract.isPaymentPending && contract.isPaymentDeadlineExpired);
+
+  /// Bloco único quando o prazo expirou: indica expirado + cancelado automaticamente (sem botões).
+  Widget _buildExpiredCanceledMessage(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isPayment = contract.isPaymentPending && contract.isPaymentDeadlineExpired;
+    final message = isPayment
+        ? 'Prazo de pagamento expirado. Este contrato foi cancelado automaticamente.'
+        : 'Prazo para aceitar expirado. Este contrato foi cancelado automaticamente.';
+    return Container(
+      padding: EdgeInsets.all(DSSize.width(12)),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(DSSize.width(8)),
+        border: Border.all(color: colorScheme.error.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: DSSize.width(18),
+            color: colorScheme.onErrorContainer,
+          ),
+          DSSizedBoxSpacing.horizontal(8),
+          Expanded(
+            child: Text(
+              message,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Indicador de prazo para o cliente (data/hora em que o artista pode aceitar)
   Widget _buildClientDeadlineIndicator(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -144,6 +210,56 @@ class ContractCard extends StatelessWidget {
               text,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Indicador de prazo de pagamento para o cliente (anfitrião): "Você tem até X para pagar"
+  Widget _buildPaymentDeadlineIndicator(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final isCritical = contract.isPaymentDeadlineCritical;
+    final isNear = contract.isPaymentDeadlineNear;
+    Color backgroundColor;
+    Color textColor;
+    IconData icon;
+    if (isCritical) {
+      backgroundColor = colorScheme.errorContainer.withOpacity(0.3);
+      textColor = colorScheme.error;
+      icon = Icons.warning_amber_rounded;
+    } else if (isNear) {
+      backgroundColor = colorScheme.tertiaryContainer.withOpacity(0.3);
+      textColor = colorScheme.onTertiaryContainer;
+      icon = Icons.access_time_rounded;
+    } else {
+      backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
+      textColor = colorScheme.onPrimaryContainer;
+      icon = Icons.schedule_rounded;
+    }
+    final text = contract.formattedPaymentDeadline ?? 'Prazo não disponível';
+    return Container(
+      padding: EdgeInsets.all(DSSize.width(12)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(DSSize.width(8)),
+        border: isCritical || isNear
+            ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1)
+            : null,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: DSSize.width(18), color: textColor),
+          DSSizedBoxSpacing.horizontal(8),
+          Expanded(
+            child: Text(
+              text,
+              style: textTheme.bodyMedium?.copyWith(
+                color: textColor,
+                fontWeight: isCritical || isNear ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),
@@ -242,18 +358,15 @@ class ContractCard extends StatelessWidget {
               // Informações do Artista ou Anfitrião
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: DSSize.width(20),
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                    child: Text(
-                      (isArtist 
+                  _buildAvatar(
+                    context,
+                    photoUrl: isArtist ? contract.clientPhotoUrl : contract.contractorPhotoUrl,
+                    displayName: isArtist
                         ? (contract.nameClient ?? 'A')
-                        : (contract.contractorName ?? 'A'))[0].toUpperCase(),
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: onPrimary,
-                        // fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                        : (contract.contractorName ?? 'A'),
+                    colorScheme: colorScheme,
+                    textTheme: textTheme,
+                    onPrimary: onPrimary,
                   ),
                   DSSizedBoxSpacing.horizontal(12),
                   Expanded(
@@ -361,18 +474,28 @@ class ContractCard extends StatelessWidget {
                 ),
               ),
               
-              // Indicador de prazo para aceitar (artista: "Você tem até..."; cliente: "O artista tem até...")
-              if (contract.isPending && contract.acceptDeadline != null) ...[
+              // Prazo expirado: só mensagem, sem botões
+              if (_isDeadlineExpiredNoActions) ...[
                 DSSizedBoxSpacing.vertical(12),
-                isArtist
-                    ? _buildDeadlineIndicator(context)
-                    : _buildClientDeadlineIndicator(context),
-              ],
-              
-              // Botões de ação (se fornecidos)
-              if (_buildActionButtonsSection() != null ) ...[
-                DSSizedBoxSpacing.vertical(16),
-                _buildActionButtonsSection()!,
+                _buildExpiredCanceledMessage(context),
+              ] else ...[
+                // Indicador de prazo para aceitar (pendente, quando ainda não expirou)
+                if (contract.isPending && contract.acceptDeadline != null) ...[
+                  DSSizedBoxSpacing.vertical(12),
+                  isArtist
+                      ? _buildDeadlineIndicator(context)
+                      : _buildClientDeadlineIndicator(context),
+                ],
+                // Indicador de prazo de pagamento (cliente: aguardando pagamento, quando ainda não expirou)
+                if (!isArtist && contract.isPaymentPending && contract.paymentDueDate != null && !contract.isPaymentDeadlineExpired) ...[
+                  DSSizedBoxSpacing.vertical(12),
+                  _buildPaymentDeadlineIndicator(context),
+                ],
+                // Botões de ação (não exibidos quando deadline expirado)
+                if (_buildActionButtonsSection() != null) ...[
+                  DSSizedBoxSpacing.vertical(16),
+                  _buildActionButtonsSection()!,
+                ],
               ],
             ],
           ),

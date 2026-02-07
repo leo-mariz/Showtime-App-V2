@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 class CustomBadge extends StatelessWidget {
   final String? title;
   final String value;
+  final TextStyle? valueStyle;
   final IconData? icon;
   final Color? color;
 
@@ -12,6 +13,7 @@ class CustomBadge extends StatelessWidget {
     super.key,
     this.title,
     required this.value,
+    this.valueStyle,
     this.icon,
     this.color,
   });
@@ -37,7 +39,7 @@ class CustomBadge extends StatelessWidget {
         children: [
           Text(
             value,
-            style: textTheme.bodyMedium?.copyWith(
+            style: valueStyle ?? textTheme.bodyMedium?.copyWith(
               color: onPrimary,
               fontWeight: FontWeight.w600,
             ),

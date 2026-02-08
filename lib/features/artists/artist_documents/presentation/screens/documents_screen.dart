@@ -138,19 +138,20 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         ),
                         DSSizedBoxSpacing.vertical(8),
                         
-                        // Currículo
-                        DocumentCard(
-                          title: 'Currículo',
-                          document: _getDocumentByType(DocumentTypeEnum.curriculum),
-                          onTap: () => _showCurriculumModal(),
-                        ),
-                        DSSizedBoxSpacing.vertical(8),
-                        
                         // Certidão de Antecedentes
                         DocumentCard(
                           title: 'Certidão de Antecedentes',
                           document: _getDocumentByType(DocumentTypeEnum.antecedents),
                           onTap: () => _showAntecedentsModal(),
+                        ),
+                        DSSizedBoxSpacing.vertical(8),
+                        
+                        // Currículo (opcional)
+                        DocumentCard(
+                          title: 'Currículo',
+                          document: _getDocumentByType(DocumentTypeEnum.curriculum),
+                          onTap: () => _showCurriculumModal(),
+                          isOptional: true,
                         ),
                         DSSizedBoxSpacing.vertical(24),
                       ],

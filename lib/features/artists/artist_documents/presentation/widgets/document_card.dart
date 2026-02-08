@@ -8,12 +8,15 @@ class DocumentCard extends StatelessWidget {
   final String title;
   final DocumentsEntity document;
   final VoidCallback onTap;
+  /// Se true, exibe o indicador "Opcional" no card.
+  final bool isOptional;
 
   const DocumentCard({
     super.key,
     required this.title,
     required this.document,
     required this.onTap,
+    this.isOptional = false,
   });
 
   String _getStatusText(int status) {
@@ -100,12 +103,38 @@ class DocumentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isOptional) ...[
+                      DSSizedBoxSpacing.horizontal(8),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: DSSize.width(8),
+                          vertical: DSSize.height(2),
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(DSSize.width(6)),
+                        ),
+                        child: Text(
+                          'Opcional',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 DSSizedBoxSpacing.vertical(4),
                 

@@ -77,18 +77,17 @@ class CheckArtistCompletenessUseCase {
   /// Documentos obrigatórios:
   /// - Identity (RG ou CNH)
   /// - Residence (Comprovante de Residência)
-  /// - Curriculum
   /// - Antecedents (Certidão de Antecedentes Criminais)
   ///
-  /// A seção é considerada INCOMPLETA somente se algum documento tiver:
+  /// Currículo é opcional e não entra na verificação de completude.
+  ///
+  /// A seção é considerada INCOMPLETA somente se algum documento obrigatório tiver:
   /// - status 0 (pending / Não enviado) ou
   /// - status 3 (rejected / Rejeitado).
-  /// Nos demais casos (em análise ou aprovado), o usuário já fez sua parte.
   ArtistInfoStatusEntity _checkDocuments(List<DocumentsEntity> documents) {
     final requiredDocumentTypes = [
       DocumentTypeEnum.identity,
       DocumentTypeEnum.residence,
-      DocumentTypeEnum.curriculum,
       DocumentTypeEnum.antecedents,
     ];
 

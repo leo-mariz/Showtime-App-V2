@@ -1173,7 +1173,7 @@ class _CurriculumDocumentModalState extends State<_CurriculumDocumentModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Para prosseguir com a verificação, você precisa enviar seu currículo de artista em formato PDF.',
+                    'Você pode enviar seu currículo de artista em formato PDF. Este documento é opcional.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

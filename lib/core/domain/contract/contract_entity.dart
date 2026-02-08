@@ -76,6 +76,7 @@ class ContractEntity with ContractEntityMappable {
   final String? cancelReason;          // Motivo do cancelamento
   final DateTime? statusChangedAt;    // Data da última mudança de status (para rastreamento de notificações)
   final DateTime? acceptDeadline;    // Data/hora limite para o artista aceitar a solicitação
+  
 
   /// URL da foto do anfitrião no momento da solicitação (snapshot para o card).
   final String? clientPhotoUrl;
@@ -83,6 +84,7 @@ class ContractEntity with ContractEntityMappable {
   final String? contractorPhotoUrl;
 
   final bool? isPaying;
+  final bool? analyseRefund;
   
   ContractEntity({
     required this.date,
@@ -129,6 +131,7 @@ class ContractEntity with ContractEntityMappable {
     this.clientPhotoUrl,
     this.contractorPhotoUrl,
     this.isPaying = false,
+    this.analyseRefund = false,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Validações de negócio

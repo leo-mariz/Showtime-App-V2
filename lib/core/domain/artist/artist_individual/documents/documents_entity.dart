@@ -8,9 +8,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 part 'documents_entity.mapper.dart';
 
 
-
-
-
 @MappableClass()
 class DocumentsEntity with DocumentsEntityMappable {
   String? idNumber;

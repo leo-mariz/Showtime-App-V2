@@ -84,10 +84,10 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
     }
   }
 
-  Future<void> _loadContracts() async {
-      context.read<ContractsBloc>().add(
-        GetContractsByArtistEvent(),
-      );
+  Future<void> _loadContracts({bool forceRefresh = false}) async {
+    context.read<ContractsBloc>().add(
+      GetContractsByArtistEvent(forceRefresh: forceRefresh),
+    );
   }
 
   @override
@@ -140,7 +140,7 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
             context.showError(state.error);
           } else if (state is ConfirmShowSuccess) {
             context.showSuccess('Show confirmado com sucesso!');
-            _loadContracts();
+            _loadContracts(forceRefresh: true);
           } else if (state is ConfirmShowFailure) {
             context.showError(state.error);
           } else if (state is AcceptContractLoading) {
@@ -150,8 +150,8 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
               _processingContractUid = null; // Reset após sucesso
             });
             context.showSuccess('Solicitação aceita com sucesso!');
-            // Recarregar contratos após sucesso
-            _loadContracts();
+            // Recarregar do servidor para atualizar status/botões na tela
+            _loadContracts(forceRefresh: true);
           } else if (state is AcceptContractFailure) {
             setState(() {
               _processingContractUid = null; // Reset após falha
@@ -164,20 +164,20 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
               _processingContractUid = null; // Reset após sucesso
             });
             context.showSuccess('Solicitação rejeitada com sucesso!');
-            // Recarregar contratos após sucesso
-            _loadContracts();
+            // Recarregar do servidor para atualizar lista/card
+            _loadContracts(forceRefresh: true);
           } else if (state is RejectContractFailure) {
             setState(() {
               _processingContractUid = null; // Reset após falha
             });
             context.showError(state.error);
           } else if (state is MakePaymentSuccess) {
-            // Recarregar contratos após pagamento bem-sucedido
-            _loadContracts();
+            // Recarregar do servidor após pagamento
+            _loadContracts(forceRefresh: true);
           } else if (state is CancelContractSuccess) {
             context.showSuccess('Contrato cancelado com sucesso!');
-            // Recarregar contratos após cancelamento
-            _loadContracts();
+            // Recarregar do servidor após cancelamento
+            _loadContracts(forceRefresh: true);
           } else if (state is CancelContractFailure) {
             context.showError(state.error);
           }

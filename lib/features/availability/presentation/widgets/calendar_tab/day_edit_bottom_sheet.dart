@@ -4,6 +4,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/domain/availability/time_slot_entity.dart';
+import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/options_modal.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/edit_address_radius_modal.dart';
@@ -60,9 +61,16 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   /// Verifica se a disponibilidade está ativa
   bool get _isActive => widget.availability?.isActive ?? false;
   
-  /// Obtém a lista de slots de disponibilidade
-  List<dynamic> get _availabilitySlots => 
-      widget.availability?.slots ?? [];
+  /// Slots do dia (todos)
+  List<TimeSlot> get _allSlots => widget.availability?.slots ?? [];
+
+  /// Apenas slots disponíveis (tab Disponibilidades)
+  List<TimeSlot> get _availableSlots =>
+      _allSlots.where((s) => s.status == TimeSlotStatusEnum.available).toList();
+
+  /// Apenas slots reservados/show (tab Shows)
+  List<TimeSlot> get _bookedSlots =>
+      _allSlots.where((s) => s.status == TimeSlotStatusEnum.booked).toList();
 
   @override
   void dispose() {
@@ -338,20 +346,18 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     );
   }
 
-  /// Card de Disponibilidade (endereço + raio + slots)
+  /// Card de Disponibilidade (endereço + raio + apenas slots AVAILABLE)
   Widget _buildAvailabilityCard(ColorScheme colorScheme) {
-    // Se não tem disponibilidade, mostrar mensagem
-    if (!_hasAvailability || _availabilitySlots.isEmpty) {
+    if (!_hasAvailability) {
       return _buildEmptyAvailabilityCard(colorScheme);
     }
-    
-    // Acessar propriedades diretamente do AvailabilityDayEntity
+
     final availability = widget.availability!;
-    final address = availability.endereco?.title.isNotEmpty ?? false 
-        ? availability.endereco?.title 
+    final address = availability.endereco?.title.isNotEmpty ?? false
+        ? availability.endereco?.title
         : (availability.endereco?.street ?? 'Sem endereço');
     final radius = availability.raioAtuacao;
-    final slots = availability.slots;
+    final slots = _availableSlots;
 
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
@@ -469,9 +475,9 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
             
             SizedBox(height: DSSize.height(8)),
             
-            // Lista de slots (dados reais) - ordenados por horário de início
-            if (slots?.isNotEmpty ?? false)
-              ..._sortSlotsByStartTime(slots!).map((slot) => Padding(
+            // Lista de slots disponíveis - ordenados por horário de início
+            if (slots.isNotEmpty)
+              ..._sortSlotsByStartTime(slots).map((slot) => Padding(
                 padding: EdgeInsets.only(bottom: DSSize.height(8)),
                 child: _buildTimeSlotCard(
                   colorScheme,
@@ -482,13 +488,15 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                 ),
               )),
             
-            // Mensagem se não há slots
-            if (slots?.isEmpty ?? true)
+            // Mensagem se não há slots disponíveis
+            if (slots.isEmpty)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: DSSize.height(16)),
                 child: Center(
                   child: Text(
-                    'Nenhum horário cadastrado',
+                    _bookedSlots.isNotEmpty
+                        ? 'Nenhum horário disponível (todos reservados)'
+                        : 'Nenhum horário cadastrado',
                     style: TextStyle(
                       fontSize: calculateFontSize(13),
                       color: colorScheme.onSurfaceVariant,
@@ -802,30 +810,35 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     );
   }
 
-  /// Card de Shows
+  /// Card de Shows (slots BOOKED do dia, com contractSnapshot)
   Widget _buildShowsCard(ColorScheme colorScheme) {
-
-    // Dados mockados
-    final mockShows = [
-      {
-        'eventType': 'Casamento',
-        'hostName': 'João Silva',
-        'neighborhood': 'Centro',
-        'totalValue': 1500.0,
-      },
-      {
-        'eventType': 'Aniversário',
-        'hostName': 'Maria Santos',
-        'neighborhood': 'Zona Sul',
-        'totalValue': 2000.0,
-      },
-      {
-        'eventType': 'Corporativo',
-        'hostName': 'Tech Corp',
-        'neighborhood': 'Barra',
-        'totalValue': 3500.0,
-      },
-    ];
+    final bookedSlots = _bookedSlots;
+    if (bookedSlots.isEmpty) {
+      return Container(
+        padding: EdgeInsets.all(DSSize.width(16)),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(DSSize.width(12)),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: DSSize.height(24)),
+            child: Text(
+              'Nenhum show agendado neste dia',
+              style: TextStyle(
+                fontSize: calculateFontSize(13),
+                color: colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
@@ -840,15 +853,24 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: mockShows.map((show) {
+          children: _sortSlotsByStartTime(bookedSlots).map((slot) {
+            final contract = slot.contractSnapshot;
+            final eventType = contract?.eventType?.name ?? 'Evento';
+            final hostName = contract?.nameClient ?? 'Anfitrião';
+            final neighborhood = contract?.address.district != null &&
+                    contract!.address.district!.isNotEmpty
+                ? contract.address.district!
+                : (contract?.address.city ?? '—');
+            final totalValue = contract?.value ?? 0.0;
             return Padding(
               padding: EdgeInsets.only(bottom: DSSize.height(8)),
               child: _buildShowCard(
                 colorScheme,
-                eventType: show['eventType'] as String,
-                hostName: show['hostName'] as String,
-                neighborhood: show['neighborhood'] as String,
-                totalValue: show['totalValue'] as double,
+                eventType: eventType,
+                hostName: hostName,
+                neighborhood: neighborhood,
+                totalValue: totalValue,
+                timeRange: '${slot.startTime} - ${slot.endTime}',
               ),
             );
           }).toList(),
@@ -863,6 +885,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
     required String hostName,
     required String neighborhood,
     required double totalValue,
+    String? timeRange,
   }) {
     return GestureDetector(
       onTap: () {
@@ -882,7 +905,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Tipo de evento
+            // Tipo de evento e horário
             Row(
               children: [
                 Icon(
@@ -891,14 +914,24 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
                   color: Colors.amber.shade600,
                 ),
                 SizedBox(width: DSSize.width(6)),
-                Text(
-                  eventType,
-                  style: TextStyle(
-                    fontSize: calculateFontSize(13),
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+                Expanded(
+                  child: Text(
+                    eventType,
+                    style: TextStyle(
+                      fontSize: calculateFontSize(13),
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
+                if (timeRange != null && timeRange.isNotEmpty)
+                  Text(
+                    timeRange,
+                    style: TextStyle(
+                      fontSize: calculateFontSize(11),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
               ],
             ),
             

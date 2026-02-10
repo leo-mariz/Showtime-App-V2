@@ -31,11 +31,13 @@ class UpdateContractsIndexUseCase {
 
   /// Atualiza o índice de contratos para um contrato específico
   /// 
-  /// [contract] - Contrato que foi criado/atualizado
+  /// [contract] - Contrato que foi criado/atualizado (ou removido, se [removed] true)
   /// [oldStatus] - Status anterior (opcional, para decrementar contador antigo)
+  /// [removed] - Se true, apenas decrementa os contadores da tab do contrato (ex.: após delete)
   Future<Either<Failure, void>> call({
     required ContractEntity contract,
     ContractStatusEnum? oldStatus,
+    bool removed = false,
   }) async {
     try {
       // Atualizar índice do artista (contrato individual)
@@ -43,8 +45,9 @@ class UpdateContractsIndexUseCase {
         await _updateIndexForUser(
           userId: contract.refArtist!,
           contract: contract,
-          oldStatus: oldStatus,
+          oldStatus: removed ? contract.status : oldStatus,
           isArtist: true,
+          removed: removed,
         );
       }
 
@@ -53,8 +56,9 @@ class UpdateContractsIndexUseCase {
         await _updateIndexForUser(
           userId: contract.refArtistOwner!,
           contract: contract,
-          oldStatus: oldStatus,
+          oldStatus: removed ? contract.status : oldStatus,
           isArtist: true,
+          removed: removed,
         );
       }
 
@@ -63,8 +67,9 @@ class UpdateContractsIndexUseCase {
         await _updateIndexForUser(
           userId: contract.refClient!,
           contract: contract,
-          oldStatus: oldStatus,
+          oldStatus: removed ? contract.status : oldStatus,
           isArtist: false,
+          removed: removed,
         );
       }
 
@@ -75,66 +80,50 @@ class UpdateContractsIndexUseCase {
   }
 
   /// Atualiza o índice para um usuário específico
+  /// [removed] - Se true, só decrementa a tab do contrato (ex.: após delete), sem incrementar
   Future<void> _updateIndexForUser({
     required String userId,
     required ContractEntity contract,
     ContractStatusEnum? oldStatus,
     required bool isArtist,
+    bool removed = false,
   }) async {
-    // Determinar qual tab o contrato pertence (novo status)
     final newTabIndex = _getTabIndexForStatus(contract.status, isArtist);
-    
-    // Determinar qual tab o contrato pertencia (status antigo)
     int? oldTabIndex;
     if (oldStatus != null) {
       oldTabIndex = _getTabIndexForStatus(oldStatus, isArtist);
     }
 
-    // Se o status não mudou de tab, não precisa atualizar
-    if (oldTabIndex != null && oldTabIndex == newTabIndex) {
+    if (!removed && oldTabIndex != null && oldTabIndex == newTabIndex) {
       return;
     }
 
-    // Buscar índice atual do usuário
     final currentIndex = await repository.getContractsIndexStream(userId).first;
-    
-    // Preparar atualizações com prefixo do role
     final rolePrefix = isArtist ? 'artist' : 'client';
     final updates = <String, dynamic>{};
 
-    // Decrementar contadores antigos (se houver)
     if (oldTabIndex != null) {
       final oldTabTotal = '${rolePrefix}Tab${oldTabIndex}Total';
       final oldTabUnseen = '${rolePrefix}Tab${oldTabIndex}Unseen';
-      
       final currentTotal = currentIndex.getTotalForTab(oldTabIndex, isArtist);
       final currentUnseen = currentIndex.getUnseenForTab(oldTabIndex, isArtist);
-      
       updates[oldTabTotal] = (currentTotal > 0) ? currentTotal - 1 : 0;
       updates[oldTabUnseen] = (currentUnseen > 0) ? currentUnseen - 1 : 0;
     }
 
-    // Incrementar contadores novos
-    final newTabTotal = '${rolePrefix}Tab${newTabIndex}Total';
-    final newTabUnseen = '${rolePrefix}Tab${newTabIndex}Unseen';
-    
-    final currentNewTotal = currentIndex.getTotalForTab(newTabIndex, isArtist);
-    final currentNewUnseen = currentIndex.getUnseenForTab(newTabIndex, isArtist);
-    
-    updates[newTabTotal] = currentNewTotal + 1;
-    
-    // Verificar se o contrato é "não visto" (criado/atualizado após lastSeenTabX)
-    final lastSeen = currentIndex.getLastSeenForTab(newTabIndex, isArtist);
-    final contractChangedAt = contract.statusChangedAt ?? contract.createdAt ?? DateTime.now();
-    
-    bool isUnseen = true;
-    if (lastSeen != null && contractChangedAt.isBefore(lastSeen)) {
-      isUnseen = false;
+    if (!removed) {
+      final newTabTotal = '${rolePrefix}Tab${newTabIndex}Total';
+      final newTabUnseen = '${rolePrefix}Tab${newTabIndex}Unseen';
+      final currentNewTotal = currentIndex.getTotalForTab(newTabIndex, isArtist);
+      final currentNewUnseen = currentIndex.getUnseenForTab(newTabIndex, isArtist);
+      updates[newTabTotal] = currentNewTotal + 1;
+      final lastSeen = currentIndex.getLastSeenForTab(newTabIndex, isArtist);
+      final contractChangedAt = contract.statusChangedAt ?? contract.createdAt ?? DateTime.now();
+      final isUnseen = lastSeen == null || contractChangedAt.isAfter(lastSeen);
+      updates[newTabUnseen] = isUnseen ? currentNewUnseen + 1 : currentNewUnseen;
     }
-    
-    updates[newTabUnseen] = isUnseen ? currentNewUnseen + 1 : currentNewUnseen;
 
-    // Atualizar índice no Firestore
+    if (updates.isEmpty) return;
     await repository.updateContractsIndex(userId, updates);
   }
 

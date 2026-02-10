@@ -76,7 +76,9 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     });
     if (widget.selectedAddress != null) {
       _selectedAddress = widget.selectedAddress;
-      _loadAvailabilities();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadAvailabilities();
+      });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;

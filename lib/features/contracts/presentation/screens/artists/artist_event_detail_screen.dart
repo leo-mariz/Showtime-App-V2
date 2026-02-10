@@ -278,6 +278,38 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     ),
                   ],
 
+                  // Prazo para o anfitrião pagar (quando aguardando pagamento)
+                  if (_status == ContractStatusEnum.paymentPending &&
+                      _contract.paymentDueDate != null &&
+                      !_contract.isPaymentDeadlineExpired) ...[
+                    DSSizedBoxSpacing.vertical(12),
+                    Container(
+                      padding: EdgeInsets.all(DSSize.width(12)),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(DSSize.width(8)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: DSSize.width(18),
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                          DSSizedBoxSpacing.horizontal(8),
+                          Expanded(
+                            child: Text(
+                              _contract.formattedPaymentDeadlineForArtist ?? 'Prazo não disponível',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   DSSizedBoxSpacing.vertical(24),
 
                   // Localização

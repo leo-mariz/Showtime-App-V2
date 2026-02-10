@@ -2,6 +2,7 @@ import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
@@ -16,10 +17,12 @@ import 'package:timezone/timezone.dart' as tz;
 /// - Retornar UID do contrato criado
 class AddContractUseCase {
   final IContractRepository repository;
+  final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   AddContractUseCase({
     required this.repository,
+    required this.contractsFunctions,
     this.updateContractsIndexUseCase,
   });
 
@@ -36,24 +39,54 @@ class AddContractUseCase {
   }
 
   /// True se a data do evento é hoje ou amanhã no fuso America/Sao_Paulo.
-  bool _isEventSameOrNextDayInSp(DateTime eventDate, tz.TZDateTime nowSp) {
-    final tomorrowSp = nowSp.add(const Duration(days: 1));
-    final sameDay = eventDate.year == nowSp.year && eventDate.month == nowSp.month && eventDate.day == nowSp.day;
-    final nextDay = eventDate.year == tomorrowSp.year && eventDate.month == tomorrowSp.month && eventDate.day == tomorrowSp.day;
-    return sameDay || nextDay;
+  // bool _isEventSameOrNextDayInSp(DateTime eventDate, tz.TZDateTime nowSp) {
+  //   final tomorrowSp = nowSp.add(const Duration(days: 1));
+  //   final sameDay = eventDate.year == nowSp.year && eventDate.month == nowSp.month && eventDate.day == nowSp.day;
+  //   final nextDay = eventDate.year == tomorrowSp.year && eventDate.month == tomorrowSp.month && eventDate.day == tomorrowSp.day;
+  //   return sameDay || nextDay;
+  // }
+
+  /// Monta o payload para a Cloud Function addContract.
+  Map<String, dynamic> _buildAddContractPayload(ContractEntity contract) {
+    final payload = <String, dynamic>{
+      'refClient': contract.refClient,
+      'contractorType': contract.contractorType.value,
+      'date': contract.date.toUtc().toIso8601String(),
+      'time': contract.time,
+      'duration': contract.duration,
+      'preparationTime': contract.preparationTime,
+      'value': contract.value,
+      'address': contract.address.toMap(),
+    };
+    if (contract.contractorType == ContractorTypeEnum.artist && contract.refArtist != null) {
+      payload['refArtist'] = contract.refArtist;
+    }
+    if (contract.contractorType == ContractorTypeEnum.group) {
+      if (contract.refGroup != null) payload['refGroup'] = contract.refGroup;
+      if (contract.refArtistOwner != null) payload['refArtistOwner'] = contract.refArtistOwner;
+    }
+    if (contract.eventType != null) payload['eventType'] = contract.eventType!.toMap();
+    if (contract.nameArtist != null) payload['nameArtist'] = contract.nameArtist;
+    if (contract.nameGroup != null) payload['nameGroup'] = contract.nameGroup;
+    if (contract.nameClient != null) payload['nameClient'] = contract.nameClient;
+    if (contract.clientRating != null) payload['clientRating'] = contract.clientRating;
+    if (contract.clientRatingCount != null) payload['clientRatingCount'] = contract.clientRatingCount;
+    if (contract.clientPhotoUrl != null) payload['clientPhotoUrl'] = contract.clientPhotoUrl;
+    if (contract.contractorPhotoUrl != null) payload['contractorPhotoUrl'] = contract.contractorPhotoUrl;
+    return payload;
   }
 
-  /// Calcula o acceptDeadline em fuso America/Sao_Paulo e retorna em UTC.
-  /// Regra: evento no mesmo dia ou no dia seguinte → prazo 1h; caso contrário → 24h.
-  DateTime _calculateAcceptDeadlineUtc(DateTime createdAtUtc, DateTime eventDateTimeUtc, DateTime eventDate) {
-    final nowSp = tz.TZDateTime.now(_saoPaulo);
-    final shortDeadline = _isEventSameOrNextDayInSp(eventDate, nowSp);
-    final duration = shortDeadline
-        ? const Duration(hours: 1)
-        : const Duration(hours: 24);
-    final deadlineSp = nowSp.add(duration);
-    return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);
-  }
+  // /// Calcula o acceptDeadline em fuso America/Sao_Paulo e retorna em UTC.
+  // /// Regra: evento no mesmo dia ou no dia seguinte → prazo 1h; caso contrário → 24h.
+  // DateTime _calculateAcceptDeadlineUtc(DateTime createdAtUtc, DateTime eventDateTimeUtc, DateTime eventDate) {
+  //   final nowSp = tz.TZDateTime.now(_saoPaulo);
+  //   final shortDeadline = _isEventSameOrNextDayInSp(eventDate, nowSp);
+  //   final duration = shortDeadline
+  //       ? const Duration(hours: 1)
+  //       : const Duration(hours: 24);
+  //   final deadlineSp = nowSp.add(duration);
+  //   return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);
+  // }
 
   Future<Either<Failure, String>> call(ContractEntity contract) async {
     try {
@@ -130,40 +163,22 @@ class AddContractUseCase {
       //   }
       // }
 
-      // Calcular deadline em America/Sao_Paulo e armazenar em UTC
-      final createdAtUtc = contract.createdAt ?? DateTime.now().toUtc();
-      final acceptDeadlineUtc = _calculateAcceptDeadlineUtc(createdAtUtc, eventDateTimeUtc, contract.date);
+      // Montar payload para a Cloud Function (addContract)
+      final payload = _buildAddContractPayload(contract);
 
-      // Criar contrato com deadline calculado (sempre UTC)
-      final contractWithDeadline = contract.copyWith(
-        acceptDeadline: acceptDeadlineUtc,
-        createdAt: createdAtUtc,
-      );
+      // Criar contrato via Cloud Function
+      final contractUid = await contractsFunctions.addContract(payload);
 
-      // Adicionar contrato
-      final result = await repository.addContract(contractWithDeadline);
-
-      return result.fold(
-        (failure) => Left(failure),
-        (contractUid) async {
-          // Buscar contrato criado para atualizar índice
-          final getResult = await repository.getContract(contractUid);
-          await getResult.fold(
-            (_) async {},
-            (createdContract) async {
-              // Atualizar índice de contratos (não bloqueia se falhar)
-              if (updateContractsIndexUseCase != null) {
-                await updateContractsIndexUseCase!.call(
-                  contract: createdContract.copyWith(
-                    statusChangedAt: DateTime.now(),
-                  ),
-                );
-              }
-            },
-          );
-          return Right(contractUid);
-        },
-      );
+      // Atualizar índice no client (sempre, mesmo se getContract falhar)
+      if (updateContractsIndexUseCase != null) {
+        final getResult = await repository.getContract(contractUid);
+        final toIndex = getResult.fold(
+          (_) => contract.copyWith(uid: contractUid, statusChangedAt: DateTime.now()),
+          (createdContract) => createdContract.copyWith(statusChangedAt: DateTime.now()),
+        );
+        await updateContractsIndexUseCase!.call(contract: toIndex);
+      }
+      return Right(contractUid);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

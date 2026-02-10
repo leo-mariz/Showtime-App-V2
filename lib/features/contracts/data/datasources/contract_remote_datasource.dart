@@ -177,32 +177,32 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
   Map<String, dynamic> _convertTimestampsToDateTime(Map<String, dynamic> map) {
     final convertedMap = Map<String, dynamic>.from(map);
     
-    // Lista de campos que podem ser Timestamp
+    // Lista de campos que podem ser Timestamp (ContractEntity + Rating)
     final dateFields = [
       'date',
       'paymentDueDate',
       'paymentDate',
       'showConfirmedAt',
-      'ratedAt',
+      'ratingsPublishedAt',
+      'showRatingRequestedAt',
       'createdAt',
       'acceptedAt',
       'rejectedAt',
       'canceledAt',
+      'statusChangedAt',
+      'acceptDeadline',
+      'ratedAt',
     ];
     
-    // Converter campos de data do contrato
+    // Converter campos de data do contrato.
+    // O DateTimeMapper do dart_mappable só decodifica String ou num; Firestore retorna Timestamp.
+    // Convertemos Timestamp -> millisecondsSinceEpoch (num) para o mapper aceitar.
     for (final field in dateFields) {
       if (convertedMap.containsKey(field) && convertedMap[field] != null) {
         if (convertedMap[field] is Timestamp) {
-          convertedMap[field] = (convertedMap[field] as Timestamp).toDate();
-        } else if (convertedMap[field] is String) {
-          // Se for String ISO, tentar converter
-          try {
-            convertedMap[field] = DateTime.parse(convertedMap[field] as String);
-          } catch (e) {
-            debugPrint('⚠️ Erro ao converter $field de String para DateTime: $e');
-          }
+          convertedMap[field] = (convertedMap[field] as Timestamp).millisecondsSinceEpoch;
         }
+        // String ISO já é aceita pelo mapper; num (ms) também
       }
     }
     
@@ -215,13 +215,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       for (final field in availabilityDateFields) {
         if (availabilityMap.containsKey(field) && availabilityMap[field] != null) {
           if (availabilityMap[field] is Timestamp) {
-            availabilityMap[field] = (availabilityMap[field] as Timestamp).toDate();
-          } else if (availabilityMap[field] is String) {
-            try {
-              availabilityMap[field] = DateTime.parse(availabilityMap[field] as String);
-            } catch (e) {
-              debugPrint('⚠️ Erro ao converter availabilitySnapshot.$field de String para DateTime: $e');
-            }
+            availabilityMap[field] = (availabilityMap[field] as Timestamp).millisecondsSinceEpoch;
           }
         }
       }

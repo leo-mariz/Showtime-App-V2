@@ -32,6 +32,8 @@ import 'package:app/features/contracts/presentation/bloc/states/contracts_states
 import 'package:app/features/clients/presentation/bloc/clients_bloc.dart';
 import 'package:app/features/clients/presentation/bloc/events/clients_events.dart';
 import 'package:app/features/clients/presentation/bloc/states/clients_states.dart';
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -92,9 +94,10 @@ class _RequestScreenState extends State<RequestScreen> {
     _selectedDuration = _minimumDuration;
     _durationController.text = _formatDuration(_minimumDuration);
     
-    // Buscar dados após o primeiro frame
+    // Buscar dados após o primeiro frame (inclui usuário para o botão Solicitar responder no 1º toque)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        context.read<UsersBloc>().add(GetUserDataEvent());
         _loadEventTypes();
         _loadAvailabilities();
       }
@@ -584,16 +587,25 @@ class _RequestScreenState extends State<RequestScreen> {
     return null;
   }
 
+  /// Obtém o UID do cliente. Se os dados ainda não estiverem carregados,
+  /// dispara o carregamento e aguarda o resultado (evita precisar clicar duas vezes).
   Future<String?> _getClientUid() async {
     final usersBloc = context.read<UsersBloc>();
     final currentUserState = usersBloc.state;
-    print('currentUserState: $currentUserState');
-    if (currentUserState is! GetUserDataSuccess) {
-      usersBloc.add(GetUserDataEvent());
-    }
     if (currentUserState is GetUserDataSuccess) {
-      print('currentUserState.user.uid: ${currentUserState.user.uid}');
       return currentUserState.user.uid;
+    }
+    usersBloc.add(GetUserDataEvent());
+    try {
+      final state = await usersBloc.stream
+          .where((s) => s is GetUserDataSuccess || s is GetUserDataFailure)
+          .first
+          .timeout(const Duration(seconds: 10));
+      if (state is GetUserDataSuccess) return state.user.uid;
+    } on TimeoutException {
+      return null;
+    } catch (_) {
+      return null;
     }
     return null;
   }
@@ -610,10 +622,11 @@ class _RequestScreenState extends State<RequestScreen> {
       return;
     }
 
-    // Obter UID do cliente usando UsersBloc
+    // Obter UID do cliente usando UsersBloc (aguarda carregamento se necessário)
     final clientUid = await _getClientUid();
 
     if (clientUid == null || clientUid.isEmpty) {
+      if (mounted) context.showError('Não foi possível identificar o usuário. Tente novamente.');
       return;
     }
 

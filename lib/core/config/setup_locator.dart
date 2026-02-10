@@ -11,6 +11,7 @@ import 'package:app/core/services/biometric_auth_service.dart';
 import 'package:app/core/services/app_notification_service.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final getIt = GetIt.instance;
@@ -59,6 +60,10 @@ void setupLocator() {
   
   getIt.registerLazySingleton<IFirebaseFunctionsService>(
     () => FirebaseFunctionsService(),
+  );
+
+  getIt.registerLazySingleton<IContractsFunctionsService>(
+    () => ContractsFunctionsService(functions: getIt<IFirebaseFunctionsService>()),
   );
 
   getIt.registerLazySingleton<MercadoPagoService>(

@@ -5,6 +5,7 @@ import 'package:app/features/artists/artist_availability/data/datasources/availa
 import 'package:app/features/artists/artist_availability/data/datasources/availability_remote_datasource.dart';
 import 'package:app/features/artists/artist_availability/domain/repositories/availability_repository.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 /// Implementação do Repository de Availability
 /// 
@@ -24,23 +25,25 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
     required String artistId,
     bool forceRemote = false,
   }) async {
-    try {      
-      // Se não forçar remote, tenta buscar do cache primeiro
+    try {
       if (!forceRemote) {
         final cachedDays = await localDataSource.getAvailabilities(artistId);
         if (cachedDays.isNotEmpty) {
+          debugPrint('📅 [AvailabilityRepo] getAvailabilities: cache hit, ${cachedDays.length} dias');
           return Right(cachedDays);
         }
       }
-      
-      // Buscar do remote
+
+      debugPrint('📅 [AvailabilityRepo] getAvailabilities: buscando remote (artistId: $artistId)');
       final remoteDays = await remoteDataSource.getAvailabilities(artistId);
+      debugPrint('📅 [AvailabilityRepo] getAvailabilities: remote retornou ${remoteDays.length} dias');
       for (final day in remoteDays) {
         await localDataSource.cacheAvailability(artistId, day);
       }
-      
       return Right(remoteDays);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ [AvailabilityRepo] getAvailabilities ERRO: $e');
+      debugPrint('❌ [AvailabilityRepo] stackTrace: $stackTrace');
       return Left(ErrorHandler.handle(e));
     }
   }

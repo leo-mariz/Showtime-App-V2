@@ -8,8 +8,6 @@ class CnpjUserEntity with CnpjUserEntityMappable{
   final String? fantasyName;
   final String? stateRegistration;
 
-
-
   CnpjUserEntity({
     this.cnpj,
     this.companyName,
@@ -20,9 +18,6 @@ class CnpjUserEntity with CnpjUserEntityMappable{
 }
 
 
-
-
-
 extension CnpjUserEntityReference on CnpjUserEntity {
 
   static List<String> cnpjUserFields = [
@@ -30,9 +25,6 @@ extension CnpjUserEntityReference on CnpjUserEntity {
     'companyName',
     'fantasyName',
     'stateRegistration',
-    'completeAddress',
-    'hasIntegrants',
-    'integrants',
   ];
 }
 

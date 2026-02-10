@@ -8,6 +8,7 @@ import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/event_location_map.dart';
+import 'package:app/features/contracts/presentation/bloc/contract_paying_cubit.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -84,6 +85,9 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
       listener: (context, state) {
         if (state is MakePaymentFailure) {
           context.showError(state.error);
+          if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+            context.read<ContractPayingCubit>().removeOpening(_contract.uid!);
+          }
         } else if (state is CancelContractSuccess) {
           context.showSuccess('Contrato cancelado com sucesso!');
           // Voltar para a tela anterior e sinalizar que precisa recarregar
@@ -356,27 +360,44 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               DSSizedBoxSpacing.vertical(24),
             ],
 
-            // Botões de Ação
+            // Botões de Ação (estado local via ContractPayingCubit; cliente não escreve em contratos)
             if (_status == ContractStatusEnum.paymentPending) ...[
-              BlocBuilder<ContractsBloc, ContractsState>(
-                builder: (context, state) {
-                  final isVerifying = state is VerifyPaymentLoading;
-                  final shouldShowVerifyButton = _contract.isPaying == true;
-                  
-                  return SizedBox(
-                    width: double.infinity,
-                    child: CustomButton(
-                      label: shouldShowVerifyButton ? 'Verificar Pagamento' : 'Realizar Pagamento',
-                      onPressed: shouldShowVerifyButton 
-                          ? () => _handleVerifyPayment(context)
-                          : () => _handlePayment(context),
-                      icon: shouldShowVerifyButton 
-                          ? Icons.check_circle_rounded 
-                          : Icons.payment_rounded,
-                      iconOnRight: true,
-                      height: DSSize.height(48),
-                      isLoading: isVerifying,
-                    ),
+              BlocBuilder<ContractPayingCubit, ContractPayingState>(
+                builder: (context, payingState) {
+                  final shouldShowVerifyButton = _contract.uid != null && payingState.paying.contains(_contract.uid);
+                  final isOpeningPayment = _contract.uid != null && payingState.opening.contains(_contract.uid);
+                  return BlocBuilder<ContractsBloc, ContractsState>(
+                    builder: (context, state) {
+                      final isVerifying = state is VerifyPaymentLoading;
+                      final isLoading = isVerifying || isOpeningPayment;
+                      String label;
+                      VoidCallback? onPressed;
+                      IconData icon;
+                      if (shouldShowVerifyButton) {
+                        label = 'Verificar Pagamento';
+                        onPressed = () => _handleVerifyPayment(context);
+                        icon = Icons.check_circle_rounded;
+                      } else if (isOpeningPayment) {
+                        label = 'Abrindo...';
+                        onPressed = null;
+                        icon = Icons.payment_rounded;
+                      } else {
+                        label = 'Realizar Pagamento';
+                        onPressed = () => _handlePayment(context);
+                        icon = Icons.payment_rounded;
+                      }
+                      return SizedBox(
+                        width: double.infinity,
+                        child: CustomButton(
+                          label: label,
+                          onPressed: onPressed,
+                          icon: icon,
+                          iconOnRight: true,
+                          height: DSSize.height(48),
+                          isLoading: isLoading,
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -606,15 +627,24 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
     }
   }
 
+  static const _paymentRedirectDelay = Duration(seconds: 4);
+
   void _handlePayment(BuildContext context) {
     if (_contract.linkPayment == null || _contract.linkPayment!.isEmpty) {
       context.showError('Link de pagamento não disponível. Entre em contato com o suporte.');
       return;
     }
+    if (_contract.uid == null || _contract.uid!.isEmpty) return;
 
+    final uid = _contract.uid!;
+    final cubit = context.read<ContractPayingCubit>();
+    cubit.addOpening(uid);
     context.read<ContractsBloc>().add(
-          MakePaymentEvent(linkPayment: _contract.linkPayment!, contractUid: _contract.uid!),
-        );
+      MakePaymentEvent(linkPayment: _contract.linkPayment!, contractUid: uid),
+    );
+    Future.delayed(_paymentRedirectDelay, () {
+      if (mounted) cubit.finishOpeningAndSetPaying(uid);
+    });
   }
 
   void _handleVerifyPayment(BuildContext context) {
@@ -622,7 +652,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
       context.showError('Erro: Contrato sem identificador');
       return;
     }
-
+    context.read<ContractPayingCubit>().removePaying(_contract.uid!);
     context.read<ContractsBloc>().add(
       VerifyPaymentEvent(contractUid: _contract.uid!),
     );

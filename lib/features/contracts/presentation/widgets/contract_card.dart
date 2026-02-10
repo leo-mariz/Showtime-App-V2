@@ -3,6 +3,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
+import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -218,8 +219,9 @@ class ContractCard extends StatelessWidget {
     );
   }
 
-  /// Indicador de prazo de pagamento para o cliente (anfitrião): "Você tem até X para pagar"
-  Widget _buildPaymentDeadlineIndicator(BuildContext context) {
+  /// Indicador de prazo de pagamento: para o cliente "Você tem até X para pagar";
+  /// para o artista "O anfitrião tem até X para pagar".
+  Widget _buildPaymentDeadlineIndicator(BuildContext context, {String? textOverride}) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isCritical = contract.isPaymentDeadlineCritical;
@@ -240,7 +242,7 @@ class ContractCard extends StatelessWidget {
       textColor = colorScheme.onPrimaryContainer;
       icon = Icons.schedule_rounded;
     }
-    final text = contract.formattedPaymentDeadline ?? 'Prazo não disponível';
+    final text = textOverride ?? contract.formattedPaymentDeadline ?? 'Prazo não disponível';
     return Container(
       padding: EdgeInsets.all(DSSize.width(12)),
       decoration: BoxDecoration(
@@ -382,23 +384,31 @@ class ContractCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        DSSizedBoxSpacing.vertical(4),      
-                        Text(
-                          isArtist
-                            ? (contract.isGroupContract && contract.nameGroup != null && contract.nameGroup!.isNotEmpty
-                                ? 'Anfitrião · Conjunto: ${contract.nameGroup}'
-                                : 'Anfitrião')
-                            : (contract.isGroupContract && contract.nameGroup != null && contract.nameGroup!.isNotEmpty
-                                ? 'Conjunto'
-                                : 'Artista'),
-                          style: textTheme.bodySmall?.copyWith(
-                            color: onSurfaceVariant,
+                        DSSizedBoxSpacing.vertical(4),  
+                        if (isArtist) ...[
+                          Text(
+                            'Anfitrião',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
                           ),
-                        ),
+                          DSSizedBoxSpacing.vertical(4),    
+                        ] else ...[
+                          Text(
+                            contract.isGroupContract ?
+                            'Conjunto' : 'Artista',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
+                          ),
+                          DSSizedBoxSpacing.vertical(4),    
+                        ],
                       ],
                     ),
                   ),
                   DSSizedBoxSpacing.horizontal(8),
+
+                  
               
                   // Informações do Evento
                   Row(
@@ -419,6 +429,27 @@ class ContractCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+
+              if (isArtist) ...[
+                DSSizedBoxSpacing.vertical(12),
+                Row(
+                  children: [
+                    Text("Solicitado para:"),
+                    DSSizedBoxSpacing.horizontal(8),
+                    CustomBadge(value: 
+                      contract.isGroupContract
+                        ? 'Conjunto'
+                        : 'Individual',
+                      valueStyle: textTheme.bodySmall?.copyWith(
+                      ),
+                      icon: contract.isGroupContract ? Icons.group_rounded : Icons.person_rounded,
+                      
+                      ),
+                    
+
+                ],)
+              ],
               
               
               
@@ -486,10 +517,13 @@ class ContractCard extends StatelessWidget {
                       ? _buildDeadlineIndicator(context)
                       : _buildClientDeadlineIndicator(context),
                 ],
-                // Indicador de prazo de pagamento (cliente: aguardando pagamento, quando ainda não expirou)
-                if (!isArtist && contract.isPaymentPending && contract.paymentDueDate != null && !contract.isPaymentDeadlineExpired) ...[
+                // Indicador de prazo de pagamento: cliente = "Você tem até X para pagar"; artista = "O anfitrião tem até X para pagar"
+                if (contract.isPaymentPending && contract.paymentDueDate != null && !contract.isPaymentDeadlineExpired) ...[
                   DSSizedBoxSpacing.vertical(12),
-                  _buildPaymentDeadlineIndicator(context),
+                  _buildPaymentDeadlineIndicator(
+                    context,
+                    textOverride: isArtist ? contract.formattedPaymentDeadlineForArtist : null,
+                  ),
                 ],
                 // Botões de ação (não exibidos quando deadline expirado)
                 if (_buildActionButtonsSection() != null) ...[

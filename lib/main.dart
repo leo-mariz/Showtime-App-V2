@@ -82,6 +82,7 @@ import 'package:app/features/favorites/domain/usecases/get_favorite_ensembles_us
 import 'package:app/features/favorites/domain/usecases/remove_favorite_ensemble_usecase.dart';
 import 'package:app/features/favorites/domain/usecases/remove_favorite_usecase.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/data/datasources/contract_local_datasource.dart';
 import 'package:app/features/contracts/data/datasources/contract_remote_datasource.dart';
 import 'package:app/features/contracts/data/repositories/contract_repository_impl.dart';
@@ -103,6 +104,7 @@ import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.d
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
+import 'package:app/features/contracts/presentation/bloc/contract_paying_cubit.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/request_availabilities/request_availabilities_bloc.dart';
@@ -730,11 +732,11 @@ RequestAvailabilitiesBloc _createRequestAvailabilitiesBloc(
 ContractsBloc _createContractsBloc(
   IContractRepository contractRepository,
   GetUserUidUseCase getUserUidUseCase,
-  IFirebaseFunctionsService firebaseFunctionsService,
+  IContractsFunctionsService contractsFunctionsService,
   MercadoPagoService mercadoPagoService,
   IEnsembleRepository ensembleRepository,
 ) {
-  // Criar UseCase de atualização de índice (compartilhado)
+  // Criar UseCase de atualização de índice (compartilhado) — índice continua no client
   final updateContractsIndexUseCase = UpdateContractsIndexUseCase(repository: contractRepository);
   
   // Criar UseCases
@@ -744,18 +746,18 @@ ContractsBloc _createContractsBloc(
   final getContractsByGroupUseCase = GetContractsByGroupUseCase(repository: contractRepository);
   final getEnsembleIdsByOwnerUseCase = GetEnsembleIdsByOwnerUseCase(repository: ensembleRepository);
   final getContractsForArtistIncludingEnsemblesUseCase = GetContractsForArtistIncludingEnsemblesUseCase(repository: contractRepository);
-  final addContractUseCase = AddContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final addContractUseCase = AddContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final updateContractUseCase = UpdateContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository);
-  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, firebaseFunctionsService: firebaseFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, cancelContractUseCase: cancelContractUseCase);
-  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository, cancelContractUseCase: cancelContractUseCase);
+  final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository, contractsFunctions: contractsFunctionsService);
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
-  final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, contractRepository: contractRepository);
-  final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
-  final skipRatingArtistUseCase = SkipRatingArtistUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
-  final rateClientUseCase = RateClientUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
+  final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, contractRepository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final skipRatingArtistUseCase = SkipRatingArtistUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final rateClientUseCase = RateClientUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
 
 
   // Criar e retornar ContractsBloc
@@ -1145,6 +1147,7 @@ Future <void> main() async {
   final biometricService = getIt<IBiometricAuthService>();
   final storageService = getIt<IStorageService>();
   final firebaseFunctionsService = getIt<IFirebaseFunctionsService>();
+  final contractsFunctionsService = getIt<IContractsFunctionsService>();
   final mercadoPagoService = getIt<MercadoPagoService>();
 
   final appRouter = AppRouter();
@@ -1397,10 +1400,13 @@ Future <void> main() async {
             create: (context) => _createContractsBloc(
               contractRepository,
               getUserUidUseCase,
-              firebaseFunctionsService,
+              contractsFunctionsService,
               mercadoPagoService,
               ensembleRepository,
             ),
+          ),
+          BlocProvider(
+            create: (context) => ContractPayingCubit(),
           ),
           BlocProvider(
             create: (context) => _createPendingContractsCountBloc(

@@ -319,11 +319,16 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
 
     // ════════════════════════════════════════════════════════════════
     // DADOS CARREGADOS → Renderizar calendário
+    // Usar state.availabilities quando disponível para refletir dados imediatamente
+    // (evita tela vazia no primeiro frame após sucesso)
     // ════════════════════════════════════════════════════════════════
-    if (state is GetAllAvailabilitiesSuccess || _availabilities.isNotEmpty) {
+    final list = state is GetAllAvailabilitiesSuccess
+        ? state.availabilities
+        : _availabilities;
+    if (state is GetAllAvailabilitiesSuccess || list.isNotEmpty) {
       return CalendarWidget(
         key: _calendarKey,
-        availabilities: _availabilities, // Passar dados reais
+        availabilities: list,
         selectedDay: _selectedDay,
         selectedDays: _selectedDays,
         onDaySelected: (day) {

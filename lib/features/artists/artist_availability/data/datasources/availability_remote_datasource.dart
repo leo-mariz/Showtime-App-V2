@@ -2,6 +2,7 @@ import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface do DataSource remoto para Availability
 /// 
@@ -81,19 +82,25 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
       );
       
       final querySnapshot = await collection.get();
-      
-      final days = querySnapshot.docs.map((doc) {
-        final dayMap = doc.data() as Map<String, dynamic>;
-        
-        // Converter Timestamps para DateTime antes do mapper
-        final cleanedMap = _convertTimestamps(dayMap);
-        
-        final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
-        return day.copyWith(id: doc.id);
-      }).toList();
-      
+      debugPrint('📅 [AvailabilityRemote] getAvailabilities: ${querySnapshot.docs.length} documentos');
+
+      final days = <AvailabilityDayEntity>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          final dayMap = doc.data() as Map<String, dynamic>;
+          final cleanedMap = _convertTimestamps(dayMap);
+          final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
+          days.add(day.copyWith(id: doc.id));
+        } catch (e, stackTrace) {
+          debugPrint('❌ [AvailabilityRemote] getAvailabilities: ERRO ao mapear doc id=${doc.id}: $e');
+          debugPrint('❌ [AvailabilityRemote] stackTrace: $stackTrace');
+          rethrow;
+        }
+      }
+      debugPrint('📅 [AvailabilityRemote] getAvailabilities: mapeados ${days.length} dias com sucesso');
       return days;
     } on FirebaseException catch (e, stackTrace) {
+      debugPrint('❌ [AvailabilityRemote] getAvailabilities FirebaseException: ${e.message}');
       throw ServerException(
         'Erro ao buscar disponibilidades: ${e.message}',
         statusCode: ErrorHandler.getStatusCode(e),
@@ -101,6 +108,8 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
         stackTrace: stackTrace,
       );
     } catch (e, stackTrace) {
+      debugPrint('❌ [AvailabilityRemote] getAvailabilities catch: $e');
+      debugPrint('❌ [AvailabilityRemote] stackTrace: $stackTrace');
       throw ServerException(
         'Erro inesperado ao buscar disponibilidades',
         originalError: e,
@@ -274,32 +283,36 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
   /// Converte recursivamente todos os Timestamps em DateTime
   Map<String, dynamic> _convertTimestamps(Map<String, dynamic> map) {
     final result = <String, dynamic>{};
-    
+
     for (final entry in map.entries) {
       final key = entry.key;
       final value = entry.value;
-      
+
       if (value is Timestamp) {
-        // Converter Timestamp para DateTime
         result[key] = value.toDate();
       } else if (value is Map) {
-        // Recursão para mapas aninhados
-        result[key] = _convertTimestamps(value as Map<String, dynamic>);
+        try {
+          result[key] = _convertTimestamps(value as Map<String, dynamic>);
+        } catch (e, stackTrace) {
+          debugPrint('❌ [AvailabilityRemote] _convertTimestamps erro na key="$key": $e');
+          debugPrint('❌ [AvailabilityRemote] stackTrace: $stackTrace');
+          rethrow;
+        }
       } else if (value is List) {
-        // Processar listas
         result[key] = value.map((item) {
           if (item is Map) {
             return _convertTimestamps(item as Map<String, dynamic>);
           } else if (item is Timestamp) {
             return item.toDate();
           }
+          debugPrint('📅 [AvailabilityRemote] _convertTimestamps: lista key="$key" item tipo ${item.runtimeType} (não é Map nem Timestamp)');
           return item;
         }).toList();
       } else {
         result[key] = value;
       }
     }
-    
+
     return result;
   }
 }

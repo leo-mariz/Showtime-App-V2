@@ -17,8 +17,7 @@ import 'package:app/features/addresses/presentation/bloc/addresses_bloc.dart';
 import 'package:app/features/addresses/presentation/bloc/events/addresses_events.dart';
 import 'package:app/features/addresses/presentation/bloc/states/addresses_states.dart';
 import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart';
-import 'package:app/features/contracts/presentation/bloc/request_availabilities/events/request_availabilities_events.dart';
-import 'package:app/features/contracts/presentation/bloc/request_availabilities/request_availabilities_bloc.dart';
+import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/explore/presentation/bloc/explore_bloc.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
@@ -63,13 +62,16 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
         context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
       }
     });
-    // Se veio com endereço selecionado, usar ele
+    // Se veio com endereço selecionado, usar e carregar disponibilidades no próximo frame
     if (widget.selectedAddress != null) {
       _selectedAddress = widget.selectedAddress;
-      _loadAvailabilities();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadAvailabilities();
+      });
     } else {
       // Buscar endereços do AddressesBloc
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         final addressesState = context.read<AddressesBloc>().state;
         if (addressesState is! GetAddressesSuccess) {
           context.read<AddressesBloc>().add(GetAddressesEvent());
@@ -103,11 +105,12 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
     }
   }
 
-  /// Carrega disponibilidades para o endereço selecionado
+  /// Carrega disponibilidades para o endereço selecionado.
+  /// A tab de calendário lê do ExploreBloc, então disparamos GetArtistAllAvailabilitiesEvent.
   void _loadAvailabilities() {
     if (_selectedAddress != null && widget.artist.uid != null) {
-      context.read<RequestAvailabilitiesBloc>().add(
-        LoadArtistAvailabilitiesEvent(
+      context.read<ExploreBloc>().add(
+        GetArtistAllAvailabilitiesEvent(
           artistId: widget.artist.uid!,
           userAddress: _selectedAddress,
         ),
@@ -505,7 +508,8 @@ class _ArtistExploreScreenState extends State<ArtistExploreScreen> {
           );
         }
 
-        if (state is GetArtistsWithAvailabilitiesSuccess) {
+        if (state is GetArtistsWithAvailabilitiesSuccess &&
+            state.selectedArtistId == widget.artist.uid) {
           final availabilities = state.availabilities ?? [];
           
           if (availabilities.isEmpty) {

@@ -1,55 +1,24 @@
-import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
-import 'package:app/core/services/firebase_functions_service.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
-import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 /// UseCase: Aceitar uma solicitação de contrato
 /// 
-/// RESPONSABILIDADES:
-/// - Validar UID do contrato
-/// - Buscar contrato existente
-/// - Validar que o contrato está pendente
-/// - Alterar status para accepted
-/// - Adicionar timestamp de aceitação
-/// - Atualizar contrato no repositório
+/// Chama a Cloud Function acceptContract; a escrita do contrato é feita no backend.
+/// O índice de contratos é atualizado no client após sucesso.
 class AcceptContractUseCase {
   final IContractRepository repository;
-  final IFirebaseFunctionsService firebaseFunctionsService;
+  final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
-  final CancelContractUseCase cancelContractUseCase;
 
   AcceptContractUseCase({
     required this.repository,
-    required this.firebaseFunctionsService,
+    required this.contractsFunctions,
     this.updateContractsIndexUseCase,
-    required this.cancelContractUseCase,
   });
-
-  static tz.Location get _saoPaulo => tz.getLocation('America/Sao_Paulo');
-
-  /// True se a data do evento é hoje ou amanhã no fuso America/Sao_Paulo.
-  bool _isEventSameOrNextDayInSp(DateTime eventDate, tz.TZDateTime nowSp) {
-    final tomorrowSp = nowSp.add(const Duration(days: 1));
-    final sameDay = eventDate.year == nowSp.year && eventDate.month == nowSp.month && eventDate.day == nowSp.day;
-    final nextDay = eventDate.year == tomorrowSp.year && eventDate.month == tomorrowSp.month && eventDate.day == tomorrowSp.day;
-    return sameDay || nextDay;
-  }
-
-  /// Calcula o prazo para o anfitrião pagar (America/Sao_Paulo), retorna em UTC.
-  /// Regra: evento no mesmo dia ou no dia seguinte → 1h; caso contrário → 24h.
-  DateTime _calculatePaymentDeadlineUtc(DateTime eventDate) {
-    final nowSp = tz.TZDateTime.now(_saoPaulo);
-    final duration = _isEventSameOrNextDayInSp(eventDate, nowSp)
-        ? const Duration(hours: 1)
-        : const Duration(hours: 24);
-    final deadlineSp = nowSp.add(duration);
-    return DateTime.fromMillisecondsSinceEpoch(deadlineSp.millisecondsSinceEpoch, isUtc: true);
-  }
 
   Future<Either<Failure, void>> call({
     required String contractUid,
@@ -80,54 +49,23 @@ class AcceptContractUseCase {
         ));
       }
 
-      // Verificar se não existe slot BOOKED no horário (evitar criar links e chamadas desnecessárias)
-      // final overlapResult = await repository.checkContractOverlapWithBooked(contractUid);
-      // final hasOverlap = overlapResult.fold(
-      //   (failure) => throw failure,
-      //   (overlap) => overlap,
-      // );
-      // if (hasOverlap) {
-      //   await cancelContractUseCase.call(contractUid: contractUid, canceledBy: 'ARTIST', cancelReason: 'Horário já está reservado por outro show.');
-      //   return Left(ValidationFailure(
-      //     'Este horário já está reservado por outro show.',
-      //   ));
-      // }
+      // Aceitar contrato via Cloud Function (cria link de pagamento e atualiza status no backend)
+      await contractsFunctions.acceptContract(contractUid);
 
-      // Criar pagamento no Mercado Pago
-      final paymentLink = await firebaseFunctionsService.createMercadoPagoPayment(
-        contract.uid!,
-        false,
-      );
-
-      // Prazo para o anfitrião pagar (mesmo dia/dia seguinte = 1h; depois = 24h), em UTC
-      final paymentDueDateUtc = _calculatePaymentDeadlineUtc(contract.date);
-      final acceptedAtUtc = DateTime.now().toUtc();
-
-      // Criar cópia do contrato com status aceito
-      final updatedContract = contract.copyWith(
-        status: ContractStatusEnum.paymentPending,
-        acceptedAt: acceptedAtUtc,
-        linkPayment: paymentLink,
-        paymentDueDate: paymentDueDateUtc,
-        statusChangedAt: acceptedAtUtc,
-      );
-
-      // Atualizar contrato
-      final updateResult = await repository.updateContract(updatedContract);
-
-      return updateResult.fold(
-        (failure) => Left(failure),
-        (_) async {
-          // Atualizar índice de contratos (não bloqueia se falhar)
+      // Buscar contrato atualizado e atualizar índice no client
+      final getResult2 = await repository.getContract(contractUid, forceRefresh: true);
+      await getResult2.fold(
+        (_) async {},
+        (updatedContract) async {
           if (updateContractsIndexUseCase != null) {
             await updateContractsIndexUseCase!.call(
               contract: updatedContract,
               oldStatus: contract.status,
             );
           }
-          return const Right(null);
         },
       );
+      return const Right(null);
     } catch (e) {
       if (e is Failure) return Left(e);
       return Left(ErrorHandler.handle(e));

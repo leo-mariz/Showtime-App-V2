@@ -1,6 +1,7 @@
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
@@ -16,10 +17,12 @@ import 'package:dartz/dartz.dart';
 /// - Atualizar contrato no repositório
 class CancelContractUseCase {
   final IContractRepository repository;
+  final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   CancelContractUseCase({
     required this.repository,
+    required this.contractsFunctions,
     this.updateContractsIndexUseCase,
   });
 
@@ -69,60 +72,44 @@ class CancelContractUseCase {
         return const Left(ValidationFailure('Não é possível cancelar um contrato já rejeitado'));
       }
 
-      // Criar cópia do contrato com status cancelado
-      final updatedContract = contract.copyWith(
-        status: ContractStatusEnum.canceled,
-        canceledAt: DateTime.now(),
-        canceledBy: canceledBy,
-        cancelReason: cancelReason,
-        statusChangedAt: DateTime.now(),
-      );
+      await contractsFunctions.cancelContract(contractUid, canceledBy, cancelReason: cancelReason);
 
-      // Atualizar contrato
-      final updateResult = await repository.updateContract(updatedContract);
+      // Se o contrato estava PAID, liberar slot de disponibilidade (continua no client)
+      if (contract.status == ContractStatusEnum.paid) {
+        final artistId = contract.refArtist ?? contract.refGroup;
+        if (artistId != null) {
+          final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
+          final releaseResult = await repository.releaseAvailabilitySlotAfterCancel(
+            contractId: contract.uid!,
+            artistId: artistId,
+            date: dateString,
+          );
+          releaseResult.fold(
+            (failure) {
+              // Log; não bloqueia cancelamento
+            },
+            (result) {
+              if (result['success'] != true) {
+                // Erro ao liberar slot (não bloqueia)
+              }
+            },
+          );
+        }
+      }
 
-      return updateResult.fold(
-        (failure) => Left(failure),
-        (_) async {
-          // Se o contrato estava PAID, liberar slot de disponibilidade
-          if (contract.status == ContractStatusEnum.paid) {
-            final artistId = contract.refArtist ?? contract.refGroup;
-            if (artistId != null) {
-              final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
-              
-              final releaseResult = await repository.releaseAvailabilitySlotAfterCancel(
-                contractId: contract.uid!,
-                artistId: artistId,
-                date: dateString,
-              );
-
-              // Log do resultado (não bloqueia se falhar)
-              releaseResult.fold(
-                (failure) {
-                  // Log de erro, mas não retorna erro (não bloqueia cancelamento)
-                  print('⚠️ [CancelContractUseCase] Erro ao liberar slot: ${failure.message}');
-                },
-                (result) {
-                  if (result['success'] == true) {
-                    print('✅ [CancelContractUseCase] Slot liberado com sucesso');
-                  } else {
-                    print('⚠️ [CancelContractUseCase] Erro ao liberar slot: ${result['error']}');
-                  }
-                },
-              );
-            }
-          }
-
-          // Atualizar índice de contratos (não bloqueia se falhar)
+      final getResult2 = await repository.getContract(contractUid, forceRefresh: true);
+      await getResult2.fold(
+        (_) async {},
+        (updatedContract) async {
           if (updateContractsIndexUseCase != null) {
             await updateContractsIndexUseCase!.call(
               contract: updatedContract,
               oldStatus: contract.status,
             );
           }
-          return const Right(null);
         },
       );
+      return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

@@ -33,13 +33,7 @@ class VerifyPaymentUseCase {
         return const Left(NotFoundFailure('Contrato não encontrado'));
       }
 
-      final updatedContract = contract.copyWith(
-        isPaying: false,
-      );
-
-      await updateContractUseCase.call(updatedContract);
-
-      if (updatedContract.status != ContractStatusEnum.paid) {
+      if (contract.status != ContractStatusEnum.paid) {
         return const Left(ValidationFailure('Pagamento não realizado. Caso já tenha realizado o pagamento, aguarde alguns minutos para o status ser atualizado.'));
       }
 

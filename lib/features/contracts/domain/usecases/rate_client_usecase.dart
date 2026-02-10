@@ -1,9 +1,10 @@
-import 'package:app/core/domain/contract/rating_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
+import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
-import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Avaliar cliente/anfitrião (pelo artista)
@@ -18,11 +19,15 @@ import 'package:dartz/dartz.dart';
 /// - Atualizar contrato usando UpdateContractUseCase
 class RateClientUseCase {
   final GetContractUseCase getContractUseCase;
-  final UpdateContractUseCase updateContractUseCase;
+  final IContractRepository repository;
+  final IContractsFunctionsService contractsFunctions;
+  final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
 
   RateClientUseCase({
     required this.getContractUseCase,
-    required this.updateContractUseCase,
+    required this.repository,
+    required this.contractsFunctions,
+    this.updateContractsIndexUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -71,27 +76,26 @@ class RateClientUseCase {
         return const Left(ValidationFailure('Contrato já foi avaliado pelo artista'));
       }
 
-      // Criar RatingEntity para rateByArtist
-      final ratingEntity = RatingEntity(
+      await contractsFunctions.rateClient(
+        contractUid,
+        rating,
         comment: comment?.trim().isEmpty == true ? null : comment?.trim(),
-        rating: skippedRating ? 0.0 : rating,
-        isClientRating: false,
         skippedRating: skippedRating,
-        ratedAt: skippedRating ? null : DateTime.now(),
       );
 
-      // Criar cópia do contrato com a avaliação
-      final updatedContract = contract.copyWith(
-        rateByArtist: ratingEntity,
+      final getResult = await repository.getContract(contractUid, forceRefresh: true);
+      await getResult.fold(
+        (_) async {},
+        (updatedContract) async {
+          if (updateContractsIndexUseCase != null) {
+            await updateContractsIndexUseCase!.call(
+              contract: updatedContract,
+              oldStatus: contract.status,
+            );
+          }
+        },
       );
-
-      // Atualizar contrato usando UpdateContractUseCase
-      final updateResult = await updateContractUseCase.call(updatedContract);
-
-      return updateResult.fold(
-        (failure) => Left(failure),
-        (_) => const Right(null),
-      );
+      return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
     }

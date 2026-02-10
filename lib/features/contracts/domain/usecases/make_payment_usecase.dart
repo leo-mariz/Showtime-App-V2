@@ -2,8 +2,8 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/mercado_pago_service.dart';
+import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
-import 'package:app/features/contracts/domain/usecases/cancel_contract_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Abrir link de pagamento do Mercado Pago
@@ -14,12 +14,12 @@ import 'package:dartz/dartz.dart';
 class MakePaymentUseCase {
   final MercadoPagoService mercadoPagoService;
   final IContractRepository repository;
-  final CancelContractUseCase cancelContractUseCase;
+  final IContractsFunctionsService contractsFunctions;
 
   MakePaymentUseCase({
     required this.mercadoPagoService,
     required this.repository,
-    required this.cancelContractUseCase,
+    required this.contractsFunctions,
   });
 
   Future<Either<Failure, void>> call({
@@ -45,44 +45,27 @@ class MakePaymentUseCase {
         return const Left(ValidationFailure('Contrato não está pendente de pagamento. Atualizando contrato...'));
       }
 
-      // Verificar se não existe slot BOOKED no horário antes de abrir o pagamento
-      // final overlapResult = await repository.checkContractOverlapWithBooked(contractUid);
-      // final hasOverlap = overlapResult.fold((failure) => null, (overlap) => overlap);
-      // if (hasOverlap == null) return overlapResult.fold((l) => Left(l), (_) => throw StateError('unreachable'));
-      // if (hasOverlap) {
-      //   await cancelContractUseCase.call(contractUid: contractUid, canceledBy: 'ARTIST', cancelReason: 'Horário já está reservado por outro show.');
-      //   return Left(ValidationFailure(
-      //     'Este horário já está reservado por outro show.',
-      //   ));
-      // }
+      // Etapa de segurança: verificar se o contrato ainda é aceitável (disponibilidade/overlap) antes de abrir pagamento
+      final contractMap = contract.toMap();
+      final acceptable = await contractsFunctions.verifyContract(contractMap);
+      if (!acceptable) {
+        return const Left(ValidationFailure(
+          'Este horário não está mais disponível. Atualize o contrato ou escolha outra data.',
+        ));
+      }
 
-      final updatedContract = contract.copyWith(
-        isPaying: true,
-      );
+      // isPaying é controlado apenas no app (cliente não escreve em contratos)
 
-      final updateResult = await repository.updateContract(updatedContract);
+      if (linkPayment.isEmpty) {
+        return const Left(ValidationFailure('Link de pagamento não pode ser vazio'));
+      }
+      final uri = Uri.tryParse(linkPayment);
+      if (uri == null || !uri.hasScheme) {
+        return const Left(ValidationFailure('Link de pagamento inválido'));
+      }
 
-      return updateResult.fold(
-        (failure) => Left(failure),
-        (_) async {
-            if (linkPayment.isEmpty) {
-            return const Left(ValidationFailure('Link de pagamento não pode ser vazio'));
-          }
-
-          // Validar se é uma URL válida
-          final uri = Uri.tryParse(linkPayment);
-          if (uri == null || !uri.hasScheme) {
-            return const Left(ValidationFailure('Link de pagamento inválido'));
-          }
-
-          // Abrir checkout do Mercado Pago
-          await mercadoPagoService.openCheckout(linkPayment);
-
-          return const Right(null); 
-        }
-      );
-
-      // Validar link de pagamento
+      await mercadoPagoService.openCheckout(linkPayment);
+      return const Right(null);
       
     } catch (e) {
       return Left(ErrorHandler.handle(e));

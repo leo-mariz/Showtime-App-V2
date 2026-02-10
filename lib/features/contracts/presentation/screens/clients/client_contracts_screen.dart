@@ -8,6 +8,7 @@ import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/card_action_button.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
+import 'package:app/features/contracts/presentation/bloc/contract_paying_cubit.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/states/pending_contracts_count_states.dart';
@@ -33,7 +34,8 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   List<ContractEntity> _allContracts = [];
   bool _isLoading = false;
   bool _isVerifyingPayment = false;
-  // bool _isTryingToPay = false;
+  /// UID do contrato para o qual disparou "Realizar Pagamento" (para remover do cubit em caso de falha).
+  String? _lastMakePaymentContractUid;
 
   @override
   void initState() {
@@ -149,10 +151,15 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
               _isLoading = false;
             });
           } else if (state is MakePaymentSuccess) {
-            // Recarregar contratos após pagamento bem-sucedido
-            _loadContracts();
+            _lastMakePaymentContractUid = null;
+            // Recarregar contratos após abrir checkout (isPaying já está no cubit local)
+            _loadContracts(forceRefresh: true);
           } else if (state is MakePaymentFailure) {
             context.showError(state.error);
+            if (_lastMakePaymentContractUid != null) {
+              context.read<ContractPayingCubit>().removeOpening(_lastMakePaymentContractUid!);
+              _lastMakePaymentContractUid = null;
+            }
             _loadContracts(forceRefresh: true);
           } else if (state is CancelContractSuccess) {
             context.showSuccess('Contrato cancelado com sucesso!');
@@ -184,6 +191,8 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
           builder: (context, state) {
             return BlocBuilder<PendingContractsCountBloc, PendingContractsCountState>(
               builder: (context, contractsCountState) {
+                return BlocBuilder<ContractPayingCubit, ContractPayingState>(
+                  builder: (context, payingState) {
                 final filteredContracts = _filteredContracts;
                 
                 // Obter contadores de não vistos
@@ -334,7 +343,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                   return ContractCard(
                                     contract: contract,
                                     onTap: () => _onRequestTapped(contract),
-                                    actionButtons: _buildActionButtons(contract),
+                                    actionButtons: _buildActionButtons(contract, payingState: payingState),
                                   );
                                 },
                               ),
@@ -342,11 +351,13 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                 ],
               ),
             );
+                  },
+                );
+              },
+            );
           },
-        );
-        },
+        ),
       ),
-    ),
     );
   }
 
@@ -412,12 +423,15 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     }
   }
 
-  // Constrói os botões de ação baseado no status do contrato (Cliente)
-  List<Widget> _buildActionButtons(ContractEntity contract) {
+  // Constrói os botões de ação baseado no status do contrato (Cliente).
+  // Estado de pagamento é local (ContractPayingCubit); o app cliente não escreve em contratos.
+  List<Widget> _buildActionButtons(ContractEntity contract, {required ContractPayingState payingState}) {
     final buttons = <Widget>[];
+    final isPayingLocally = contract.uid != null && payingState.paying.contains(contract.uid);
+    final isOpeningPayment = contract.uid != null && payingState.opening.contains(contract.uid);
 
     if (contract.status == ContractStatusEnum.paymentPending) {
-      if (contract.isPaying == true) {
+      if (isPayingLocally) {
         buttons.add(
           SizedBox(
             width: double.infinity,
@@ -431,19 +445,20 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
           ),
         );
       } else {
-        // Accepted → Realizar Pagamento
+        // Aguardando pagamento → Realizar Pagamento (com loading enquanto abre o MP)
         buttons.add(
           SizedBox(
             width: double.infinity,
             child: CardActionButton(
-              label: 'Realizar Pagamento',
-              onPressed: () => _onMakePayment(contract),
+              label: isOpeningPayment ? 'Abrindo...' : 'Realizar Pagamento',
+              onPressed: isOpeningPayment ? null : () => _onMakePayment(contract),
               icon: Icons.payment_rounded,
               height: 40,
+              isLoading: isOpeningPayment,
             ),
           ),
         );
-      } 
+      }
     }
     else if (contract.status == ContractStatusEnum.paymentExpired) {
       // paymentExpired → Gerar Pagamento
@@ -477,18 +492,30 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     return buttons;
   }
 
+  static const _paymentRedirectDelay = Duration(seconds: 4);
+
   void _onMakePayment(ContractEntity contract) {
     if (contract.linkPayment == null || contract.linkPayment!.isEmpty) {
       context.showError('Link de pagamento não disponível. Entre em contato com o suporte.');
       return;
     }
+    if (contract.uid == null || contract.uid!.isEmpty) return;
 
+    final uid = contract.uid!;
+    _lastMakePaymentContractUid = uid;
+    final cubit = context.read<ContractPayingCubit>();
+    cubit.addOpening(uid);
     context.read<ContractsBloc>().add(
-      MakePaymentEvent(linkPayment: contract.linkPayment!, contractUid: contract.uid!),
+      MakePaymentEvent(linkPayment: contract.linkPayment!, contractUid: uid),
     );
+    Future.delayed(_paymentRedirectDelay, () {
+      if (mounted) cubit.finishOpeningAndSetPaying(uid);
+    });
   }
 
   void _onVerifyPayment(ContractEntity contract) {
+    if (contract.uid == null || contract.uid!.isEmpty) return;
+    context.read<ContractPayingCubit>().removePaying(contract.uid!);
     context.read<ContractsBloc>().add(
       VerifyPaymentEvent(contractUid: contract.uid!),
     );

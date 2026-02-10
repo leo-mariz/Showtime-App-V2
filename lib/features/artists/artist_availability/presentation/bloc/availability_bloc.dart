@@ -1,4 +1,5 @@
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/states/availability_states.dart';
@@ -69,20 +70,29 @@ class AvailabilityBloc extends Bloc<AvailabilityEvent, AvailabilityState> {
     GetAllAvailabilitiesEvent event,
     Emitter<AvailabilityState> emit,
   ) async {
+    debugPrint('📅 [AvailabilityBloc] GetAllAvailabilitiesEvent - forceRemote: ${event.forceRemote}');
     emit(GetAllAvailabilitiesLoading());
     final uid = await _getCurrentUserId();
+    if (uid == null || uid.isEmpty) {
+      debugPrint('❌ [AvailabilityBloc] UID nulo ou vazio');
+      emit(GetAllAvailabilitiesFailure(error: 'Usuário não identificado'));
+      emit(AvailabilityInitial());
+      return;
+    }
 
     final result = await getAllAvailabilitiesUseCase(
-      uid!,
+      uid,
       event.forceRemote,
     );
 
     result.fold(
       (failure) {
+        debugPrint('❌ [AvailabilityBloc] GetAllAvailabilities FAILURE: ${failure.message}');
         emit(GetAllAvailabilitiesFailure(error: failure.message));
         emit(AvailabilityInitial());
       },
       (availabilities) {
+        debugPrint('✅ [AvailabilityBloc] GetAllAvailabilities SUCCESS: ${availabilities.length} dias');
         emit(GetAllAvailabilitiesSuccess(availabilities: availabilities));
       },
     );

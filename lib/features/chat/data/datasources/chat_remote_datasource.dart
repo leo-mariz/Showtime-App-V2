@@ -121,7 +121,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       final chatRef = ChatEntityReference.chatDocument(firestore, chatId);
       batch.set(chatRef, chatData);
 
-      // 2. Criar índice para o cliente
+      // 2. Criar índice para o cliente (userRole necessário para filtrar na lista)
       final clientIndexRef =
           firestore.collection('user_chats').doc(clientId);
       batch.set(
@@ -131,6 +131,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           'activeChatsCount': FieldValue.increment(1),
           'lastUpdate': now,
           'chats.$chatId': {
+            'userRole': 'CLIENT',
             'unread': 0,
             'lastMessageAt': now,
             'otherUserId': artistId,
@@ -143,7 +144,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
         SetOptions(merge: true),
       );
 
-      // 3. Criar índice para o artista
+      // 3. Criar índice para o artista (userRole necessário para filtrar na lista)
       final artistIndexRef =
           firestore.collection('user_chats').doc(artistId);
       batch.set(
@@ -153,6 +154,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           'activeChatsCount': FieldValue.increment(1),
           'lastUpdate': now,
           'chats.$chatId': {
+            'userRole': 'ARTIST',
             'unread': 0,
             'lastMessageAt': now,
             'otherUserId': clientId,
@@ -264,8 +266,9 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
           
           if (chatPreviewData != null) {
             final userRole = chatPreviewData['userRole'] as String?;
-            // Se o role corresponder ao perfil ativo, incluir no filtro
-            if (userRole == expectedRole) {
+            // Se o role corresponder ao perfil ativo, incluir no filtro.
+            // Chats antigos podem não ter userRole: incluir para não esconder conversas existentes.
+            if (userRole == expectedRole || userRole == null) {
               filteredChatIds.add(chatId);
             }
           }

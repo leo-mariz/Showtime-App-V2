@@ -8,6 +8,7 @@ import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/event_location_map.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:app/features/contracts/presentation/bloc/contract_paying_cubit.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
@@ -500,6 +501,9 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
     Color onPrimary,
     {bool isGroup = false}
   ) {
+    final photoUrl = _contract.contractorPhotoUrl;
+    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
+    final displayName = _contract.contractorName ?? 'Artista';
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
       decoration: BoxDecoration(
@@ -511,13 +515,16 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
           CircleAvatar(
             radius: DSSize.width(24),
             backgroundColor: colorScheme.surfaceContainerHighest,
-            child: Text(
-              (_contract.contractorName ?? 'A')[0].toUpperCase(),
-              style: textTheme.titleMedium?.copyWith(
-                color: onPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            backgroundImage: hasPhoto ? CachedNetworkImageProvider(photoUrl.trim()) : null,
+            child: hasPhoto
+                ? null
+                : Text(
+                    displayName.trim().isNotEmpty ? displayName[0].toUpperCase() : 'A',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
           DSSizedBoxSpacing.horizontal(16),
           Expanded(
@@ -525,7 +532,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                   (_contract.contractorName ?? 'Artista'),
+                  displayName,
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,

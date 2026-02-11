@@ -44,6 +44,7 @@ class MessagesBloc extends Bloc<MessagesEvent, MessagesState> {
   }) : super(MessagesInitial()) {
     on<LoadMessagesEvent>(_onLoadMessagesEvent);
     on<MessagesUpdatedEvent>(_onMessagesUpdatedEvent);
+    on<MessagesStreamErrorEvent>(_onMessagesStreamErrorEvent);
     on<SendMessageEvent>(_onSendMessageEvent);
     on<LoadMoreMessagesEvent>(_onLoadMoreMessagesEvent);
     on<MarkMessagesAsReadEvent>(_onMarkMessagesAsReadEvent);
@@ -76,22 +77,31 @@ class MessagesBloc extends Bloc<MessagesEvent, MessagesState> {
       await _messagesSubscription?.cancel();
 
       // Criar nova subscription ao stream de mensagens
+      // onError não pode chamar emit() aqui: o handler já terá completado quando o stream falhar.
+      // Disparamos um evento para que um novo handler emita o estado de falha.
       _messagesSubscription = chatRepository
           .getMessagesStream(chatId: event.chatId, limit: 50)
           .listen(
         (messages) {
-          // Disparar evento interno quando stream atualizar
-          add(MessagesUpdatedEvent(messages: messages));
+          if (!isClosed) add(MessagesUpdatedEvent(messages: messages));
         },
         onError: (error) {
-          // Emitir erro se stream falhar
-          emit(MessagesFailure(error: 'Erro ao carregar mensagens: $error'));
+          if (!isClosed) add(MessagesStreamErrorEvent(error: 'Erro ao carregar mensagens: $error'));
         },
       );
     } catch (e) {
       emit(MessagesFailure(error: 'Erro ao carregar mensagens: $e'));
       emit(MessagesInitial());
     }
+  }
+
+  /// Trata erro do stream de mensagens (chamado por callback assíncrono via evento)
+  void _onMessagesStreamErrorEvent(
+    MessagesStreamErrorEvent event,
+    Emitter<MessagesState> emit,
+  ) {
+    emit(MessagesFailure(error: event.error));
+    emit(MessagesInitial());
   }
 
   /// Atualiza estado quando stream de mensagens emite novos dados

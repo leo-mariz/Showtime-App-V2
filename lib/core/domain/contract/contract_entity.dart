@@ -214,7 +214,7 @@ extension ContractEntityReference on ContractEntity {
   // ==================== CACHE VALIDITY (Constantes) ====================
   
   /// Validade do cache de contratos (10 minutos)
-  static const Duration contractsCacheValidity = Duration(minutes: 1);
+  // static const Duration contractsCacheValidity = Duration(minutes: 1);
 
   static List<String> contractFields = [
     'uid',

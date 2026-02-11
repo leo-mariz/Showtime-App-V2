@@ -14,6 +14,9 @@ import 'package:app/features/artists/artist_availability/presentation/bloc/avail
 import 'package:app/features/artists/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/states/availability_states.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/calendar_widget.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
+import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/states/pending_contracts_count_states.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/day_edit_bottom_sheet.dart';
 import 'package:app/features/availability/presentation/widgets/forms/availability_confirmation_dialog.dart';
 import 'package:app/features/availability/presentation/widgets/forms/availability_form_modal.dart';
@@ -46,11 +49,21 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   String? _pendingSlotEndTime; // Horário de fim do slot pendente
   double? _pendingSlotPricePerHour; // Valor por hora do slot pendente
 
+  /// Últimos totais do índice de contratos do artista (tab 1 = Confirmadas, tab 2 = Finalizadas).
+  /// Usado para detectar paid/canceled e forçar refresh do calendário.
+  int? _lastArtistTab1Total;
+  int? _lastArtistTab2Total;
+
   @override
   void initState() {
     super.initState();
     // Carregar disponibilidades ao iniciar a tela
     _loadAvailabilities();
+    // Garantir que o índice de contratos do artista está ativo (stream) para sincronizar
+    // quando um contrato for para confirmado (paid) ou finalizado (canceled)
+    context.read<PendingContractsCountBloc>().add(
+      LoadPendingContractsCountEvent(isArtist: true),
+    );
   }
 
   /// Carrega as disponibilidades do BLoC
@@ -107,8 +120,27 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return BlocListener<AvailabilityBloc, AvailabilityState>(
-      listener: (context, state) {
+    return MultiBlocListener(
+      listeners: [
+        // Sincronização com índice de contratos: quando um contrato vai para
+        // Confirmadas (paid → slot booked) ou Finalizadas (canceled → slot available),
+        // forçar refresh do calendário para refletir os slots.
+        BlocListener<PendingContractsCountBloc, PendingContractsCountState>(
+          listener: (context, state) {
+            if (state is! PendingContractsCountSuccess) return;
+            final tab1Changed = _lastArtistTab1Total != null &&
+                state.tab1Total != _lastArtistTab1Total;
+            final tab2Changed = _lastArtistTab2Total != null &&
+                state.tab2Total != _lastArtistTab2Total;
+            if (tab1Changed || tab2Changed) {
+              _loadAvailabilities(forceRemote: true);
+            }
+            _lastArtistTab1Total = state.tab1Total;
+            _lastArtistTab2Total = state.tab2Total;
+          },
+        ),
+        BlocListener<AvailabilityBloc, AvailabilityState>(
+          listener: (context, state) {
         // ════════════════════════════════════════════════════════════════
         // SUCESSO Toggle Status
         // ════════════════════════════════════════════════════════════════
@@ -199,7 +231,9 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
         } else if (state is ClosePeriodFailure) {
           context.showError(state.error);
         }
-      },
+          },
+        ),
+      ],
       child: BlocBuilder<AvailabilityBloc, AvailabilityState>(
         builder: (context, state) {
           // Atualizar cache local quando dados são carregados

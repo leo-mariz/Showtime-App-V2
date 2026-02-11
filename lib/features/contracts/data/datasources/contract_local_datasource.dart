@@ -84,9 +84,9 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   @override
   Future<ContractEntity?> getCachedContract(String contractUid) async {
     try {
-      if (!await _isContractCacheValid(contractUid)) {
-        return null; // Cache expirado ou não existe
-      }
+      // if (!await _isContractCacheValid(contractUid)) {
+      //   return null; // Cache expirado ou não existe
+      // }
 
       final cacheKey = _getContractCacheKey(contractUid);
       final cachedData = await autoCacheService.getCachedDataString(cacheKey);
@@ -108,25 +108,25 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   }
 
   /// Verifica se cache de contrato individual é válido
-  Future<bool> _isContractCacheValid(String contractUid) async {
-    try {
-      final cacheKey = _getContractCacheKey(contractUid);
-      final cachedData = await autoCacheService.getCachedDataString(cacheKey);
+  // Future<bool> _isContractCacheValid(String contractUid) async {
+  //   try {
+  //     final cacheKey = _getContractCacheKey(contractUid);
+  //     final cachedData = await autoCacheService.getCachedDataString(cacheKey);
       
-      if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
-        return false; // Cache não existe
-      }
+  //     if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
+  //       return false; // Cache não existe
+  //     }
       
-      final timestamp = cachedData[_cacheFieldTimestamp] as int;
-      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      final now = DateTime.now();
-      final difference = now.difference(cacheTime);
+  //     final timestamp = cachedData[_cacheFieldTimestamp] as int;
+  //     final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  //     final now = DateTime.now();
+  //     final difference = now.difference(cacheTime);
       
-      return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
-    } catch (e) {
-      return false; // Erro ao verificar, considerar inválido
-    }
-  }
+  //     return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
+  //   } catch (e) {
+  //     return false; // Erro ao verificar, considerar inválido
+  //   }
+  // }
 
   @override
   Future<void> cacheContract(ContractEntity contract) async {
@@ -157,9 +157,9 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   @override
   Future<List<ContractEntity>> getCachedContractsByClient(String clientUid) async {
     try {
-      if (!await _isClientContractsCacheValid(clientUid)) {
-        return []; // Cache expirado ou não existe
-      }
+      // if (!await _isClientContractsCacheValid(clientUid)) {
+      //   return []; // Cache expirado ou não existe
+      // }
 
       final cacheKey = _getClientContractsCacheKey(clientUid);
       final cachedData = await autoCacheService.getCachedDataString(cacheKey);
@@ -188,25 +188,25 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   }
 
   /// Verifica se cache de contratos do cliente é válido
-  Future<bool> _isClientContractsCacheValid(String clientUid) async {
-    try {
-      final cacheKey = _getClientContractsCacheKey(clientUid);
-      final cachedData = await autoCacheService.getCachedDataString(cacheKey);
+  // Future<bool> _isClientContractsCacheValid(String clientUid) async {
+  //   try {
+  //     final cacheKey = _getClientContractsCacheKey(clientUid);
+  //     final cachedData = await autoCacheService.getCachedDataString(cacheKey);
       
-      if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
-        return false; // Cache não existe
-      }
+  //     if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
+  //       return false; // Cache não existe
+  //     }
       
-      final timestamp = cachedData[_cacheFieldTimestamp] as int;
-      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      final now = DateTime.now();
-      final difference = now.difference(cacheTime);
+  //     final timestamp = cachedData[_cacheFieldTimestamp] as int;
+  //     final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  //     final now = DateTime.now();
+  //     final difference = now.difference(cacheTime);
       
-      return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
-    } catch (e) {
-      return false; // Erro ao verificar, considerar inválido
-    }
-  }
+  //     return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
+  //   } catch (e) {
+  //     return false; // Erro ao verificar, considerar inválido
+  //   }
+  // }
 
   @override
   Future<void> cacheContractsByClient(String clientUid, List<ContractEntity> contracts) async {
@@ -240,9 +240,9 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   @override
   Future<List<ContractEntity>> getCachedContractsByArtist(String artistUid) async {
     try {
-      if (!await _isArtistContractsCacheValid(artistUid)) {
-        return []; // Cache expirado ou não existe
-      }
+      // if (!await _isArtistContractsCacheValid(artistUid)) {
+      //   return []; // Cache expirado ou não existe
+      // }
 
       final cacheKey = _getArtistContractsCacheKey(artistUid);
       final cachedData = await autoCacheService.getCachedDataString(cacheKey);
@@ -271,25 +271,25 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   }
 
   /// Verifica se cache de contratos do artista é válido
-  Future<bool> _isArtistContractsCacheValid(String artistUid) async {
-    try {
-      final cacheKey = _getArtistContractsCacheKey(artistUid);
-      final cachedData = await autoCacheService.getCachedDataString(cacheKey);
+  // Future<bool> _isArtistContractsCacheValid(String artistUid) async {
+  //   try {
+  //     final cacheKey = _getArtistContractsCacheKey(artistUid);
+  //     final cachedData = await autoCacheService.getCachedDataString(cacheKey);
       
-      if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
-        return false; // Cache não existe
-      }
+  //     if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
+  //       return false; // Cache não existe
+  //     }
       
-      final timestamp = cachedData[_cacheFieldTimestamp] as int;
-      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      final now = DateTime.now();
-      final difference = now.difference(cacheTime);
+  //     final timestamp = cachedData[_cacheFieldTimestamp] as int;
+  //     final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  //     final now = DateTime.now();
+  //     final difference = now.difference(cacheTime);
       
-      return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
-    } catch (e) {
-      return false; // Erro ao verificar, considerar inválido
-    }
-  }
+  //     return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
+  //   } catch (e) {
+  //     return false; // Erro ao verificar, considerar inválido
+  //   }
+  // }
 
   @override
   Future<void> cacheContractsByArtist(String artistUid, List<ContractEntity> contracts) async {
@@ -323,9 +323,9 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   @override
   Future<List<ContractEntity>> getCachedContractsByGroup(String groupUid) async {
     try {
-      if (!await _isGroupContractsCacheValid(groupUid)) {
-        return []; // Cache expirado ou não existe
-      }
+      // if (!await _isGroupContractsCacheValid(groupUid)) {
+      //   return []; // Cache expirado ou não existe
+      // }
 
       final cacheKey = _getGroupContractsCacheKey(groupUid);
       final cachedData = await autoCacheService.getCachedDataString(cacheKey);
@@ -354,25 +354,25 @@ class ContractLocalDataSourceImpl implements IContractLocalDataSource {
   }
 
   /// Verifica se cache de contratos do grupo é válido
-  Future<bool> _isGroupContractsCacheValid(String groupUid) async {
-    try {
-      final cacheKey = _getGroupContractsCacheKey(groupUid);
-      final cachedData = await autoCacheService.getCachedDataString(cacheKey);
+  // Future<bool> _isGroupContractsCacheValid(String groupUid) async {
+  //   try {
+  //     final cacheKey = _getGroupContractsCacheKey(groupUid);
+  //     final cachedData = await autoCacheService.getCachedDataString(cacheKey);
       
-      if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
-        return false; // Cache não existe
-      }
+  //     if (cachedData.isEmpty || !cachedData.containsKey(_cacheFieldTimestamp)) {
+  //       return false; // Cache não existe
+  //     }
       
-      final timestamp = cachedData[_cacheFieldTimestamp] as int;
-      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      final now = DateTime.now();
-      final difference = now.difference(cacheTime);
+  //     final timestamp = cachedData[_cacheFieldTimestamp] as int;
+  //     final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+  //     final now = DateTime.now();
+  //     final difference = now.difference(cacheTime);
       
-      return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
-    } catch (e) {
-      return false; // Erro ao verificar, considerar inválido
-    }
-  }
+  //     return difference < ContractEntityReference.contractsCacheValidity; // Ainda dentro da validade
+  //   } catch (e) {
+  //     return false; // Erro ao verificar, considerar inválido
+  //   }
+  // }
 
   @override
   Future<void> cacheContractsByGroup(String groupUid, List<ContractEntity> contracts) async {

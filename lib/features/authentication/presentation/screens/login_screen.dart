@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  UserType _selectedUserType = UserType.artist;
+  UserType _selectedUserType = UserType.host;
   bool _waitingForBiometricsCheck = false;
   UserEntity? _pendingUser;
 
@@ -40,8 +40,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    // final email = _emailController.text.trim();
+    // final password = _passwordController.text;
+
+    final email = 'leomariz914@gmail.com';
+    final password = 'Lms@0075';
+
+    // final email = 'leomariz123@hotmail.com';
+    // final password = 'Lms@0075';
+
+
 
     // Validação básica
     if (email.isEmpty) {

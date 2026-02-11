@@ -10,6 +10,7 @@ import 'package:app/core/shared/widgets/card_action_button.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/core/shared/widgets/event_location_map.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
@@ -474,14 +475,21 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                             context.showError('Localização não disponível');
                           }
                         },
-                        icon: Icon(Icons.directions_rounded),
-                        label: Text('Como chegar'),
+                        icon: Icon(Icons.directions_rounded, color: colorScheme.onPrimaryContainer,),
+                        label: Text('Como chegar?', style: textTheme.bodyMedium?.copyWith(
+                          
+                          color: colorScheme.onPrimaryContainer,
+                        ),),
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.symmetric(
                             horizontal: DSSize.width(16),
                             vertical: DSSize.height(12),
                           ),
-                          backgroundColor: colorScheme.onPrimaryContainer,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          side: BorderSide(
+                            color: colorScheme.onPrimaryContainer,
+                            width: 1,
+                          ),
                         ),
                       ),
                     ),
@@ -706,6 +714,9 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
     TextTheme textTheme,
     Color onPrimary,
   ) {
+    final photoUrl = _contract.clientPhotoUrl;
+    final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
+    final displayName = _contract.nameClient ?? 'Anfitrião';
     return Container(
       padding: EdgeInsets.all(DSSize.width(16)),
       decoration: BoxDecoration(
@@ -717,13 +728,16 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           CircleAvatar(
             radius: DSSize.width(24),
             backgroundColor: colorScheme.surfaceContainerHighest,
-            child: Text(
-              (_contract.nameClient ?? 'A')[0].toUpperCase(),
-              style: textTheme.titleMedium?.copyWith(
-                color: onPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            backgroundImage: hasPhoto ? CachedNetworkImageProvider(photoUrl.trim()) : null,
+            child: hasPhoto
+                ? null
+                : Text(
+                    displayName.trim().isNotEmpty ? displayName[0].toUpperCase() : 'A',
+                    style: textTheme.titleMedium?.copyWith(
+                      color: onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
           DSSizedBoxSpacing.horizontal(16),
           Expanded(
@@ -731,7 +745,7 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _contract.nameClient ?? 'Anfitrião',
+                  displayName,
                   style: textTheme.titleMedium?.copyWith(
                     color: onPrimary,
                     fontWeight: FontWeight.w600,

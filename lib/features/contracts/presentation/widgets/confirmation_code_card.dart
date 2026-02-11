@@ -101,7 +101,7 @@ class ConfirmationCodeCard extends StatelessWidget {
 
           // Descrição
           Text(
-            'Mostre este código para o artista na finalização do show para confirmar que o evento foi realizado.',
+            'Mostre este código para o artista quando o show for ser iniciado.',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),

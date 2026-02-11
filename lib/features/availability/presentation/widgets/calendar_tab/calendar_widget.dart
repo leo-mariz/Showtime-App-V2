@@ -115,6 +115,15 @@ class CalendarWidgetState extends State<CalendarWidget> {
         ?.where((slot) => slot.status == TimeSlotStatusEnum.available)
         .length ?? 0;
   }
+
+  /// Conta quantidade de slots com status booked no dia (shows).
+  int _getBookedSlotsCount(DateTime day) {
+    final availability = _getAvailabilityForDay(day);
+    if (availability == null) return 0;
+    return availability.slots
+        ?.where((slot) => slot.status == TimeSlotStatusEnum.booked)
+        .length ?? 0;
+  }
   
   /// Verifica se a disponibilidade está desativada
   bool _isAvailabilityInactive(DateTime day) {
@@ -501,6 +510,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
     final hasAvailability = _hasAvailability(day);
     final slotsCount = _getAvailableSlotsCount(day);
     final isInactive = _isAvailabilityInactive(day);
+    final bookedCount = _getBookedSlotsCount(day);
     
     return GestureDetector(
       onTap: () {
@@ -645,6 +655,33 @@ class CalendarWidgetState extends State<CalendarWidget> {
                   ),
 
                   DSSizedBoxSpacing.vertical(8),
+
+                  // Estrela + quantidade de slots booked (shows) no dia
+                  if (bookedCount > 0 && !isPast) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          size: DSSize.width(16),
+                          color: Colors.yellowAccent,
+                        ),
+                        DSSizedBoxSpacing.horizontal(2),
+                        Text(
+                          '$bookedCount',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: isSelected
+                                ? colorScheme.primaryContainer
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                      DSSizedBoxSpacing.vertical(4),
+                  ],
+
+                  // Espaçador para manter altura consistente
                   
                   
                   // Informações de disponibilidade
@@ -712,27 +749,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
                     ),
                   ],
                   
-                  // TODO: Adicionar indicador de shows quando houver integração
-                  // Exemplo: if (hasShows) ... Icon(Icons.mic, ...) + Text('$showsCount')
-                  
-                  // Espaçador para manter altura consistente
-                  if (!hasAvailability && !isPast) ...[
-                    SizedBox(height: DSSize.height(4)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '',
-                          style: TextStyle(
-                            fontSize: calculateFontSize(14),
-                            color: isSelected
-                                ? colorScheme.primaryContainer
-                                : colorScheme.onSurfaceVariant.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),            

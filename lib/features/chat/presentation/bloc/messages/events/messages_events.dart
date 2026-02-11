@@ -33,6 +33,18 @@ class MessagesUpdatedEvent extends MessagesEvent {
   List<Object?> get props => [messages];
 }
 
+/// Evento interno disparado quando o stream de mensagens emite erro
+/// 
+/// Usado para emitir estado de falha em um novo handler (evita emit após handler completar)
+class MessagesStreamErrorEvent extends MessagesEvent {
+  final String error;
+
+  MessagesStreamErrorEvent({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== SEND MESSAGE EVENT ====================
 
 /// Evento para enviar uma mensagem

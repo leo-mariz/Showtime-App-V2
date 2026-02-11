@@ -4,11 +4,14 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/domain/availability/time_slot_entity.dart';
+import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/options_modal.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/edit_address_radius_modal.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/edit_slot_modal.dart';
+import 'package:app/core/config/auto_router_config.gr.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -866,6 +869,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
               padding: EdgeInsets.only(bottom: DSSize.height(8)),
               child: _buildShowCard(
                 colorScheme,
+                contract: contract,
                 eventType: eventType,
                 hostName: hostName,
                 neighborhood: neighborhood,
@@ -881,6 +885,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
 
   Widget _buildShowCard(
     ColorScheme colorScheme, {
+    ContractEntity? contract,
     required String eventType,
     required String hostName,
     required String neighborhood,
@@ -889,7 +894,10 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   }) {
     return GestureDetector(
       onTap: () {
-        // TODO: Navegar para tela do show
+        if (contract != null) {
+          Navigator.of(context).pop(); // Fecha o bottom sheet
+          context.router.push(ArtistEventDetailRoute(contract: contract));
+        }
       },
       child: Container(
         padding: EdgeInsets.all(DSSize.width(10)),

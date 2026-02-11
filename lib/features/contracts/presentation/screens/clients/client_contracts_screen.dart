@@ -37,6 +37,13 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   /// UID do contrato para o qual disparou "Realizar Pagamento" (para remover do cubit em caso de falha).
   String? _lastMakePaymentContractUid;
 
+  /// Últimos totais do índice (cliente) para detectar mudança e disparar force refresh apenas quando alterar.
+  int? _lastClientTab0Total;
+  int? _lastClientTab1Total;
+  int? _lastClientTab2Total;
+  /// Marcar a aba atual como vista ao abrir a tela (apenas uma vez).
+  bool _didMarkInitialTabAsSeen = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,8 +64,6 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
       _loadContracts();
       // Carregar índice de contratos pendentes (como cliente)
       context.read<PendingContractsCountBloc>().add(LoadPendingContractsCountEvent(isArtist: false));
-      // Não marcar tab inicial aqui - será marcada automaticamente quando o usuário interagir
-      // ou quando o listener do TabController detectar mudança
     });
   }
   
@@ -132,8 +137,46 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
 
     return BlocProvider.value(
       value: context.read<ContractsBloc>(),
-      child: BlocListener<ContractsBloc, ContractsState>(
-        listener: (context, state) {
+      child: MultiBlocListener(
+        listeners: [
+          // Índice de contratos: force refresh só quando totais mudarem; marcar aba atual como vista ao abrir.
+          BlocListener<PendingContractsCountBloc, PendingContractsCountState>(
+            listener: (context, state) {
+              if (state is! PendingContractsCountSuccess) return;
+
+              // Ao abrir a tela: se a aba atual tem unseen, marcar como vista uma vez.
+              if (!_didMarkInitialTabAsSeen) {
+                final unseen = _selectedTabIndex == 0
+                    ? state.tab0Unseen
+                    : _selectedTabIndex == 1
+                        ? state.tab1Unseen
+                        : state.tab2Unseen;
+                if (unseen > 0) {
+                  context.read<PendingContractsCountBloc>().add(
+                    MarkTabAsSeenEvent(tabIndex: _selectedTabIndex, isArtist: false),
+                  );
+                  _didMarkInitialTabAsSeen = true;
+                } else {
+                  _didMarkInitialTabAsSeen = true;
+                }
+              }
+
+              // Force refresh apenas quando o índice realmente mudar (não na primeira emissão).
+              final tab0 = state.tab0Total;
+              final tab1 = state.tab1Total;
+              final tab2 = state.tab2Total;
+              final changed = _lastClientTab0Total != null &&
+                  (tab0 != _lastClientTab0Total || tab1 != _lastClientTab1Total || tab2 != _lastClientTab2Total);
+              if (changed) {
+                _loadContracts(forceRefresh: true);
+              }
+              _lastClientTab0Total = tab0;
+              _lastClientTab1Total = tab1;
+              _lastClientTab2Total = tab2;
+            },
+          ),
+          BlocListener<ContractsBloc, ContractsState>(
+            listener: (context, state) {
           if (state is GetContractsByClientLoading) {
             setState(() {
               _isLoading = true;
@@ -186,7 +229,9 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
               _isVerifyingPayment = true;
             });
           }
-        },
+            },
+          ),
+        ],
         child: BlocBuilder<ContractsBloc, ContractsState>(
           builder: (context, state) {
             return BlocBuilder<PendingContractsCountBloc, PendingContractsCountState>(
@@ -195,17 +240,21 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                   builder: (context, payingState) {
                 final filteredContracts = _filteredContracts;
                 
-                // Obter contadores de não vistos
-                int tab0Unseen = 0;
-                int tab1Unseen = 0;
-                int tab2Unseen = 0;
-                
+                // Obter contadores de não vistos e totais; limitar badge ao número real de contratos na tab
+                int tab0Unseen = 0, tab1Unseen = 0, tab2Unseen = 0;
+                int tab0Total = 0, tab1Total = 0, tab2Total = 0;
                 if (contractsCountState is PendingContractsCountSuccess) {
                   tab0Unseen = contractsCountState.tab0Unseen;
                   tab1Unseen = contractsCountState.tab1Unseen;
                   tab2Unseen = contractsCountState.tab2Unseen;
+                  tab0Total = contractsCountState.tab0Total;
+                  tab1Total = contractsCountState.tab1Total;
+                  tab2Total = contractsCountState.tab2Total;
                 }
-                
+                final display0 = tab0Total > 0 ? tab0Unseen.clamp(0, tab0Total) : 0;
+                final display1 = tab1Total > 0 ? tab1Unseen.clamp(0, tab1Total) : 0;
+                final display2 = tab2Total > 0 ? tab2Unseen.clamp(0, tab2Total) : 0;
+
                 return BasePage(
                   showAppBar: true,
                   appBarTitle: 'Solicitações',
@@ -244,7 +293,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text('Em aberto'),
-                                    if (tab0Unseen > 0) ...[
+                                    if (display0 > 0) ...[
                                       const SizedBox(width: 4),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -253,7 +302,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
-                                          tab0Unseen > 99 ? '99+' : '$tab0Unseen',
+                                          display0 > 99 ? '99+' : '$display0',
                                           style: textTheme.bodySmall?.copyWith(
                                             color: colorScheme.onError,
                                             fontWeight: FontWeight.bold,
@@ -273,7 +322,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text('Confirmadas'),
-                                    if (tab1Unseen > 0) ...[
+                                    if (display1 > 0) ...[
                                       const SizedBox(width: 4),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -282,7 +331,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
-                                          tab1Unseen > 99 ? '99+' : '$tab1Unseen',
+                                          display1 > 99 ? '99+' : '$display1',
                                           style: textTheme.bodySmall?.copyWith(
                                             color: colorScheme.onError,
                                             fontWeight: FontWeight.bold,
@@ -302,7 +351,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text('Finalizados'),
-                                    if (tab2Unseen > 0) ...[
+                                    if (display2 > 0) ...[
                                       const SizedBox(width: 4),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -311,7 +360,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Text(
-                                          tab2Unseen > 99 ? '99+' : '$tab2Unseen',
+                                          display2 > 99 ? '99+' : '$display2',
                                           style: textTheme.bodySmall?.copyWith(
                                             color: colorScheme.onError,
                                             fontWeight: FontWeight.bold,
@@ -492,7 +541,7 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     return buttons;
   }
 
-  static const _paymentRedirectDelay = Duration(seconds: 4);
+  static const _paymentRedirectDelay = Duration(seconds: 7);
 
   void _onMakePayment(ContractEntity contract) {
     if (contract.linkPayment == null || contract.linkPayment!.isEmpty) {

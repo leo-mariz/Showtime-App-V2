@@ -115,7 +115,8 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   void _getPrimaryAddressFromState(GetAddressesSuccess state) {
     if (state.addresses.isEmpty) {
-      _onApplyFilters();
+      setState(() => _selectedAddress = null);
+      context.read<ExploreBloc>().add(ResetExploreEvent());
       return;
     }
     AddressInfoEntity primaryAddress;
@@ -133,9 +134,13 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   /// Aplica filtros atuais (data, endereço, busca) em ambas as abas.
-  /// Search bar está acima das abas: ao trocar de aba, a outra já vem com o mesmo resultado.
+  /// Só carrega artistas e conjuntos quando há um endereço selecionado.
   void _onApplyFilters() {
     if (!mounted) return;
+    if (_selectedAddress == null) {
+      context.read<ExploreBloc>().add(ResetExploreEvent());
+      return;
+    }
     const forceRefresh = true;
     final query = _searchQuery.isNotEmpty ? _searchQuery : null;
     context.read<ExploreBloc>().add(
@@ -216,57 +221,57 @@ class _ExploreScreenState extends State<ExploreScreen>
           ),
           DSSizedBoxSpacing.vertical(8),
           
-          // Search Bar + Filtro (acima das abas: mesma busca em Individual e Conjuntos)
-          Row(
-            children: [
-              Expanded(
-                child: SearchBarWidget(
-                  controller: _searchController,
-                  hintText: 'Buscar artistas e conjuntos...',
-                  onChanged: _onSearchChanged,
-                  onClear: _onSearchCleared,
-                ),
-              ),
-              // DSSizedBoxSpacing.horizontal(12),
-              // FilterButton(onPressed: _onFilterTapped),
-            ],
-          ),
-          DSSizedBoxSpacing.vertical(12),
-          Container(
-            height: DSSize.height(30),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(DSSize.width(12)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: colorScheme.onPrimaryContainer,
-                borderRadius: BorderRadius.circular(DSSize.width(12)),
-              ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: colorScheme.primaryContainer,
-              unselectedLabelColor: onSurfaceVariant,
-              labelStyle: textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onPrimary,
-              ),
-              unselectedLabelStyle: textTheme.bodyMedium,
-              dividerColor: Colors.transparent,
-              tabAlignment: TabAlignment.fill,
-              padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
-              labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
-              tabs: [
-                Tab(
-                  child: const Text('Individual'),
-                ),
-                Tab(
-                child: const Text('Conjuntos'),
+          if (_selectedAddress != null) ...[
+            // Search Bar + Filtro (acima das abas: mesma busca em Individual e Conjuntos)
+            Row(
+              children: [
+                Expanded(
+                  child: SearchBarWidget(
+                    controller: _searchController,
+                    hintText: 'Buscar artistas e conjuntos...',
+                    onChanged: _onSearchChanged,
+                    onClear: _onSearchCleared,
+                  ),
                 ),
               ],
             ),
-          ),
-          DSSizedBoxSpacing.vertical(12),
+            DSSizedBoxSpacing.vertical(12),
+            Container(
+              height: DSSize.height(30),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(DSSize.width(12)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: colorScheme.onPrimaryContainer,
+                  borderRadius: BorderRadius.circular(DSSize.width(12)),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: colorScheme.primaryContainer,
+                unselectedLabelColor: onSurfaceVariant,
+                labelStyle: textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onPrimary,
+                ),
+                unselectedLabelStyle: textTheme.bodyMedium,
+                dividerColor: Colors.transparent,
+                tabAlignment: TabAlignment.fill,
+                padding: EdgeInsets.symmetric(horizontal: DSSize.width(4)),
+                labelPadding: EdgeInsets.symmetric(horizontal: DSSize.width(8)),
+                tabs: [
+                  Tab(
+                    child: const Text('Individual'),
+                  ),
+                  Tab(
+                    child: const Text('Conjuntos'),
+                  ),
+                ],
+              ),
+            ),
+            DSSizedBoxSpacing.vertical(12),
+          ],
           Expanded(
             child: MultiBlocListener(
               listeners: [
@@ -278,89 +283,92 @@ class _ExploreScreenState extends State<ExploreScreen>
                     }
                   },
                 ),
-                BlocListener<ExploreBloc, ExploreState>(
-                  listener: (context, state) {
-                    if (state is GetArtistsWithAvailabilitiesSuccess) {
-                      setState(() {
-                        final n = state.artistsWithAvailabilities.length;
-                        _artistsNextIndex = state.nextIndex;
-                        _artistsHasMore = state.hasMore;
-                        if (state.append) {
-                          _isLoadingMoreArtists = false;
-                        } else {
-                          if (n != _previousArtistsListSize &&
-                              _scrollControllerArtists.hasClients) {
-                            _scrollControllerArtists.animateTo(
-                              0,
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOut,
-                            );
+                if (_selectedAddress != null)
+                  BlocListener<ExploreBloc, ExploreState>(
+                        listener: (context, state) {
+                          if (state is GetArtistsWithAvailabilitiesSuccess) {
+                            setState(() {
+                              final n = state.artistsWithAvailabilities.length;
+                              _artistsNextIndex = state.nextIndex;
+                              _artistsHasMore = state.hasMore;
+                              if (state.append) {
+                                _isLoadingMoreArtists = false;
+                              } else {
+                                if (n != _previousArtistsListSize &&
+                                    _scrollControllerArtists.hasClients) {
+                                  _scrollControllerArtists.animateTo(
+                                    0,
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+                              }
+                              _previousArtistsListSize = n;
+                            });
+                          } else if (state is GetEnsemblesWithAvailabilitiesSuccess) {
+                            setState(() {
+                              final n = state.ensemblesWithAvailabilities.length;
+                              _ensemblesNextIndex = state.nextIndex;
+                              _ensemblesHasMore = state.hasMore;
+                              if (state.append) {
+                                _isLoadingMoreEnsembles = false;
+                              } else {
+                                if (n != _previousEnsemblesListSize &&
+                                    _scrollControllerEnsembles.hasClients) {
+                                  _scrollControllerEnsembles.animateTo(
+                                    0,
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeOut,
+                                  );
+                                }
+                              }
+                              _previousEnsemblesListSize = n;
+                            });
                           }
-                        }
-                        _previousArtistsListSize = n;
-                      });
-                    } else if (state is GetEnsemblesWithAvailabilitiesSuccess) {
-                      setState(() {
-                        final n = state.ensemblesWithAvailabilities.length;
-                        _ensemblesNextIndex = state.nextIndex;
-                        _ensemblesHasMore = state.hasMore;
-                        if (state.append) {
-                          _isLoadingMoreEnsembles = false;
-                        } else {
-                          if (n != _previousEnsemblesListSize &&
-                              _scrollControllerEnsembles.hasClients) {
-                            _scrollControllerEnsembles.animateTo(
-                              0,
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOut,
-                            );
+                        },
+                      ),
+                      BlocListener<FavoritesBloc, FavoritesState>(
+                        listener: (context, state) {
+                          if (state is GetFavoriteArtistsSuccess) {
+                            setState(() {
+                              _favoriteArtistIds = state.artists
+                                  .map((a) => a.uid ?? '')
+                                  .where((id) => id.isNotEmpty)
+                                  .toSet();
+                            });
+                          } else if (state is GetFavoriteEnsemblesSuccess) {
+                            setState(() {
+                              _favoriteEnsembleIds = state.ensembles
+                                  .map((e) => e.ensemble.id ?? '')
+                                  .where((id) => id.isNotEmpty)
+                                  .toSet();
+                            });
+                          } else if (state is AddFavoriteSuccess) {
+                            context.showSuccess('Adicionado aos favoritos');
+                            context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+                          } else if (state is AddFavoriteFailure) {
+                            context.showError(state.error);
+                          } else if (state is RemoveFavoriteSuccess) {
+                            context.showSuccess('Removido dos favoritos');
+                            context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
+                          } else if (state is RemoveFavoriteEnsembleSuccess) {
+                            context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
+                          } else if (state is RemoveFavoriteFailure) {
+                            context.showError(state.error);
                           }
-                        }
-                        _previousEnsemblesListSize = n;
-                      });
-                    }
-                  },
-                ),
-                BlocListener<FavoritesBloc, FavoritesState>(
-                  listener: (context, state) {
-                    if (state is GetFavoriteArtistsSuccess) {
-                      setState(() {
-                        _favoriteArtistIds = state.artists
-                            .map((a) => a.uid ?? '')
-                            .where((id) => id.isNotEmpty)
-                            .toSet();
-                      });
-                    } else if (state is GetFavoriteEnsemblesSuccess) {
-                      setState(() {
-                        _favoriteEnsembleIds = state.ensembles
-                            .map((e) => e.ensemble.id ?? '')
-                            .where((id) => id.isNotEmpty)
-                            .toSet();
-                      });
-                    } else if (state is AddFavoriteSuccess) {
-                      context.showSuccess('Adicionado aos favoritos');
-                      context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
-                    } else if (state is AddFavoriteFailure) {
-                      context.showError(state.error);
-                    } else if (state is RemoveFavoriteSuccess) {
-                      context.showSuccess('Removido dos favoritos');
-                      context.read<FavoritesBloc>().add(GetFavoriteArtistsEvent());
-                    } else if (state is RemoveFavoriteEnsembleSuccess) {
-                      context.read<FavoritesBloc>().add(GetFavoriteEnsemblesEvent());
-                    } else if (state is RemoveFavoriteFailure) {
-                      context.showError(state.error);
-                    }
-                  },
-                ),
-              ],
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildArtistsTabContent(),
-                  _buildEnsemblesTabContent(),
-                ],
-              ),
-            ),
+                        },
+                      ),
+                    ],
+                    child: _selectedAddress == null
+                        ? _buildSelectAddressMessage()
+                        : TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildArtistsTabContent(),
+                              _buildEnsemblesTabContent(),
+                            ],
+                          ),
+                  ),
           ),
         ],
       ),
@@ -434,6 +442,49 @@ class _ExploreScreenState extends State<ExploreScreen>
         }
         return _buildEnsemblesList(ensembles);
       },
+    );
+  }
+
+  /// Mensagem exibida quando nenhum endereço está selecionado.
+  Widget _buildSelectAddressMessage() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: DSPadding.horizontal(32)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.location_off_outlined,
+              size: DSSize.width(56),
+              color: colorScheme.onSurfaceVariant,
+            ),
+            DSSizedBoxSpacing.vertical(20),
+            Text(
+              'Selecione um endereço',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            DSSizedBoxSpacing.vertical(8),
+            Text(
+              'É necessário selecionar um endereço para ver os artistas e conjuntos disponíveis.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            DSSizedBoxSpacing.vertical(24),
+            FilledButton.icon(
+              onPressed: _onAddressSelected,
+              icon: const Icon(Icons.add_location_alt_outlined, size: 20),
+              label: const Text('Selecionar endereço'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -782,7 +833,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   void _loadMoreArtists() {
-    if (!_artistsHasMore || _isLoadingMoreArtists) return;
+    if (_selectedAddress == null || !_artistsHasMore || _isLoadingMoreArtists) return;
     _isLoadingMoreArtists = true;
     context.read<ExploreBloc>().add(
       GetArtistsWithAvailabilitiesFilteredEvent(
@@ -797,7 +848,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   void _loadMoreEnsembles() {
-    if (!_ensemblesHasMore || _isLoadingMoreEnsembles) return;
+    if (_selectedAddress == null || !_ensemblesHasMore || _isLoadingMoreEnsembles) return;
     _isLoadingMoreEnsembles = true;
     context.read<ExploreBloc>().add(
       GetEnsemblesWithAvailabilitiesFilteredEvent(

@@ -74,29 +74,6 @@ class CancelContractUseCase {
 
       await contractsFunctions.cancelContract(contractUid, canceledBy, cancelReason: cancelReason);
 
-      // Se o contrato estava PAID, liberar slot de disponibilidade (continua no client)
-      if (contract.status == ContractStatusEnum.paid) {
-        final artistId = contract.refArtist ?? contract.refGroup;
-        if (artistId != null) {
-          final dateString = '${contract.date.year}-${contract.date.month.toString().padLeft(2, '0')}-${contract.date.day.toString().padLeft(2, '0')}';
-          final releaseResult = await repository.releaseAvailabilitySlotAfterCancel(
-            contractId: contract.uid!,
-            artistId: artistId,
-            date: dateString,
-          );
-          releaseResult.fold(
-            (failure) {
-              // Log; não bloqueia cancelamento
-            },
-            (result) {
-              if (result['success'] != true) {
-                // Erro ao liberar slot (não bloqueia)
-              }
-            },
-          );
-        }
-      }
-
       final getResult2 = await repository.getContract(contractUid, forceRefresh: true);
       await getResult2.fold(
         (_) async {},

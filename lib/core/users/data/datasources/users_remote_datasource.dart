@@ -77,7 +77,6 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
         (key, value) =>
             key == 'isArtist' ||
             key == 'password' ||
-            key == 'isCnpj' ||
             key == 'cpfUser' ||
             key == 'cnpjUser'
       );

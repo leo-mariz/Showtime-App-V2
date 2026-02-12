@@ -42,12 +42,17 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() {
     // final email = _emailController.text.trim();
     // final password = _passwordController.text;
+    var email = '';
+    var password = '';
+    final type = 2;
 
-    final email = 'leomariz914@gmail.com';
-    final password = 'Lms@0075';
-
-    // final email = 'leomariz123@hotmail.com';
-    // final password = 'Lms@0075';
+    if (type == 1) {
+      email = 'leomariz914@gmail.com';
+      password = 'Lms@0075';
+    } else if (type == 2) {
+      email = 'leomariz123@hotmail.com';
+      password = 'Lms@0075';
+    }
 
 
 

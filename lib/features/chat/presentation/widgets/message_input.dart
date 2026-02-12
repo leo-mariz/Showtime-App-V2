@@ -11,12 +11,15 @@ class MessageInput extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final bool isLoading;
+  /// Quando false, desabilita o botão de envio (ex.: validação de conteúdo em tempo real).
+  final bool sendEnabled;
 
   const MessageInput({
     super.key,
     required this.controller,
     required this.onSend,
     this.isLoading = false,
+    this.sendEnabled = true,
   });
 
   @override
@@ -99,7 +102,8 @@ class _MessageInputState extends State<MessageInput> {
                   color: textColor,
                 ),
                 onSubmitted: (_) {
-                  if (widget.controller.text.trim().isNotEmpty) {
+                  if (widget.sendEnabled &&
+                      widget.controller.text.trim().isNotEmpty) {
                     widget.onSend();
                   }
                 },
@@ -118,6 +122,7 @@ class _MessageInputState extends State<MessageInput> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: widget.isLoading ||
+                          !widget.sendEnabled ||
                           widget.controller.text.trim().isEmpty
                       ? null
                       : widget.onSend,
@@ -135,7 +140,9 @@ class _MessageInputState extends State<MessageInput> {
                         : Icon(
                             Icons.send,
                             size: DSSize.width(20),
-                            color: widget.controller.text.trim().isEmpty
+                            color: widget.isLoading ||
+                                    !widget.sendEnabled ||
+                                    widget.controller.text.trim().isEmpty
                                 ? colorScheme.onSurfaceVariant
                                 : colorScheme.surface,
                           ),

@@ -268,6 +268,21 @@ class _RequestScreenState extends State<RequestScreen> {
         .toList() ?? [];
   }
 
+  /// Para "hoje": true se existir pelo menos um slot disponível com início >= agora + 1h30.
+  /// Usado no seletor de data para não permitir escolher hoje quando não há horário bookável.
+  bool _hasBookableSlotForToday() {
+    final now = DateTime.now();
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final availability = _getAvailabilityForDate(todayDate);
+    if (availability == null || !availability.isActive) return false;
+    final cutoff = now.add(Duration(minutes: sameDayMinimumLeadTimeMinutes));
+    return availability.slots?.any(
+      (slot) =>
+          slot.status == TimeSlotStatusEnum.available &&
+          isSlotAtOrAfterCutoff(availability.date, slot.startTime, cutoff),
+    ) ?? false;
+  }
+
   /// Encontra o slot que contém o horário especificado
   TimeSlot? _findSlotContainingTime(DateTime date, String time) {
     final slots = _getAvailableSlotsForDate(date);
@@ -343,22 +358,28 @@ class _RequestScreenState extends State<RequestScreen> {
     DateTime lastDate = DateTime.now().add(const Duration(days: 365));
     bool Function(DateTime)? selectableDayPredicate;
 
-    // Criar função para validar dias selecionáveis: disponibilidade + antecedência mínima
-    selectableDayPredicate = (DateTime date) {
-      if (_getAvailabilityForDate(date) == null) return false;
-      return respectsMinimumEarliness(date, minEarlinessMinutes);
-    };
-
-    // Definir firstDate como a primeira data disponível (>= hoje e que respeite antecedência mínima)
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
+    // Criar função para validar dias selecionáveis: disponibilidade + antecedência mínima;
+    // para hoje, exige ainda pelo menos um slot bookável (início >= agora + 1h30)
+    selectableDayPredicate = (DateTime date) {
+      final dateOnly = DateTime(date.year, date.month, date.day);
+      if (_getAvailabilityForDate(date) == null) return false;
+      if (!respectsMinimumEarliness(date, minEarlinessMinutes)) return false;
+      if (dateOnly.isAtSameMomentAs(todayDate)) return _hasBookableSlotForToday();
+      return true;
+    };
+
+    // Definir firstDate como a primeira data disponível (>= hoje e que respeite antecedência mínima e, se hoje, tenha slot bookável)
     final sortedDates = _availabilities!
         .map((a) => a.date)
         .where((date) {
           final dateOnly = DateTime(date.year, date.month, date.day);
           if (dateOnly.isBefore(todayDate)) return false;
-          return respectsMinimumEarliness(dateOnly, minEarlinessMinutes);
+          if (!respectsMinimumEarliness(dateOnly, minEarlinessMinutes)) return false;
+          if (dateOnly.isAtSameMomentAs(todayDate)) return _hasBookableSlotForToday();
+          return true;
         })
         .toList()
       ..sort();
@@ -704,6 +725,7 @@ class _RequestScreenState extends State<RequestScreen> {
           listener: (context, state) {
             if (state is AddContractSuccess) {
               context.showSuccess('Solicitação enviada com sucesso!');
+              context.read<ContractsBloc>().add(GetContractsByClientEvent(forceRefresh: true));
               router.maybePop();
             } else if (state is AddContractFailure) {
               context.showError(state.error);

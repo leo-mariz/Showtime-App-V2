@@ -73,6 +73,14 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
 
   ContractStatusEnum get _status => _contract.status;
 
+  void _handleRefresh() {
+    if (_contract.uid != null && _contract.uid!.isNotEmpty) {
+      context.read<ContractsBloc>().add(
+        GetContractsByClientEvent(forceRefresh: true),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -103,6 +111,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               GetContractEvent(contractUid: _contract.uid!),
             );
           }
+          _handleRefresh();
         } else if (state is RateArtistFailure) {
           context.showError(state.error);
         } else if (state is GetContractSuccess) {

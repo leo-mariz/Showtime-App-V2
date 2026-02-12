@@ -1,5 +1,6 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/rating_entity.dart';
+import 'package:app/core/domain/contract/show_rating_requested_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
@@ -61,11 +62,8 @@ class ContractEntity with ContractEntityMappable {
   final RatingEntity? rateByArtist;
   
   // Controle de avaliação do show (futuro)
-  final bool? showRatingRequested;      // Dialog de avaliação foi mostrado?
-  final bool? showRatingSkipped;       // Usuário pulou a avaliação?
-  final bool? showRatingCompleted;     // Avaliação foi feita?
-  final DateTime? showRatingRequestedAt; // Quando foi solicitado
-  final String? showRatingRequestedFor; // 'CLIENT' ou 'ARTIST' (quem deve avaliar)
+  final ShowRatingRequestedEntity? showRatingRequestedEntityByArtist;      // Dialog de avaliação foi mostrado?
+  final ShowRatingRequestedEntity? showRatingRequestedEntityByClient;       // Usuário pulou a avaliação?
   
   // Timestamps
   final DateTime? createdAt;               // Data de criação da solicitação
@@ -115,11 +113,8 @@ class ContractEntity with ContractEntityMappable {
     this.ratingsPublishedAt,
     this.rateByClient,
     this.rateByArtist,
-    this.showRatingRequested,
-    this.showRatingSkipped,
-    this.showRatingCompleted,
-    this.showRatingRequestedAt,
-    this.showRatingRequestedFor,
+    this.showRatingRequestedEntityByArtist,
+    this.showRatingRequestedEntityByClient,
     DateTime? createdAt,
     this.acceptedAt,
     this.rejectedAt,
@@ -153,7 +148,7 @@ class ContractEntity with ContractEntityMappable {
     if (acceptDeadline == null || !isPending) return false;
     final nowUtc = DateTime.now().toUtc();
     final d = acceptDeadline!;
-    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    final deadlineUtc = d.isUtc ? d : d.toUtc();
     return nowUtc.isAfter(deadlineUtc);
   }
 
@@ -162,7 +157,7 @@ class ContractEntity with ContractEntityMappable {
     if (acceptDeadline == null || !isPending) return null;
     final nowUtc = DateTime.now().toUtc();
     final d = acceptDeadline!;
-    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    final deadlineUtc = d.isUtc ? d : d.toUtc();
     if (nowUtc.isAfter(deadlineUtc)) return null;
     return deadlineUtc.difference(nowUtc);
   }
@@ -172,7 +167,7 @@ class ContractEntity with ContractEntityMappable {
     if (paymentDueDate == null || !isPaymentPending) return false;
     final nowUtc = DateTime.now().toUtc();
     final d = paymentDueDate!;
-    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    final deadlineUtc = d.isUtc ? d : d.toUtc();
     return nowUtc.isAfter(deadlineUtc);
   }
 
@@ -181,7 +176,7 @@ class ContractEntity with ContractEntityMappable {
     if (paymentDueDate == null || !isPaymentPending) return null;
     final nowUtc = DateTime.now().toUtc();
     final d = paymentDueDate!;
-    final deadlineUtc = d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    final deadlineUtc = d.isUtc ? d : d.toUtc();
     if (nowUtc.isAfter(deadlineUtc)) return null;
     return deadlineUtc.difference(nowUtc);
   }

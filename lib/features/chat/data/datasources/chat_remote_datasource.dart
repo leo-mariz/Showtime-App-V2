@@ -1,4 +1,5 @@
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:app/features/chat/domain/entities/chat_entity.dart';
 import 'package:app/features/chat/domain/entities/message_entity.dart';
 import 'package:app/features/chat/domain/entities/user_chat_info_entity.dart';
@@ -201,7 +202,8 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       }
 
       final data = doc.data() as Map<String, dynamic>;
-      return ChatEntityMapper.fromMap(data);
+      final cleanedMap = convertFirestoreMapForMapper(data);
+      return ChatEntityMapper.fromMap(cleanedMap);
     } on FirebaseException catch (e) {
       throw ServerException(e.message ?? 'Erro ao buscar chat');
     } catch (e) {
@@ -290,16 +292,7 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
             }
             
             final chatData = chatDoc.data() as Map<String, dynamic>;
-            
-            // Converter Timestamp para DateTime manualmente
-            final convertedData = Map<String, dynamic>.from(chatData);
-            if (convertedData['createdAt'] is Timestamp) {
-              convertedData['createdAt'] = (convertedData['createdAt'] as Timestamp).toDate();
-            }
-            if (convertedData['lastMessageAt'] is Timestamp) {
-              convertedData['lastMessageAt'] = (convertedData['lastMessageAt'] as Timestamp).toDate();
-            }
-            
+            final convertedData = convertFirestoreMapForMapper(chatData);
             return ChatEntityMapper.fromMap(convertedData);
           } catch (e) {
             // Se falhar ao buscar um chat específico, apenas pular
@@ -443,13 +436,9 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
         return snapshot.docs.map((doc) {
           try {
             final data = doc.data() as Map<String, dynamic>;
-            
-            // Converter Timestamp para DateTime manualmente
-            final convertedData = Map<String, dynamic>.from(data);
-            if (convertedData['createdAt'] is Timestamp) {
-              convertedData['createdAt'] = (convertedData['createdAt'] as Timestamp).toDate();
-            }
-            
+            final convertedData = convertFirestoreMapForMapper(data);
+            // Mensagens criadas pela function podem não ter messageId; usar doc.id
+            convertedData['messageId'] ??= doc.id;
             return MessageEntityMapper.fromMap(convertedData);
           } catch (e) {
             rethrow;
@@ -481,13 +470,9 @@ class ChatRemoteDataSourceImpl implements IChatRemoteDataSource {
       
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        
-        // Converter Timestamp para DateTime manualmente
-        final convertedData = Map<String, dynamic>.from(data);
-        if (convertedData['createdAt'] is Timestamp) {
-          convertedData['createdAt'] = (convertedData['createdAt'] as Timestamp).toDate();
-        }
-        
+        final convertedData = convertFirestoreMapForMapper(data);
+        // Mensagens criadas pela function podem não ter messageId; usar doc.id
+        convertedData['messageId'] ??= doc.id;
         return MessageEntityMapper.fromMap(convertedData);
       }).toList();
     } on FirebaseException catch (e) {

@@ -1,6 +1,7 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Interface do DataSource remoto para Ensembles (conjuntos).
@@ -49,7 +50,7 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       if (raw == null) {
         throw const ServerException('Conjunto criado mas dados não encontrados');
       }
-      final map = _fromFirestoreMap(raw as Map<dynamic, dynamic>);
+      final map = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
       map[EnsembleEntityKeys.id] = docRef.id;
       return EnsembleEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
@@ -74,7 +75,7 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       final snapshot = await docRef.get();
       if (!snapshot.exists) return null;
       final raw = snapshot.data()! as Map<String, dynamic>;
-      final map = _fromFirestoreMap(raw);
+      final map = convertFirestoreMapForMapper(raw);
       map[EnsembleEntityKeys.id] = snapshot.id;
       return EnsembleEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
@@ -101,7 +102,7 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       if (snapshot.docs.isEmpty) return [];
       return snapshot.docs.map((doc) {
         final raw = doc.data();
-        final map = _fromFirestoreMap(raw as Map<dynamic, dynamic>);
+        final map = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
         map[EnsembleEntityKeys.id] = doc.id;
         return EnsembleEntityMapper.fromMap(map);
       }).toList();
@@ -189,19 +190,4 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
     data[EnsembleEntityKeys.updatedAt] = FieldValue.serverTimestamp();
   }
 
-  static Map<String, dynamic> _fromFirestoreMap(Map<dynamic, dynamic>? data) {
-    if (data == null) return {};
-    final result = <String, dynamic>{};
-    for (final entry in data.entries) {
-      final value = entry.value;
-      if (value is Timestamp) {
-        result[entry.key] = value.toDate();
-      } else if (value is Map) {
-        result[entry.key] = _fromFirestoreMap(value);
-      } else {
-        result[entry.key] = value;
-      }
-    }
-    return result;
-  }
 }

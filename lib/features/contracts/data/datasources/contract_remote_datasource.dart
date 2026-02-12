@@ -3,6 +3,7 @@ import 'package:app/core/domain/contract/key_code_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:app/features/contracts/domain/entities/user_contracts_index_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -174,56 +175,6 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
     return convertedMap;
   }
 
-  Map<String, dynamic> _convertTimestampsToDateTime(Map<String, dynamic> map) {
-    final convertedMap = Map<String, dynamic>.from(map);
-    
-    // Lista de campos que podem ser Timestamp (ContractEntity + Rating)
-    final dateFields = [
-      'date',
-      'paymentDueDate',
-      'paymentDate',
-      'showConfirmedAt',
-      'ratingsPublishedAt',
-      'showRatingRequestedAt',
-      'createdAt',
-      'acceptedAt',
-      'rejectedAt',
-      'canceledAt',
-      'statusChangedAt',
-      'acceptDeadline',
-      'ratedAt',
-    ];
-    
-    // Converter campos de data do contrato.
-    // O DateTimeMapper do dart_mappable só decodifica String ou num; Firestore retorna Timestamp.
-    // Convertemos Timestamp -> millisecondsSinceEpoch (num) para o mapper aceitar.
-    for (final field in dateFields) {
-      if (convertedMap.containsKey(field) && convertedMap[field] != null) {
-        if (convertedMap[field] is Timestamp) {
-          convertedMap[field] = (convertedMap[field] as Timestamp).millisecondsSinceEpoch;
-        }
-        // String ISO já é aceita pelo mapper; num (ms) também
-      }
-    }
-    
-    // Converter datas dentro do availabilitySnapshot (se existir)
-    if (convertedMap.containsKey('availabilitySnapshot') && 
-        convertedMap['availabilitySnapshot'] is Map) {
-      final availabilityMap = convertedMap['availabilitySnapshot'] as Map<String, dynamic>;
-      final availabilityDateFields = ['dataInicio', 'dataFim'];
-      
-      for (final field in availabilityDateFields) {
-        if (availabilityMap.containsKey(field) && availabilityMap[field] != null) {
-          if (availabilityMap[field] is Timestamp) {
-            availabilityMap[field] = (availabilityMap[field] as Timestamp).millisecondsSinceEpoch;
-          }
-        }
-      }
-    }
-    
-    return convertedMap;
-  }
-
   @override
   Future<ContractEntity> getContract(String contractUid) async {
     try {
@@ -247,7 +198,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
       final contractMap = snapshot.data() as Map<String, dynamic>;
       try {
         // Converter Timestamps para DateTime antes do mapeamento
-        final convertedMap = _convertTimestampsToDateTime(contractMap);
+        final convertedMap = convertFirestoreMapForMapper(contractMap);
         final contract = ContractEntityMapper.fromMap(convertedMap);
       return contract.copyWith(uid: snapshot.id);
       } catch (e, stackTrace) {
@@ -301,7 +252,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
             try {
             final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
-              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final convertedMap = convertFirestoreMapForMapper(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
             return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {
@@ -357,7 +308,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
             try {
             final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
-              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final convertedMap = convertFirestoreMapForMapper(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
             return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {
@@ -413,7 +364,7 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
             try {
             final contractMap = doc.data() as Map<String, dynamic>;
               // Converter Timestamps para DateTime antes do mapeamento
-              final convertedMap = _convertTimestampsToDateTime(contractMap);
+              final convertedMap = convertFirestoreMapForMapper(contractMap);
               final contract = ContractEntityMapper.fromMap(convertedMap);
             return contract.copyWith(uid: doc.id);
             } catch (e, stackTrace) {

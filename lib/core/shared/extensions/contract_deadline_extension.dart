@@ -8,7 +8,7 @@ extension ContractDeadlineExtension on ContractEntity {
   String? get formattedAcceptDeadline {
     if (acceptDeadline == null || !isPending) return null;
     final nowUtc = DateTime.now().toUtc();
-    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : DateTime.utc(acceptDeadline!.year, acceptDeadline!.month, acceptDeadline!.day, acceptDeadline!.hour, acceptDeadline!.minute, acceptDeadline!.second, acceptDeadline!.millisecond);
+    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : acceptDeadline!.toUtc();
 
     if (nowUtc.isAfter(deadlineUtc)) return 'Prazo expirado';
     final remaining = deadlineUtc.difference(nowUtc);
@@ -42,7 +42,7 @@ extension ContractDeadlineExtension on ContractEntity {
   String? get shortDeadlineText {
     if (acceptDeadline == null || !isPending) return null;
     final nowUtc = DateTime.now().toUtc();
-    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : DateTime.utc(acceptDeadline!.year, acceptDeadline!.month, acceptDeadline!.day, acceptDeadline!.hour, acceptDeadline!.minute, acceptDeadline!.second, acceptDeadline!.millisecond);
+    final deadlineUtc = acceptDeadline!.isUtc ? acceptDeadline! : acceptDeadline!.toUtc();
     if (nowUtc.isAfter(deadlineUtc)) return 'Expirado';
     final remaining = deadlineUtc.difference(nowUtc);
     
@@ -99,7 +99,7 @@ extension ContractDeadlineExtension on ContractEntity {
   static DateTime? _paymentDeadlineUtc(ContractEntity c) {
     if (c.paymentDueDate == null || !c.isPaymentPending) return null;
     final d = c.paymentDueDate!;
-    return d.isUtc ? d : DateTime.utc(d.year, d.month, d.day, d.hour, d.minute, d.second, d.millisecond);
+    return d.isUtc ? d : d.toUtc();
   }
 
   /// Texto formatado do prazo para o anfitrião pagar

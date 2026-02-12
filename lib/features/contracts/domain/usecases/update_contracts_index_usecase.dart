@@ -6,20 +6,28 @@ import 'package:app/features/contracts/domain/repositories/contract_repository.d
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Atualizar índice de contratos
-/// 
-/// RESPONSABILIDADES:
-/// - Calcular qual tab um contrato pertence baseado no status
-/// - Atualizar contadores totais e não vistos no índice
-/// - Atualizar índices tanto do artista quanto do cliente
-/// 
+///
+/// REGRA: Sempre atualizar AMBOS os lados (artista e cliente) em toda mudança.
+/// - No documento do artista (user_contracts_index/{refArtist}): apenas artistTab*.
+/// - No documento do cliente (user_contracts_index/{refClient}): apenas clientTab*.
+/// Nunca misturar artistTab e clientTab no mesmo usuário.
+///
+/// QUEM ATUALIZA O QUÊ:
+/// - Cliente solicita → tab 0 (artista e cliente).
+/// - Artista aceita → contrato segue na tab 0; atualizar lastUpdate em ambos para refletir mudança.
+/// - Cliente paga → tab 1 (artista e cliente).
+/// - Artista confirma show → tab 2 (artista e cliente).
+/// - Contrato cancelado (artista ou cliente) → tab 2 (artista e cliente).
+/// - Artista rejeita → tab 2 (artista e cliente).
+///
 /// LÓGICA DE TABS:
 /// Para ARTISTA:
-/// - Tab 0 (Em aberto): PENDING
+/// - Tab 0 (Em aberto): PENDING, PAYMENT_PENDING, etc.
 /// - Tab 1 (Confirmadas): PAID
 /// - Tab 2 (Finalizadas): COMPLETED, REJECTED, CANCELED, RATED
-/// 
+///
 /// Para CLIENTE:
-/// - Tab 0 (Em aberto): PENDING, PAYMENT_PENDING
+/// - Tab 0 (Em aberto): PENDING, PAYMENT_PENDING, PAYMENT_EXPIRED, PAYMENT_REFUSED, PAYMENT_FAILED
 /// - Tab 1 (Confirmadas): PAID
 /// - Tab 2 (Finalizadas): COMPLETED, REJECTED, CANCELED, RATED
 class UpdateContractsIndexUseCase {
@@ -94,13 +102,25 @@ class UpdateContractsIndexUseCase {
       oldTabIndex = _getTabIndexForStatus(oldStatus, isArtist);
     }
 
-    if (!removed && oldTabIndex != null && oldTabIndex == newTabIndex) {
-      return;
-    }
-
     final currentIndex = await repository.getContractsIndexStream(userId).first;
     final rolePrefix = isArtist ? 'artist' : 'client';
     final updates = <String, dynamic>{};
+
+    // Contrato permanece na mesma tab (ex.: artista aceita = PENDING -> PAYMENT_PENDING, ambos tab 0)
+    // Atualizar lastUpdate e incrementar unseen da tab para o outro lado ver o indicador (artista e cliente)
+    if (!removed && oldTabIndex != null && oldTabIndex == newTabIndex) {
+      updates['lastUpdate'] = DateTime.now();
+      final tabUnseenKey = '${rolePrefix}Tab${newTabIndex}Unseen';
+      final currentUnseen = currentIndex.getUnseenForTab(newTabIndex, isArtist);
+      final currentTotal = currentIndex.getTotalForTab(newTabIndex, isArtist);
+      final lastSeen = currentIndex.getLastSeenForTab(newTabIndex, isArtist);
+      final contractChangedAt = contract.statusChangedAt ?? contract.createdAt ?? DateTime.now();
+      final isUnseen = lastSeen == null || contractChangedAt.isAfter(lastSeen);
+      final newUnseen = isUnseen ? (currentUnseen + 1).clamp(0, currentTotal) : currentUnseen;
+      updates[tabUnseenKey] = newUnseen;
+      await repository.updateContractsIndex(userId, updates);
+      return;
+    }
 
     if (oldTabIndex != null) {
       final oldTabTotal = '${rolePrefix}Tab${oldTabIndex}Total';

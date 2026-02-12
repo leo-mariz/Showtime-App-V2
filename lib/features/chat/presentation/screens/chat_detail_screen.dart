@@ -1,8 +1,11 @@
 import 'package:app/core/design_system/font/font_size_calculator.dart';
+import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/utils/chat_message_contact_validator.dart';
 import 'package:app/core/shared/widgets/circle_avatar.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/design_system/padding/ds_padding.dart';
+import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/users/presentation/bloc/events/users_events.dart';
 import 'package:app/core/users/presentation/bloc/states/users_states.dart';
 import 'package:app/core/users/presentation/bloc/users_bloc.dart';
@@ -39,15 +42,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   String? _currentUserId;
+  /// Validação em tempo real: true quando o texto contém informações de contato não permitidas.
+  bool _hasContactInfoInText = false;
 
   @override
   void initState() {
     super.initState();
     
     _initializeScreen();
-    // Listener para atualizar botão de envio
+    // Listener para atualizar botão de envio e validação de conteúdo em tempo real
     _messageController.addListener(() {
-      setState(() {});
+      setState(() {
+        _hasContactInfoInText = containsDisallowedContactInfo(_messageController.text);
+      });
     });
     
     // Listener para scroll - detectar quando chegar no topo para carregar mais mensagens
@@ -149,6 +156,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             input: SendMessageInputDto(
               chatId: widget.chatId,
               text: text,
+              chatStatus: widget.chat.status,
             ),
           ),
         );
@@ -158,6 +166,144 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // Rolar para o final imediatamente ao enviar (antes mesmo da mensagem otimista aparecer)
     // Isso garante que a tela já esteja no final quando a mensagem aparecer
     _scrollToBottom();
+  }
+
+  /// Banner exibido acima do input quando o texto contém informações de contato (validação em tempo real).
+  Widget _buildContactInfoBanner(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.symmetric(
+        horizontal: DSPadding.horizontal(16),
+        vertical: DSPadding.vertical(8),
+      ),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.error.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.security, color: colorScheme.onErrorContainer, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Informações de contato não permitidas',
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Por motivos de segurança, não é permitido compartilhar contatos externos.',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onErrorContainer,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(6),
+          Text(
+            '💡 Use apenas a plataforma para se comunicar com segurança.',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onErrorContainer,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(6),
+          Text(
+            '💡 Use apenas a plataforma para se comunicar com segurança.',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onErrorContainer,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(6),
+          Text(
+            'Qualquer tentativa de compartilhar contatos poderá resultar em banimento da plataforma.',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onErrorContainer,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactInfoError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.security, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Informações de contato não permitidas',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Por motivos de segurança, não é permitido compartilhar:',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '• Números de telefone ou WhatsApp\n'
+              '• Endereços de email\n'
+              '• Redes sociais (Instagram, Facebook, etc.)\n'
+              '• Palavras como "me liga", "me add", etc.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black),
+            ),
+            SizedBox(height: 6),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '💡 Use apenas a plataforma para se comunicar com segurança',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.black,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 6),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: EdgeInsets.only(
+          bottom: 80,
+          left: 16,
+          right: 16,
+        ),
+      ),
+    );
   }
 
   @override
@@ -200,9 +346,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             // Informações do contrato abaixo do AppBar
             Container(
               width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                vertical: DSPadding.vertical(8),
-              ),
+              // padding: EdgeInsets.symmetric(
+              //   vertical: DSPadding.vertical(2),
+              // ),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceVariant.withOpacity(0.3),
                 border: Border(
@@ -281,6 +427,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       } else if (state is SendMessageSuccess) {
                         // Quando uma nova mensagem é enviada, ir para o final imediatamente
                         _scrollToBottom();
+                      } else if (state is SendMessageFailure && mounted) {
+                        if (state.error == kChatContactInfoValidationMessage) {
+                          _showContactInfoError(context);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(state.error),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       }
                     },
                   ),
@@ -298,7 +455,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         children: [
                           Icon(
                             Icons.error_outline,
-                            size: 48,
+                            size: DSSize.width(48),
                             color: colorScheme.error,
                           ),
                           DSSizedBoxSpacing.vertical(16),
@@ -354,8 +511,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                             padding: EdgeInsets.symmetric(
                               vertical: DSPadding.vertical(8),
                             ),
-                            child: const Center(
-                              child: CircularProgressIndicator(),
+                            child: Center(
+                              child: CustomLoadingIndicator(
+                                color: colorScheme.onPrimary,
+                              ),
                             ),
                           );
                         }
@@ -391,17 +550,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 ),
               ),
             ),
-            // Input de mensagem
-            BlocBuilder<MessagesBloc, MessagesState>(
-              builder: (context, state) {
-                final isLoading = state is SendMessageSuccess;
-                return MessageInput(
-                  controller: _messageController,
-                  onSend: _onSendMessage,
-                  isLoading: isLoading,
-                );
-              },
-            ),
+            // Input de mensagem (oculto quando o chat está encerrado)
+            if (!widget.chat.isClosed) ...[
+              if (_hasContactInfoInText) _buildContactInfoBanner(context),
+              BlocBuilder<MessagesBloc, MessagesState>(
+                builder: (context, state) {
+                  final isLoading = state is SendMessageSuccess;
+                  return MessageInput(
+                    controller: _messageController,
+                    onSend: _onSendMessage,
+                    isLoading: isLoading,
+                    sendEnabled: !_hasContactInfoInText,
+                  );
+                },
+              ),
+            ],
           ],
           ),
         ),
@@ -424,20 +587,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         children: [
           CustomCircleAvatar(
             imageUrl: otherUserPhoto,
-            size: 80,
+            size: DSSize.width(80),
           ),
           DSSizedBoxSpacing.vertical(16),
           Text(
             otherUserName,
             style: textTheme.titleMedium,
-          ),
-          DSSizedBoxSpacing.vertical(4),
-          Text(
-            contractRef,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-              fontSize: 12,
-            ),
           ),
           DSSizedBoxSpacing.vertical(8),
           Padding(

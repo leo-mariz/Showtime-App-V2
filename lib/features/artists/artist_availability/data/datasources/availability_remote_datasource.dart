@@ -1,6 +1,7 @@
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -88,7 +89,7 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
       for (final doc in querySnapshot.docs) {
         try {
           final dayMap = doc.data() as Map<String, dynamic>;
-          final cleanedMap = _convertTimestamps(dayMap);
+          final cleanedMap = convertFirestoreMapForMapper(dayMap);
           final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
           days.add(day.copyWith(id: doc.id));
         } catch (e, stackTrace) {
@@ -137,7 +138,7 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
       }
       
       final dayMap = snapshot.data() as Map<String, dynamic>;
-      final cleanedMap = _convertTimestamps(dayMap);
+      final cleanedMap = convertFirestoreMapForMapper(dayMap);
       final day = AvailabilityDayEntityMapper.fromMap(cleanedMap);
       return day.copyWith(id: dayId);
     } on FirebaseException catch (e, stackTrace) {
@@ -280,39 +281,4 @@ class AvailabilityRemoteDataSourceImpl implements IAvailabilityRemoteDataSource 
     }
   }
   
-  /// Converte recursivamente todos os Timestamps em DateTime
-  Map<String, dynamic> _convertTimestamps(Map<String, dynamic> map) {
-    final result = <String, dynamic>{};
-
-    for (final entry in map.entries) {
-      final key = entry.key;
-      final value = entry.value;
-
-      if (value is Timestamp) {
-        result[key] = value.toDate();
-      } else if (value is Map) {
-        try {
-          result[key] = _convertTimestamps(value as Map<String, dynamic>);
-        } catch (e, stackTrace) {
-          debugPrint('❌ [AvailabilityRemote] _convertTimestamps erro na key="$key": $e');
-          debugPrint('❌ [AvailabilityRemote] stackTrace: $stackTrace');
-          rethrow;
-        }
-      } else if (value is List) {
-        result[key] = value.map((item) {
-          if (item is Map) {
-            return _convertTimestamps(item as Map<String, dynamic>);
-          } else if (item is Timestamp) {
-            return item.toDate();
-          }
-          debugPrint('📅 [AvailabilityRemote] _convertTimestamps: lista key="$key" item tipo ${item.runtimeType} (não é Map nem Timestamp)');
-          return item;
-        }).toList();
-      } else {
-        result[key] = value;
-      }
-    }
-
-    return result;
-  }
 }

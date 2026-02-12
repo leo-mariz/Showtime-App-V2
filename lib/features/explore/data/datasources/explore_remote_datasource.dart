@@ -4,6 +4,7 @@ import 'package:app/core/domain/ensemble/ensemble_availability_day_reference.dar
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -103,7 +104,8 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
 
       return querySnapshot.docs.map((doc) {
         final artistMap = doc.data() as Map<String, dynamic>;
-        final artist = ArtistEntityMapper.fromMap(artistMap);
+        final cleanedMap = convertFirestoreMapForMapper(artistMap);
+        final artist = ArtistEntityMapper.fromMap(cleanedMap);
         return artist.copyWith(uid: doc.id);
       }).toList();
     } on FirebaseException catch (e, stackTrace) {
@@ -132,7 +134,8 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
       final snapshot = await docRef.get();
       if (!snapshot.exists) return null;
       final artistMap = snapshot.data() as Map<String, dynamic>;
-      final artist = ArtistEntityMapper.fromMap(artistMap);
+      final cleanedMap = convertFirestoreMapForMapper(artistMap);
+      final artist = ArtistEntityMapper.fromMap(cleanedMap);
       return artist.copyWith(uid: snapshot.id);
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
@@ -184,8 +187,7 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
 
       final dayMap = snapshot.data() as Map<String, dynamic>;
       
-      // Converter timestamps se necessário
-      final cleanedMap = _convertTimestamps(dayMap);
+      final cleanedMap = convertFirestoreMapForMapper(dayMap);
       
       final availabilityDay = AvailabilityDayEntityMapper.fromMap(cleanedMap);
       return availabilityDay.copyWith(id: dayId);
@@ -236,8 +238,7 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
         try {
           final dayMap = doc.data() as Map<String, dynamic>;
           
-          // Converter timestamps se necessário
-          final cleanedMap = _convertTimestamps(dayMap);
+          final cleanedMap = convertFirestoreMapForMapper(dayMap);
           
           final availabilityDay = AvailabilityDayEntityMapper.fromMap(cleanedMap);
           availabilities.add(availabilityDay.copyWith(id: doc.id));
@@ -295,7 +296,7 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
         final doc = querySnapshot.docs[i];
         try {
           final map = doc.data() as Map<String, dynamic>;
-          final cleanedMap = _convertFirestoreTimestampsForMapper(map);
+          final cleanedMap = convertFirestoreMapForMapper(map);
           final ensemble = EnsembleEntityMapper.fromMap(cleanedMap);
           results.add(ensemble.copyWith(id: doc.id));
         } catch (e, stackTrace) {
@@ -360,7 +361,7 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
       }
 
       final dayMap = snapshot.data() as Map<String, dynamic>;
-      final cleanedMap = _convertTimestamps(dayMap);
+      final cleanedMap = convertFirestoreMapForMapper(dayMap);
       final availabilityDay =
           AvailabilityDayEntityMapper.fromMap(cleanedMap);
       return availabilityDay.copyWith(id: dayId);
@@ -408,7 +409,7 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
       for (final doc in querySnapshot.docs) {
         try {
           final dayMap = doc.data() as Map<String, dynamic>;
-          final cleanedMap = _convertTimestamps(dayMap);
+          final cleanedMap = convertFirestoreMapForMapper(dayMap);
           final availabilityDay =
               AvailabilityDayEntityMapper.fromMap(cleanedMap);
           availabilities.add(availabilityDay.copyWith(id: doc.id));
@@ -436,50 +437,5 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
     }
   }
 
-  /// Converte Timestamps do Firestore para milissegundos (int).
-  /// Usado em mapas que serão passados ao dart_mappable, que espera String ou num para DateTime.
-  Map<String, dynamic> _convertFirestoreTimestampsForMapper(Map<String, dynamic> data) {
-    final converted = Map<String, dynamic>.from(data);
-    for (final key in converted.keys.toList()) {
-      final value = converted[key];
-      if (value is Timestamp) {
-        converted[key] = value.millisecondsSinceEpoch;
-      } else if (value is Map<String, dynamic>) {
-        converted[key] = _convertFirestoreTimestampsForMapper(value);
-      } else if (value is List) {
-        converted[key] = value.map((e) {
-          if (e is Timestamp) return e.millisecondsSinceEpoch;
-          if (e is Map<String, dynamic>) return _convertFirestoreTimestampsForMapper(e);
-          return e;
-        }).toList();
-      }
-    }
-    return converted;
-  }
-
-  /// Converte timestamps do Firestore para DateTime
-  Map<String, dynamic> _convertTimestamps(Map<String, dynamic> data) {
-    final converted = Map<String, dynamic>.from(data);
-    
-    // Converter campos de timestamp comuns
-    final timestampFields = ['createdAt', 'updatedAt', 'date'];
-    
-    for (final field in timestampFields) {
-      if (converted.containsKey(field)) {
-        final value = converted[field];
-        if (value is Timestamp) {
-          converted[field] = value.toDate();
-        } else if (value is String) {
-          try {
-            converted[field] = DateTime.parse(value);
-          } catch (_) {
-            // Se não conseguir parsear, mantém o valor original
-          }
-        }
-      }
-    }
-    
-    return converted;
-  }
 }
 

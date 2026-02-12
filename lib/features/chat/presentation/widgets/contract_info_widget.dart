@@ -1,3 +1,4 @@
+import 'package:app/core/design_system/font/font_size_calculator.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
@@ -112,7 +113,7 @@ class _ContractInfoWidgetState extends State<ContractInfoWidget> {
       infoText,
       style: widget.textStyle ?? textTheme.bodySmall?.copyWith(
         color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-        fontSize: 12,
+        fontSize: calculateFontSize(12),
       ),
       textAlign: widget.textAlign ?? TextAlign.left,
       maxLines: 1,
@@ -128,7 +129,7 @@ class _ContractInfoWidgetState extends State<ContractInfoWidget> {
       'Contrato #${widget.contractId}',
       style: widget.textStyle ?? textTheme.bodySmall?.copyWith(
         color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-        fontSize: 12,
+        fontSize: calculateFontSize(12),
       ),
       textAlign: widget.textAlign ?? TextAlign.left,
       maxLines: 1,

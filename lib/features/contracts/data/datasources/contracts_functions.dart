@@ -1,3 +1,4 @@
+import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
 
 /// Interface para chamadas às Cloud Functions de contratos.
@@ -53,9 +54,12 @@ class ContractsFunctionsService implements IContractsFunctionsService {
   @override
   Future<String> addContract(Map<String, dynamic> payload) async {
     final result = await _functions.callFunction(_addContract, payload);
+    // Backend pode retornar 200 com { error: { code, message } } em vez de lançar
+    final callableError = CallableFunctionException.fromResponseMap(result);
+    if (callableError != null) throw callableError;
     final contractId = result['contractId'] as String?;
     if (contractId == null || contractId.isEmpty) {
-      throw Exception('Resposta da função addContract não contém contractId');
+      throw const ServerException('Resposta da função addContract não contém contractId');
     }
     return contractId;
   }
@@ -63,6 +67,8 @@ class ContractsFunctionsService implements IContractsFunctionsService {
   @override
   Future<bool> verifyContract(Map<String, dynamic> contractMap) async {
     final result = await _functions.callFunction(_verifyContract, contractMap);
+    final callableError = CallableFunctionException.fromResponseMap(result);
+    if (callableError != null) throw callableError;
     return result['acceptable'] as bool? ?? false;
   }
 

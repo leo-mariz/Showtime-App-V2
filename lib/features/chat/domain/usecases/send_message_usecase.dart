@@ -1,4 +1,5 @@
 import 'package:app/core/errors/failure.dart';
+import 'package:app/core/utils/chat_message_contact_validator.dart';
 import 'package:app/features/chat/domain/dtos/send_message_input_dto.dart';
 import 'package:app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:dartz/dartz.dart';
@@ -30,6 +31,13 @@ class SendMessageUseCase {
       );
     }
 
+    // Não permitir envio em chat encerrado
+    if (input.chatStatus == 'closed') {
+      return const Left(
+        ValidationFailure('Chat encerrado. Não é possível enviar mensagens.'),
+      );
+    }
+
     // Validar senderId
     if (senderId.isEmpty) {
       return const Left(
@@ -49,6 +57,13 @@ class SendMessageUseCase {
     if (trimmedText.length > 1000) {
       return const Left(
         ValidationFailure('Mensagem muito longa (máximo 1000 caracteres)'),
+      );
+    }
+
+    // Bloquear informações de contato (telefone, email, redes sociais, etc.)
+    if (containsDisallowedContactInfo(trimmedText)) {
+      return const Left(
+        ValidationFailure(kChatContactInfoValidationMessage),
       );
     }
 

@@ -1,3 +1,8 @@
+/// Antecedência mínima fixa do app para eventos no mesmo dia (1h30).
+/// Usada no explorar para não mostrar artista/conjunto quando, para "hoje",
+/// não houver pelo menos 1h30 de janela bookável à frente (alinhado à tela de request).
+const int sameDayMinimumLeadTimeMinutes = 90;
+
 /// Helper para filtragem por antecedência mínima de solicitação.
 ///
 /// Usado no explorar (artistas e conjuntos) para garantir que o dia

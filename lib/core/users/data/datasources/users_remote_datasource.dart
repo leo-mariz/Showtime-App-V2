@@ -1,8 +1,9 @@
+import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:app/core/users/domain/entities/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
 import 'package:app/core/users/domain/entities/user_entity.dart';
-import 'package:app/core/errors/error_handler.dart';
-import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Interface do DataSource remoto (Firestore)
@@ -168,7 +169,8 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
       
       if (snapshot.exists) {
         final userMap = snapshot.data() as Map<String, dynamic>;
-        return UserEntityMapper.fromMap(userMap);
+        final cleanedMap = convertFirestoreMapForMapper(userMap);
+        return UserEntityMapper.fromMap(cleanedMap);
       }
       
       return UserEntity(email: '');

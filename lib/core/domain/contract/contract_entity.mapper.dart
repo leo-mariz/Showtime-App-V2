@@ -20,6 +20,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       EventTypeEntityMapper.ensureInitialized();
       ContractStatusEnumMapper.ensureInitialized();
       RatingEntityMapper.ensureInitialized();
+      ShowRatingRequestedEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -186,36 +187,22 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$rateByArtist,
     opt: true,
   );
-  static bool? _$showRatingRequested(ContractEntity v) => v.showRatingRequested;
-  static const Field<ContractEntity, bool> _f$showRatingRequested = Field(
-    'showRatingRequested',
-    _$showRatingRequested,
+  static ShowRatingRequestedEntity? _$showRatingRequestedEntityByArtist(
+    ContractEntity v,
+  ) => v.showRatingRequestedEntityByArtist;
+  static const Field<ContractEntity, ShowRatingRequestedEntity>
+  _f$showRatingRequestedEntityByArtist = Field(
+    'showRatingRequestedEntityByArtist',
+    _$showRatingRequestedEntityByArtist,
     opt: true,
   );
-  static bool? _$showRatingSkipped(ContractEntity v) => v.showRatingSkipped;
-  static const Field<ContractEntity, bool> _f$showRatingSkipped = Field(
-    'showRatingSkipped',
-    _$showRatingSkipped,
-    opt: true,
-  );
-  static bool? _$showRatingCompleted(ContractEntity v) => v.showRatingCompleted;
-  static const Field<ContractEntity, bool> _f$showRatingCompleted = Field(
-    'showRatingCompleted',
-    _$showRatingCompleted,
-    opt: true,
-  );
-  static DateTime? _$showRatingRequestedAt(ContractEntity v) =>
-      v.showRatingRequestedAt;
-  static const Field<ContractEntity, DateTime> _f$showRatingRequestedAt = Field(
-    'showRatingRequestedAt',
-    _$showRatingRequestedAt,
-    opt: true,
-  );
-  static String? _$showRatingRequestedFor(ContractEntity v) =>
-      v.showRatingRequestedFor;
-  static const Field<ContractEntity, String> _f$showRatingRequestedFor = Field(
-    'showRatingRequestedFor',
-    _$showRatingRequestedFor,
+  static ShowRatingRequestedEntity? _$showRatingRequestedEntityByClient(
+    ContractEntity v,
+  ) => v.showRatingRequestedEntityByClient;
+  static const Field<ContractEntity, ShowRatingRequestedEntity>
+  _f$showRatingRequestedEntityByClient = Field(
+    'showRatingRequestedEntityByClient',
+    _$showRatingRequestedEntityByClient,
     opt: true,
   );
   static DateTime? _$createdAt(ContractEntity v) => v.createdAt;
@@ -285,6 +272,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     opt: true,
     def: false,
   );
+  static bool? _$analyseRefund(ContractEntity v) => v.analyseRefund;
+  static const Field<ContractEntity, bool> _f$analyseRefund = Field(
+    'analyseRefund',
+    _$analyseRefund,
+    opt: true,
+    def: false,
+  );
 
   @override
   final MappableFields<ContractEntity> fields = const {
@@ -316,11 +310,8 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #ratingsPublishedAt: _f$ratingsPublishedAt,
     #rateByClient: _f$rateByClient,
     #rateByArtist: _f$rateByArtist,
-    #showRatingRequested: _f$showRatingRequested,
-    #showRatingSkipped: _f$showRatingSkipped,
-    #showRatingCompleted: _f$showRatingCompleted,
-    #showRatingRequestedAt: _f$showRatingRequestedAt,
-    #showRatingRequestedFor: _f$showRatingRequestedFor,
+    #showRatingRequestedEntityByArtist: _f$showRatingRequestedEntityByArtist,
+    #showRatingRequestedEntityByClient: _f$showRatingRequestedEntityByClient,
     #createdAt: _f$createdAt,
     #acceptedAt: _f$acceptedAt,
     #rejectedAt: _f$rejectedAt,
@@ -332,6 +323,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #clientPhotoUrl: _f$clientPhotoUrl,
     #contractorPhotoUrl: _f$contractorPhotoUrl,
     #isPaying: _f$isPaying,
+    #analyseRefund: _f$analyseRefund,
   };
 
   static ContractEntity _instantiate(DecodingData data) {
@@ -364,11 +356,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       ratingsPublishedAt: data.dec(_f$ratingsPublishedAt),
       rateByClient: data.dec(_f$rateByClient),
       rateByArtist: data.dec(_f$rateByArtist),
-      showRatingRequested: data.dec(_f$showRatingRequested),
-      showRatingSkipped: data.dec(_f$showRatingSkipped),
-      showRatingCompleted: data.dec(_f$showRatingCompleted),
-      showRatingRequestedAt: data.dec(_f$showRatingRequestedAt),
-      showRatingRequestedFor: data.dec(_f$showRatingRequestedFor),
+      showRatingRequestedEntityByArtist: data.dec(
+        _f$showRatingRequestedEntityByArtist,
+      ),
+      showRatingRequestedEntityByClient: data.dec(
+        _f$showRatingRequestedEntityByClient,
+      ),
       createdAt: data.dec(_f$createdAt),
       acceptedAt: data.dec(_f$acceptedAt),
       rejectedAt: data.dec(_f$rejectedAt),
@@ -380,6 +373,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       clientPhotoUrl: data.dec(_f$clientPhotoUrl),
       contractorPhotoUrl: data.dec(_f$contractorPhotoUrl),
       isPaying: data.dec(_f$isPaying),
+      analyseRefund: data.dec(_f$analyseRefund),
     );
   }
 
@@ -456,6 +450,18 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
   EventTypeEntityCopyWith<$R, EventTypeEntity, EventTypeEntity>? get eventType;
   RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByClient;
   RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByArtist;
+  ShowRatingRequestedEntityCopyWith<
+    $R,
+    ShowRatingRequestedEntity,
+    ShowRatingRequestedEntity
+  >?
+  get showRatingRequestedEntityByArtist;
+  ShowRatingRequestedEntityCopyWith<
+    $R,
+    ShowRatingRequestedEntity,
+    ShowRatingRequestedEntity
+  >?
+  get showRatingRequestedEntityByClient;
   $R call({
     DateTime? date,
     String? time,
@@ -485,11 +491,8 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? ratingsPublishedAt,
     RatingEntity? rateByClient,
     RatingEntity? rateByArtist,
-    bool? showRatingRequested,
-    bool? showRatingSkipped,
-    bool? showRatingCompleted,
-    DateTime? showRatingRequestedAt,
-    String? showRatingRequestedFor,
+    ShowRatingRequestedEntity? showRatingRequestedEntityByArtist,
+    ShowRatingRequestedEntity? showRatingRequestedEntityByClient,
     DateTime? createdAt,
     DateTime? acceptedAt,
     DateTime? rejectedAt,
@@ -501,6 +504,7 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? clientPhotoUrl,
     String? contractorPhotoUrl,
     bool? isPaying,
+    bool? analyseRefund,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -537,6 +541,26 @@ class _ContractEntityCopyWithImpl<$R, $Out>
   RatingEntityCopyWith<$R, RatingEntity, RatingEntity>? get rateByArtist =>
       $value.rateByArtist?.copyWith.$chain((v) => call(rateByArtist: v));
   @override
+  ShowRatingRequestedEntityCopyWith<
+    $R,
+    ShowRatingRequestedEntity,
+    ShowRatingRequestedEntity
+  >?
+  get showRatingRequestedEntityByArtist => $value
+      .showRatingRequestedEntityByArtist
+      ?.copyWith
+      .$chain((v) => call(showRatingRequestedEntityByArtist: v));
+  @override
+  ShowRatingRequestedEntityCopyWith<
+    $R,
+    ShowRatingRequestedEntity,
+    ShowRatingRequestedEntity
+  >?
+  get showRatingRequestedEntityByClient => $value
+      .showRatingRequestedEntityByClient
+      ?.copyWith
+      .$chain((v) => call(showRatingRequestedEntityByClient: v));
+  @override
   $R call({
     DateTime? date,
     String? time,
@@ -566,11 +590,8 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? ratingsPublishedAt = $none,
     Object? rateByClient = $none,
     Object? rateByArtist = $none,
-    Object? showRatingRequested = $none,
-    Object? showRatingSkipped = $none,
-    Object? showRatingCompleted = $none,
-    Object? showRatingRequestedAt = $none,
-    Object? showRatingRequestedFor = $none,
+    Object? showRatingRequestedEntityByArtist = $none,
+    Object? showRatingRequestedEntityByClient = $none,
     Object? createdAt = $none,
     Object? acceptedAt = $none,
     Object? rejectedAt = $none,
@@ -582,6 +603,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? clientPhotoUrl = $none,
     Object? contractorPhotoUrl = $none,
     Object? isPaying = $none,
+    Object? analyseRefund = $none,
   }) => $apply(
     FieldCopyWithData({
       if (date != null) #date: date,
@@ -613,15 +635,10 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (ratingsPublishedAt != $none) #ratingsPublishedAt: ratingsPublishedAt,
       if (rateByClient != $none) #rateByClient: rateByClient,
       if (rateByArtist != $none) #rateByArtist: rateByArtist,
-      if (showRatingRequested != $none)
-        #showRatingRequested: showRatingRequested,
-      if (showRatingSkipped != $none) #showRatingSkipped: showRatingSkipped,
-      if (showRatingCompleted != $none)
-        #showRatingCompleted: showRatingCompleted,
-      if (showRatingRequestedAt != $none)
-        #showRatingRequestedAt: showRatingRequestedAt,
-      if (showRatingRequestedFor != $none)
-        #showRatingRequestedFor: showRatingRequestedFor,
+      if (showRatingRequestedEntityByArtist != $none)
+        #showRatingRequestedEntityByArtist: showRatingRequestedEntityByArtist,
+      if (showRatingRequestedEntityByClient != $none)
+        #showRatingRequestedEntityByClient: showRatingRequestedEntityByClient,
       if (createdAt != $none) #createdAt: createdAt,
       if (acceptedAt != $none) #acceptedAt: acceptedAt,
       if (rejectedAt != $none) #rejectedAt: rejectedAt,
@@ -633,6 +650,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (clientPhotoUrl != $none) #clientPhotoUrl: clientPhotoUrl,
       if (contractorPhotoUrl != $none) #contractorPhotoUrl: contractorPhotoUrl,
       if (isPaying != $none) #isPaying: isPaying,
+      if (analyseRefund != $none) #analyseRefund: analyseRefund,
     }),
   );
   @override
@@ -674,25 +692,13 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     ),
     rateByClient: data.get(#rateByClient, or: $value.rateByClient),
     rateByArtist: data.get(#rateByArtist, or: $value.rateByArtist),
-    showRatingRequested: data.get(
-      #showRatingRequested,
-      or: $value.showRatingRequested,
+    showRatingRequestedEntityByArtist: data.get(
+      #showRatingRequestedEntityByArtist,
+      or: $value.showRatingRequestedEntityByArtist,
     ),
-    showRatingSkipped: data.get(
-      #showRatingSkipped,
-      or: $value.showRatingSkipped,
-    ),
-    showRatingCompleted: data.get(
-      #showRatingCompleted,
-      or: $value.showRatingCompleted,
-    ),
-    showRatingRequestedAt: data.get(
-      #showRatingRequestedAt,
-      or: $value.showRatingRequestedAt,
-    ),
-    showRatingRequestedFor: data.get(
-      #showRatingRequestedFor,
-      or: $value.showRatingRequestedFor,
+    showRatingRequestedEntityByClient: data.get(
+      #showRatingRequestedEntityByClient,
+      or: $value.showRatingRequestedEntityByClient,
     ),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     acceptedAt: data.get(#acceptedAt, or: $value.acceptedAt),
@@ -708,6 +714,7 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       or: $value.contractorPhotoUrl,
     ),
     isPaying: data.get(#isPaying, or: $value.isPaying),
+    analyseRefund: data.get(#analyseRefund, or: $value.analyseRefund),
   );
 
   @override

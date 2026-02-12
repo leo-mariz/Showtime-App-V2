@@ -1,6 +1,7 @@
 import 'package:app/core/domain/ensemble/members/ensemble_member_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Interface do DataSource remoto para Members (integrantes).
@@ -68,8 +69,8 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       final docRef = await ref.add(data);
       await docRef.update({EnsembleMemberEntityKeys.id: docRef.id});
       final snapshot = await docRef.get();
-      final raw = snapshot.data() ?? {};
-      final map = _fromFirestoreMap(raw as Map<dynamic, dynamic>);
+      final raw = snapshot.data() as Map<String, dynamic>?;
+      final map = convertFirestoreMapForMapper(raw ?? <String, dynamic>{});
       map[EnsembleMemberEntityKeys.id] = docRef.id;
       _ensureEnsembleIdsList(map);
       return EnsembleMemberEntityMapper.fromMap(map);
@@ -100,7 +101,7 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       final snapshot = await docRef.get();
       if (!snapshot.exists) return null;
       final raw = snapshot.data()! as Map<String, dynamic>;
-      final map = _fromFirestoreMap(raw);
+      final map = convertFirestoreMapForMapper(raw);
       map[EnsembleMemberEntityKeys.id] = snapshot.id;
       _ensureEnsembleIdsList(map);
       return EnsembleMemberEntityMapper.fromMap(map);
@@ -123,7 +124,7 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
       if (snapshot.docs.isEmpty) return [];
       return snapshot.docs.map((doc) {
         final raw = doc.data() as Map<String, dynamic>;
-        final map = _fromFirestoreMap(raw);
+        final map = convertFirestoreMapForMapper(raw);
         map[EnsembleMemberEntityKeys.id] = doc.id;
         _ensureEnsembleIdsList(map);
         return EnsembleMemberEntityMapper.fromMap(map);
@@ -220,22 +221,6 @@ class MembersRemoteDataSourceImpl implements IMembersRemoteDataSource {
     if (artistId.isEmpty) {
       throw const ValidationException('artistId não pode ser vazio');
     }
-  }
-
-  static Map<String, dynamic> _fromFirestoreMap(Map<dynamic, dynamic>? data) {
-    if (data == null) return {};
-    final result = <String, dynamic>{};
-    for (final entry in data.entries) {
-      final value = entry.value;
-      if (value is Timestamp) {
-        result[entry.key] = value.toDate();
-      } else if (value is Map) {
-        result[entry.key] = _fromFirestoreMap(value);
-      } else {
-        result[entry.key] = value;
-      }
-    }
-    return result;
   }
 
   /// Garante que o map tenha 'ensembleIds' como List<String> para o mapper.

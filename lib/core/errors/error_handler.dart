@@ -113,10 +113,22 @@ class ErrorHandler {
           exception.message,
           originalError: exception.originalError,
         ),
+      CallableFunctionException(code: final code) => _callableToFailure(exception.message, code, exception.originalError),
       _ => UnknownFailure(
           exception.message,
           originalError: exception.originalError,
         ),
+    };
+  }
+
+  /// Mapeia erro de Callable Function (code + message do backend) para Failure.
+  static Failure _callableToFailure(String message, CallableErrorCode code, dynamic originalError) {
+    return switch (code) {
+      CallableErrorCode.unauthorized => AuthFailure(message, originalError: originalError),
+      CallableErrorCode.forbidden => PermissionFailure(message, originalError: originalError),
+      CallableErrorCode.validation => ValidationFailure(message, originalError: originalError),
+      CallableErrorCode.notFound => NotFoundFailure(message, originalError: originalError),
+      CallableErrorCode.server => ServerFailure(message, originalError: originalError),
     };
   }
 

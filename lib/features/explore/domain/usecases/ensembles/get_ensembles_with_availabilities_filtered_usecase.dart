@@ -6,7 +6,8 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/distance_helper.dart';
 import 'package:app/core/utils/geohash_helper.dart';
-import 'package:app/core/utils/minimum_earliness_helper.dart';
+import 'package:app/core/utils/minimum_earliness_helper.dart'
+    show respectsMinimumEarliness, sameDayMinimumLeadTimeMinutes, isSlotAtOrAfterCutoff;
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
@@ -137,6 +138,20 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
                 ensemble.professionalInfo?.requestMinimumEarliness,
               )) {
                 return null;
+              }
+
+              // Para o mesmo dia: conjunto deve ter pelo menos 1h30 de janela bookável à frente (evita mostrar no explorar quem não teria horário na request)
+              final now = DateTime.now();
+              final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+              final todayOnly = DateTime(now.year, now.month, now.day);
+              if (selectedDateOnly.isAtSameMomentAs(todayOnly)) {
+                final cutoff = now.add(Duration(minutes: sameDayMinimumLeadTimeMinutes));
+                final hasBookableSlotToday = availabilityDay.slots?.any(
+                  (slot) =>
+                      slot.status == TimeSlotStatusEnum.available &&
+                      isSlotAtOrAfterCutoff(availabilityDay.date, slot.startTime, cutoff),
+                ) ?? false;
+                if (!hasBookableSlotToday) return null;
               }
 
               bool isValid = true;

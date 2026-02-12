@@ -33,6 +33,15 @@ class RatingSection extends StatefulWidget {
   /// Recebe o rating (1-5) e o comentário (opcional)
   final void Function(int rating, String? comment)? onSubmit;
 
+  /// Se false, não exibe o rótulo "Avaliando: [nome]" (útil quando usado dentro de modal com header próprio).
+  final bool showHeaderLabel;
+
+  /// Se false, não exibe o botão "Avaliar" (útil quando o modal tem seus próprios botões).
+  final bool showSubmitButton;
+
+  /// Chamado quando o rating ou o comentário mudam (para o pai sincronizar estado, ex.: modal).
+  final void Function(int rating, String? comment)? onRatingChanged;
+
   const RatingSection({
     super.key,
     required this.personName,
@@ -42,6 +51,9 @@ class RatingSection extends StatefulWidget {
     this.existingRating,
     this.existingComment,
     this.onSubmit,
+    this.showHeaderLabel = true,
+    this.showSubmitButton = true,
+    this.onRatingChanged,
   });
 
   @override
@@ -127,26 +139,27 @@ class _RatingSectionState extends State<RatingSection> {
           ),
           DSSizedBoxSpacing.vertical(16),
 
-          // Nome da pessoa sendo avaliada
-          Text.rich(
-            TextSpan(
-              text: widget.hasAlreadyRated ? 'Avaliado: ' : 'Avaliando: ',
-              style: textTheme.bodyMedium?.copyWith(
-                color: onPrimary.withOpacity(0.8),
-                fontWeight: FontWeight.w500,
-              ),
-              children: [
-                TextSpan(
-                  text: widget.personName,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: onPrimary.withOpacity(0.8),
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Nome da pessoa sendo avaliada (pode ser ocultado em modal)
+          if (widget.showHeaderLabel)
+            Text.rich(
+              TextSpan(
+                text: widget.hasAlreadyRated ? 'Avaliado: ' : 'Avaliando: ',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: onPrimary.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
+                children: [
+                  TextSpan(
+                    text: widget.personName,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: onPrimary.withOpacity(0.8),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          DSSizedBoxSpacing.vertical(16),
+          if (widget.showHeaderLabel) DSSizedBoxSpacing.vertical(16),
 
           // Estrelas
           Center(
@@ -161,6 +174,12 @@ class _RatingSectionState extends State<RatingSection> {
                   onTap: isDisabled ? null : () {
                     setState(() {
                       _selectedRating = starIndex;
+                      widget.onRatingChanged?.call(
+                        _selectedRating,
+                        _commentController.text.trim().isEmpty
+                            ? null
+                            : _commentController.text.trim(),
+                      );
                     });
                   },
                   child: Padding(
@@ -206,13 +225,18 @@ class _RatingSectionState extends State<RatingSection> {
             controller: _commentController,
             labelText: 'Comentário (opcional)',
             hintText: 'Conte mais sobre sua experiência...',
-            onChanged: (value) {},
+            onChanged: (value) {
+              widget.onRatingChanged?.call(
+                _selectedRating,
+                value.trim().isEmpty ? null : value.trim(),
+              );
+            },
             readOnly: widget.isLoading || widget.hasAlreadyRated,
           ),
           DSSizedBoxSpacing.vertical(16),
 
-          // Botão (só aparece se ainda não foi avaliado)
-          if (!widget.hasAlreadyRated)
+          // Botão (só aparece se ainda não foi avaliado e showSubmitButton)
+          if (!widget.hasAlreadyRated && widget.showSubmitButton)
             Row(
               children: [
                 DSSizedBoxSpacing.horizontal(12),

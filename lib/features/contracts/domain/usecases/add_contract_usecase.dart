@@ -1,4 +1,5 @@
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
@@ -168,14 +169,16 @@ class AddContractUseCase {
 
       // Criar contrato via Cloud Function
       final contractUid = await contractsFunctions.addContract(payload);
+      
 
-      // Atualizar índice no client (sempre, mesmo se getContract falhar)
+      // Atualizar índice no client (sempre, mesmo se getContract falhar).
+      // Garantir status PENDING para que o índice incremente tab 0 (Em aberto) do artista, não tab 1.
       if (updateContractsIndexUseCase != null) {
         final getResult = await repository.getContract(contractUid);
         final toIndex = getResult.fold(
           (_) => contract.copyWith(uid: contractUid, statusChangedAt: DateTime.now()),
           (createdContract) => createdContract.copyWith(statusChangedAt: DateTime.now()),
-        );
+        ).copyWith(status: ContractStatusEnum.pending);
         await updateContractsIndexUseCase!.call(contract: toIndex);
       }
       return Right(contractUid);

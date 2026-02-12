@@ -1,4 +1,3 @@
-import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -85,25 +84,22 @@ class FirebaseFunctionsService implements IFirebaseFunctionsService {
         print('   Código: ${e.code}');
         print('   Mensagem: ${e.message}');
         print('   Detalhes: ${e.details}');
-        
-        // Mensagem específica para erro "not-found"
         if (e.code == 'not-found') {
-          print('');
           print('⚠️ [FirebaseFunctions] A função "$functionName" não foi encontrada.');
-          print('   Possíveis causas:');
-          print('   1. A função não foi implantada no Firebase');
-          print('   2. O nome da função está incorreto');
-          print('   3. A função está em uma região diferente');
-          print('   4. Você está usando emulador local mas não está configurado');
-          print('');
-          print('   Para verificar:');
-          print('   - Execute: firebase functions:list');
-          print('   - Verifique se a função está implantada');
-          print('   - Verifique a região da função no Firebase Console');
         }
       }
 
-      // Mensagem mais específica para erro "not-found"
+      // Erro estruturado do backend (error: { code, message }) → exceção tipada
+      final callableError = CallableFunctionException.tryParse(e);
+      if (callableError != null) {
+        throw CallableFunctionException(
+          callableError.message,
+          code: callableError.code,
+          originalError: e,
+          stackTrace: stackTrace,
+        );
+      }
+
       String errorMessage;
       if (e.code == 'not-found') {
         errorMessage = 'Função "$functionName" não encontrada. Verifique se a função foi implantada no Firebase e se o nome está correto.';
@@ -113,7 +109,7 @@ class FirebaseFunctionsService implements IFirebaseFunctionsService {
 
       throw ServerException(
         errorMessage,
-        statusCode: ErrorHandler.getStatusCode(e),
+        statusCode: null,
         originalError: e,
         stackTrace: stackTrace,
       );

@@ -4,6 +4,7 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 /// UseCase: Verificar se o usuário pode trocar para perfil de artista
 /// 
@@ -22,6 +23,9 @@ class SwitchToArtistUseCase {
 
   Future<Either<Failure, bool>> call() async {
     try {
+      if (kDebugMode) {
+        debugPrint('🔄 [SwitchToArtistUseCase] Iniciando verificação de perfil artista');
+      }
       // 1. Obter UID do usuário
       final uidResult = await getUserUidUseCase.call();
       final uid = uidResult.fold(
@@ -30,25 +34,36 @@ class SwitchToArtistUseCase {
       );
 
       if (uid == null || uid.isEmpty) {
+        if (kDebugMode) debugPrint('🔴 [SwitchToArtistUseCase] UID vazio ou nulo');
         return const Left(ValidationFailure('UID do usuário não encontrado'));
       }
 
+      if (kDebugMode) {
+        debugPrint('🔄 [SwitchToArtistUseCase] Buscando artista uid=$uid');
+      }
       // 2. Verificar se artista já existe
       final artistResult = await getArtistUseCase.call(uid);
 
       return artistResult.fold(
         (failure) {
-          // Se for NotFoundFailure, significa que não existe
-          // Se for outro tipo de erro, retornar o erro
+          if (kDebugMode) {
+            debugPrint('🔴 [SwitchToArtistUseCase] getArtist falhou: ${failure.runtimeType} - ${failure.message}');
+          }
           return Left(failure);
         },
         (artist) {
-          // Comparar com entidade vazia para verificar se existe
           final profileExists = artist != ArtistEntity() && artist.uid != null;
+          if (kDebugMode) {
+            debugPrint('🟢 [SwitchToArtistUseCase] getArtist ok, profileExists=$profileExists');
+          }
           return Right(profileExists);
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 [SwitchToArtistUseCase] Exceção: $e');
+        debugPrint('🔴 [SwitchToArtistUseCase] stackTrace: $stackTrace');
+      }
       return Left(ErrorHandler.handle(e));
     }
   }

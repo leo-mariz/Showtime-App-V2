@@ -82,6 +82,14 @@ class _RequestScreenState extends State<RequestScreen> {
   TimeSlot? _selectedSlot;
   double? _selectedPricePerHour;
 
+  int _getTotalExtraEnsembleMembers() {
+    if (widget.ensemble == null) {
+      return 0;
+    }
+    final members = widget.ensemble!.ensemble.members ?? [];
+    return members.where((m) => !m.isOwner).length;
+  }
+
   // Getters
   Duration get _minimumDuration => widget.artist.professionalInfo?.minimumShowDuration != null
       ? Duration(minutes: widget.artist.professionalInfo!.minimumShowDuration!)
@@ -671,7 +679,7 @@ class _RequestScreenState extends State<RequestScreen> {
 
     final isGroup = widget.ensemble != null;
     final ensemble = widget.ensemble;
-    final membersCount = ensemble?.ensemble.members?.length ?? 0 - 1;
+    final membersCount = _getTotalExtraEnsembleMembers();
     final nameGroup = ensemble != null
         ? '${ensemble.ownerArtist?.artistName ?? 'Conjunto'} + $membersCount'
         : null;
@@ -799,7 +807,7 @@ class _RequestScreenState extends State<RequestScreen> {
               // Cabeçalho: Solicitando para (artista ou conjunto)
               Text(
                 widget.ensemble != null
-                    ? 'Conjunto: ${widget.ensemble!.ownerArtist?.artistName ?? 'Conjunto'} + ${widget.ensemble!.ensemble.members?.length ?? 0}'
+                    ? 'Conjunto: ${widget.ensemble!.ownerArtist?.artistName ?? 'Conjunto'} + ${_getTotalExtraEnsembleMembers()}'
                     : 'Artista: ${widget.artist.artistName}',
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,

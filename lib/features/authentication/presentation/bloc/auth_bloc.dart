@@ -19,6 +19,7 @@ import 'package:app/features/profile/shared/domain/usecases/switch_to_artist_use
 import 'package:app/features/profile/shared/domain/usecases/switch_to_client_usecase.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -521,15 +522,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) {
+        if (kDebugMode) {
+          debugPrint('🔴 [AuthBloc] SwitchUserType failure: ${failure.runtimeType} - ${failure.message}');
+        }
         emit(SwitchUserTypeFailure(error: failure.message));
         emit(AuthInitial());
       },
       (profileExists) {
+        if (kDebugMode) {
+          debugPrint('🟢 [AuthBloc] SwitchUserType success, profileExists=$profileExists, switchToArtist=${event.switchToArtist}');
+        }
         if (profileExists) {
-          // Perfil já existe, trocar diretamente
           emit(SwitchUserTypeSuccess(isArtist: event.switchToArtist));
         } else {
-          // Perfil não existe, precisa criar
           emit(SwitchUserTypeNeedsCreation(switchToArtist: event.switchToArtist));
         }
         emit(AuthInitial());

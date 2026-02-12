@@ -19,6 +19,7 @@ import 'package:app/features/contracts/presentation/widgets/cancel_contract_dial
 import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_status_badge.dart';
 import 'package:app/features/contracts/presentation/widgets/navigation_options_modal.dart';
+import 'package:app/features/contracts/presentation/widgets/rating_modal.dart';
 import 'package:app/features/contracts/presentation/widgets/rating_section.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,9 @@ class ArtistEventDetailScreen extends StatefulWidget {
 
 class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
   late ContractEntity _contract;
-  
+  /// True enquanto o modal de avaliação do cliente está aberto (para fechá-lo ao receber resposta).
+  bool _isRatingModalOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -121,15 +124,51 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           context.showError(state.error);
         } else if (state is ConfirmShowSuccess) {
           context.showSuccess('Show confirmado com sucesso!');
-          // Voltar para a tela anterior e sinalizar que precisa recarregar
           if (mounted) {
-            context.router.pop(true);
+            final contract = _contract;
+            final contractUid = contract.uid;
+            final nameClient = contract.nameClient ?? 'Anfitrião';
+            final eventTypeName = contract.eventType?.name;
+            final date = contract.date;
+            final time = contract.time;
+            final bloc = context.read<ContractsBloc>();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              setState(() => _isRatingModalOpen = true);
+              RatingModal.show(
+                context: context,
+                personName: nameClient,
+                isRatingArtist: false,
+                eventTypeName: eventTypeName,
+                date: date,
+                time: time,
+                onAvaliar: (rating, comment) {
+                  if (contractUid != null && contractUid.isNotEmpty) {
+                    bloc.add(RateClientEvent(
+                      contractUid: contractUid,
+                      rating: rating.toDouble(),
+                      comment: comment,
+                    ));
+                  }
+                },
+                onAvaliarDepois: () {
+                  if (contractUid != null && contractUid.isNotEmpty) {
+                    bloc.add(SkipRatingClientEvent(contractUid: contractUid));
+                  }
+                },
+              ).then((_) {
+                if (mounted) {
+                  setState(() => _isRatingModalOpen = false);
+                  context.router.pop(true);
+                }
+              });
+            });
           }
         } else if (state is ConfirmShowFailure) {
           context.showError(state.error);
         } else if (state is RateClientSuccess) {
+          if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
           context.showSuccess('Avaliação enviada com sucesso!');
-          // Recarregar o contrato para atualizar a UI
           if (_contract.uid != null && _contract.uid!.isNotEmpty) {
             context.read<ContractsBloc>().add(
               GetContractEvent(contractUid: _contract.uid!),
@@ -137,6 +176,13 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
           }
           _handleRefresh();
         } else if (state is RateClientFailure) {
+          if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+          context.showError(state.error);
+        } else if (state is SkipRatingClientSuccess) {
+          if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+          _handleRefresh();
+        } else if (state is SkipRatingClientFailure) {
+          if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
           context.showError(state.error);
         } else if (state is GetContractSuccess) {
           // Atualizar o contrato local quando recarregado

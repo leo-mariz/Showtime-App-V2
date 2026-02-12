@@ -16,6 +16,7 @@ import 'package:app/features/contracts/presentation/bloc/pending_contracts_count
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_card.dart';
 import 'package:app/features/contracts/presentation/widgets/confirm_show_modal.dart';
+import 'package:app/features/contracts/presentation/widgets/rating_modal.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,6 +41,8 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
   int? _lastArtistTab2Total;
   /// Marcar a aba atual como vista ao abrir a tela (apenas uma vez).
   bool _didMarkInitialTabAsSeen = false;
+  /// True enquanto o modal de avaliação do cliente está aberto (para fechá-lo ao receber resposta).
+  bool _isRatingModalOpen = false;
 
   @override
   void initState() {
@@ -185,6 +188,19 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
             context.showSuccess('Show confirmado com sucesso!');
             _loadContracts(forceRefresh: true);
           } else if (state is ConfirmShowFailure) {
+            context.showError(state.error);
+          } else if (state is RateClientSuccess) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            context.showSuccess('Avaliação enviada com sucesso!');
+            _loadContracts(forceRefresh: true);
+          } else if (state is RateClientFailure) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            context.showError(state.error);
+          } else if (state is SkipRatingClientSuccess) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            _loadContracts(forceRefresh: true);
+          } else if (state is SkipRatingClientFailure) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
             context.showError(state.error);
           } else if (state is AcceptContractLoading) {
             // Não precisa fazer nada, o BlocBuilder vai atualizar
@@ -521,10 +537,42 @@ class _ArtistContractsScreenState extends State<ArtistContractsScreen>
       return;
     }
 
-    await ConfirmShowModal.show(
+    final codeResult = await ConfirmShowModal.show(
       context: context,
       contractUid: contract.uid!,
     );
+
+    if (!mounted) return;
+    if (codeResult != null) {
+      final contractUid = contract.uid!;
+      final nameClient = contract.nameClient ?? 'Anfitrião';
+      final eventTypeName = contract.eventType?.name;
+      final date = contract.date;
+      final time = contract.time;
+      final bloc = context.read<ContractsBloc>();
+
+      setState(() => _isRatingModalOpen = true);
+      RatingModal.show(
+        context: context,
+        personName: nameClient,
+        isRatingArtist: false,
+        eventTypeName: eventTypeName,
+        date: date,
+        time: time,
+        onAvaliar: (rating, comment) {
+          bloc.add(RateClientEvent(
+            contractUid: contractUid,
+            rating: rating.toDouble(),
+            comment: comment,
+          ));
+        },
+        onAvaliarDepois: () {
+          bloc.add(SkipRatingClientEvent(contractUid: contractUid));
+        },
+      ).then((_) {
+        if (mounted) setState(() => _isRatingModalOpen = false);
+      });
+    }
   }
 
   void _onAccept(ContractEntity contract) {

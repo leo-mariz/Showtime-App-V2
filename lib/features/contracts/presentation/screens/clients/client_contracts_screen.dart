@@ -16,6 +16,7 @@ import 'package:app/features/contracts/presentation/bloc/states/contracts_states
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 import 'package:app/features/contracts/presentation/widgets/contract_card.dart';
+import 'package:app/features/contracts/presentation/widgets/rating_modal.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,6 +44,11 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   int? _lastClientTab2Total;
   /// Marcar a aba atual como vista ao abrir a tela (apenas uma vez).
   bool _didMarkInitialTabAsSeen = false;
+
+  /// Contratos para os quais já mostramos o modal de avaliação nesta sessão (evita loop infinito).
+  final Set<String> _ratingModalShownForContractUids = {};
+  /// True enquanto o modal de avaliação está aberto (para fechá-lo ao receber resposta do bloc).
+  bool _isRatingModalOpen = false;
 
   @override
   void initState() {
@@ -102,6 +108,23 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// Retorna o primeiro contrato finalizado que ainda precisa de avaliação do cliente
+  /// (showRatingRequestedEntityByClient com requested true, não pulado, não concluído, e ainda sem rateByClient).
+  ContractEntity? _findContractNeedingClientRating(List<ContractEntity> contracts) {
+    for (final c in contracts) {
+      if (c.status != ContractStatusEnum.completed) continue;
+      if (c.rateByClient != null) continue; // Já avaliado pelo cliente
+      final byClient = c.showRatingRequestedEntityByClient;
+      if (byClient == null) continue;
+      if (byClient.showRatingRequested &&
+          !byClient.showRatingSkipped &&
+          !byClient.showRatingCompleted) {
+        return c;
+      }
+    }
+    return null;
   }
 
   List<ContractEntity> get _filteredContracts {
@@ -185,9 +208,50 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
           if (state is GetContractsByClientSuccess) {
             setState(() {
               _allContracts = state.contracts;
-              
               _isLoading = false;
             });
+            final contractToRate = _findContractNeedingClientRating(state.contracts);
+            if (contractToRate != null && mounted) {
+              final contractUidToShow = contractToRate.uid;
+              if (contractUidToShow != null &&
+                  contractUidToShow.isNotEmpty &&
+                  !_ratingModalShownForContractUids.contains(contractUidToShow)) {
+                _ratingModalShownForContractUids.add(contractUidToShow);
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  final contract = contractToRate;
+                  final contractUid = contract.uid;
+                  if (contractUid == null || contractUid.isEmpty) return;
+                  final nameArtist = contract.nameArtist ?? contract.nameGroup ?? 'Artista';
+                  final eventTypeName = contract.eventType?.name;
+                  final date = contract.date;
+                  final time = contract.time;
+                  final bloc = context.read<ContractsBloc>();
+
+                  setState(() => _isRatingModalOpen = true);
+                  RatingModal.show(
+                    context: context,
+                    personName: nameArtist,
+                    isRatingArtist: true,
+                    eventTypeName: eventTypeName,
+                    date: date,
+                    time: time,
+                    onAvaliar: (rating, comment) {
+                      bloc.add(RateArtistEvent(
+                        contractUid: contractUid,
+                        rating: rating.toDouble(),
+                        comment: comment,
+                      ));
+                    },
+                    onAvaliarDepois: () {
+                      bloc.add(SkipRatingArtistEvent(contractUid: contractUid));
+                    },
+                  ).then((_) {
+                    if (mounted) setState(() => _isRatingModalOpen = false);
+                  });
+                });
+              }
+            }
           } else if (state is GetContractsByClientFailure) {
             context.showError(state.error);
             setState(() {
@@ -228,6 +292,19 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
             setState(() {
               _isVerifyingPayment = true;
             });
+          } else if (state is RateArtistSuccess) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            context.showSuccess('Avaliação enviada com sucesso!');
+            _loadContracts(forceRefresh: true);
+          } else if (state is RateArtistFailure) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            context.showError(state.error);
+          } else if (state is SkipRatingArtistSuccess) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            _loadContracts(forceRefresh: true);
+          } else if (state is SkipRatingArtistFailure) {
+            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+            context.showError(state.error);
           }
             },
           ),

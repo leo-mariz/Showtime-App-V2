@@ -28,11 +28,17 @@ abstract class IContractsFunctionsService {
   /// Cliente avalia o artista.
   Future<void> rateArtist(String contractUid, double rating, {String? comment, bool skippedRating = false});
 
+  /// Cliente avalia o grupo (espelho de rateArtist).
+  Future<void> rateGroup(String contractUid, double rating, {String? comment, bool skippedRating = false});
+
   /// Artista avalia o cliente.
   Future<void> rateClient(String contractUid, double rating, {String? comment, bool skippedRating = false});
 
-  /// Cliente pula a avaliação do artista.
+  /// Cliente pula a avaliação do artista ("Avaliar depois").
   Future<void> skipRatingArtist(String contractUid);
+
+  /// Artista pula a avaliação do cliente ("Avaliar depois").
+  Future<void> skipRatingClient(String contractUid);
 }
 
 /// Implementação que delega às callable functions.
@@ -48,8 +54,10 @@ class ContractsFunctionsService implements IContractsFunctionsService {
   static const String _cancelContract = 'cancelContract';
   static const String _confirmShow = 'confirmShow';
   static const String _rateArtist = 'rateArtist';
+  static const String _rateGroup = 'rateGroup';
   static const String _rateClient = 'rateClient';
   static const String _skipRatingArtist = 'skipRatingArtist';
+  static const String _skipRatingClient = 'skipRatingClient';
 
   @override
   Future<String> addContract(Map<String, dynamic> payload) async {
@@ -114,6 +122,17 @@ class ContractsFunctionsService implements IContractsFunctionsService {
   }
 
   @override
+  Future<void> rateGroup(String contractUid, double rating, {String? comment, bool skippedRating = false}) async {
+    final payload = <String, dynamic>{
+      'contractUid': contractUid,
+      'rating': rating,
+      'skippedRating': skippedRating,
+    };
+    if (comment != null && comment.isNotEmpty) payload['comment'] = comment;
+    await _functions.callFunction(_rateGroup, payload);
+  }
+
+  @override
   Future<void> rateClient(String contractUid, double rating, {String? comment, bool skippedRating = false}) async {
     final payload = <String, dynamic>{
       'contractUid': contractUid,
@@ -127,5 +146,10 @@ class ContractsFunctionsService implements IContractsFunctionsService {
   @override
   Future<void> skipRatingArtist(String contractUid) async {
     await _functions.callFunction(_skipRatingArtist, {'contractUid': contractUid});
+  }
+
+  @override
+  Future<void> skipRatingClient(String contractUid) async {
+    await _functions.callFunction(_skipRatingClient, {'contractUid': contractUid});
   }
 }

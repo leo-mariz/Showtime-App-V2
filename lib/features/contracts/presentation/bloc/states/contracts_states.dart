@@ -293,6 +293,21 @@ class SkipRatingArtistFailure extends ContractsState {
   List<Object?> get props => [error];
 }
 
+// ==================== SKIP RATING CLIENT STATES ====================
+
+class SkipRatingClientLoading extends ContractsState {}
+
+class SkipRatingClientSuccess extends ContractsState {}
+
+class SkipRatingClientFailure extends ContractsState {
+  final String error;
+
+  SkipRatingClientFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== RATE CLIENT STATES ====================
 
 class RateClientLoading extends ContractsState {}

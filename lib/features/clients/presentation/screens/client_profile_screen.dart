@@ -347,13 +347,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                                 router.push(const LoginSecurityRoute());
                                               },
                                             ),
-                                            ProfileOptionTile(
-                                              icon: Icons.star,
-                                              title: 'Preferências',
-                                              showDivider: true,
-                                              onTap: () {},
-                                              isLast: false,
-                                            ),
+                                            // ProfileOptionTile(
+                                            //   icon: Icons.star,
+                                            //   title: 'Preferências',
+                                            //   showDivider: true,
+                                            //   onTap: () {},
+                                            //   isLast: false,
+                                            // ),
                                             ProfileOptionTile(
                                               icon: Icons.support_agent,
                                               title: 'Atendimento',

@@ -3,6 +3,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
+import 'package:app/core/shared/widgets/confirmation_dialog.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
 import 'package:app/features/artists/artists/presentation/widgets/forms/support_form.dart';
 import 'package:app/features/support/presentation/bloc/events/support_events.dart';
@@ -56,22 +57,15 @@ class _SupportPageState extends State<SupportPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Sucesso', style: Theme.of(context).textTheme.titleMedium),
-          content: Text(
-            'Enviamos sua mensagem à nossa equipe!\n\n'
+        return ConfirmationDialog(
+          title: 'Sucesso',
+          message: 'Enviamos sua mensagem à nossa equipe!\n\n'
             'Você também receberá um e-mail de confirmação que conterá o número de protocolo: $protocolNumber',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                _clearFormFields();
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
+          confirmText: 'OK',
+          onConfirm: () {
+            _clearFormFields();
+            Navigator.of(context).pop();
+          },
         );
       },
     );

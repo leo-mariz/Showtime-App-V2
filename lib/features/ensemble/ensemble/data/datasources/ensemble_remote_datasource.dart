@@ -4,6 +4,22 @@ import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Normaliza tipos numéricos vindos do Firestore (num pode vir como int ou double).
+Map<String, dynamic> _normalizeEnsembleMap(Map<String, dynamic> map) {
+  final normalized = Map<String, dynamic>.from(map);
+  if (normalized[EnsembleEntityKeys.rating] != null &&
+      normalized[EnsembleEntityKeys.rating] is num) {
+    normalized[EnsembleEntityKeys.rating] =
+        (normalized[EnsembleEntityKeys.rating] as num).toDouble();
+  }
+  if (normalized[EnsembleEntityKeys.rateCount] != null &&
+      normalized[EnsembleEntityKeys.rateCount] is num) {
+    normalized[EnsembleEntityKeys.rateCount] =
+        (normalized[EnsembleEntityKeys.rateCount] as num).toInt();
+  }
+  return normalized;
+}
+
 /// Interface do DataSource remoto para Ensembles (conjuntos).
 ///
 /// Operações CRUD no Firestore. Coleção top-level: Ensembles/{ensembleId}.
@@ -50,7 +66,8 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       if (raw == null) {
         throw const ServerException('Conjunto criado mas dados não encontrados');
       }
-      final map = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
+      final converted = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
+      final map = _normalizeEnsembleMap(converted);
       map[EnsembleEntityKeys.id] = docRef.id;
       return EnsembleEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
@@ -75,7 +92,8 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       final snapshot = await docRef.get();
       if (!snapshot.exists) return null;
       final raw = snapshot.data()! as Map<String, dynamic>;
-      final map = convertFirestoreMapForMapper(raw);
+      final converted = convertFirestoreMapForMapper(raw);
+      final map = _normalizeEnsembleMap(converted);
       map[EnsembleEntityKeys.id] = snapshot.id;
       return EnsembleEntityMapper.fromMap(map);
     } on FirebaseException catch (e, stackTrace) {
@@ -102,7 +120,8 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       if (snapshot.docs.isEmpty) return [];
       return snapshot.docs.map((doc) {
         final raw = doc.data();
-        final map = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
+        final converted = convertFirestoreMapForMapper(Map<String, dynamic>.from(raw as Map<dynamic, dynamic>));
+        final map = _normalizeEnsembleMap(converted);
         map[EnsembleEntityKeys.id] = doc.id;
         return EnsembleEntityMapper.fromMap(map);
       }).toList();

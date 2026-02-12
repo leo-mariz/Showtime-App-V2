@@ -102,6 +102,7 @@ import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart'
 import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/skip_rating_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:app/features/contracts/presentation/bloc/contract_paying_cubit.dart';
@@ -756,7 +757,8 @@ ContractsBloc _createContractsBloc(
   final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
   final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, contractRepository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final skipRatingArtistUseCase = SkipRatingArtistUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final skipRatingArtistUseCase = SkipRatingArtistUseCase(contractsFunctions: contractsFunctionsService);
+  final skipRatingClientUseCase = SkipRatingClientUseCase(contractsFunctions: contractsFunctionsService);
   final rateClientUseCase = RateClientUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
 
 
@@ -780,6 +782,7 @@ ContractsBloc _createContractsBloc(
     getUserUidUseCase: getUserUidUseCase,
     rateArtistUseCase: rateArtistUseCase,
     skipRatingArtistUseCase: skipRatingArtistUseCase,
+    skipRatingClientUseCase: skipRatingClientUseCase,
     rateClientUseCase: rateClientUseCase,
   );
 }

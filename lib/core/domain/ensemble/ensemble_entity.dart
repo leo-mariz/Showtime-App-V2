@@ -81,6 +81,9 @@ abstract class EnsembleEntityKeys {
   static const String incompleteSections = 'incompleteSections';
   static const String createdAt = 'createdAt';
   static const String updatedAt = 'updatedAt';
+  static const String rating = 'rating';
+  static const String rateCount = 'rateCount';
+  static const String contractsRatedUids = 'contractsRatedUids';
 }
 
 extension EnsembleEntityReference on EnsembleEntity {

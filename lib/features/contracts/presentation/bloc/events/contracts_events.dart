@@ -204,6 +204,19 @@ class SkipRatingArtistEvent extends ContractsEvent {
   List<Object?> get props => [contractUid];
 }
 
+// ==================== SKIP RATING CLIENT EVENTS ====================
+
+class SkipRatingClientEvent extends ContractsEvent {
+  final String contractUid;
+
+  SkipRatingClientEvent({
+    required this.contractUid,
+  });
+
+  @override
+  List<Object?> get props => [contractUid];
+}
+
 // ==================== RATE CLIENT EVENTS ====================
 
 class RateClientEvent extends ContractsEvent {

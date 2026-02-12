@@ -8,6 +8,7 @@ import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart
 import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/skip_rating_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/get_contracts_by_group_usecase.dart';
@@ -47,6 +48,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
   final ConfirmShowUseCase confirmShowUseCase;
   final RateArtistUseCase rateArtistUseCase;
   final SkipRatingArtistUseCase skipRatingArtistUseCase;
+  final SkipRatingClientUseCase skipRatingClientUseCase;
   final RateClientUseCase rateClientUseCase;
 
   ContractsBloc({
@@ -68,6 +70,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     required this.confirmShowUseCase,
     required this.rateArtistUseCase,
     required this.skipRatingArtistUseCase,
+    required this.skipRatingClientUseCase,
     required this.rateClientUseCase,
   }) : super(ContractsInitial()) {
     on<GetContractEvent>(_onGetContractEvent);
@@ -85,6 +88,7 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
     on<ConfirmShowEvent>(_onConfirmShowEvent);
     on<RateArtistEvent>(_onRateArtistEvent);
     on<SkipRatingArtistEvent>(_onSkipRatingArtistEvent);
+    on<SkipRatingClientEvent>(_onSkipRatingClientEvent);
     on<RateClientEvent>(_onRateClientEvent);
     on<ResetContractsEvent>(_onResetContractsEvent);
   }
@@ -462,6 +466,30 @@ class ContractsBloc extends Bloc<ContractsEvent, ContractsState> {
       },
       (_) {
         emit(SkipRatingArtistSuccess());
+        emit(ContractsInitial());
+      },
+    );
+  }
+
+  // ==================== SKIP RATING CLIENT ====================
+
+  Future<void> _onSkipRatingClientEvent(
+    SkipRatingClientEvent event,
+    Emitter<ContractsState> emit,
+  ) async {
+    emit(SkipRatingClientLoading());
+
+    final result = await skipRatingClientUseCase.call(
+      contractUid: event.contractUid,
+    );
+
+    result.fold(
+      (failure) {
+        emit(SkipRatingClientFailure(error: failure.message));
+        emit(ContractsInitial());
+      },
+      (_) {
+        emit(SkipRatingClientSuccess());
         emit(ContractsInitial());
       },
     );

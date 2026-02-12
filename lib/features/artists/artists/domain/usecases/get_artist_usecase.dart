@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/artists/artists/domain/repositories/artists_repository.dart';
 import 'package:dartz/dartz.dart';
+import 'package:flutter/foundation.dart';
 
 /// UseCase: Buscar dados do artista
 /// 
@@ -31,7 +32,11 @@ class GetArtistUseCase {
         (failure) => Left(failure),
         (artist) => Right(artist),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 [GetArtistUseCase] Exceção ao buscar artista uid=$uid: $e');
+        debugPrint('🔴 [GetArtistUseCase] Tipo: ${e.runtimeType}, stackTrace: $stackTrace');
+      }
       return Left(ErrorHandler.handle(e));
     }
   }

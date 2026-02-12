@@ -61,9 +61,9 @@ class ContractEntity with ContractEntityMappable {
   final RatingEntity? rateByClient;
   final RatingEntity? rateByArtist;
   
-  // Controle de avaliação do show (futuro)
-  final ShowRatingRequestedEntity? showRatingRequestedEntityByArtist;      // Dialog de avaliação foi mostrado?
-  final ShowRatingRequestedEntity? showRatingRequestedEntityByClient;       // Usuário pulou a avaliação?
+  // Controle de avaliação do show (showRatingRequestedFor: byArtist = "ARTISTS", byClient = "CLIENTS")
+  final ShowRatingRequestedEntity? showRatingRequestedEntityByArtist;   // Avaliação requisitada para o artista fazer (rate client)
+  final ShowRatingRequestedEntity? showRatingRequestedEntityByClient;   // Avaliação requisitada para o cliente fazer (rate artist/group)
   
   // Timestamps
   final DateTime? createdAt;               // Data de criação da solicitação

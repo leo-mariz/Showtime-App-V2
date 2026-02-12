@@ -3,6 +3,7 @@ import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface do DataSource remoto (Firestore)
 /// Responsável APENAS por operações CRUD no Firestore
@@ -64,22 +65,53 @@ class ArtistsRemoteDataSourceImpl implements IArtistsRemoteDataSource {
     }
   }
 
+  /// Normaliza tipos vindos do Firestore para o formato esperado pelo mapper:
+  /// - Timestamp -> millisecondsSinceEpoch (DateTime?)
+  /// - rating/rateCount num -> double/int
+  static Map<String, dynamic> _normalizeArtistMap(Map<String, dynamic> map) {
+    final normalized = Map<String, dynamic>.from(map);
+    if (normalized['dateRegistered'] != null && normalized['dateRegistered'] is Timestamp) {
+      normalized['dateRegistered'] = (normalized['dateRegistered'] as Timestamp).millisecondsSinceEpoch;
+    }
+    if (normalized['rating'] != null && normalized['rating'] is num) {
+      normalized['rating'] = (normalized['rating'] as num).toDouble();
+    }
+    if (normalized['rateCount'] != null && normalized['rateCount'] is num) {
+      normalized['rateCount'] = (normalized['rateCount'] as num).toInt();
+    }
+    return normalized;
+  }
+
   @override
   Future<ArtistEntity> getArtist(String uid) async {
     try {
+      if (kDebugMode) {
+        debugPrint('📥 [ArtistsRemoteDataSource] getArtist(uid: $uid)');
+      }
       final documentReference = ArtistEntityReference.firebaseUidReference(
         firestore,
         uid,
       );
       final snapshot = await documentReference.get();
-      
+
       if (snapshot.exists) {
-        final artistMap = snapshot.data() as Map<String, dynamic>;
+        final rawMap = snapshot.data() as Map<String, dynamic>;
+        final artistMap = _normalizeArtistMap(rawMap);
+        if (kDebugMode) {
+          debugPrint('📥 [ArtistsRemoteDataSource] Documento encontrado, campos: ${artistMap.keys.join(", ")}');
+        }
         return ArtistEntityMapper.fromMap(artistMap);
       }
-      
+
+      if (kDebugMode) {
+        debugPrint('📥 [ArtistsRemoteDataSource] Documento não existe, retornando entidade vazia');
+      }
       return ArtistEntity();
     } on FirebaseException catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 [ArtistsRemoteDataSource] FirebaseException: ${e.code} - ${e.message}');
+        debugPrint('🔴 [ArtistsRemoteDataSource] stackTrace: $stackTrace');
+      }
       throw ServerException(
         'Erro ao buscar dados do artista no Firestore: ${e.message}',
         statusCode: ErrorHandler.getStatusCode(e),
@@ -87,6 +119,11 @@ class ArtistsRemoteDataSourceImpl implements IArtistsRemoteDataSource {
         stackTrace: stackTrace,
       );
     } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 [ArtistsRemoteDataSource] Erro inesperado ao buscar dados do artista: $e');
+        debugPrint('🔴 [ArtistsRemoteDataSource] Tipo do erro: ${e.runtimeType}');
+        debugPrint('🔴 [ArtistsRemoteDataSource] stackTrace: $stackTrace');
+      }
       throw ServerException(
         'Erro inesperado ao buscar dados do artista',
         originalError: e,

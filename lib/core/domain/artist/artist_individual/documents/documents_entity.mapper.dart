@@ -64,6 +64,12 @@ class DocumentsEntityMapper extends ClassMapperBase<DocumentsEntity> {
     _$idNumber,
     opt: true,
   );
+  static DateTime? _$updatedAt(DocumentsEntity v) => v.updatedAt;
+  static const Field<DocumentsEntity, DateTime> _f$updatedAt = Field(
+    'updatedAt',
+    _$updatedAt,
+    opt: true,
+  );
 
   @override
   final MappableFields<DocumentsEntity> fields = const {
@@ -74,6 +80,7 @@ class DocumentsEntityMapper extends ClassMapperBase<DocumentsEntity> {
     #observation: _f$observation,
     #address: _f$address,
     #idNumber: _f$idNumber,
+    #updatedAt: _f$updatedAt,
   };
 
   static DocumentsEntity _instantiate(DecodingData data) {
@@ -85,6 +92,7 @@ class DocumentsEntityMapper extends ClassMapperBase<DocumentsEntity> {
       observation: data.dec(_f$observation),
       address: data.dec(_f$address),
       idNumber: data.dec(_f$idNumber),
+      updatedAt: data.dec(_f$updatedAt),
     );
   }
 
@@ -160,6 +168,7 @@ abstract class DocumentsEntityCopyWith<$R, $In extends DocumentsEntity, $Out>
     String? observation,
     AddressInfoEntity? address,
     String? idNumber,
+    DateTime? updatedAt,
   });
   DocumentsEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -186,6 +195,7 @@ class _DocumentsEntityCopyWithImpl<$R, $Out>
     Object? observation = $none,
     Object? address = $none,
     Object? idNumber = $none,
+    Object? updatedAt = $none,
   }) => $apply(
     FieldCopyWithData({
       if (documentType != null) #documentType: documentType,
@@ -195,6 +205,7 @@ class _DocumentsEntityCopyWithImpl<$R, $Out>
       if (observation != $none) #observation: observation,
       if (address != $none) #address: address,
       if (idNumber != $none) #idNumber: idNumber,
+      if (updatedAt != $none) #updatedAt: updatedAt,
     }),
   );
   @override
@@ -206,6 +217,7 @@ class _DocumentsEntityCopyWithImpl<$R, $Out>
     observation: data.get(#observation, or: $value.observation),
     address: data.get(#address, or: $value.address),
     idNumber: data.get(#idNumber, or: $value.idNumber),
+    updatedAt: data.get(#updatedAt, or: $value.updatedAt),
   );
 
   @override

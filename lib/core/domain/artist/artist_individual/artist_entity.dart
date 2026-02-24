@@ -14,6 +14,9 @@ class ArtistEntity with ArtistEntityMappable {
   Map<String, String>? presentationMedias;
   final AddressInfoEntity? residenceAddress;
   List<String>? groupsUids;
+  /// Seções incompletas: chave = tipo (camelCase), valor = itens faltando (hoje [chave]).
+  /// Chaves: documents, bankAccount, profilePicture, availability, professionalInfo, presentations.
+  /// Use [ArtistIncompleteInfoType.fromString(key)] para label e categoria no admin.
   Map<String, List<String>>? incompleteSections;
   bool? approved;
   bool? isActive;

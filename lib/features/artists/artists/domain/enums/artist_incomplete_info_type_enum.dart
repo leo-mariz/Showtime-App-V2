@@ -6,6 +6,11 @@
 /// 
 /// Os valores deste enum correspondem aos valores do `ArtistInfoType`, mas são
 /// serializados como strings no Firestore.
+///
+/// **Uso no painel admin:** para cada chave em `artist.incompleteSections`:
+/// 1. Use [ArtistIncompleteInfoType.fromString(key)] para obter o enum.
+/// 2. Use [displayName] para o label e [categoryForAdmin] para agrupar (Aprovação / Visibilidade / Opcional).
+/// 3. Use [adminDescription] para texto explicativo na interface.
 enum ArtistIncompleteInfoType {
   documents,
   bankAccount,
@@ -13,6 +18,39 @@ enum ArtistIncompleteInfoType {
   availability,
   professionalInfo,
   presentations;
+
+  /// Categoria para exibição no admin: Aprovação, Visibilidade ou Opcional
+  String get categoryForAdmin {
+    switch (this) {
+      case ArtistIncompleteInfoType.documents:
+      case ArtistIncompleteInfoType.bankAccount:
+        return 'Aprovação';
+      case ArtistIncompleteInfoType.profilePicture:
+      case ArtistIncompleteInfoType.availability:
+        return 'Visibilidade';
+      case ArtistIncompleteInfoType.professionalInfo:
+      case ArtistIncompleteInfoType.presentations:
+        return 'Opcional';
+    }
+  }
+
+  /// Descrição curta para o painel admin (o que falta / impacto)
+  String get adminDescription {
+    switch (this) {
+      case ArtistIncompleteInfoType.documents:
+        return 'Documentos obrigatórios: identidade, comprovante de residência, currículo e antecedentes.';
+      case ArtistIncompleteInfoType.bankAccount:
+        return 'PIX ou conta bancária (agência, conta e tipo) para pagamentos.';
+      case ArtistIncompleteInfoType.profilePicture:
+        return 'Foto de perfil não enviada.';
+      case ArtistIncompleteInfoType.availability:
+        return 'Nenhuma disponibilidade ativa com data futura.';
+      case ArtistIncompleteInfoType.professionalInfo:
+        return 'Dados profissionais incompletos: especialidade, duração mínima, tempo de preparação e bio.';
+      case ArtistIncompleteInfoType.presentations:
+        return 'Falta vídeo de apresentação para cada talento cadastrado.';
+    }
+  }
 
   /// Retorna o nome amigável do tipo de informação
   String get displayName {

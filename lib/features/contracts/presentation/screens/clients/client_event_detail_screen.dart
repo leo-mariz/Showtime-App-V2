@@ -333,6 +333,42 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               ),
             ),
 
+            // Cancelado com reembolso em análise
+            if (_status == ContractStatusEnum.canceled &&
+                (_contract.analyseRefund == true)) ...[
+              DSSizedBoxSpacing.vertical(24),
+              Container(
+                padding: EdgeInsets.all(DSSize.width(16)),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(DSSize.width(12)),
+                  border: Border.all(
+                    color: colorScheme.tertiary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.pending_actions_rounded,
+                      size: DSSize.width(24),
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                    DSSizedBoxSpacing.horizontal(12),
+                    Expanded(
+                      child: Text(
+                        'Reembolso em análise.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             DSSizedBoxSpacing.vertical(24),
 
             // Seção de Avaliação (quando completado)

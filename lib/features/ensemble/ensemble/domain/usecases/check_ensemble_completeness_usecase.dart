@@ -21,7 +21,7 @@ import 'package:flutter/foundation.dart';
 /// 5. Dados profissionais do conjunto preenchidos.
 ///
 /// **Administrador:**
-/// 6. Administrador tem todos os documentos enviados (feature artists).
+/// 6. Administrador tem documentos obrigatórios enviados (identidade, residência, antecedentes; currículo não é obrigatório).
 /// 7. Administrador tem PIX ou conta bancária preenchidos.
 class CheckEnsembleCompletenessUseCase {
   const CheckEnsembleCompletenessUseCase();
@@ -146,12 +146,12 @@ class CheckEnsembleCompletenessUseCase {
     );
   }
 
-  /// 6. Administrador tem todos os documentos enviados (submitted ou approved).
+  /// 6. Administrador tem documentos obrigatórios enviados (submitted ou approved):
+  /// identidade, comprovante de residência e certidão de antecedentes. Currículo não é obrigatório.
   EnsembleInfoStatusEntity _checkOwnerDocuments(List<DocumentsEntity> ownerDocuments) {
     const requiredTypes = <DocumentTypeEnum>[
       DocumentTypeEnum.identity,
       DocumentTypeEnum.residence,
-      DocumentTypeEnum.curriculum,
       DocumentTypeEnum.antecedents,
     ];
     for (final docType in requiredTypes) {

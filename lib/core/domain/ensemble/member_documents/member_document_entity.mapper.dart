@@ -54,6 +54,30 @@ class MemberDocumentEntityMapper extends ClassMapperBase<MemberDocumentEntity> {
     _$url,
     opt: true,
   );
+  static String? _$documentOption(MemberDocumentEntity v) => v.documentOption;
+  static const Field<MemberDocumentEntity, String> _f$documentOption = Field(
+    'documentOption',
+    _$documentOption,
+    opt: true,
+  );
+  static String? _$observation(MemberDocumentEntity v) => v.observation;
+  static const Field<MemberDocumentEntity, String> _f$observation = Field(
+    'observation',
+    _$observation,
+    opt: true,
+  );
+  static String? _$idNumber(MemberDocumentEntity v) => v.idNumber;
+  static const Field<MemberDocumentEntity, String> _f$idNumber = Field(
+    'idNumber',
+    _$idNumber,
+    opt: true,
+  );
+  static DateTime? _$updatedAt(MemberDocumentEntity v) => v.updatedAt;
+  static const Field<MemberDocumentEntity, DateTime> _f$updatedAt = Field(
+    'updatedAt',
+    _$updatedAt,
+    opt: true,
+  );
 
   @override
   final MappableFields<MemberDocumentEntity> fields = const {
@@ -63,6 +87,10 @@ class MemberDocumentEntityMapper extends ClassMapperBase<MemberDocumentEntity> {
     #documentType: _f$documentType,
     #status: _f$status,
     #url: _f$url,
+    #documentOption: _f$documentOption,
+    #observation: _f$observation,
+    #idNumber: _f$idNumber,
+    #updatedAt: _f$updatedAt,
   };
 
   static MemberDocumentEntity _instantiate(DecodingData data) {
@@ -73,6 +101,10 @@ class MemberDocumentEntityMapper extends ClassMapperBase<MemberDocumentEntity> {
       documentType: data.dec(_f$documentType),
       status: data.dec(_f$status),
       url: data.dec(_f$url),
+      documentOption: data.dec(_f$documentOption),
+      observation: data.dec(_f$observation),
+      idNumber: data.dec(_f$idNumber),
+      updatedAt: data.dec(_f$updatedAt),
     );
   }
 
@@ -153,6 +185,10 @@ abstract class MemberDocumentEntityCopyWith<
     String? documentType,
     int? status,
     String? url,
+    String? documentOption,
+    String? observation,
+    String? idNumber,
+    DateTime? updatedAt,
   });
   MemberDocumentEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -175,6 +211,10 @@ class _MemberDocumentEntityCopyWithImpl<$R, $Out>
     String? documentType,
     int? status,
     Object? url = $none,
+    Object? documentOption = $none,
+    Object? observation = $none,
+    Object? idNumber = $none,
+    Object? updatedAt = $none,
   }) => $apply(
     FieldCopyWithData({
       if (artistId != null) #artistId: artistId,
@@ -183,6 +223,10 @@ class _MemberDocumentEntityCopyWithImpl<$R, $Out>
       if (documentType != null) #documentType: documentType,
       if (status != null) #status: status,
       if (url != $none) #url: url,
+      if (documentOption != $none) #documentOption: documentOption,
+      if (observation != $none) #observation: observation,
+      if (idNumber != $none) #idNumber: idNumber,
+      if (updatedAt != $none) #updatedAt: updatedAt,
     }),
   );
   @override
@@ -193,6 +237,10 @@ class _MemberDocumentEntityCopyWithImpl<$R, $Out>
     documentType: data.get(#documentType, or: $value.documentType),
     status: data.get(#status, or: $value.status),
     url: data.get(#url, or: $value.url),
+    documentOption: data.get(#documentOption, or: $value.documentOption),
+    observation: data.get(#observation, or: $value.observation),
+    idNumber: data.get(#idNumber, or: $value.idNumber),
+    updatedAt: data.get(#updatedAt, or: $value.updatedAt),
   );
 
   @override

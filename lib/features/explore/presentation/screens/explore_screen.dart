@@ -26,6 +26,9 @@ import 'package:app/features/explore/presentation/widgets/explore_order_modal.da
 import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
 import 'package:app/core/shared/widgets/custom_icon_button.dart';
+import 'package:app/features/app_lists/presentation/bloc/app_lists_bloc.dart';
+import 'package:app/features/app_lists/presentation/bloc/events/app_lists_events.dart';
+import 'package:app/features/app_lists/presentation/bloc/states/app_lists_states.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
 import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
@@ -194,9 +197,16 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
-  /// Abre o modal de filtros. Lista de talentos pode vir do AppListsBloc depois.
+  /// Abre o modal de filtros. Lista de talentos vem do AppListsBloc.
   Future<void> _showFilterModal() async {
-    final talentOptions = <String>[]; // TODO: obter do AppListsBloc (GetTalentsEvent)
+    context.read<AppListsBloc>().add(GetTalentsEvent());
+    final appListsState = context.read<AppListsBloc>().state;
+    final talentOptions = appListsState is GetTalentsSuccess
+        ? appListsState.talents
+            .where((e) => e.isActive)
+            .map((e) => e.name)
+            .toList()
+        : <String>[];
     final result = await ExploreFilterModal.show(
       context: context,
       talentOptions: talentOptions,

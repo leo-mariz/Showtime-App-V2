@@ -215,7 +215,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Mensagem user-friendly já vem do failure
       (failure) => emit(ForgotPasswordFailure(error: failure.message)),
       (_) {
-        emit(ForgotPasswordSuccess(message: "Email enviado com sucesso"));
+        emit(ForgotPasswordSuccess(message: "Caso o email informado esteja cadastrado, você receberá um link para redefinir sua senha por lá."));
         emit(AuthInitial());
       },
     );

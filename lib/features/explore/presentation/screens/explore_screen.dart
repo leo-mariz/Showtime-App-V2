@@ -21,9 +21,11 @@ import 'package:app/features/explore/presentation/widgets/address_selector.dart'
 import 'package:app/features/explore/presentation/widgets/artist_card.dart';
 import 'package:app/features/explore/presentation/widgets/date_selector.dart';
 import 'package:app/features/explore/presentation/widgets/ensemble_card.dart';
-// ignore: unused_import
+import 'package:app/features/explore/presentation/widgets/explore_filter_modal.dart';
+import 'package:app/features/explore/presentation/widgets/explore_order_modal.dart';
 import 'package:app/features/explore/presentation/widgets/filter_button.dart';
 import 'package:app/features/explore/presentation/widgets/search_bar_widget.dart';
+import 'package:app/core/shared/widgets/custom_icon_button.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/favorites/presentation/bloc/favorites_bloc.dart';
 import 'package:app/features/favorites/presentation/bloc/states/favorites_states.dart';
@@ -64,6 +66,11 @@ class _ExploreScreenState extends State<ExploreScreen>
   Set<String> _favoriteEnsembleIds = {};
   String _searchQuery = '';
   Timer? _searchDebounceTimer;
+
+  /// Filtros aplicados (talento, preço, duração) — para persistir ao mudar data/busca.
+  ExploreFilterValues _filterValues = const ExploreFilterValues();
+  /// Ordenação selecionada.
+  ExploreOrderOption? _orderOption;
 
   @override
   bool get wantKeepAlive => true;
@@ -175,6 +182,34 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
+  /// Abre o modal de ordenação e atualiza o estado ao aplicar.
+  Future<void> _showOrderModal() async {
+    final result = await ExploreOrderModal.show(
+      context: context,
+      initialOrder: _orderOption,
+    );
+    if (result != null && mounted) {
+      setState(() => _orderOption = result);
+      // TODO: repassar _orderOption ao bloc quando a ordenação for implementada
+    }
+  }
+
+  /// Abre o modal de filtros. Lista de talentos pode vir do AppListsBloc depois.
+  Future<void> _showFilterModal() async {
+    final talentOptions = <String>[]; // TODO: obter do AppListsBloc (GetTalentsEvent)
+    final result = await ExploreFilterModal.show(
+      context: context,
+      talentOptions: talentOptions,
+      initialValues: _filterValues,
+      suggestedMinPrice: null, // TODO: vir do metadata do explore quando implementado
+      suggestedMaxPrice: null,
+    );
+    if (result != null && mounted) {
+      setState(() => _filterValues = result);
+      // TODO: repassar _filterValues ao bloc quando os filtros forem implementados
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -222,7 +257,7 @@ class _ExploreScreenState extends State<ExploreScreen>
           DSSizedBoxSpacing.vertical(8),
           
           if (_selectedAddress != null) ...[
-            // Search Bar + Filtro (acima das abas: mesma busca em Individual e Conjuntos)
+            // Search Bar + Ordenar + Filtros (acima das abas)
             Row(
               children: [
                 Expanded(
@@ -233,6 +268,19 @@ class _ExploreScreenState extends State<ExploreScreen>
                     onClear: _onSearchCleared,
                   ),
                 ),
+                DSSizedBoxSpacing.horizontal(8),
+                CustomIconButton(
+                  icon: Icons.sort_rounded,
+                  onPressed: _showOrderModal,
+                  color: colorScheme.onPrimaryContainer,
+                  size: DSSize.width(20),
+                  backgroundColor: colorScheme.surface,
+                  padding: EdgeInsets.all(DSSize.width(12)),
+                  sizeBackground: Size(DSSize.width(30), DSSize.height(30)),
+                  showNotification: false,
+                ),
+                DSSizedBoxSpacing.horizontal(4),
+                FilterButton(onPressed: _showFilterModal),
               ],
             ),
             DSSizedBoxSpacing.vertical(12),

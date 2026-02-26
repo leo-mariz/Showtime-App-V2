@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/authentication/domain/usecases/get_user_uid.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/clear_contracts_cache_usecase.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter/foundation.dart';
 
@@ -15,10 +16,12 @@ import 'package:flutter/foundation.dart';
 class SwitchToArtistUseCase {
   final GetUserUidUseCase getUserUidUseCase;
   final GetArtistUseCase getArtistUseCase;
+  final ClearContractsCacheUseCase clearContractsCacheUseCase;
 
   SwitchToArtistUseCase({
     required this.getUserUidUseCase,
     required this.getArtistUseCase,
+    required this.clearContractsCacheUseCase,
   });
 
   Future<Either<Failure, bool>> call() async {
@@ -26,6 +29,10 @@ class SwitchToArtistUseCase {
       if (kDebugMode) {
         debugPrint('🔄 [SwitchToArtistUseCase] Iniciando verificação de perfil artista');
       }
+
+      // 0. Limpar cache de contratos
+      await clearContractsCacheUseCase.call();
+
       // 1. Obter UID do usuário
       final uidResult = await getUserUidUseCase.call();
       final uid = uidResult.fold(

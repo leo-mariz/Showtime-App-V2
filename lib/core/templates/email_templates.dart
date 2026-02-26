@@ -33,34 +33,5 @@ class EmailTemplates {
     ''';
   }
 
-  static String buildRegisteredArtistInviteEmail({
-    required String invitedArtistName,
-    required String groupName,
-    required String inviterName,
-  }) {
-    return '''
-    Olá, $invitedArtistName!
-    Você foi convidado para participar do conjunto "$groupName" por $inviterName no Showtime! 🎶
-    Para aceitar ou recusar o convite, acesse sua área de artista no aplicativo.
-    Caso tenha dúvidas, nossa equipe está à disposição.
-    Atenciosamente,
-    Equipe Showtime
-    ''';
-  }
-
-  static String buildUnregisteredArtistInviteEmail({
-    required String groupName,
-    required String inviterName,
-  }) {
-    return '''
-    Olá!
-    Você foi convidado para participar do conjunto "$groupName" por $inviterName no Showtime! 🎶
-    Para participar, basta se cadastrar na nossa plataforma através do link abaixo:
-    Link para o aplicativo: https://showtime.app.br/
-    Após o cadastro, você poderá aceitar o convite e fazer parte do grupo.
-    Qualquer dúvida, estamos à disposição.
-    Atenciosamente,
-    Equipe Showtime
-    ''';
-  }
+  
 }

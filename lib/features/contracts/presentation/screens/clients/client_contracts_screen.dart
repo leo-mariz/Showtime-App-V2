@@ -200,112 +200,112 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
           ),
           BlocListener<ContractsBloc, ContractsState>(
             listener: (context, state) {
-          if (state is GetContractsByClientLoading) {
-            setState(() {
-              _isLoading = true;
-            });
-          }
-          if (state is GetContractsByClientSuccess) {
-            setState(() {
-              _allContracts = state.contracts;
-              _isLoading = false;
-            });
-            final contractToRate = _findContractNeedingClientRating(state.contracts);
-            if (contractToRate != null && mounted) {
-              final contractUidToShow = contractToRate.uid;
-              if (contractUidToShow != null &&
-                  contractUidToShow.isNotEmpty &&
-                  !_ratingModalShownForContractUids.contains(contractUidToShow)) {
-                _ratingModalShownForContractUids.add(contractUidToShow);
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  final contract = contractToRate;
-                  final contractUid = contract.uid;
-                  if (contractUid == null || contractUid.isEmpty) return;
-                  final nameArtist = contract.nameArtist ?? contract.nameGroup ?? 'Artista';
-                  final eventTypeName = contract.eventType?.name;
-                  final date = contract.date;
-                  final time = contract.time;
-                  final bloc = context.read<ContractsBloc>();
-
-                  setState(() => _isRatingModalOpen = true);
-                  RatingModal.show(
-                    context: context,
-                    personName: nameArtist,
-                    isRatingArtist: true,
-                    eventTypeName: eventTypeName,
-                    date: date,
-                    time: time,
-                    onAvaliar: (rating, comment) {
-                      bloc.add(RateArtistEvent(
-                        contractUid: contractUid,
-                        rating: rating.toDouble(),
-                        comment: comment,
-                      ));
-                    },
-                    onAvaliarDepois: () {
-                      bloc.add(SkipRatingArtistEvent(contractUid: contractUid));
-                    },
-                  ).then((_) {
-                    if (mounted) setState(() => _isRatingModalOpen = false);
-                  });
+              if (state is GetContractsByClientLoading) {
+                setState(() {
+                  _isLoading = true;
                 });
               }
-            }
-          } else if (state is GetContractsByClientFailure) {
-            context.showError(state.error);
-            setState(() {
-              _isLoading = false;
-            });
-          } else if (state is MakePaymentSuccess) {
-            _lastMakePaymentContractUid = null;
-            // Recarregar contratos após abrir checkout (isPaying já está no cubit local)
-            _loadContracts(forceRefresh: true);
-          } else if (state is MakePaymentFailure) {
-            context.showError(state.error);
-            if (_lastMakePaymentContractUid != null) {
-              context.read<ContractPayingCubit>().removeOpening(_lastMakePaymentContractUid!);
-              _lastMakePaymentContractUid = null;
-            }
-            _loadContracts(forceRefresh: true);
-          } else if (state is CancelContractSuccess) {
-            context.showSuccess('Contrato cancelado com sucesso!');
-            // Recarregar contratos após cancelamento
-            _loadContracts();
-          } else if (state is CancelContractFailure) {
-            context.showError(state.error);
-          } else if (state is VerifyPaymentSuccess) {
-            context.showSuccess('O pagamento foi identificado com sucesso!');
-            setState(() {
-              _isVerifyingPayment = false;
-            });
-            // Recarregar contratos após verificar pagamento
-            _loadContracts();
-          } else if (state is VerifyPaymentFailure) {
-            context.showError(state.error);
-            setState(() {
-              _isVerifyingPayment = false;
-            });
-            // Recarregar contratos após verificar pagamento
-            _loadContracts(forceRefresh: true);
-          } else if (state is VerifyPaymentLoading) {
-            setState(() {
-              _isVerifyingPayment = true;
-            });
-          } else if (state is RateArtistSuccess) {
-            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
-            context.showSuccess('Avaliação enviada com sucesso!');
-            _loadContracts(forceRefresh: true);
-          } else if (state is RateArtistFailure) {
-            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
-            context.showError(state.error);
-          } else if (state is SkipRatingArtistSuccess) {
-            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
-            _loadContracts(forceRefresh: true);
-          } else if (state is SkipRatingArtistFailure) {
-            if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
-            context.showError(state.error);
-          }
+              if (state is GetContractsByClientSuccess) {
+                setState(() {
+                  _allContracts = state.contracts;
+                  _isLoading = false;
+                });
+                final contractToRate = _findContractNeedingClientRating(state.contracts);
+                if (contractToRate != null && mounted) {
+                  final contractUidToShow = contractToRate.uid;
+                  if (contractUidToShow != null &&
+                      contractUidToShow.isNotEmpty &&
+                      !_ratingModalShownForContractUids.contains(contractUidToShow)) {
+                    _ratingModalShownForContractUids.add(contractUidToShow);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      final contract = contractToRate;
+                      final contractUid = contract.uid;
+                      if (contractUid == null || contractUid.isEmpty) return;
+                      final nameArtist = contract.nameArtist ?? contract.nameGroup ?? 'Artista';
+                      final eventTypeName = contract.eventType?.name;
+                      final date = contract.date;
+                      final time = contract.time;
+                      final bloc = context.read<ContractsBloc>();
+
+                      setState(() => _isRatingModalOpen = true);
+                      RatingModal.show(
+                        context: context,
+                        personName: nameArtist,
+                        isRatingArtist: true,
+                        eventTypeName: eventTypeName,
+                        date: date,
+                        time: time,
+                        onAvaliar: (rating, comment) {
+                          bloc.add(RateArtistEvent(
+                            contractUid: contractUid,
+                            rating: rating.toDouble(),
+                            comment: comment,
+                          ));
+                        },
+                        onAvaliarDepois: () {
+                          bloc.add(SkipRatingArtistEvent(contractUid: contractUid));
+                        },
+                      ).then((_) {
+                        if (mounted) setState(() => _isRatingModalOpen = false);
+                      });
+                    });
+                  }
+                }
+              } else if (state is GetContractsByClientFailure) {
+                context.showError(state.error);
+                setState(() {
+                  _isLoading = false;
+                });
+              } else if (state is MakePaymentSuccess) {
+                _lastMakePaymentContractUid = null;
+                // Recarregar contratos após abrir checkout (isPaying já está no cubit local)
+                _loadContracts(forceRefresh: true);
+              } else if (state is MakePaymentFailure) {
+                context.showError(state.error);
+                if (_lastMakePaymentContractUid != null) {
+                  context.read<ContractPayingCubit>().removeOpening(_lastMakePaymentContractUid!);
+                  _lastMakePaymentContractUid = null;
+                }
+                _loadContracts(forceRefresh: true);
+              } else if (state is CancelContractSuccess) {
+                context.showSuccess('Contrato cancelado com sucesso!');
+                // Recarregar contratos após cancelamento
+                _loadContracts();
+              } else if (state is CancelContractFailure) {
+                context.showError(state.error);
+              } else if (state is VerifyPaymentSuccess) {
+                context.showSuccess('O pagamento foi identificado com sucesso!');
+                setState(() {
+                  _isVerifyingPayment = false;
+                });
+                // Recarregar contratos após verificar pagamento
+                _loadContracts();
+              } else if (state is VerifyPaymentFailure) {
+                context.showError(state.error);
+                setState(() {
+                  _isVerifyingPayment = false;
+                });
+                // Recarregar contratos após verificar pagamento
+                _loadContracts(forceRefresh: true);
+              } else if (state is VerifyPaymentLoading) {
+                setState(() {
+                  _isVerifyingPayment = true;
+                });
+              } else if (state is RateArtistSuccess) {
+                if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+                context.showSuccess('Avaliação enviada com sucesso!');
+                _loadContracts(forceRefresh: true);
+              } else if (state is RateArtistFailure) {
+                if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+                context.showError(state.error);
+              } else if (state is SkipRatingArtistSuccess) {
+                if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+                _loadContracts(forceRefresh: true);
+              } else if (state is SkipRatingArtistFailure) {
+                if (_isRatingModalOpen && mounted) Navigator.of(context).pop();
+                context.showError(state.error);
+              }
             },
           ),
         ],

@@ -524,6 +524,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (failure) {
         if (kDebugMode) {
           debugPrint('🔴 [AuthBloc] SwitchUserType failure: ${failure.runtimeType} - ${failure.message}');
+          if (failure is domain.ServerFailure && failure.originalError != null) {
+            debugPrint('🔴 [AuthBloc] ServerFailure.originalError: ${failure.originalError}');
+          }
         }
         emit(SwitchUserTypeFailure(error: failure.message));
         emit(AuthInitial());

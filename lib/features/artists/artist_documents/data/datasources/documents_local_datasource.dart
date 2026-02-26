@@ -6,6 +6,7 @@ import 'package:app/core/services/auto_cache_service.dart';
 /// Responsável APENAS por operações de cache
 /// 
 /// REGRAS:
+/// - Se algum documento tiver status = 1 (enviado/em análise), invalida o cache automaticamente
 /// - Lança [CacheException] em caso de erro
 /// - NÃO faz validações de negócio
 abstract class IDocumentsLocalDataSource {
@@ -41,6 +42,11 @@ class DocumentsLocalDataSourceImpl implements IDocumentsLocalDataSource {
     return '${DocumentsEntityReference.cachedKey()}_$artistId';
   }
 
+  /// Invalida cache se algum documento estiver com status = 1 (enviado/em análise).
+  bool _shouldInvalidateDueToStatus(List<DocumentsEntity> documents) {
+    return documents.any((d) => d.status == 1);
+  }
+
   @override
   Future<List<DocumentsEntity>> getCachedDocuments(String artistId) async {
     try {
@@ -51,17 +57,16 @@ class DocumentsLocalDataSourceImpl implements IDocumentsLocalDataSource {
       final cacheKey = _getCacheKey(artistId);
       final cachedData = await autoCacheService.getCachedDataString(cacheKey);
       
-      // Verificar se dados não são vazios
-      if (cachedData.isEmpty) {
-        return [];
-      }
+      if (cachedData.isEmpty) return [];
 
       List<DocumentsEntity> documentsList = [];
       for (var entry in cachedData.entries) {
+        if (entry.value is! Map<String, dynamic>) continue;
         final documentMap = entry.value as Map<String, dynamic>;
         final documentEntity = DocumentsEntityMapper.fromMap(documentMap);
         documentsList.add(documentEntity);
       }
+      if (_shouldInvalidateDueToStatus(documentsList)) return [];
       return documentsList;
     } catch (e, stackTrace) {
       if (e is CacheException) rethrow;
@@ -126,6 +131,9 @@ class DocumentsLocalDataSourceImpl implements IDocumentsLocalDataSource {
       
       final documentMap = cachedData[documentType] as Map<String, dynamic>;
       final documentEntity = DocumentsEntityMapper.fromMap(documentMap);
+      if (documentEntity.status == 1) {
+        throw CacheException('Cache inválido (documento em análise): $documentType');
+      }
       return documentEntity;
     } catch (e, stackTrace) {
       if (e is CacheException) rethrow;
@@ -149,7 +157,6 @@ class DocumentsLocalDataSourceImpl implements IDocumentsLocalDataSource {
       }
       
       final cacheKey = _getCacheKey(artistId);
-      // Busca cache existente para não sobrescrever outros documentos
       final existingCache = await autoCacheService.getCachedDataString(cacheKey);
       final documentMap = document.toMap();
       existingCache[document.documentType] = documentMap;

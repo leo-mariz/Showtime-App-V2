@@ -61,6 +61,9 @@ abstract class IChatLocalDataSource {
   /// Limpa cache de chats de um usuário
   Future<void> clearUserChatsCache(String userId);
 
+  /// Limpa todo o cache de chat relacionado a um usuário (lista de chats + contador de não lidas).
+  Future<void> clearChatsCache(String userId);
+
   /// Limpa todo o cache de chat
   Future<void> clearAllCache();
 }
@@ -356,6 +359,22 @@ class ChatLocalDataSourceImpl implements IChatLocalDataSource {
     } catch (e) {
       if (kDebugMode) {
         print('Erro ao limpar cache de chats do usuário: $e');
+      }
+    }
+  }
+
+  @override
+  Future<void> clearChatsCache(String userId) async {
+    try {
+      final userChatsKey = ChatEntityReference.cachedUserChatsKey(userId);
+      final unreadKey = UserChatInfoEntityReference.unreadCountCacheKey(userId);
+      await Future.wait([
+        autoCache.deleteCachedDataString(userChatsKey),
+        autoCache.deleteCachedDataString(unreadKey),
+      ]);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao limpar cache de chats: $e');
       }
     }
   }

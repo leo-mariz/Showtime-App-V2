@@ -340,10 +340,10 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               Container(
                 padding: EdgeInsets.all(DSSize.width(16)),
                 decoration: BoxDecoration(
-                  color: colorScheme.tertiaryContainer.withOpacity(0.3),
+                  color: colorScheme.onTertiaryContainer,
                   borderRadius: BorderRadius.circular(DSSize.width(12)),
                   border: Border.all(
-                    color: colorScheme.tertiary.withOpacity(0.3),
+                    color: colorScheme.onTertiaryContainer,
                     width: 1,
                   ),
                 ),
@@ -352,14 +352,14 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                     Icon(
                       Icons.pending_actions_rounded,
                       size: DSSize.width(24),
-                      color: colorScheme.onTertiaryContainer,
+                      color: colorScheme.onPrimary,
                     ),
                     DSSizedBoxSpacing.horizontal(12),
                     Expanded(
                       child: Text(
                         'Reembolso em análise.',
                         style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onTertiaryContainer,
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -372,7 +372,7 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
             DSSizedBoxSpacing.vertical(24),
 
             // Seção de Avaliação (quando completado)
-            if (_status == ContractStatusEnum.completed) ...[
+            if (_status == ContractStatusEnum.completed || _status == ContractStatusEnum.rated) ...[
               _buildSectionTitle('Avaliação', textTheme, onPrimary),
               DSSizedBoxSpacing.vertical(12),
               BlocBuilder<ContractsBloc, ContractsState>(

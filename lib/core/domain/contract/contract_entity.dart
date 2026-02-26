@@ -109,6 +109,8 @@ class ContractEntity with ContractEntityMappable {
   /// Data em que a contestação foi aberta.
   final DateTime? contestedAt;
 
+  final String? contestedReason;
+
   ContractEntity({
     required this.date,
     required this.time,
@@ -160,6 +162,7 @@ class ContractEntity with ContractEntityMappable {
     this.contested,
     this.contestedBy,
     this.contestedAt,
+    this.contestedReason,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Validações de negócio
@@ -289,6 +292,7 @@ extension ContractEntityReference on ContractEntity {
     'contested',
     'contestedBy',
     'contestedAt',
+    'contestedReason',
   ];
 }
 

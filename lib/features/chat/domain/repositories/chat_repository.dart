@@ -144,4 +144,9 @@ abstract class IChatRepository {
   /// 
   /// Retorna Stream<int> que emite o total de mensagens não lidas
   Stream<int> getUnreadCountStream(String userId);
+
+  // ==================== CACHE ====================
+
+  /// Limpa o cache local de chats do usuário (lista de chats + contador de não lidas).
+  Future<Either<Failure, void>> clearChatsCache(String userId);
 }

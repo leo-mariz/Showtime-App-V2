@@ -248,4 +248,16 @@ class ChatRepositoryImpl implements IChatRepository {
       return count;
     });
   }
+
+  // ==================== CACHE ====================
+
+  @override
+  Future<Either<Failure, void>> clearChatsCache(String userId) async {
+    try {
+      await localDataSource.clearChatsCache(userId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }

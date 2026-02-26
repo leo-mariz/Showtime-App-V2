@@ -594,7 +594,7 @@ class ContractCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(DSSize.width(12)),
                   decoration: BoxDecoration(
-                    color: colorScheme.tertiaryContainer.withOpacity(0.4),
+                    color: colorScheme.onTertiaryContainer,
                     borderRadius: BorderRadius.circular(DSSize.width(8)),
                     border: Border.all(
                       color: colorScheme.tertiary.withOpacity(0.3),
@@ -606,14 +606,14 @@ class ContractCard extends StatelessWidget {
                       Icon(
                         Icons.pending_actions_rounded,
                         size: DSSize.width(20),
-                        color: colorScheme.onTertiaryContainer,
+                        color: colorScheme.onPrimary,
                       ),
                       DSSizedBoxSpacing.horizontal(10),
                       Expanded(
                         child: Text(
                           'Reembolso em análise.',
                           style: textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onTertiaryContainer,
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

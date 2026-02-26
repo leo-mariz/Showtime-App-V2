@@ -38,6 +38,11 @@ class LoginUseCase {
 
   Future<Either<Failure, void>> call(UserEntity user) async {
     try {
+
+
+      // 0. Limpar cache de autenticação
+      await authRepository.clearCache();
+
       final email = user.email;
       final password = user.password;
       final isArtist = user.isArtist ?? false;

@@ -316,6 +316,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),
+                                        rating: client?.rating,
+                                        rateCount: client?.rateCount,
                                       )
                                     else
                                       // Fallback: mostrar skeleton se dados não estiverem prontos

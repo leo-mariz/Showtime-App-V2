@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:app/core/services/firebase_functions_service.dart';
+import 'package:app/features/contracts/domain/usecases/clear_contracts_cache_usecase.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:app/core/users/data/datasources/users_local_datasource.dart';
 import 'package:app/core/users/data/datasources/users_remote_datasource.dart';
@@ -266,7 +267,6 @@ import 'package:app/features/app_lists/domain/usecases/get_support_subjects_usec
 import 'package:app/features/support/presentation/bloc/support_bloc.dart';
 import 'package:app/features/support/data/datasources/support_remote_datasource.dart';
 import 'package:app/features/support/data/repositories/support_repository_impl.dart';
-import 'package:app/features/support/data/services/support_email_service_impl.dart';
 import 'package:app/features/support/domain/repositories/support_repository.dart';
 import 'package:app/features/support/domain/usecases/send_support_message_usecase.dart';
 import 'package:app/core/services/mail_services.dart';
@@ -282,7 +282,8 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
                           IArtistsRepository artistsRepository, 
                           IClientsRepository clientsRepository,
                           SaveBankAccountUseCase saveBankAccountUseCase,
-                          SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase) {
+                          SyncArtistCompletenessIfChangedUseCase syncArtistCompletenessIfChangedUseCase,
+                          IContractRepository contractRepository) {
 
   // 5. Criar UseCases
   final loginUseCase = LoginUseCase(
@@ -301,6 +302,7 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
   final registerEmailPasswordUseCase = RegisterEmailPasswordUseCase(
     usersRepository: usersRepository,
     authServices: authServices,
+    authRepository: authRepository,
   );
   final sendWelcomeEmailUsecase = SendWelcomeEmailUsecase();
   final registerOnboardingUseCase = RegisterOnboardingUseCase(
@@ -374,13 +376,17 @@ AuthBloc _createAuthBloc(IAuthServices authServices,
   final getArtistUseCase = GetArtistUseCase(repository: artistsRepository);
   final getClientUseCase = GetClientUseCase(repository: clientsRepository);
 
+  final clearContractsCacheUseCase = ClearContractsCacheUseCase(repository: contractRepository, getUserUidUseCase: getUserUidUseCase);
+
   final switchToArtistUseCase = SwitchToArtistUseCase(
     getUserUidUseCase: getUserUidUseCase,
     getArtistUseCase: getArtistUseCase,
+    clearContractsCacheUseCase: clearContractsCacheUseCase,
   );
   final switchToClientUseCase = SwitchToClientUseCase(
     getUserUidUseCase: getUserUidUseCase,
     getClientUseCase: getClientUseCase,
+    clearContractsCacheUseCase: clearContractsCacheUseCase,
   );
 
   // 6. Criar e retornar AuthBloc
@@ -965,8 +971,12 @@ AppListsBloc _createAppListsBloc(
 SupportBloc _createSupportBloc(
   ISupportRepository supportRepository,
   GetUserUidUseCase getUserUidUseCase,
+  MailService mailService,
 ) {
-  final sendSupportMessageUseCase = SendSupportMessageUseCase(repository: supportRepository);
+  final sendSupportMessageUseCase = SendSupportMessageUseCase(
+    repository: supportRepository,
+    mailService: mailService,
+  );
   return SupportBloc(
     sendSupportMessageUseCase: sendSupportMessageUseCase,
     getUserUidUseCase: getUserUidUseCase,
@@ -1149,6 +1159,7 @@ Future <void> main() async {
   final firebaseFunctionsService = getIt<IFirebaseFunctionsService>();
   final contractsFunctionsService = getIt<IContractsFunctionsService>();
   final mercadoPagoService = getIt<MercadoPagoService>();
+  final mailService = getIt<MailService>();
 
   final appRouter = AppRouter();
 
@@ -1284,6 +1295,7 @@ Future <void> main() async {
     remoteDataSource: contractRemoteDataSource,
   );
 
+
   // Favorites
   final favoriteLocalDataSource = FavoriteLocalDataSourceImpl(autoCache: localCacheService);
   final favoriteRemoteDataSource = FavoriteRemoteDataSourceImpl(firestore: firestore);
@@ -1307,10 +1319,8 @@ Future <void> main() async {
 
   // Support (atendimento)
   final supportRemoteDataSource = SupportRemoteDataSourceImpl(firestore: firestore);
-  final supportEmailService = SupportEmailServiceImpl(mailService: MailService());
   final supportRepository = SupportRepositoryImpl(
     remoteDataSource: supportRemoteDataSource,
-    emailService: supportEmailService,
   );
 
   runApp(MultiBlocProvider(
@@ -1328,6 +1338,7 @@ Future <void> main() async {
               clientsRepository,
               saveBankAccountUseCase, 
               syncArtistCompletenessIfChangedUseCase,
+              contractRepository,
             ),
           ),
           BlocProvider(
@@ -1464,6 +1475,7 @@ Future <void> main() async {
             create: (context) => _createSupportBloc(
               supportRepository,
               getUserUidUseCase,
+              mailService,
             ),
           ),
           BlocProvider(

@@ -639,10 +639,10 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     Container(
                       padding: EdgeInsets.all(DSSize.width(16)),
                       decoration: BoxDecoration(
-                        color: colorScheme.tertiaryContainer.withOpacity(0.3),
+                        color: colorScheme.onTertiaryContainer,
                         borderRadius: BorderRadius.circular(DSSize.width(12)),
                         border: Border.all(
-                          color: colorScheme.tertiary.withOpacity(0.3),
+                          color: colorScheme.onTertiaryContainer,
                           width: 1,
                         ),
                       ),
@@ -651,14 +651,14 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                           Icon(
                             Icons.pending_actions_rounded,
                             size: DSSize.width(24),
-                            color: colorScheme.onTertiaryContainer,
+                            color: colorScheme.onPrimary,
                           ),
                           DSSizedBoxSpacing.horizontal(12),
                           Expanded(
                             child: Text(
                               'Reembolso em análise.',
                               style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onTertiaryContainer,
+                                color: colorScheme.onPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),

@@ -683,7 +683,7 @@ class _SwitchAccountConfirmationModal extends StatelessWidget {
         left: DSSize.width(16),
         right: DSSize.width(16),
         top: DSSize.height(16),
-        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(48),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -766,7 +766,7 @@ class _ClientTermsModal extends StatelessWidget {
         left: DSSize.width(16),
         right: DSSize.width(16),
         top: DSSize.height(16),
-        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(16),
+        bottom: MediaQuery.of(context).viewInsets.bottom + DSSize.height(48),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

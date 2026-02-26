@@ -34,6 +34,7 @@ class EditSlotModal extends StatefulWidget {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => EditSlotModal(
         startTime: startTime,

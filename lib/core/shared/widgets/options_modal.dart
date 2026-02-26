@@ -87,6 +87,8 @@ class OptionsModal extends StatelessWidget {
   }) {
     return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       builder: (context) => OptionsModal(
         title: title,

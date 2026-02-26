@@ -995,6 +995,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   void _showLegendModal() {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _buildLegendBottomSheet(),
     );

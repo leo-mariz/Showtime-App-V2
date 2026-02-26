@@ -35,6 +35,7 @@ class AddressesModal extends StatefulWidget {
     return showModalBottomSheet<AddressInfoEntity?>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddressesModal(
         selectedAddress: selectedAddress,

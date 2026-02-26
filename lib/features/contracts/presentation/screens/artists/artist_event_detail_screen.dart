@@ -4,6 +4,7 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/showtime_refund_status_enum.dart';
 import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
@@ -580,7 +581,10 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                           _buildInfoRow(
                             icon: Icons.payments_rounded,
                             label: 'Valor do repasse',
-                            value: _formatCurrency(_contract.value * 0.9),
+                            value: _formatCurrency(
+                              _contract.showtimePaidToArtistAmount ??
+                                  (_contract.value * 0.9),
+                            ),
                             textTheme: textTheme,
                             onSurfaceVariant: onSurfaceVariant,
                             onPrimary: onPrimary,
@@ -596,6 +600,18 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                             onPrimary: onPrimary,
                             isHighlighted: false,
                           ),
+                          if (_contract.showtimeRefundStatus != null) ...[
+                            DSSizedBoxSpacing.vertical(12),
+                            _buildInfoRow(
+                              icon: Icons.replay_rounded,
+                              label: 'Status do reembolso',
+                              value: _contract.showtimeRefundStatus!.displayName,
+                              textTheme: textTheme,
+                              onSurfaceVariant: onSurfaceVariant,
+                              onPrimary: onPrimary,
+                              isHighlighted: false,
+                            ),
+                          ],
                           DSSizedBoxSpacing.vertical(12),
                           _buildInfoRow(
                             icon: Icons.receipt_long_rounded,
@@ -665,6 +681,20 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                  // Cancelado: status do reembolso (quando preenchido)
+                  if (_status == ContractStatusEnum.canceled &&
+                      _contract.showtimeRefundStatus != null) ...[
+                    DSSizedBoxSpacing.vertical(16),
+                    _buildInfoRow(
+                      icon: Icons.replay_rounded,
+                      label: 'Status do reembolso',
+                      value: _contract.showtimeRefundStatus!.displayName,
+                      textTheme: textTheme,
+                      onSurfaceVariant: onSurfaceVariant,
+                      onPrimary: onPrimary,
+                      isHighlighted: false,
                     ),
                   ],
 

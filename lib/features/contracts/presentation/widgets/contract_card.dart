@@ -4,6 +4,7 @@ import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/showtime_refund_status_enum.dart';
 import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
@@ -530,7 +531,10 @@ class ContractCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            _formatCurrency(contract.value * 0.9),
+                            _formatCurrency(
+                              contract.showtimePaidToArtistAmount ??
+                                  (contract.value * 0.9),
+                            ),
                             style: textTheme.bodyMedium?.copyWith(
                               color: onPrimary,
                               fontWeight: FontWeight.w600,
@@ -556,6 +560,26 @@ class ContractCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                      if (contract.showtimeRefundStatus != null) ...[
+                        DSSizedBoxSpacing.vertical(8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Status do reembolso',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              contract.showtimeRefundStatus!.displayName,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: onPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       DSSizedBoxSpacing.vertical(4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -618,6 +642,63 @@ class ContractCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ],
+              // Cancelado: status do reembolso e valor reembolsado (cliente, quando preenchidos)
+              if (!isArtist &&
+                  contract.status == ContractStatusEnum.canceled &&
+                  contract.showtimeRefundStatus != null) ...[
+                DSSizedBoxSpacing.vertical(12),
+                Container(
+                  padding: EdgeInsets.all(DSSize.width(12)),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(DSSize.width(8)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Status do reembolso',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            contract.showtimeRefundStatus!.displayName,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (contract.showtimeRefundedAmount != null &&
+                          contract.showtimeRefundedAmount! > 0) ...[
+                        DSSizedBoxSpacing.vertical(8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Valor reembolsado',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              _formatCurrency(contract.showtimeRefundedAmount!),
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -6,6 +6,7 @@ import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
 import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/showtime_refund_status_enum.dart';
 import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/enums/contested_by_enum.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -101,6 +102,14 @@ class ContractEntity with ContractEntityMappable {
   /// Última atualização do status da nota fiscal.
   final DateTime? invoiceStatusUpdatedAt;
 
+  // Reembolso Showtime ao cliente (análise de reembolso)
+  /// Resultado da análise de reembolso ao cliente (NONE, PARTIAL, FULL).
+  final ShowtimeRefundStatus? showtimeRefundStatus;
+  /// Valor em R$ reembolsado ao cliente. NONE = 0, PARTIAL = valor parcial, FULL = valor total.
+  final double? showtimeRefundedAmount;
+  /// Valor em R$ repassado ao artista. FULL = 0; NONE/PARTIAL = valor efetivamente pago ao artista.
+  final double? showtimePaidToArtistAmount;
+
   // Contestação (contrato finalizado/pago mas em disputa)
   /// Contrato em disputa (uma das partes contestou).
   final bool? contested;
@@ -159,6 +168,9 @@ class ContractEntity with ContractEntityMappable {
     this.showtimeRefundedAt,
     this.invoiceStatus,
     this.invoiceStatusUpdatedAt,
+    this.showtimeRefundStatus,
+    this.showtimeRefundedAmount,
+    this.showtimePaidToArtistAmount,
     this.contested,
     this.contestedBy,
     this.contestedAt,
@@ -289,6 +301,9 @@ extension ContractEntityReference on ContractEntity {
     'showtimeRefundedAt',
     'invoiceStatus',
     'invoiceStatusUpdatedAt',
+    'showtimeRefundStatus',
+    'showtimeRefundedAmount',
+    'showtimePaidToArtistAmount',
     'contested',
     'contestedBy',
     'contestedAt',

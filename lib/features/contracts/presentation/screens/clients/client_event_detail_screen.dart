@@ -2,6 +2,7 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/enums/showtime_refund_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
@@ -367,6 +368,32 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                   ],
                 ),
               ),
+            ],
+            // Cancelado: status do reembolso e valor reembolsado (quando preenchidos)
+            if (_status == ContractStatusEnum.canceled &&
+                _contract.showtimeRefundStatus != null) ...[
+              DSSizedBoxSpacing.vertical(16),
+              _buildInfoRow(
+                icon: Icons.replay_rounded,
+                label: 'Status do reembolso',
+                value: _contract.showtimeRefundStatus!.displayName,
+                textTheme: textTheme,
+                onSurfaceVariant: onSurfaceVariant,
+                onPrimary: onPrimary,
+              ),
+              if (_contract.showtimeRefundedAmount != null &&
+                  _contract.showtimeRefundedAmount! > 0) ...[
+                DSSizedBoxSpacing.vertical(12),
+                _buildInfoRow(
+                  icon: Icons.payments_rounded,
+                  label: 'Valor reembolsado',
+                  value: _formatCurrency(_contract.showtimeRefundedAmount!),
+                  textTheme: textTheme,
+                  onSurfaceVariant: onSurfaceVariant,
+                  onPrimary: onPrimary,
+                  isHighlighted: true,
+                ),
+              ],
             ],
 
             DSSizedBoxSpacing.vertical(24),

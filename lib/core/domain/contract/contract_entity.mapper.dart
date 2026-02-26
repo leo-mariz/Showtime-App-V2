@@ -23,6 +23,7 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       ShowRatingRequestedEntityMapper.ensureInitialized();
       ShowtimePaymentStatusMapper.ensureInitialized();
       InvoiceStatusMapper.ensureInitialized();
+      ShowtimeRefundStatusMapper.ensureInitialized();
       ContestedByMapper.ensureInitialized();
     }
     return _instance!;
@@ -313,6 +314,29 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       v.invoiceStatusUpdatedAt;
   static const Field<ContractEntity, DateTime> _f$invoiceStatusUpdatedAt =
       Field('invoiceStatusUpdatedAt', _$invoiceStatusUpdatedAt, opt: true);
+  static ShowtimeRefundStatus? _$showtimeRefundStatus(ContractEntity v) =>
+      v.showtimeRefundStatus;
+  static const Field<ContractEntity, ShowtimeRefundStatus>
+  _f$showtimeRefundStatus = Field(
+    'showtimeRefundStatus',
+    _$showtimeRefundStatus,
+    opt: true,
+  );
+  static double? _$showtimeRefundedAmount(ContractEntity v) =>
+      v.showtimeRefundedAmount;
+  static const Field<ContractEntity, double> _f$showtimeRefundedAmount = Field(
+    'showtimeRefundedAmount',
+    _$showtimeRefundedAmount,
+    opt: true,
+  );
+  static double? _$showtimePaidToArtistAmount(ContractEntity v) =>
+      v.showtimePaidToArtistAmount;
+  static const Field<ContractEntity, double> _f$showtimePaidToArtistAmount =
+      Field(
+        'showtimePaidToArtistAmount',
+        _$showtimePaidToArtistAmount,
+        opt: true,
+      );
   static bool? _$contested(ContractEntity v) => v.contested;
   static const Field<ContractEntity, bool> _f$contested = Field(
     'contested',
@@ -329,6 +353,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
   static const Field<ContractEntity, DateTime> _f$contestedAt = Field(
     'contestedAt',
     _$contestedAt,
+    opt: true,
+  );
+  static String? _$contestedReason(ContractEntity v) => v.contestedReason;
+  static const Field<ContractEntity, String> _f$contestedReason = Field(
+    'contestedReason',
+    _$contestedReason,
     opt: true,
   );
 
@@ -381,9 +411,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #showtimeRefundedAt: _f$showtimeRefundedAt,
     #invoiceStatus: _f$invoiceStatus,
     #invoiceStatusUpdatedAt: _f$invoiceStatusUpdatedAt,
+    #showtimeRefundStatus: _f$showtimeRefundStatus,
+    #showtimeRefundedAmount: _f$showtimeRefundedAmount,
+    #showtimePaidToArtistAmount: _f$showtimePaidToArtistAmount,
     #contested: _f$contested,
     #contestedBy: _f$contestedBy,
     #contestedAt: _f$contestedAt,
+    #contestedReason: _f$contestedReason,
   };
 
   static ContractEntity _instantiate(DecodingData data) {
@@ -439,9 +473,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       showtimeRefundedAt: data.dec(_f$showtimeRefundedAt),
       invoiceStatus: data.dec(_f$invoiceStatus),
       invoiceStatusUpdatedAt: data.dec(_f$invoiceStatusUpdatedAt),
+      showtimeRefundStatus: data.dec(_f$showtimeRefundStatus),
+      showtimeRefundedAmount: data.dec(_f$showtimeRefundedAmount),
+      showtimePaidToArtistAmount: data.dec(_f$showtimePaidToArtistAmount),
       contested: data.dec(_f$contested),
       contestedBy: data.dec(_f$contestedBy),
       contestedAt: data.dec(_f$contestedAt),
+      contestedReason: data.dec(_f$contestedReason),
     );
   }
 
@@ -578,9 +616,13 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     DateTime? showtimeRefundedAt,
     InvoiceStatus? invoiceStatus,
     DateTime? invoiceStatusUpdatedAt,
+    ShowtimeRefundStatus? showtimeRefundStatus,
+    double? showtimeRefundedAmount,
+    double? showtimePaidToArtistAmount,
     bool? contested,
     ContestedBy? contestedBy,
     DateTime? contestedAt,
+    String? contestedReason,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -685,9 +727,13 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? showtimeRefundedAt = $none,
     Object? invoiceStatus = $none,
     Object? invoiceStatusUpdatedAt = $none,
+    Object? showtimeRefundStatus = $none,
+    Object? showtimeRefundedAmount = $none,
+    Object? showtimePaidToArtistAmount = $none,
     Object? contested = $none,
     Object? contestedBy = $none,
     Object? contestedAt = $none,
+    Object? contestedReason = $none,
   }) => $apply(
     FieldCopyWithData({
       if (date != null) #date: date,
@@ -742,9 +788,16 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (invoiceStatus != $none) #invoiceStatus: invoiceStatus,
       if (invoiceStatusUpdatedAt != $none)
         #invoiceStatusUpdatedAt: invoiceStatusUpdatedAt,
+      if (showtimeRefundStatus != $none)
+        #showtimeRefundStatus: showtimeRefundStatus,
+      if (showtimeRefundedAmount != $none)
+        #showtimeRefundedAmount: showtimeRefundedAmount,
+      if (showtimePaidToArtistAmount != $none)
+        #showtimePaidToArtistAmount: showtimePaidToArtistAmount,
       if (contested != $none) #contested: contested,
       if (contestedBy != $none) #contestedBy: contestedBy,
       if (contestedAt != $none) #contestedAt: contestedAt,
+      if (contestedReason != $none) #contestedReason: contestedReason,
     }),
   );
   @override
@@ -826,9 +879,22 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       #invoiceStatusUpdatedAt,
       or: $value.invoiceStatusUpdatedAt,
     ),
+    showtimeRefundStatus: data.get(
+      #showtimeRefundStatus,
+      or: $value.showtimeRefundStatus,
+    ),
+    showtimeRefundedAmount: data.get(
+      #showtimeRefundedAmount,
+      or: $value.showtimeRefundedAmount,
+    ),
+    showtimePaidToArtistAmount: data.get(
+      #showtimePaidToArtistAmount,
+      or: $value.showtimePaidToArtistAmount,
+    ),
     contested: data.get(#contested, or: $value.contested),
     contestedBy: data.get(#contestedBy, or: $value.contestedBy),
     contestedAt: data.get(#contestedAt, or: $value.contestedAt),
+    contestedReason: data.get(#contestedReason, or: $value.contestedReason),
   );
 
   @override

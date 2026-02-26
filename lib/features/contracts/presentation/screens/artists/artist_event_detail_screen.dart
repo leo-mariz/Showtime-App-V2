@@ -3,6 +3,8 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
@@ -561,16 +563,110 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                       color: primaryContainer.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(DSSize.width(12)),
                     ),
-                    child: _buildInfoRow(
-                      icon: Icons.attach_money_rounded,
-                      label: 'Valor Total',
-                      value: _formatCurrency(_contract.value),
-                      textTheme: textTheme,
-                      onSurfaceVariant: onSurfaceVariant,
-                      onPrimary: onPrimary,
-                      isHighlighted: true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoRow(
+                          icon: Icons.attach_money_rounded,
+                          label: 'Valor Total',
+                          value: _formatCurrency(_contract.value),
+                          textTheme: textTheme,
+                          onSurfaceVariant: onSurfaceVariant,
+                          onPrimary: onPrimary,
+                          isHighlighted: true,
+                        ),
+                        if (_status == ContractStatusEnum.completed) ...[
+                          DSSizedBoxSpacing.vertical(16),
+                          _buildInfoRow(
+                            icon: Icons.payments_rounded,
+                            label: 'Valor do repasse',
+                            value: _formatCurrency(_contract.value * 0.9),
+                            textTheme: textTheme,
+                            onSurfaceVariant: onSurfaceVariant,
+                            onPrimary: onPrimary,
+                            isHighlighted: true,
+                          ),
+                          DSSizedBoxSpacing.vertical(12),
+                          _buildInfoRow(
+                            icon: Icons.sync_rounded,
+                            label: 'Status repasse',
+                            value: _contract.showtimePaymentStatus?.displayName ?? '—',
+                            textTheme: textTheme,
+                            onSurfaceVariant: onSurfaceVariant,
+                            onPrimary: onPrimary,
+                            isHighlighted: false,
+                          ),
+                          DSSizedBoxSpacing.vertical(12),
+                          _buildInfoRow(
+                            icon: Icons.receipt_long_rounded,
+                            label: 'Status Nota Fiscal',
+                            value: _contract.invoiceStatus?.displayName ?? '—',
+                            textTheme: textTheme,
+                            onSurfaceVariant: onSurfaceVariant,
+                            onPrimary: onPrimary,
+                            isHighlighted: false,
+                          ),
+                          DSSizedBoxSpacing.vertical(12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: DSSize.width(20),
+                                color: onSurfaceVariant,
+                              ),
+                              DSSizedBoxSpacing.horizontal(12),
+                              Expanded(
+                                child: Text(
+                                  'Os pagamentos são realizados em até 72h após a realização do evento.',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: onSurfaceVariant,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
                   ),
+
+                  // Cancelado com reembolso em análise
+                  if (_status == ContractStatusEnum.canceled &&
+                      (_contract.analyseRefund == true)) ...[
+                    DSSizedBoxSpacing.vertical(16),
+                    Container(
+                      padding: EdgeInsets.all(DSSize.width(16)),
+                      decoration: BoxDecoration(
+                        color: colorScheme.onTertiaryContainer,
+                        borderRadius: BorderRadius.circular(DSSize.width(12)),
+                        border: Border.all(
+                          color: colorScheme.onTertiaryContainer,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.pending_actions_rounded,
+                            size: DSSize.width(24),
+                            color: colorScheme.onPrimary,
+                          ),
+                          DSSizedBoxSpacing.horizontal(12),
+                          Expanded(
+                            child: Text(
+                              'Reembolso em análise.',
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   DSSizedBoxSpacing.vertical(16),
 

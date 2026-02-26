@@ -52,13 +52,27 @@ class MemberDocumentEntity with MemberDocumentEntityMappable {
   /// URL do arquivo no Storage (após upload)
   final String? url;
 
-  const MemberDocumentEntity({
+  String? documentOption;
+
+  final String? observation;
+
+  String? idNumber;
+
+  final DateTime? updatedAt;
+
+
+
+  MemberDocumentEntity({
     required this.artistId,
     required this.ensembleId,
     required this.memberId,
     required this.documentType,
     this.status = 0,
     this.url,
+    this.documentOption,
+    this.observation,
+    this.idNumber,
+    this.updatedAt,
   });
 }
 
@@ -119,5 +133,18 @@ extension MemberDocumentEntityReference on MemberDocumentEntity {
         .child('Members')
         .child(memberId)
         .child(documentType);
+  }
+
+  static List<String> identityDocumentOptions() {
+    return [
+      'RG',
+      'CNH',
+    ];
+  }
+
+  static List<String> antecedentsDocumentOptions() {
+    return [
+      'Certidão de Antecedentes Criminais',
+    ];
   }
 }

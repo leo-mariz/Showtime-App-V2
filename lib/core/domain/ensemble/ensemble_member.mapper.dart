@@ -69,36 +69,43 @@ class EnsembleMemberMapper extends ClassMapperBase<EnsembleMember> {
 
 mixin EnsembleMemberMappable {
   String toJson() {
-    return EnsembleMemberMapper.ensureInitialized()
-        .encodeJson<EnsembleMember>(this as EnsembleMember);
+    return EnsembleMemberMapper.ensureInitialized().encodeJson<EnsembleMember>(
+      this as EnsembleMember,
+    );
   }
 
   Map<String, dynamic> toMap() {
-    return EnsembleMemberMapper.ensureInitialized()
-        .encodeMap<EnsembleMember>(this as EnsembleMember);
+    return EnsembleMemberMapper.ensureInitialized().encodeMap<EnsembleMember>(
+      this as EnsembleMember,
+    );
   }
 
   EnsembleMemberCopyWith<EnsembleMember, EnsembleMember, EnsembleMember>
-  get copyWith =>
-      _EnsembleMemberCopyWithImpl<EnsembleMember, EnsembleMember>(
-          this as EnsembleMember, $identity, $identity);
-
+  get copyWith => _EnsembleMemberCopyWithImpl<EnsembleMember, EnsembleMember>(
+    this as EnsembleMember,
+    $identity,
+    $identity,
+  );
   @override
   String toString() {
-    return EnsembleMemberMapper.ensureInitialized()
-        .stringifyValue(this as EnsembleMember);
+    return EnsembleMemberMapper.ensureInitialized().stringifyValue(
+      this as EnsembleMember,
+    );
   }
 
   @override
   bool operator ==(Object other) {
-    return EnsembleMemberMapper.ensureInitialized()
-        .equalsValue(this as EnsembleMember, other);
+    return EnsembleMemberMapper.ensureInitialized().equalsValue(
+      this as EnsembleMember,
+      other,
+    );
   }
 
   @override
   int get hashCode {
-    return EnsembleMemberMapper.ensureInitialized()
-        .hashValue(this as EnsembleMember);
+    return EnsembleMemberMapper.ensureInitialized().hashValue(
+      this as EnsembleMember,
+    );
   }
 }
 
@@ -111,12 +118,10 @@ extension EnsembleMemberValueCopy<$R, $Out>
 abstract class EnsembleMemberCopyWith<$R, $In extends EnsembleMember, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get specialty;
-  $R call({
-    String? memberId,
-    Object? specialty = $none,
-    bool? isOwner,
-  });
-  EnsembleMemberCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+  $R call({String? memberId, List<String>? specialty, bool? isOwner});
+  EnsembleMemberCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  );
 }
 
 class _EnsembleMemberCopyWithImpl<$R, $Out>
@@ -127,34 +132,34 @@ class _EnsembleMemberCopyWithImpl<$R, $Out>
   @override
   late final ClassMapperBase<EnsembleMember> $mapper =
       EnsembleMemberMapper.ensureInitialized();
-
   @override
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get specialty =>
       $value.specialty != null
-          ? ListCopyWith($value.specialty!, (v, t) => ObjectCopyWith(v, $identity, t),
-              (v) => call(specialty: v))
-          : null;
-
+      ? ListCopyWith(
+          $value.specialty!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(specialty: v),
+        )
+      : null;
   @override
-  $R call({
-    String? memberId,
-    Object? specialty = $none,
-    bool? isOwner,
-  }) =>
-      $apply(FieldCopyWithData({
-        if (memberId != null) #memberId: memberId,
-        if (specialty != $none) #specialty: specialty,
-        if (isOwner != null) #isOwner: isOwner,
-      }));
-
+  $R call({String? memberId, Object? specialty = $none, bool? isOwner}) =>
+      $apply(
+        FieldCopyWithData({
+          if (memberId != null) #memberId: memberId,
+          if (specialty != $none) #specialty: specialty,
+          if (isOwner != null) #isOwner: isOwner,
+        }),
+      );
   @override
   EnsembleMember $make(CopyWithData data) => EnsembleMember(
-      memberId: data.get(#memberId, or: $value.memberId),
-      specialty: data.get(#specialty, or: $value.specialty),
-      isOwner: data.get(#isOwner, or: $value.isOwner));
+    memberId: data.get(#memberId, or: $value.memberId),
+    specialty: data.get(#specialty, or: $value.specialty),
+    isOwner: data.get(#isOwner, or: $value.isOwner),
+  );
 
   @override
   EnsembleMemberCopyWith<$R2, EnsembleMember, $Out2> $chain<$R2, $Out2>(
-          Then<$Out2, $R2> t) =>
-      _EnsembleMemberCopyWithImpl<$R2, $Out2>($value, $cast, t);
+    Then<$Out2, $R2> t,
+  ) => _EnsembleMemberCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
+

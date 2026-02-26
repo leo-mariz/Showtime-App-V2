@@ -110,5 +110,11 @@ abstract class IContractRepository {
   /// 
   /// Retorna true se há overlap (horário já reservado por outro show)
   Future<Either<Failure, bool>> checkContractOverlapWithBooked(String contractId);
+
+  // ==================== CACHE ====================
+
+  /// Limpa o cache local de contratos.
+  /// Se [userId] for informado, limpa os caches de lista (por cliente e por artista) desse usuário.
+  Future<Either<Failure, void>> clearContractsCache({String? userId});
 }
 

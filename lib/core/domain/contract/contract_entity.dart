@@ -5,6 +5,9 @@ import 'package:app/core/domain/event/event_type_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
+import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/invoice_status_enum.dart';
+import 'package:app/core/enums/contested_by_enum.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:dart_mappable/dart_mappable.dart';
@@ -83,7 +86,31 @@ class ContractEntity with ContractEntityMappable {
 
   final bool? isPaying;
   final bool? analyseRefund;
-  
+
+  // Repasse Showtime ao artista (espelhado do Admin)
+  /// Status do repasse da plataforma ao artista (a pagar, pago, reembolsado, em contestação).
+  final ShowtimePaymentStatus? showtimePaymentStatus;
+  /// Data em que a Showtime efetuou o repasse ao artista.
+  final DateTime? showtimePaymentAt;
+  /// Data em que foi reembolsado (aba Reembolsados).
+  final DateTime? showtimeRefundedAt;
+
+  // Nota fiscal (espelhado do Admin)
+  /// Status da nota fiscal em relação ao repasse.
+  final InvoiceStatus? invoiceStatus;
+  /// Última atualização do status da nota fiscal.
+  final DateTime? invoiceStatusUpdatedAt;
+
+  // Contestação (contrato finalizado/pago mas em disputa)
+  /// Contrato em disputa (uma das partes contestou).
+  final bool? contested;
+  /// Quem abriu a contestação.
+  final ContestedBy? contestedBy;
+  /// Data em que a contestação foi aberta.
+  final DateTime? contestedAt;
+
+  final String? contestedReason;
+
   ContractEntity({
     required this.date,
     required this.time,
@@ -127,6 +154,15 @@ class ContractEntity with ContractEntityMappable {
     this.contractorPhotoUrl,
     this.isPaying = false,
     this.analyseRefund = false,
+    this.showtimePaymentStatus,
+    this.showtimePaymentAt,
+    this.showtimeRefundedAt,
+    this.invoiceStatus,
+    this.invoiceStatusUpdatedAt,
+    this.contested,
+    this.contestedBy,
+    this.contestedAt,
+    this.contestedReason,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Validações de negócio
@@ -248,6 +284,15 @@ extension ContractEntityReference on ContractEntity {
     'acceptDeadline',
     'clientPhotoUrl',
     'contractorPhotoUrl',
+    'showtimePaymentStatus',
+    'showtimePaymentAt',
+    'showtimeRefundedAt',
+    'invoiceStatus',
+    'invoiceStatusUpdatedAt',
+    'contested',
+    'contestedBy',
+    'contestedAt',
+    'contestedReason',
   ];
 }
 

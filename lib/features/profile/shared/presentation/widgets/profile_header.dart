@@ -14,6 +14,10 @@ class ProfileHeader extends StatelessWidget {
   final VoidCallback? onEditName;
   /// Quando true, exibe um ícone de alerta (!) no canto superior direito do avatar (ex.: foto incompleta).
   final bool showPhotoIncompleteBadge;
+  /// Avaliação (ex.: 4.5). Se null ou sem avaliações, não exibe nada no header.
+  final double? rating;
+  /// Quantidade de avaliações. Opcional, usado junto com [rating] para exibir "4.5 ★ (12 avaliações)".
+  final int? rateCount;
 
   const ProfileHeader({
     super.key,
@@ -26,6 +30,8 @@ class ProfileHeader extends StatelessWidget {
     this.onSwitchUserType,
     this.onEditName,
     this.showPhotoIncompleteBadge = false,
+    this.rating,
+    this.rateCount,
   });
 
   @override
@@ -104,7 +110,37 @@ class ProfileHeader extends StatelessWidget {
                     ],
                   ],
                 ),
-              
+                // Rating: só exibe se houver avaliação (rating > 0 ou rateCount > 0)
+                if (rating != null && (rating! > 0 || (rateCount != null && rateCount! > 0))) ...[
+                  DSSizedBoxSpacing.vertical(0),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        size: DSSize.width(18),
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                      SizedBox(width: DSSize.width(4)),
+                      Text(
+                        rating!.toStringAsFixed(1),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      // if (rateCount != null && rateCount! > 0) ...[
+                      //   SizedBox(width: DSSize.width(6)),
+                      //   Text(
+                      //     '($rateCount ${rateCount == 1 ? 'avaliação' : 'avaliações'})',
+                      //     style: theme.textTheme.bodySmall?.copyWith(
+                      //       color: colorScheme.onSurface.withOpacity(0.7),
+                      //     ),
+                      //   ),
+                      // ],
+                    ],
+                  ),
+                ],
                 DSSizedBoxSpacing.vertical(4),
                 Row(
                   children: [

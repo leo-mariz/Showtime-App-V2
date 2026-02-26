@@ -333,10 +333,46 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
               ),
             ),
 
+            // Cancelado com reembolso em análise
+            if (_status == ContractStatusEnum.canceled &&
+                (_contract.analyseRefund == true)) ...[
+              DSSizedBoxSpacing.vertical(24),
+              Container(
+                padding: EdgeInsets.all(DSSize.width(16)),
+                decoration: BoxDecoration(
+                  color: colorScheme.onTertiaryContainer,
+                  borderRadius: BorderRadius.circular(DSSize.width(12)),
+                  border: Border.all(
+                    color: colorScheme.onTertiaryContainer,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.pending_actions_rounded,
+                      size: DSSize.width(24),
+                      color: colorScheme.onPrimary,
+                    ),
+                    DSSizedBoxSpacing.horizontal(12),
+                    Expanded(
+                      child: Text(
+                        'Reembolso em análise.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             DSSizedBoxSpacing.vertical(24),
 
             // Seção de Avaliação (quando completado)
-            if (_status == ContractStatusEnum.completed) ...[
+            if (_status == ContractStatusEnum.completed || _status == ContractStatusEnum.rated) ...[
               _buildSectionTitle('Avaliação', textTheme, onPrimary),
               DSSizedBoxSpacing.vertical(12),
               BlocBuilder<ContractsBloc, ContractsState>(

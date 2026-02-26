@@ -2,6 +2,9 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/enums/showtime_payment_status_enum.dart';
+import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
@@ -504,7 +507,122 @@ class ContractCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
+              // Repasse e Nota Fiscal (artista, contrato completed)
+              if (isArtist && contract.status == ContractStatusEnum.completed) ...[
+                DSSizedBoxSpacing.vertical(12),
+                Container(
+                  padding: EdgeInsets.all(DSSize.width(12)),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(DSSize.width(8)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Valor do repasse',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            _formatCurrency(contract.value * 0.9),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: onPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Status repasse',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            contract.showtimePaymentStatus?.displayName ?? '—',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Status Nota Fiscal',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            contract.invoiceStatus?.displayName ?? '—',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      DSSizedBoxSpacing.vertical(8),
+                      Text(
+                        'Os pagamentos são realizados em até 72h após a realização do evento.',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Cancelado com reembolso em análise (artista e anfitrião)
+              if (contract.status == ContractStatusEnum.canceled &&
+                  contract.analyseRefund == true) ...[
+                DSSizedBoxSpacing.vertical(12),
+                Container(
+                  padding: EdgeInsets.all(DSSize.width(12)),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onTertiaryContainer,
+                    borderRadius: BorderRadius.circular(DSSize.width(8)),
+                    border: Border.all(
+                      color: colorScheme.tertiary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pending_actions_rounded,
+                        size: DSSize.width(20),
+                        color: colorScheme.onPrimary,
+                      ),
+                      DSSizedBoxSpacing.horizontal(10),
+                      Expanded(
+                        child: Text(
+                          'Reembolso em análise.',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Prazo expirado: só mensagem, sem botões
               if (_isDeadlineExpiredNoActions) ...[
                 DSSizedBoxSpacing.vertical(12),

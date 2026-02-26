@@ -1,4 +1,5 @@
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:app/features/app_lists/domain/entities/app_list_item_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -38,7 +39,8 @@ class AppListsRemoteDataSourceImpl implements IAppListsRemoteDataSource {
 
       final items = querySnapshot.docs.map((doc) {
         final data = doc.data();
-        final entity = AppListItemEntityMapper.fromMap(data as Map<String, dynamic>);
+        final convertedMap = convertFirestoreMapForMapper(data as Map<String, dynamic>);
+        final entity = AppListItemEntityMapper.fromMap(convertedMap);
         return entity.copyWith(id: doc.id);
       }).toList();
 

@@ -378,5 +378,17 @@ class ContractRepositoryImpl implements IContractRepository {
       return Left(ErrorHandler.handle(e));
     }
   }
+
+  // ==================== CACHE ====================
+
+  @override
+  Future<Either<Failure, void>> clearContractsCache({String? userId}) async {
+    try {
+      await localDataSource.clearContractsCache(userId: userId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
 }
 

@@ -17,6 +17,7 @@ class DocumentsEntity with DocumentsEntityMappable {
   int status; // Armazena como int no Firestore (0, 1, 2, 3)
   AddressInfoEntity? address;
   String? observation;
+  DateTime? updatedAt;
 
   DocumentsEntity({
     required this.documentType,
@@ -26,6 +27,7 @@ class DocumentsEntity with DocumentsEntityMappable {
     this.observation,
     this.address,
     this.idNumber,
+    this.updatedAt,
   });
 }
 

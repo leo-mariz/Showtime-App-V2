@@ -1,7 +1,9 @@
 import 'package:app/core/domain/client/client_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Interface do DataSource remoto (Firestore) para Clients
 /// Responsável APENAS por operações CRUD no Firestore
@@ -61,7 +63,8 @@ class ClientsRemoteDataSourceImpl implements IClientsRemoteDataSource {
       }
 
       final clientMap = documentSnapshot.data() as Map<String, dynamic>;
-      final client = ClientEntityMapper.fromMap(clientMap);
+      final convertedMap = convertFirestoreMapForMapper(clientMap);
+      final client = ClientEntityMapper.fromMap(convertedMap);
       return client;
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
@@ -73,6 +76,12 @@ class ClientsRemoteDataSourceImpl implements IClientsRemoteDataSource {
     } on AppException {
       rethrow;
     } catch (e, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('🔴 [ClientsRemoteDataSource] Erro inesperado ao buscar cliente');
+        debugPrint('🔴 [ClientsRemoteDataSource] Tipo do erro: ${e.runtimeType}');
+        debugPrint('🔴 [ClientsRemoteDataSource] Mensagem: $e');
+        debugPrint('🔴 [ClientsRemoteDataSource] StackTrace: $stackTrace');
+      }
       throw ServerException(
         'Erro inesperado ao buscar cliente',
         originalError: e,

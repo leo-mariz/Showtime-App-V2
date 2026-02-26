@@ -602,12 +602,10 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
           .map((doc) {
         if (!doc.exists) {
           // Retornar entidade padrão se documento não existe
-          debugPrint('📊 [ContractsIndex] Documento não existe para userId: $userId');
           return UserContractsIndexEntity();
         }
         
         final data = doc.data()!;
-        debugPrint('📊 [ContractsIndex] Dados recebidos: $data');
         
         // Converter Timestamps para DateTime antes do mapeamento
         // O TimestampHook não está funcionando corretamente, então fazemos manualmente
@@ -617,17 +615,13 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
         // O mapper vai usar valores padrão (0) para campos ausentes
         try {
           final entity = UserContractsIndexEntityMapper.fromMap(convertedData);
-          debugPrint('📊 [ContractsIndex] Entidade mapeada - Artist Tab0: ${entity.artistTab0Unseen}, Client Tab0: ${entity.clientTab0Unseen}');
           return entity;
         } catch (e) {
-          debugPrint('❌ [ContractsIndex] Erro ao mapear: $e');
-          debugPrint('❌ [ContractsIndex] Dados convertidos: $convertedData');
           // Se falhar o mapeamento, retornar entidade padrão
           return UserContractsIndexEntity();
         }
       });
     } catch (e) {
-      debugPrint('❌ [ContractsIndex] Erro ao criar stream: $e');
       throw ServerException('Erro ao criar stream do índice de contratos: $e');
     }
   }

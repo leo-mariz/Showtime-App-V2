@@ -52,13 +52,23 @@ class AddArtistUseCase {
 
       final artist = ArtistEntity.defaultEntity();
 
+      String artistName = '';
+
+      if (user.isCnpj == true) {
+        artistName = user.cnpjUser?.fantasyName ?? '';
+      } else {
+        artistName = '${user.cpfUser?.firstName ?? ''} ${user.cpfUser?.lastName ?? ''}'.trim();
+      }
+
+      final updatedArtist = artist.copyWith(artistName: artistName);
+
       // Validar se dateRegistered está presente (obrigatório)
-      if (artist.dateRegistered == null) {
+      if (updatedArtist.dateRegistered == null) {
         return const Left(ValidationFailure('Data de registro não pode ser vazia'));
       }
 
       // Adicionar artista primeiro; só depois salvar conta bancária para manter consistência
-      final addResult = await repository.addArtist(uid, artist);
+      final addResult = await repository.addArtist(uid, updatedArtist);
       if (addResult.isLeft()) {
         return addResult.fold((l) => Left(l), (_) => throw StateError('unreachable'));
       }

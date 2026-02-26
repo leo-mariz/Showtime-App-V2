@@ -215,7 +215,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Mensagem user-friendly já vem do failure
       (failure) => emit(ForgotPasswordFailure(error: failure.message)),
       (_) {
-        emit(ForgotPasswordSuccess(message: "Email enviado com sucesso"));
+        emit(ForgotPasswordSuccess(message: "Caso o email informado esteja cadastrado, você receberá um link para redefinir sua senha por lá."));
         emit(AuthInitial());
       },
     );
@@ -524,6 +524,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (failure) {
         if (kDebugMode) {
           debugPrint('🔴 [AuthBloc] SwitchUserType failure: ${failure.runtimeType} - ${failure.message}');
+          if (failure is domain.ServerFailure && failure.originalError != null) {
+            debugPrint('🔴 [AuthBloc] ServerFailure.originalError: ${failure.originalError}');
+          }
         }
         emit(SwitchUserTypeFailure(error: failure.message));
         emit(AuthInitial());

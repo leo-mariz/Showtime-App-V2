@@ -5,7 +5,6 @@ import 'package:app/features/contracts/domain/entities/user_contracts_index_enti
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/states/pending_contracts_count_states.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Bloc para gerenciar contador de contratos pendentes por tab
@@ -79,17 +78,12 @@ class PendingContractsCountBloc extends Bloc<PendingContractsCountEvent, Pending
       // Armazenar o role atual
       _currentIsArtist = event.isArtist;
 
-      debugPrint('📊 [PendingContractsCountBloc] Carregando índice - UserId: $userId, Role: ${_currentIsArtist ? "ARTIST" : "CLIENT"}');
-
       // Criar subscription ao stream otimizado do índice
       // O stream do Firestore SEMPRE emite o valor atual quando você se inscreve
       // Este stream escuta apenas o documento user_contracts_index/{userId}
       // Muito mais eficiente que buscar todos os contratos
       _indexSubscription = contractRepository.getContractsIndexStream(userId).listen(
         (indexEntity) {
-          debugPrint('📊 [PendingContractsCountBloc] Stream atualizado - Role: ${_currentIsArtist ? "ARTIST" : "CLIENT"}');
-          debugPrint('📊 [PendingContractsCountBloc] Artist Tab0 Unseen: ${indexEntity.artistTab0Unseen}, Client Tab0 Unseen: ${indexEntity.clientTab0Unseen}');
-          
           // Disparar evento interno quando stream atualizar (com role atual)
           // O stream do Firestore emite o valor atual imediatamente, então o primeiro valor
           // será processado rapidamente através do evento
@@ -99,7 +93,6 @@ class PendingContractsCountBloc extends Bloc<PendingContractsCountEvent, Pending
           ));
         },
         onError: (error) {
-          debugPrint('❌ [PendingContractsCountBloc] Erro no stream: $error');
           // Emitir erro se stream falhar - usar entidade vazia
           add(PendingContractsCountUpdatedEvent(
             indexEntity: UserContractsIndexEntity(),
@@ -123,9 +116,6 @@ class PendingContractsCountBloc extends Bloc<PendingContractsCountEvent, Pending
     final tab0Unseen = indexEntity.getUnseenForTab(0, isArtist);
     final tab1Unseen = indexEntity.getUnseenForTab(1, isArtist);
     final tab2Unseen = indexEntity.getUnseenForTab(2, isArtist);
-    
-    debugPrint('📊 [PendingContractsCountBloc] Atualizando estado - Role: ${isArtist ? "ARTIST" : "CLIENT"}');
-    debugPrint('📊 [PendingContractsCountBloc] Tab0 Unseen: $tab0Unseen, Tab1 Unseen: $tab1Unseen, Tab2 Unseen: $tab2Unseen');
     
     emit(PendingContractsCountSuccess(
       tab0Unseen: tab0Unseen,

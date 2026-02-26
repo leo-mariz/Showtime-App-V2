@@ -5,6 +5,7 @@ import 'package:app/core/services/auto_cache_service.dart';
 /// Interface do DataSource local para MemberDocuments (documentos do integrante).
 ///
 /// Cache local por artistId + ensembleId + memberId. REGRAS:
+/// - Se algum documento (identidade ou antecedentes) tiver status = 1 (enviado/em análise), invalida o cache
 /// - Retorna null / lista vazia quando não há cache
 /// - Lança [CacheException] em caso de erro de escrita/leitura
 abstract class IMemberDocumentsLocalDataSource {
@@ -58,6 +59,11 @@ class MemberDocumentsLocalDataSourceImpl
   String _cacheKey(String artistId, String ensembleId, String memberId) =>
       MemberDocumentEntityReference.cacheMemberDocumentsKey(memberId);
 
+  /// Invalida cache se algum documento estiver com status = 1 (enviado/em análise).
+  bool _shouldInvalidateDueToStatus(List<MemberDocumentEntity> documents) {
+    return documents.any((d) => d.status == 1);
+  }
+
   @override
   Future<MemberDocumentEntity?> get(
     String artistId,
@@ -88,10 +94,12 @@ class MemberDocumentsLocalDataSourceImpl
       final data = await localCacheService.getCachedDataString(key);
       if (data.isEmpty || !data.containsKey(_documentsKey)) return [];
       final list = data[_documentsKey] as List<dynamic>;
-      return list
+      final documents = list
           .map((e) => MemberDocumentEntityMapper.fromMap(
               Map<String, dynamic>.from(e as Map)))
           .toList();
+      if (_shouldInvalidateDueToStatus(documents)) return [];
+      return documents;
     } catch (e) {
       if (_isMapperOrFormatError(e)) {
         await clearCache(artistId, ensembleId, memberId);

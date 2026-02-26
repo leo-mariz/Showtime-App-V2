@@ -16,7 +16,7 @@ enum EnsembleInfoType {
   /// 5. Dados profissionais do conjunto preenchidos.
   professionalInfo,
 
-  /// 6. Administrador tem todos os documentos enviados (feature artists).
+  /// 6. Administrador tem documentos obrigatórios (identidade, residência, antecedentes; currículo opcional).
   ownerDocuments,
 
   /// 7. Administrador tem informações bancárias (PIX ou Ag/Conta).

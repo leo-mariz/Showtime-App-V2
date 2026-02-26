@@ -3,6 +3,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/auth_service.dart';
 import 'package:app/core/users/domain/repositories/users_repository.dart';
+import 'package:app/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 
 /// UseCase: Registrar usuário com email e senha
@@ -16,14 +17,20 @@ import 'package:dartz/dartz.dart';
 class RegisterEmailPasswordUseCase {
   final IAuthServices authServices;
   final IUsersRepository usersRepository;
+  final IAuthRepository authRepository;
 
   RegisterEmailPasswordUseCase({
     required this.authServices,
     required this.usersRepository,
+    required this.authRepository,
   });
 
   Future<Either<Failure, String>> call(UserEntity user) async {
     try {
+
+      // 0. Limpar cache de autenticação
+      await authRepository.clearCache();
+
       // 1. Validar dados
       final email = user.email;
       final password = user.password;

@@ -1,3 +1,4 @@
+import 'package:app/core/services/mail_services.dart';
 import 'package:app/core/services/mercado_pago_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
@@ -68,5 +69,9 @@ void setupLocator() {
 
   getIt.registerLazySingleton<MercadoPagoService>(
     () => MercadoPagoService(),
+  );
+
+  getIt.registerLazySingleton<MailService>(
+    () => MailService(),
   );
 }

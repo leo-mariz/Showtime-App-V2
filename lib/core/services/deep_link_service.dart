@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 import 'package:app/core/services/mercado_pago_service.dart';
 
 /// Enum para status do pagamento via Deep Link
@@ -21,8 +21,9 @@ typedef PaymentDeepLinkCallback = void Function(
 /// Principalmente usado para retorno do fluxo de pagamento do Mercado Pago
 class DeepLinkService {
   static const String _scheme = 'myapp'; // ⚠️ ALTERAR para o scheme do seu app
-  
-  StreamSubscription? _subscription;
+
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _subscription;
   PaymentDeepLinkCallback? _paymentCallback;
   final MercadoPagoService _mercadoPagoService;
 
@@ -41,7 +42,7 @@ class DeepLinkService {
     _paymentCallback = onPaymentReturn;
     
     // Escuta Deep Links enquanto o app está aberto
-    _subscription = uriLinkStream.listen(
+    _subscription = _appLinks.uriLinkStream.listen(
       (Uri? uri) {
         if (uri != null) {
           _handleDeepLink(uri);
@@ -61,7 +62,7 @@ class DeepLinkService {
   /// Verifica se o app foi aberto via Deep Link (cold start)
   Future<void> _checkInitialLink() async {
     try {
-      final initialUri = await getInitialUri();
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         _handleDeepLink(initialUri);
       }

@@ -49,6 +49,8 @@ class SelectionModal<T> extends StatelessWidget {
     
     return await showModalBottomSheet<T>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: backgroundColor ?? colorScheme.surface.withOpacity(0.8),
       builder: (context) => SelectionModal<T>(
         title: title,

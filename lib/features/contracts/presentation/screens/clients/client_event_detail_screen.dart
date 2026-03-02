@@ -1,8 +1,9 @@
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_financial_status_enum.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
-import 'package:app/core/enums/showtime_refund_status_enum.dart';
+import 'package:app/core/enums/payment_method_id_enum.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
@@ -330,13 +331,26 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                     onSurfaceVariant: onSurfaceVariant,
                     onPrimary: onPrimary,
                   ),
+                  if (_contract.paymentMethod != null) ...[
+                    DSSizedBoxSpacing.vertical(12),
+                    _buildInfoRow(
+                      icon: Icons.credit_card_rounded,
+                      label: 'Método de pagamento',
+                      value: _contract.paymentMethod!.displayName,
+                      textTheme: textTheme,
+                      onSurfaceVariant: onSurfaceVariant,
+                      onPrimary: onPrimary,
+                    ),
+                  ],
+                
                 ],
               ),
             ),
 
             // Cancelado com reembolso em análise
             if (_status == ContractStatusEnum.canceled &&
-                (_contract.analyseRefund == true)) ...[
+                _contract.financialStatus ==
+                    ContractFinancialStatus.refundInAnalysis) ...[
               DSSizedBoxSpacing.vertical(24),
               Container(
                 padding: EdgeInsets.all(DSSize.width(16)),
@@ -369,14 +383,19 @@ class _ClientEventDetailScreenState extends State<ClientEventDetailScreen> {
                 ),
               ),
             ],
-            // Cancelado: status do reembolso e valor reembolsado (quando preenchidos)
+            // Cancelado: status financeiro e valor reembolsado (quando preenchidos)
             if (_status == ContractStatusEnum.canceled &&
-                _contract.showtimeRefundStatus != null) ...[
+                (_contract.financialStatus ==
+                        ContractFinancialStatus.partiallyTransferred ||
+                    _contract.financialStatus ==
+                        ContractFinancialStatus.fullyRefunded ||
+                    _contract.financialStatus ==
+                        ContractFinancialStatus.refundInAnalysis)) ...[
               DSSizedBoxSpacing.vertical(16),
               _buildInfoRow(
                 icon: Icons.replay_rounded,
-                label: 'Status do reembolso',
-                value: _contract.showtimeRefundStatus!.displayName,
+                label: 'Status financeiro',
+                value: _contract.financialStatus!.displayName,
                 textTheme: textTheme,
                 onSurfaceVariant: onSurfaceVariant,
                 onPrimary: onPrimary,

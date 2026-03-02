@@ -2,10 +2,8 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/contract/contract_entity.dart';
+import 'package:app/core/enums/contract_financial_status_enum.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
-import 'package:app/core/enums/showtime_payment_status_enum.dart';
-import 'package:app/core/enums/showtime_refund_status_enum.dart';
-import 'package:app/core/enums/invoice_status_enum.dart';
 import 'package:app/core/shared/extensions/contract_deadline_extension.dart';
 import 'package:app/core/shared/widgets/custom_badge.dart';
 import 'package:app/core/shared/widgets/custom_card.dart';
@@ -547,58 +545,20 @@ class ContractCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Status repasse',
+                            'Status financeiro',
                             style: textTheme.bodySmall?.copyWith(
                               color: onSurfaceVariant,
                             ),
                           ),
                           Text(
-                            contract.showtimePaymentStatus?.displayName ?? '—',
+                            contract.financialStatus?.displayName ?? '—',
                             style: textTheme.bodySmall?.copyWith(
                               color: onPrimary,
                             ),
                           ),
                         ],
                       ),
-                      if (contract.showtimeRefundStatus != null) ...[
-                        DSSizedBoxSpacing.vertical(8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Status do reembolso',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: onSurfaceVariant,
-                              ),
-                            ),
-                            Text(
-                              contract.showtimeRefundStatus!.displayName,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: onPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                       DSSizedBoxSpacing.vertical(4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Status Nota Fiscal',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            contract.invoiceStatus?.displayName ?? '—',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: onPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      DSSizedBoxSpacing.vertical(8),
                       Text(
                         'Os pagamentos são realizados em até 72h após a realização do evento.',
                         style: textTheme.bodySmall?.copyWith(
@@ -613,7 +573,8 @@ class ContractCard extends StatelessWidget {
 
               // Cancelado com reembolso em análise (artista e anfitrião)
               if (contract.status == ContractStatusEnum.canceled &&
-                  contract.analyseRefund == true) ...[
+                  contract.financialStatus ==
+                      ContractFinancialStatus.refundInAnalysis) ...[
                 DSSizedBoxSpacing.vertical(12),
                 Container(
                   padding: EdgeInsets.all(DSSize.width(12)),
@@ -646,10 +607,15 @@ class ContractCard extends StatelessWidget {
                   ),
                 ),
               ],
-              // Cancelado: status do reembolso e valor reembolsado (cliente, quando preenchidos)
+              // Cancelado: status financeiro e valor reembolsado (cliente, quando preenchidos)
               if (!isArtist &&
                   contract.status == ContractStatusEnum.canceled &&
-                  contract.showtimeRefundStatus != null) ...[
+                  (contract.financialStatus ==
+                          ContractFinancialStatus.partiallyTransferred ||
+                      contract.financialStatus ==
+                          ContractFinancialStatus.fullyRefunded ||
+                      contract.financialStatus ==
+                          ContractFinancialStatus.refundInAnalysis)) ...[
                 DSSizedBoxSpacing.vertical(12),
                 Container(
                   padding: EdgeInsets.all(DSSize.width(12)),
@@ -664,13 +630,13 @@ class ContractCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Status do reembolso',
+                            'Status financeiro',
                             style: textTheme.bodySmall?.copyWith(
                               color: onSurfaceVariant,
                             ),
                           ),
                           Text(
-                            contract.showtimeRefundStatus!.displayName,
+                            contract.financialStatus!.displayName,
                             style: textTheme.bodySmall?.copyWith(
                               color: onPrimary,
                             ),

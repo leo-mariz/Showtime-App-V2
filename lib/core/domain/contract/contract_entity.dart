@@ -4,10 +4,10 @@ import 'package:app/core/domain/contract/show_rating_requested_entity.dart';
 import 'package:app/core/domain/event/event_type_entity.dart';
 import 'package:app/core/domain/availability/availability_day_entity.dart';
 import 'package:app/core/enums/contract_status_enum.dart';
+import 'package:app/core/enums/contract_financial_status_enum.dart';
 import 'package:app/core/enums/contractor_type_enum.dart';
-import 'package:app/core/enums/showtime_payment_status_enum.dart';
-import 'package:app/core/enums/showtime_refund_status_enum.dart';
 import 'package:app/core/enums/invoice_status_enum.dart';
+import 'package:app/core/enums/payment_method_id_enum.dart';
 import 'package:app/core/enums/contested_by_enum.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -86,39 +86,40 @@ class ContractEntity with ContractEntityMappable {
   final String? contractorPhotoUrl;
 
   final bool? isPaying;
-  final bool? analyseRefund;
 
-  // Repasse Showtime ao artista (espelhado do Admin)
-  /// Status do repasse da plataforma ao artista (a pagar, pago, reembolsado, em contestação).
-  final ShowtimePaymentStatus? showtimePaymentStatus;
+  // Status financeiro (repasse/reembolso/contestação) – espelhado do Admin
+  /// Estado de repasse ao artista, reembolso ao cliente ou contestação.
+  final ContractFinancialStatus? financialStatus;
+  /// Valor que estava em [status] no momento em que o contrato foi contestado.
+  final String? statusWhenContested;
   /// Data em que a Showtime efetuou o repasse ao artista.
   final DateTime? showtimePaymentAt;
-  /// Data em que foi reembolsado (aba Reembolsados).
+  /// Data em que foi reembolsado ao cliente.
   final DateTime? showtimeRefundedAt;
+  /// Valor em R$ reembolsado ao cliente.
+  final double? showtimeRefundedAmount;
+  /// Valor em R$ repassado ao artista.
+  final double? showtimePaidToArtistAmount;
+  /// Data em que a contestação foi aberta.
+  final DateTime? contestedAt;
+  /// Quem abriu a contestação.
+  final ContestedBy? contestedBy;
+  /// Motivo da contestação.
+  final String? contestedReason;
 
   // Nota fiscal (espelhado do Admin)
-  /// Status da nota fiscal em relação ao repasse.
+  /// Status da nota fiscal (NFS-e). Separado de [financialStatus].
   final InvoiceStatus? invoiceStatus;
   /// Última atualização do status da nota fiscal.
   final DateTime? invoiceStatusUpdatedAt;
 
-  // Reembolso Showtime ao cliente (análise de reembolso)
-  /// Resultado da análise de reembolso ao cliente (NONE, PARTIAL, FULL).
-  final ShowtimeRefundStatus? showtimeRefundStatus;
-  /// Valor em R$ reembolsado ao cliente. NONE = 0, PARTIAL = valor parcial, FULL = valor total.
-  final double? showtimeRefundedAmount;
-  /// Valor em R$ repassado ao artista. FULL = 0; NONE/PARTIAL = valor efetivamente pago ao artista.
-  final double? showtimePaidToArtistAmount;
+  /// Método de pagamento usado (Mercado Pago), preenchido ao processar o webhook.
+  final PaymentMethodIdEnum? paymentMethod;
 
-  // Contestação (contrato finalizado/pago mas em disputa)
-  /// Contrato em disputa (uma das partes contestou).
-  final bool? contested;
-  /// Quem abriu a contestação.
-  final ContestedBy? contestedBy;
-  /// Data em que a contestação foi aberta.
-  final DateTime? contestedAt;
-
-  final String? contestedReason;
+  /// Valor que a plataforma recebeu (transaction_details.net_received_amount), preenchido ao processar o webhook.
+  final double? netReceivedAmount;
+  /// Taxa que ficou com o Mercado Pago (total_paid_amount - net_received_amount).
+  final double? mercadoPagoFeeAmount;
 
   ContractEntity({
     required this.date,
@@ -162,19 +163,20 @@ class ContractEntity with ContractEntityMappable {
     this.clientPhotoUrl,
     this.contractorPhotoUrl,
     this.isPaying = false,
-    this.analyseRefund = false,
-    this.showtimePaymentStatus,
+    this.financialStatus,
+    this.statusWhenContested,
     this.showtimePaymentAt,
     this.showtimeRefundedAt,
-    this.invoiceStatus,
-    this.invoiceStatusUpdatedAt,
-    this.showtimeRefundStatus,
     this.showtimeRefundedAmount,
     this.showtimePaidToArtistAmount,
-    this.contested,
-    this.contestedBy,
     this.contestedAt,
+    this.contestedBy,
     this.contestedReason,
+    this.invoiceStatus,
+    this.invoiceStatusUpdatedAt,
+    this.paymentMethod,
+    this.netReceivedAmount,
+    this.mercadoPagoFeeAmount,
   }) : createdAt = createdAt ?? DateTime.now();
   
   // Validações de negócio
@@ -296,18 +298,20 @@ extension ContractEntityReference on ContractEntity {
     'acceptDeadline',
     'clientPhotoUrl',
     'contractorPhotoUrl',
-    'showtimePaymentStatus',
+    'financialStatus',
+    'statusWhenContested',
     'showtimePaymentAt',
     'showtimeRefundedAt',
-    'invoiceStatus',
-    'invoiceStatusUpdatedAt',
-    'showtimeRefundStatus',
     'showtimeRefundedAmount',
     'showtimePaidToArtistAmount',
-    'contested',
-    'contestedBy',
     'contestedAt',
+    'contestedBy',
     'contestedReason',
+    'invoiceStatus',
+    'invoiceStatusUpdatedAt',
+    'paymentMethod',
+    'netReceivedAmount',
+    'mercadoPagoFeeAmount',
   ];
 }
 

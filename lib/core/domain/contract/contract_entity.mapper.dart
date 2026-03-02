@@ -21,10 +21,10 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       ContractStatusEnumMapper.ensureInitialized();
       RatingEntityMapper.ensureInitialized();
       ShowRatingRequestedEntityMapper.ensureInitialized();
-      ShowtimePaymentStatusMapper.ensureInitialized();
-      InvoiceStatusMapper.ensureInitialized();
-      ShowtimeRefundStatusMapper.ensureInitialized();
+      ContractFinancialStatusMapper.ensureInitialized();
       ContestedByMapper.ensureInitialized();
+      InvoiceStatusMapper.ensureInitialized();
+      PaymentMethodIdEnumMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -276,19 +276,15 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     opt: true,
     def: false,
   );
-  static bool? _$analyseRefund(ContractEntity v) => v.analyseRefund;
-  static const Field<ContractEntity, bool> _f$analyseRefund = Field(
-    'analyseRefund',
-    _$analyseRefund,
-    opt: true,
-    def: false,
-  );
-  static ShowtimePaymentStatus? _$showtimePaymentStatus(ContractEntity v) =>
-      v.showtimePaymentStatus;
-  static const Field<ContractEntity, ShowtimePaymentStatus>
-  _f$showtimePaymentStatus = Field(
-    'showtimePaymentStatus',
-    _$showtimePaymentStatus,
+  static ContractFinancialStatus? _$financialStatus(ContractEntity v) =>
+      v.financialStatus;
+  static const Field<ContractEntity, ContractFinancialStatus>
+  _f$financialStatus = Field('financialStatus', _$financialStatus, opt: true);
+  static String? _$statusWhenContested(ContractEntity v) =>
+      v.statusWhenContested;
+  static const Field<ContractEntity, String> _f$statusWhenContested = Field(
+    'statusWhenContested',
+    _$statusWhenContested,
     opt: true,
   );
   static DateTime? _$showtimePaymentAt(ContractEntity v) => v.showtimePaymentAt;
@@ -302,24 +298,6 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
   static const Field<ContractEntity, DateTime> _f$showtimeRefundedAt = Field(
     'showtimeRefundedAt',
     _$showtimeRefundedAt,
-    opt: true,
-  );
-  static InvoiceStatus? _$invoiceStatus(ContractEntity v) => v.invoiceStatus;
-  static const Field<ContractEntity, InvoiceStatus> _f$invoiceStatus = Field(
-    'invoiceStatus',
-    _$invoiceStatus,
-    opt: true,
-  );
-  static DateTime? _$invoiceStatusUpdatedAt(ContractEntity v) =>
-      v.invoiceStatusUpdatedAt;
-  static const Field<ContractEntity, DateTime> _f$invoiceStatusUpdatedAt =
-      Field('invoiceStatusUpdatedAt', _$invoiceStatusUpdatedAt, opt: true);
-  static ShowtimeRefundStatus? _$showtimeRefundStatus(ContractEntity v) =>
-      v.showtimeRefundStatus;
-  static const Field<ContractEntity, ShowtimeRefundStatus>
-  _f$showtimeRefundStatus = Field(
-    'showtimeRefundStatus',
-    _$showtimeRefundStatus,
     opt: true,
   );
   static double? _$showtimeRefundedAmount(ContractEntity v) =>
@@ -337,10 +315,10 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
         _$showtimePaidToArtistAmount,
         opt: true,
       );
-  static bool? _$contested(ContractEntity v) => v.contested;
-  static const Field<ContractEntity, bool> _f$contested = Field(
-    'contested',
-    _$contested,
+  static DateTime? _$contestedAt(ContractEntity v) => v.contestedAt;
+  static const Field<ContractEntity, DateTime> _f$contestedAt = Field(
+    'contestedAt',
+    _$contestedAt,
     opt: true,
   );
   static ContestedBy? _$contestedBy(ContractEntity v) => v.contestedBy;
@@ -349,16 +327,37 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     _$contestedBy,
     opt: true,
   );
-  static DateTime? _$contestedAt(ContractEntity v) => v.contestedAt;
-  static const Field<ContractEntity, DateTime> _f$contestedAt = Field(
-    'contestedAt',
-    _$contestedAt,
-    opt: true,
-  );
   static String? _$contestedReason(ContractEntity v) => v.contestedReason;
   static const Field<ContractEntity, String> _f$contestedReason = Field(
     'contestedReason',
     _$contestedReason,
+    opt: true,
+  );
+  static InvoiceStatus? _$invoiceStatus(ContractEntity v) => v.invoiceStatus;
+  static const Field<ContractEntity, InvoiceStatus> _f$invoiceStatus = Field(
+    'invoiceStatus',
+    _$invoiceStatus,
+    opt: true,
+  );
+  static DateTime? _$invoiceStatusUpdatedAt(ContractEntity v) =>
+      v.invoiceStatusUpdatedAt;
+  static const Field<ContractEntity, DateTime> _f$invoiceStatusUpdatedAt =
+      Field('invoiceStatusUpdatedAt', _$invoiceStatusUpdatedAt, opt: true);
+  static PaymentMethodIdEnum? _$paymentMethod(ContractEntity v) =>
+      v.paymentMethod;
+  static const Field<ContractEntity, PaymentMethodIdEnum> _f$paymentMethod =
+      Field('paymentMethod', _$paymentMethod, opt: true);
+  static double? _$netReceivedAmount(ContractEntity v) => v.netReceivedAmount;
+  static const Field<ContractEntity, double> _f$netReceivedAmount = Field(
+    'netReceivedAmount',
+    _$netReceivedAmount,
+    opt: true,
+  );
+  static double? _$mercadoPagoFeeAmount(ContractEntity v) =>
+      v.mercadoPagoFeeAmount;
+  static const Field<ContractEntity, double> _f$mercadoPagoFeeAmount = Field(
+    'mercadoPagoFeeAmount',
+    _$mercadoPagoFeeAmount,
     opt: true,
   );
 
@@ -405,19 +404,20 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #clientPhotoUrl: _f$clientPhotoUrl,
     #contractorPhotoUrl: _f$contractorPhotoUrl,
     #isPaying: _f$isPaying,
-    #analyseRefund: _f$analyseRefund,
-    #showtimePaymentStatus: _f$showtimePaymentStatus,
+    #financialStatus: _f$financialStatus,
+    #statusWhenContested: _f$statusWhenContested,
     #showtimePaymentAt: _f$showtimePaymentAt,
     #showtimeRefundedAt: _f$showtimeRefundedAt,
-    #invoiceStatus: _f$invoiceStatus,
-    #invoiceStatusUpdatedAt: _f$invoiceStatusUpdatedAt,
-    #showtimeRefundStatus: _f$showtimeRefundStatus,
     #showtimeRefundedAmount: _f$showtimeRefundedAmount,
     #showtimePaidToArtistAmount: _f$showtimePaidToArtistAmount,
-    #contested: _f$contested,
-    #contestedBy: _f$contestedBy,
     #contestedAt: _f$contestedAt,
+    #contestedBy: _f$contestedBy,
     #contestedReason: _f$contestedReason,
+    #invoiceStatus: _f$invoiceStatus,
+    #invoiceStatusUpdatedAt: _f$invoiceStatusUpdatedAt,
+    #paymentMethod: _f$paymentMethod,
+    #netReceivedAmount: _f$netReceivedAmount,
+    #mercadoPagoFeeAmount: _f$mercadoPagoFeeAmount,
   };
 
   static ContractEntity _instantiate(DecodingData data) {
@@ -467,19 +467,20 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       clientPhotoUrl: data.dec(_f$clientPhotoUrl),
       contractorPhotoUrl: data.dec(_f$contractorPhotoUrl),
       isPaying: data.dec(_f$isPaying),
-      analyseRefund: data.dec(_f$analyseRefund),
-      showtimePaymentStatus: data.dec(_f$showtimePaymentStatus),
+      financialStatus: data.dec(_f$financialStatus),
+      statusWhenContested: data.dec(_f$statusWhenContested),
       showtimePaymentAt: data.dec(_f$showtimePaymentAt),
       showtimeRefundedAt: data.dec(_f$showtimeRefundedAt),
-      invoiceStatus: data.dec(_f$invoiceStatus),
-      invoiceStatusUpdatedAt: data.dec(_f$invoiceStatusUpdatedAt),
-      showtimeRefundStatus: data.dec(_f$showtimeRefundStatus),
       showtimeRefundedAmount: data.dec(_f$showtimeRefundedAmount),
       showtimePaidToArtistAmount: data.dec(_f$showtimePaidToArtistAmount),
-      contested: data.dec(_f$contested),
-      contestedBy: data.dec(_f$contestedBy),
       contestedAt: data.dec(_f$contestedAt),
+      contestedBy: data.dec(_f$contestedBy),
       contestedReason: data.dec(_f$contestedReason),
+      invoiceStatus: data.dec(_f$invoiceStatus),
+      invoiceStatusUpdatedAt: data.dec(_f$invoiceStatusUpdatedAt),
+      paymentMethod: data.dec(_f$paymentMethod),
+      netReceivedAmount: data.dec(_f$netReceivedAmount),
+      mercadoPagoFeeAmount: data.dec(_f$mercadoPagoFeeAmount),
     );
   }
 
@@ -610,19 +611,20 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? clientPhotoUrl,
     String? contractorPhotoUrl,
     bool? isPaying,
-    bool? analyseRefund,
-    ShowtimePaymentStatus? showtimePaymentStatus,
+    ContractFinancialStatus? financialStatus,
+    String? statusWhenContested,
     DateTime? showtimePaymentAt,
     DateTime? showtimeRefundedAt,
-    InvoiceStatus? invoiceStatus,
-    DateTime? invoiceStatusUpdatedAt,
-    ShowtimeRefundStatus? showtimeRefundStatus,
     double? showtimeRefundedAmount,
     double? showtimePaidToArtistAmount,
-    bool? contested,
-    ContestedBy? contestedBy,
     DateTime? contestedAt,
+    ContestedBy? contestedBy,
     String? contestedReason,
+    InvoiceStatus? invoiceStatus,
+    DateTime? invoiceStatusUpdatedAt,
+    PaymentMethodIdEnum? paymentMethod,
+    double? netReceivedAmount,
+    double? mercadoPagoFeeAmount,
   });
   ContractEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
@@ -721,19 +723,20 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? clientPhotoUrl = $none,
     Object? contractorPhotoUrl = $none,
     Object? isPaying = $none,
-    Object? analyseRefund = $none,
-    Object? showtimePaymentStatus = $none,
+    Object? financialStatus = $none,
+    Object? statusWhenContested = $none,
     Object? showtimePaymentAt = $none,
     Object? showtimeRefundedAt = $none,
-    Object? invoiceStatus = $none,
-    Object? invoiceStatusUpdatedAt = $none,
-    Object? showtimeRefundStatus = $none,
     Object? showtimeRefundedAmount = $none,
     Object? showtimePaidToArtistAmount = $none,
-    Object? contested = $none,
-    Object? contestedBy = $none,
     Object? contestedAt = $none,
+    Object? contestedBy = $none,
     Object? contestedReason = $none,
+    Object? invoiceStatus = $none,
+    Object? invoiceStatusUpdatedAt = $none,
+    Object? paymentMethod = $none,
+    Object? netReceivedAmount = $none,
+    Object? mercadoPagoFeeAmount = $none,
   }) => $apply(
     FieldCopyWithData({
       if (date != null) #date: date,
@@ -780,24 +783,25 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (clientPhotoUrl != $none) #clientPhotoUrl: clientPhotoUrl,
       if (contractorPhotoUrl != $none) #contractorPhotoUrl: contractorPhotoUrl,
       if (isPaying != $none) #isPaying: isPaying,
-      if (analyseRefund != $none) #analyseRefund: analyseRefund,
-      if (showtimePaymentStatus != $none)
-        #showtimePaymentStatus: showtimePaymentStatus,
+      if (financialStatus != $none) #financialStatus: financialStatus,
+      if (statusWhenContested != $none)
+        #statusWhenContested: statusWhenContested,
       if (showtimePaymentAt != $none) #showtimePaymentAt: showtimePaymentAt,
       if (showtimeRefundedAt != $none) #showtimeRefundedAt: showtimeRefundedAt,
-      if (invoiceStatus != $none) #invoiceStatus: invoiceStatus,
-      if (invoiceStatusUpdatedAt != $none)
-        #invoiceStatusUpdatedAt: invoiceStatusUpdatedAt,
-      if (showtimeRefundStatus != $none)
-        #showtimeRefundStatus: showtimeRefundStatus,
       if (showtimeRefundedAmount != $none)
         #showtimeRefundedAmount: showtimeRefundedAmount,
       if (showtimePaidToArtistAmount != $none)
         #showtimePaidToArtistAmount: showtimePaidToArtistAmount,
-      if (contested != $none) #contested: contested,
-      if (contestedBy != $none) #contestedBy: contestedBy,
       if (contestedAt != $none) #contestedAt: contestedAt,
+      if (contestedBy != $none) #contestedBy: contestedBy,
       if (contestedReason != $none) #contestedReason: contestedReason,
+      if (invoiceStatus != $none) #invoiceStatus: invoiceStatus,
+      if (invoiceStatusUpdatedAt != $none)
+        #invoiceStatusUpdatedAt: invoiceStatusUpdatedAt,
+      if (paymentMethod != $none) #paymentMethod: paymentMethod,
+      if (netReceivedAmount != $none) #netReceivedAmount: netReceivedAmount,
+      if (mercadoPagoFeeAmount != $none)
+        #mercadoPagoFeeAmount: mercadoPagoFeeAmount,
     }),
   );
   @override
@@ -861,10 +865,10 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       or: $value.contractorPhotoUrl,
     ),
     isPaying: data.get(#isPaying, or: $value.isPaying),
-    analyseRefund: data.get(#analyseRefund, or: $value.analyseRefund),
-    showtimePaymentStatus: data.get(
-      #showtimePaymentStatus,
-      or: $value.showtimePaymentStatus,
+    financialStatus: data.get(#financialStatus, or: $value.financialStatus),
+    statusWhenContested: data.get(
+      #statusWhenContested,
+      or: $value.statusWhenContested,
     ),
     showtimePaymentAt: data.get(
       #showtimePaymentAt,
@@ -874,15 +878,6 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       #showtimeRefundedAt,
       or: $value.showtimeRefundedAt,
     ),
-    invoiceStatus: data.get(#invoiceStatus, or: $value.invoiceStatus),
-    invoiceStatusUpdatedAt: data.get(
-      #invoiceStatusUpdatedAt,
-      or: $value.invoiceStatusUpdatedAt,
-    ),
-    showtimeRefundStatus: data.get(
-      #showtimeRefundStatus,
-      or: $value.showtimeRefundStatus,
-    ),
     showtimeRefundedAmount: data.get(
       #showtimeRefundedAmount,
       or: $value.showtimeRefundedAmount,
@@ -891,10 +886,23 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       #showtimePaidToArtistAmount,
       or: $value.showtimePaidToArtistAmount,
     ),
-    contested: data.get(#contested, or: $value.contested),
-    contestedBy: data.get(#contestedBy, or: $value.contestedBy),
     contestedAt: data.get(#contestedAt, or: $value.contestedAt),
+    contestedBy: data.get(#contestedBy, or: $value.contestedBy),
     contestedReason: data.get(#contestedReason, or: $value.contestedReason),
+    invoiceStatus: data.get(#invoiceStatus, or: $value.invoiceStatus),
+    invoiceStatusUpdatedAt: data.get(
+      #invoiceStatusUpdatedAt,
+      or: $value.invoiceStatusUpdatedAt,
+    ),
+    paymentMethod: data.get(#paymentMethod, or: $value.paymentMethod),
+    netReceivedAmount: data.get(
+      #netReceivedAmount,
+      or: $value.netReceivedAmount,
+    ),
+    mercadoPagoFeeAmount: data.get(
+      #mercadoPagoFeeAmount,
+      or: $value.mercadoPagoFeeAmount,
+    ),
   );
 
   @override

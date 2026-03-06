@@ -681,7 +681,7 @@ class _RequestScreenState extends State<RequestScreen> {
     final ensemble = widget.ensemble;
     final membersCount = _getTotalExtraEnsembleMembers();
     final nameGroup = ensemble != null
-        ? '${ensemble.ownerArtist?.artistName ?? 'Conjunto'} + $membersCount'
+        ? ensemble.ensemble.ensembleName ?? '${ensemble.ownerArtist?.artistName ?? 'Conjunto'} + $membersCount'
         : null;
 
     // Fotos em snapshot para exibir no card (anfitrião e artista/conjunto)

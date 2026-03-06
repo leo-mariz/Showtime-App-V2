@@ -1,3 +1,4 @@
+import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/artist_name_field.dart';
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/cnpj_form.dart';
 import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/cpf_form.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,11 @@ class BasicInfoStep extends StatefulWidget {
   // Controllers compartilhados
   final TextEditingController emailController;
   final TextEditingController phoneNumberController;
-  
+
+  /// Controller do nome artístico (apenas quando [isArtist] é true).
+  final TextEditingController? artistNameController;
+  final Function(bool)? onArtistNameValidationChanged;
+
   // Estado CPF
   final String? selectedGender;
   final List<String> genderOptions;
@@ -48,6 +53,8 @@ class BasicInfoStep extends StatefulWidget {
     required this.stateRegistrationController,
     required this.emailController,
     required this.phoneNumberController,
+    this.artistNameController,
+    this.onArtistNameValidationChanged,
     required this.selectedGender,
     required this.genderOptions,
     required this.onGenderChanged,
@@ -73,6 +80,14 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Nome artístico (opcional) — só para artistas
+          if (widget.isArtist && widget.artistNameController != null) ...[
+            ArtistNameField(
+              controller: widget.artistNameController!,
+              onValidationChanged: widget.onArtistNameValidationChanged ?? (_) {},
+            ),
+            DSSizedBoxSpacing.vertical(16),
+          ],
           // Seleção CPF ou CNPJ
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

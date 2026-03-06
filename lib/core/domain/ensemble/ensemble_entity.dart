@@ -19,6 +19,9 @@ class EnsembleEntity with EnsembleEntityMappable {
   /// URL da foto de perfil do conjunto
   final String? profilePhotoUrl;
 
+  /// Nome do conjunto
+  final String? ensembleName;
+
   /// Informações profissionais do conjunto (igual à estrutura do artista)
   final ProfessionalInfoEntity? professionalInfo;
 
@@ -51,6 +54,7 @@ class EnsembleEntity with EnsembleEntityMappable {
     this.id,
     required this.ownerArtistId,
     this.profilePhotoUrl,
+    this.ensembleName,
     this.professionalInfo,
     this.presentationVideoUrl,
     this.members,
@@ -72,6 +76,7 @@ abstract class EnsembleEntityKeys {
   static const String id = 'id';
   static const String ownerArtistId = 'ownerArtistId';
   static const String profilePhotoUrl = 'profilePhotoUrl';
+  static const String ensembleName = 'ensembleName';
   static const String professionalInfo = 'professionalInfo';
   static const String presentationVideoUrl = 'presentationVideoUrl';
   static const String members = 'members';

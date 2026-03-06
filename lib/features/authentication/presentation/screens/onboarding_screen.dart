@@ -62,7 +62,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Controllers compartilhados
   final _emailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
-  
+  final _artistNameController = TextEditingController();
+
   // Estado CPF
   String? _selectedGender;
   final List<String> _genderOptions = ['Masculino', 'Feminino', 'Não informar'];
@@ -76,7 +77,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isLoading = false;
   bool _isCpfValid = true; // Indica se CPF está válido (disponível)
   bool _isCnpjValid = true; // Indica se CNPJ está válido (disponível)
-  
+  bool _isArtistNameValid = true; // Nome artístico opcional; true quando vazio ou disponível
 
   @override
   void initState() {
@@ -101,7 +102,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // Controllers compartilhados
     _emailController.dispose();
     _phoneNumberController.dispose();
-    
+    _artistNameController.dispose();
+
     super.dispose();
   }
 
@@ -202,6 +204,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           lastNameController: _lastNameController,
           emailController: _emailController,
           phoneNumberController: _phoneNumberController,
+          artistNameController: _artistNameController,
+          onArtistNameValidationChanged: _isArtist!
+              ? (isValid) {
+                  setState(() => _isArtistNameValid = isValid);
+                }
+              : null,
           cpfController: _cpfController,
           birthdateController: _birthdateController,
           cnpjController: _cnpjController,
@@ -327,8 +335,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           return;
         }
       }
-      
-      // Validar nome artístico se for artista e tiver preenchido
+
+      if (_isArtist! && !_isArtistNameValid) {
+        context.showError('Este Nome Artístico já está em uso');
+        return;
+      }
+
       setState(() => _currentStep++);
       return;
     }
@@ -372,8 +384,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
 
     // Criar ArtistEntity ou ClientEntity
-    final artist = ArtistEntity.defaultEntity();
-    
+    final artistName = _artistNameController.text.trim();
+    final artist = ArtistEntity.defaultEntity().copyWith(
+      artistName: artistName.isEmpty ? null : artistName,
+    );
+
     final client = ClientEntity.defaultClientEntity();
 
     // Criar RegisterEntity

@@ -33,10 +33,11 @@ class CalculateMonthlyEarningsUseCase {
       final paymentDate = contract.paymentDate!;
       final paymentMonth = DateTime(paymentDate.year, paymentDate.month);
 
+      final amount = contract.showtimePaidToArtistAmount ?? 0.0;
       if (paymentMonth == currentMonth) {
-        monthEarnings += contract.value;
+        monthEarnings += amount;
       } else if (paymentMonth == previousMonth) {
-        previousMonthEarnings += contract.value;
+        previousMonthEarnings += amount;
       }
     }
 

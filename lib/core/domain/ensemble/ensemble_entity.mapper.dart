@@ -40,6 +40,12 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     _$profilePhotoUrl,
     opt: true,
   );
+  static String? _$ensembleName(EnsembleEntity v) => v.ensembleName;
+  static const Field<EnsembleEntity, String> _f$ensembleName = Field(
+    'ensembleName',
+    _$ensembleName,
+    opt: true,
+  );
   static ProfessionalInfoEntity? _$professionalInfo(EnsembleEntity v) =>
       v.professionalInfo;
   static const Field<EnsembleEntity, ProfessionalInfoEntity>
@@ -122,6 +128,7 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     #id: _f$id,
     #ownerArtistId: _f$ownerArtistId,
     #profilePhotoUrl: _f$profilePhotoUrl,
+    #ensembleName: _f$ensembleName,
     #professionalInfo: _f$professionalInfo,
     #presentationVideoUrl: _f$presentationVideoUrl,
     #members: _f$members,
@@ -141,6 +148,7 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
       id: data.dec(_f$id),
       ownerArtistId: data.dec(_f$ownerArtistId),
       profilePhotoUrl: data.dec(_f$profilePhotoUrl),
+      ensembleName: data.dec(_f$ensembleName),
       professionalInfo: data.dec(_f$professionalInfo),
       presentationVideoUrl: data.dec(_f$presentationVideoUrl),
       members: data.dec(_f$members),
@@ -243,6 +251,7 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     String? id,
     String? ownerArtistId,
     String? profilePhotoUrl,
+    String? ensembleName,
     ProfessionalInfoEntity? professionalInfo,
     String? presentationVideoUrl,
     List<EnsembleMember>? members,
@@ -319,6 +328,7 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     Object? id = $none,
     String? ownerArtistId,
     Object? profilePhotoUrl = $none,
+    Object? ensembleName = $none,
     Object? professionalInfo = $none,
     Object? presentationVideoUrl = $none,
     Object? members = $none,
@@ -336,6 +346,7 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
       if (id != $none) #id: id,
       if (ownerArtistId != null) #ownerArtistId: ownerArtistId,
       if (profilePhotoUrl != $none) #profilePhotoUrl: profilePhotoUrl,
+      if (ensembleName != $none) #ensembleName: ensembleName,
       if (professionalInfo != $none) #professionalInfo: professionalInfo,
       if (presentationVideoUrl != $none)
         #presentationVideoUrl: presentationVideoUrl,
@@ -357,6 +368,7 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     id: data.get(#id, or: $value.id),
     ownerArtistId: data.get(#ownerArtistId, or: $value.ownerArtistId),
     profilePhotoUrl: data.get(#profilePhotoUrl, or: $value.profilePhotoUrl),
+    ensembleName: data.get(#ensembleName, or: $value.ensembleName),
     professionalInfo: data.get(#professionalInfo, or: $value.professionalInfo),
     presentationVideoUrl: data.get(
       #presentationVideoUrl,

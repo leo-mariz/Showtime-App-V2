@@ -223,6 +223,65 @@ class UpdateEnsembleMemberTalentsFailure extends EnsembleState {
   List<Object?> get props => [error];
 }
 
+// ==================== CHECK ENSEMBLE NAME EXISTS ====================
+
+class CheckEnsembleNameExistsLoading extends EnsembleState {
+  final String ensembleName;
+
+  CheckEnsembleNameExistsLoading({required this.ensembleName});
+
+  @override
+  List<Object?> get props => [ensembleName];
+}
+
+class CheckEnsembleNameExistsSuccess extends EnsembleState {
+  final String ensembleName;
+  final bool exists;
+
+  CheckEnsembleNameExistsSuccess({
+    required this.ensembleName,
+    required this.exists,
+  });
+
+  @override
+  List<Object?> get props => [ensembleName, exists];
+}
+
+class CheckEnsembleNameExistsFailure extends EnsembleState {
+  final String ensembleName;
+  final String error;
+
+  CheckEnsembleNameExistsFailure({
+    required this.ensembleName,
+    required this.error,
+  });
+
+  @override
+  List<Object?> get props => [ensembleName, error];
+}
+
+// ==================== UPDATE ENSEMBLE NAME ====================
+
+class UpdateEnsembleNameLoading extends EnsembleState {}
+
+class UpdateEnsembleNameSuccess extends EnsembleState {
+  final EnsembleEntity ensemble;
+
+  UpdateEnsembleNameSuccess({required this.ensemble});
+
+  @override
+  List<Object?> get props => [ensemble];
+}
+
+class UpdateEnsembleNameFailure extends EnsembleState {
+  final String error;
+
+  UpdateEnsembleNameFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== DELETE ENSEMBLE ====================
 
 class DeleteEnsembleLoading extends EnsembleState {}

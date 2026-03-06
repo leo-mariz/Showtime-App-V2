@@ -7,6 +7,7 @@ import 'package:app/core/services/image_picker_service.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/circular_progress_indicator.dart';
 import 'package:app/core/shared/widgets/custom_button.dart';
+import 'package:app/core/shared/widgets/edit_name_modal.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/features/profile/shared/presentation/widgets/icon_menu_button.dart';
 import 'package:app/features/profile/shared/presentation/widgets/logout_button.dart';
@@ -17,6 +18,7 @@ import 'package:app/features/profile/shared/presentation/widgets/profile_picture
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:app/features/authentication/presentation/bloc/events/auth_events.dart';
 import 'package:app/features/authentication/presentation/bloc/states/auth_states.dart';
+import 'package:app/features/authentication/presentation/widgets/onboarding_steps/forms/artist_name_field.dart';
 import 'package:app/features/artists/artists/domain/enums/artist_incomplete_info_type_enum.dart';
 import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/artists/artists/presentation/bloc/events/artists_events.dart';
@@ -306,6 +308,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
                                         imageUrl: displayPicture,
                                         onProfilePictureTap: () => _handleProfilePictureTap(),
                                         isLoadingProfilePicture: isLoadingProfilePicture,
+                                        onEditName: () => _showEditArtistNameModal(displayName),
                                         onSwitchUserType: () => _showSwitchAccountConfirmation(),
                                         showPhotoIncompleteBadge: _isSectionIncomplete(ArtistIncompleteInfoType.profilePicture),
                                       )
@@ -608,6 +611,21 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
     context.read<AuthBloc>().add(UserLogoutEvent());
   }
 
+  /// Abre modal para editar o nome artístico (header permanece intacto até operação concluir).
+  void _showEditArtistNameModal(String currentName) {
+    if (!mounted) return;
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      builder: (ctx) => BlocProvider.value(
+        value: context.read<ArtistsBloc>(),
+        child: _EditArtistNameModal(currentName: currentName),
+      ),
+    );
+  }
+
   /// Mostra modal de confirmação para alternar tipo de conta
   Future<void> _showSwitchAccountConfirmation() async {
     debugPrint('🔵 [ArtistProfileScreen] _showSwitchAccountConfirmation chamado');
@@ -651,6 +669,76 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen>{
         AddClientEvent(),
       );
     }
+  }
+}
+
+/// Modal para editar nome artístico (usa [ArtistNameField]; salva com [UpdateArtistNameEvent]; fecha ao concluir).
+class _EditArtistNameModal extends StatefulWidget {
+  final String currentName;
+
+  const _EditArtistNameModal({required this.currentName});
+
+  @override
+  State<_EditArtistNameModal> createState() => _EditArtistNameModalState();
+}
+
+class _EditArtistNameModalState extends State<_EditArtistNameModal> {
+  late final TextEditingController _controller;
+  bool _isNameValid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onSave() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    if (!_isNameValid) return;
+    context.read<ArtistsBloc>().add(UpdateArtistNameEvent(artistName: name));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ArtistsBloc, ArtistsState>(
+      listenWhen: (prev, curr) =>
+          curr is UpdateArtistNameSuccess || curr is UpdateArtistNameFailure,
+      listener: (context, state) {
+        if (state is UpdateArtistNameSuccess || state is UpdateArtistNameFailure) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: BlocBuilder<ArtistsBloc, ArtistsState>(
+        buildWhen: (prev, curr) =>
+            (curr is UpdateArtistNameLoading) != (prev is UpdateArtistNameLoading),
+        builder: (context, state) {
+          final isLoading = state is UpdateArtistNameLoading;
+          final canSave = !isLoading &&
+              _isNameValid &&
+              _controller.text.trim().isNotEmpty;
+          return EditNameModal(
+            title: 'Editar nome artístico',
+            field: ArtistNameField(
+              controller: _controller,
+              onValidationChanged: (valid) {
+                setState(() => _isNameValid = valid);
+              },
+              considerEmptyAsValid: false,
+            ),
+            onSave: _onSave,
+            isLoading: isLoading,
+            canSave: canSave,
+          );
+        },
+      ),
+    );
   }
 }
 

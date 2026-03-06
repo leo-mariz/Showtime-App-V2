@@ -6,7 +6,6 @@ import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_comp
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_incomplete_sections_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 
 /// Sincroniza a completude do conjunto apenas se houver mudanças.
 ///
@@ -50,12 +49,9 @@ class SyncEnsembleCompletenessIfChangedUseCase {
                 return const Left(NotFoundFailure('Conjunto não encontrado'));
               }
               final hasChanged = _hasCompletenessChanged(current, completeness);
-              debugPrint('[SyncEnsembleCompleteness] ensembleId=$ensembleId hasChanged=$hasChanged current.hasIncomplete=${current.hasIncompleteSections} current.keys=${current.incompleteSections?.keys.toList()}');
-              debugPrint('[SyncEnsembleCompleteness] newIncomplete=${completeness.incompleteStatuses.map((s) => s.type.name).toList()}');
               if (!hasChanged) {
                 return const Right(false);
               }
-              debugPrint('[SyncEnsembleCompleteness] chamando updateEnsembleIncompleteSections');
               final updateResult = await updateEnsembleIncompleteSectionsUseCase.call(
                 artistId,
                 ensembleId,
@@ -89,7 +85,6 @@ class SyncEnsembleCompletenessIfChangedUseCase {
     final expectedHasIncomplete = expected.isNotEmpty;
     final currentSections = current.incompleteSections ?? <String, List<String>>{};
     if (current.hasIncompleteSections != expectedHasIncomplete) {
-      debugPrint('[SyncEnsembleCompleteness] _hasChanged true: hasIncomplete current=${current.hasIncompleteSections} expected=$expectedHasIncomplete');
       return true;
     }
     final currentSorted = <String, List<String>>{};
@@ -97,12 +92,10 @@ class SyncEnsembleCompletenessIfChangedUseCase {
       currentSorted[e.key] = List<String>.from(e.value)..sort();
     }
     if (currentSorted.length != expected.length) {
-      debugPrint('[SyncEnsembleCompleteness] _hasChanged true: length current=${currentSorted.length} expected=${expected.length}');
       return true;
     }
     for (final key in expected.keys) {
       if (!currentSorted.containsKey(key)) {
-        debugPrint('[SyncEnsembleCompleteness] _hasChanged true: expected key $key missing in current');
         return true;
       }
       final a = expected[key]!;
@@ -114,11 +107,9 @@ class SyncEnsembleCompletenessIfChangedUseCase {
     }
     for (final key in currentSorted.keys) {
       if (!expected.containsKey(key)) {
-        debugPrint('[SyncEnsembleCompleteness] _hasChanged true: current key $key not in expected');
         return true;
       }
     }
-    debugPrint('[SyncEnsembleCompleteness] _hasChanged false');
     return false;
   }
 }

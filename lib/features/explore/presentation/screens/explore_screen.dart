@@ -701,9 +701,12 @@ class _ExploreScreenState extends State<ExploreScreen>
         final availabilities = item.availabilities;
         final info = ensemble.professionalInfo;
         final memberCount = ensemble.members?.length ?? 0;
-        final groupName = memberCount > 0
-            ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount-1}'
-            : (ownerArtist?.artistName ?? 'Conjunto');
+        final ensembleName = ensemble.ensembleName?.trim();
+        final groupName = (ensembleName != null && ensembleName.isNotEmpty)
+            ? ensembleName
+            : (memberCount > 0
+                ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount - 1}'
+                : (ownerArtist?.artistName ?? 'Conjunto'));
         var talentsSource = <String>[];
         if (ownerArtist?.professionalInfo?.specialty != null) {
           talentsSource.addAll(ownerArtist?.professionalInfo?.specialty ?? []);

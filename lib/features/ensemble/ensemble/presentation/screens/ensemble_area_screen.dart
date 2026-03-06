@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:io';
 
 import 'package:app/core/config/auto_router_config.gr.dart';
@@ -16,9 +17,11 @@ import 'package:app/features/artists/artists/presentation/widgets/artist_area_op
 import 'package:app/features/ensemble/ensemble/domain/enums/ensemble_info_type_enum.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/widgets/ensemble_completeness_card.dart';
+import 'package:app/features/ensemble/ensemble/presentation/widgets/ensemble_name_field.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_header.dart';
+import 'package:app/core/shared/widgets/edit_name_modal.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_picture/photo_confirmation_dialog.dart';
 import 'package:app/features/profile/shared/presentation/widgets/profile_picture/profile_picture_options_menu.dart';
 import 'package:auto_route/auto_route.dart';
@@ -43,6 +46,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    dev.log('EnsembleAreaScreen didChangeDependencies -> GetEnsembleByIdEvent(ensembleId=${widget.ensembleId})', name: 'EnsembleArea');
     context.read<EnsembleBloc>().add(GetEnsembleByIdEvent(ensembleId: widget.ensembleId));
     // Garante que o artista (dono) esteja carregado para navegação para "Minha Página"
     if (context.read<ArtistsBloc>().state is! GetArtistSuccess) {
@@ -74,6 +78,10 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
 
   /// Nome de exibição do conjunto: "Nome do Artista" ou "Nome do Artista + N".
   String _displayName(EnsembleEntity ensemble) {
+    final ensembleName = ensemble.ensembleName;
+    if (ensembleName != null && ensembleName.isNotEmpty) {
+      return ensembleName;
+    }
     final artistName = _getArtistName();
     final count = _additionalMembersCount(ensemble);
     return count > 0 ? '$artistName + $count' : artistName;
@@ -234,6 +242,21 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
     }
   }
 
+  void _showEditEnsembleNameModal(EnsembleEntity ensemble) {
+    final currentName = ensemble.ensembleName ?? '';
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => BlocProvider.value(
+        value: context.read<EnsembleBloc>(),
+        child: _EditEnsembleNameModal(
+          ensembleId: ensemble.id ?? widget.ensembleId,
+          currentName: currentName,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -350,6 +373,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
                     onProfilePictureTap: () => _handleProfilePictureTap(ensemble),
                     isLoadingProfilePicture: _isUpdatingProfilePhoto,
                     showPhotoIncompleteBadge: _hasIncompleteSection(ensemble, EnsembleInfoType.profilePhoto.name),
+                    onEditName: () => _showEditEnsembleNameModal(ensemble),
                   ),
                   DSSizedBoxSpacing.vertical(16),
                   // Incompleto: card com mensagem e detalhes. Completo e aprovado: botão de ativar. Completo e não aprovado: mensagem "em análise".
@@ -501,6 +525,90 @@ class _EnsembleUnderReviewCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Modal para editar nome do conjunto (usa [EnsembleNameField]; salva com [UpdateEnsembleNameEvent]; fecha ao concluir).
+class _EditEnsembleNameModal extends StatefulWidget {
+  final String ensembleId;
+  final String currentName;
+
+  const _EditEnsembleNameModal({
+    required this.ensembleId,
+    required this.currentName,
+  });
+
+  @override
+  State<_EditEnsembleNameModal> createState() => _EditEnsembleNameModalState();
+}
+
+class _EditEnsembleNameModalState extends State<_EditEnsembleNameModal> {
+  late final TextEditingController _controller;
+  bool _isNameValid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onSave() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    if (!_isNameValid) return;
+    context.read<EnsembleBloc>().add(UpdateEnsembleNameEvent(
+          ensembleId: widget.ensembleId,
+          ensembleName: name,
+        ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<EnsembleBloc, EnsembleState>(
+      listenWhen: (prev, curr) =>
+          curr is UpdateEnsembleNameSuccess || curr is UpdateEnsembleNameFailure,
+      listener: (context, state) {
+        if (state is UpdateEnsembleNameSuccess) {
+          dev.log('UpdateEnsembleNameSuccess no modal -> showSuccess + pop', name: 'EnsembleArea');
+          context.showSuccess('Nome do conjunto atualizado.');
+          Navigator.of(context).pop();
+        }
+        if (state is UpdateEnsembleNameFailure) {
+          dev.log('UpdateEnsembleNameFailure no modal -> showError + pop', name: 'EnsembleArea');
+          context.showError(state.error);
+          Navigator.of(context).pop();
+        }
+      },
+      child: BlocBuilder<EnsembleBloc, EnsembleState>(
+        buildWhen: (prev, curr) =>
+            (curr is UpdateEnsembleNameLoading) != (prev is UpdateEnsembleNameLoading),
+        builder: (context, state) {
+          final isLoading = state is UpdateEnsembleNameLoading;
+          final canSave = !isLoading &&
+              _isNameValid &&
+              _controller.text.trim().isNotEmpty;
+          return EditNameModal(
+            title: 'Editar nome do conjunto',
+            field: EnsembleNameField(
+              controller: _controller,
+              onValidationChanged: (valid) {
+                setState(() => _isNameValid = valid);
+              },
+              excludeEnsembleId: widget.ensembleId,
+            ),
+            onSave: _onSave,
+            isLoading: isLoading,
+            canSave: canSave,
+          );
+        },
       ),
     );
   }

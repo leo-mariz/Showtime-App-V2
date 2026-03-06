@@ -204,10 +204,12 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final ensemble = _currentEnsemble;
     final profilePhotoUrl = ensemble?.profilePhotoUrl ?? artist?.profilePicture;
     final totalDisplayMembers = (ensemble?.members?.length ?? 0) - 1;
-    // Nome do grupo: nome do artista dono + número de integrantes
-    final displayTitle = totalDisplayMembers > 0
-        ? '${artist?.artistName ?? 'Conjunto'} + $totalDisplayMembers'
-        : (artist?.artistName ?? 'Conjunto');
+    final ensembleName = ensemble?.ensembleName?.trim();
+    final displayTitle = (ensembleName != null && ensembleName.isNotEmpty)
+        ? ensembleName
+        : (totalDisplayMembers > 0
+            ? '${artist?.artistName ?? 'Conjunto'} + $totalDisplayMembers'
+            : (artist?.artistName ?? 'Conjunto'));
     final professionalInfo = ensemble?.professionalInfo ?? artist?.professionalInfo;
     final bio = professionalInfo?.bio;
 

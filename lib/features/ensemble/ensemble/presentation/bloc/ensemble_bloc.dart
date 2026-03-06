@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/create_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/delete_ensemble_usecase.dart';
@@ -8,7 +10,9 @@ import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_m
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_presentation_video_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_professional_info_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_profile_photo_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_name_exists_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_active_status_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_name_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
@@ -28,6 +32,8 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
   final UpdateEnsembleMembersUseCase updateEnsembleMembersUseCase;
   final UpdateEnsembleMemberTalentsUseCase updateEnsembleMemberTalentsUseCase;
   final UpdateEnsembleActiveStatusUseCase updateEnsembleActiveStatusUseCase;
+  final UpdateEnsembleNameUseCase updateEnsembleNameUseCase;
+  final CheckEnsembleNameExistsUseCase checkEnsembleNameExistsUseCase;
   final DeleteEnsembleUseCase deleteEnsembleUseCase;
   final GetUserUidUseCase getUserUidUseCase;
 
@@ -42,6 +48,8 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     required this.updateEnsembleMembersUseCase,
     required this.updateEnsembleMemberTalentsUseCase,
     required this.updateEnsembleActiveStatusUseCase,
+    required this.updateEnsembleNameUseCase,
+    required this.checkEnsembleNameExistsUseCase,
     required this.deleteEnsembleUseCase,
     required this.getUserUidUseCase,
   }) : super(EnsembleInitial()) {
@@ -56,6 +64,8 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
         _onUpdateEnsemblePresentationVideo);
     on<UpdateEnsembleMemberTalentsEvent>(_onUpdateEnsembleMemberTalents);
     on<UpdateEnsembleActiveStatusEvent>(_onUpdateEnsembleActiveStatus);
+    on<CheckEnsembleNameExistsEvent>(_onCheckEnsembleNameExists);
+    on<UpdateEnsembleNameEvent>(_onUpdateEnsembleName);
     on<DeleteEnsembleEvent>(_onDeleteEnsemble);
     on<ResetEnsembleEvent>(_onResetEnsemble);
   }
@@ -65,10 +75,74 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     return result.fold((_) => null, (uid) => uid);
   }
 
+  /// Restaura o estado da lista de conjuntos (ex.: após falha ou artistId nulo).
+  void _restoreEnsemblesState(
+    Emitter<EnsembleState> emit,
+    GetAllEnsemblesSuccess? previousSuccess,
+    List<EnsembleEntity> previousList,
+  ) {
+    if (previousList.isNotEmpty) {
+      emit(GetAllEnsemblesSuccess(
+        ensembles: previousList,
+        currentEnsemble: previousSuccess?.currentEnsemble,
+      ));
+    } else {
+      emit(EnsembleInitial());
+    }
+  }
+
+  /// Retorna lista e currentEnsemble atualizados após substituir um item por [updatedEnsemble], ou null se [previousList] for vazio.
+  (List<EnsembleEntity> updatedList, EnsembleEntity? newCurrent)? _computeEnsemblesWithUpdated(
+    GetAllEnsemblesSuccess? previousSuccess,
+    List<EnsembleEntity> previousList,
+    EnsembleEntity updatedEnsemble,
+  ) {
+    if (previousList.isEmpty) return null;
+    final updatedList = previousList
+        .map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e)
+        .toList();
+    final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
+        ? updatedEnsemble
+        : previousSuccess?.currentEnsemble;
+    return (updatedList, newCurrent);
+  }
+
+  /// Emite estado com a lista de conjuntos atualizada (um item substituído pelo [updatedEnsemble]).
+  /// Se [previousList] for vazio mas o [currentEnsemble] era o que foi atualizado, emite estado
+  /// mantendo apenas [currentEnsemble] atualizado (ensembles vazio) para a área mostrar o novo nome;
+  /// a tela de lista ao voltar verá ensembles vazio e fará refetch.
+  void _emitEnsemblesWithUpdated(
+    Emitter<EnsembleState> emit,
+    GetAllEnsemblesSuccess? previousSuccess,
+    List<EnsembleEntity> previousList,
+    EnsembleEntity updatedEnsemble,
+  ) {
+    dev.log(
+      '_emitEnsemblesWithUpdated: previousList.length=${previousList.length}, '
+      'updatedId=${updatedEnsemble.id}, currentId=${previousSuccess?.currentEnsemble?.id}',
+      name: 'EnsembleBloc',
+    );
+    final applied = _computeEnsemblesWithUpdated(previousSuccess, previousList, updatedEnsemble);
+    if (applied != null) {
+      dev.log(
+        'emit GetAllEnsemblesSuccess(ensembles: ${applied.$1.length}, currentEnsemble: ${applied.$2?.id})',
+        name: 'EnsembleBloc',
+      );
+      emit(GetAllEnsemblesSuccess(ensembles: applied.$1, currentEnsemble: applied.$2));
+    } else if (previousSuccess?.currentEnsemble?.id == updatedEnsemble.id) {
+      dev.log('emit GetAllEnsemblesSuccess(ensembles: 0, currentEnsemble: ${updatedEnsemble.id}) [branch vazio]', name: 'EnsembleBloc');
+      emit(GetAllEnsemblesSuccess(ensembles: [], currentEnsemble: updatedEnsemble));
+    } else {
+      dev.log('emit EnsembleInitial()', name: 'EnsembleBloc');
+      emit(EnsembleInitial());
+    }
+  }
+
   Future<void> _onGetAllEnsemblesByArtist(
     GetAllEnsemblesByArtistEvent event,
     Emitter<EnsembleState> emit,
   ) async {
+    dev.log('GetAllEnsemblesByArtistEvent(forceRemote: ${event.forceRemote}) -> emit Loading', name: 'EnsembleBloc');
     emit(GetAllEnsemblesLoading());
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
@@ -82,10 +156,12 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     );
     result.fold(
       (failure) {
+        dev.log('GetAllEnsemblesByArtist FAIL: ${failure.message}', name: 'EnsembleBloc');
         emit(GetAllEnsemblesFailure(error: failure.message));
         emit(EnsembleInitial());
       },
       (ensembles) {
+        dev.log('GetAllEnsemblesByArtist SUCCESS: ensembles.length=${ensembles.length}', name: 'EnsembleBloc');
         emit(GetAllEnsemblesSuccess(ensembles: ensembles, currentEnsemble: null));
       },
     );
@@ -96,12 +172,19 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     Emitter<EnsembleState> emit,
   ) async {
     final success = state is GetAllEnsemblesSuccess ? state as GetAllEnsemblesSuccess : null;
+    final list = success?.ensembles ?? <EnsembleEntity>[];
+    dev.log(
+      'GetEnsembleByIdEvent(ensembleId=${event.ensembleId}, forceRefresh=${event.forceRefresh}) '
+      'state=${state.runtimeType} success.ensembles.length=${list.length} currentId=${success?.currentEnsemble?.id}',
+      name: 'EnsembleBloc',
+    );
     if (!event.forceRefresh &&
         success != null &&
         success.currentEnsemble?.id == event.ensembleId) {
+      dev.log('GetEnsembleById early return (já tem current)', name: 'EnsembleBloc');
       return;
     }
-    final list = success?.ensembles ?? <EnsembleEntity>[];
+    dev.log('GetEnsembleById emit(ensembles: ${list.length}, currentEnsemble: null) e depois fetch', name: 'EnsembleBloc');
     emit(GetAllEnsemblesSuccess(ensembles: list, currentEnsemble: null));
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
@@ -111,9 +194,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final result = await getEnsembleUseCase.call(artistId, event.ensembleId);
     result.fold(
       (failure) {
+        dev.log('GetEnsembleById fetch FAIL: ${failure.message}', name: 'EnsembleBloc');
         emit(GetEnsembleByIdFailure(error: failure.message));
       },
       (ensemble) {
+        dev.log('GetEnsembleById fetch SUCCESS: emit(ensembles: ${list.length}, currentEnsemble: ${ensemble?.id})', name: 'EnsembleBloc');
         emit(GetAllEnsemblesSuccess(ensembles: list, currentEnsemble: ensemble));
       },
     );
@@ -154,11 +239,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
       emit(UpdateEnsembleFailure(error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
     final ensembleId = event.ensemble.id;
@@ -172,24 +253,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
       result.fold(
         (failure) {
           emit(UpdateEnsembleFailure(error: failure.message));
-          if (previousList.isNotEmpty) {
-            emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-          } else {
-            emit(EnsembleInitial());
-          }
+          _restoreEnsemblesState(emit, previousSuccess, previousList);
         },
         (updatedEnsemble) {
           emit(UpdateEnsembleSuccess(ensemble: updatedEnsemble));
-          if (previousList.isNotEmpty) {
-            final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-            final isCurrentEnsemble = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id;
-            emit(GetAllEnsemblesSuccess(
-              ensembles: updatedList,
-              currentEnsemble: isCurrentEnsemble ? updatedEnsemble : previousSuccess?.currentEnsemble,
-            ));
-          } else {
-            emit(EnsembleInitial());
-          }
+          _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
         },
       );
     } else {
@@ -197,26 +265,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
       result.fold(
         (failure) {
           emit(UpdateEnsembleFailure(error: failure.message));
-          if (previousList.isNotEmpty) {
-            emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-          } else {
-            emit(EnsembleInitial());
-          }
+          _restoreEnsemblesState(emit, previousSuccess, previousList);
         },
         (_) {
           emit(UpdateEnsembleSuccess(ensemble: event.ensemble));
-          if (previousList.isNotEmpty) {
-            final updatedList = previousList
-                .map((e) => e.id == event.ensemble.id ? event.ensemble : e)
-                .toList();
-            final isCurrentEnsemble = previousSuccess?.currentEnsemble?.id == event.ensemble.id;
-            emit(GetAllEnsemblesSuccess(
-              ensembles: updatedList,
-              currentEnsemble: isCurrentEnsemble ? event.ensemble : previousSuccess?.currentEnsemble,
-            ));
-          } else {
-            emit(EnsembleInitial());
-          }
+          _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, event.ensemble);
         },
       );
     }
@@ -233,11 +286,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
       emit(UpdateEnsembleProfessionalInfoFailure(error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
 
@@ -250,23 +299,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsembleProfessionalInfoFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updatedEnsemble) {
         emit(UpdateEnsembleProfessionalInfoSuccess(ensemble: updatedEnsemble));
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-          final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
-              ? updatedEnsemble
-              : previousSuccess?.currentEnsemble;
-          emit(GetAllEnsemblesSuccess(ensembles: updatedList, currentEnsemble: newCurrent));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
       },
     );
   }
@@ -282,11 +319,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
       emit(UpdateEnsembleMembersFailure(error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
 
@@ -299,21 +332,14 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsembleMembersFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updatedEnsemble) {
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-          final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
-              ? updatedEnsemble
-              : previousSuccess?.currentEnsemble;
+        final applied = _computeEnsemblesWithUpdated(previousSuccess, previousList, updatedEnsemble);
+        if (applied != null) {
           emit(UpdateEnsembleMembersSuccess(
-            ensembles: updatedList,
-            currentEnsemble: newCurrent,
+            ensembles: applied.$1,
+            currentEnsemble: applied.$2,
           ));
         } else {
           emit(EnsembleInitial());
@@ -333,11 +359,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
       emit(UpdateEnsembleProfilePhotoFailure(error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
     final result = await updateEnsembleProfilePhotoUseCase.call(
@@ -348,23 +370,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsembleProfilePhotoFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updatedEnsemble) {
         emit(UpdateEnsembleProfilePhotoSuccess(ensemble: updatedEnsemble));
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-          final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
-              ? updatedEnsemble
-              : previousSuccess?.currentEnsemble;
-          emit(GetAllEnsemblesSuccess(ensembles: updatedList, currentEnsemble: newCurrent));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
       },
     );
   }
@@ -381,11 +391,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     if (artistId == null) {
       emit(UpdateEnsemblePresentationVideoFailure(
           error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
     final result = await updateEnsemblePresentationVideoUseCase.call(
@@ -396,23 +402,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsemblePresentationVideoFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updatedEnsemble) {
         emit(UpdateEnsemblePresentationVideoSuccess(ensemble: updatedEnsemble));
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-          final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
-              ? updatedEnsemble
-              : previousSuccess?.currentEnsemble;
-          emit(GetAllEnsemblesSuccess(ensembles: updatedList, currentEnsemble: newCurrent));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
       },
     );
   }
@@ -429,11 +423,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     if (artistId == null) {
       emit(UpdateEnsembleMemberTalentsFailure(
           error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
     final result = await updateEnsembleMemberTalentsUseCase.call(
@@ -445,23 +435,11 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsembleMemberTalentsFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updatedEnsemble) {
         emit(UpdateEnsembleMemberTalentsSuccess(ensemble: updatedEnsemble));
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList.map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e).toList();
-          final newCurrent = previousSuccess?.currentEnsemble?.id == updatedEnsemble.id
-              ? updatedEnsemble
-              : previousSuccess?.currentEnsemble;
-          emit(GetAllEnsemblesSuccess(ensembles: updatedList, currentEnsemble: newCurrent));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
       },
     );
   }
@@ -477,11 +455,7 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     final artistId = await _getCurrentArtistId();
     if (artistId == null) {
       emit(UpdateEnsembleActiveStatusFailure(error: 'Usuário não autenticado'));
-      if (previousList.isNotEmpty) {
-        emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-      } else {
-        emit(EnsembleInitial());
-      }
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
       return;
     }
 
@@ -494,25 +468,100 @@ class EnsembleBloc extends Bloc<EnsembleEvent, EnsembleState> {
     result.fold(
       (failure) {
         emit(UpdateEnsembleActiveStatusFailure(error: failure.message));
-        if (previousList.isNotEmpty) {
-          emit(GetAllEnsemblesSuccess(ensembles: previousList, currentEnsemble: previousSuccess?.currentEnsemble));
-        } else {
-          emit(EnsembleInitial());
-        }
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
       },
       (updated) {
         emit(UpdateEnsembleActiveStatusSuccess(ensemble: updated));
-        if (previousList.isNotEmpty) {
-          final updatedList = previousList
-              .map((e) => e.id == event.ensembleId ? updated : e)
-              .toList();
-          final isCurrent = previousSuccess?.currentEnsemble?.id == event.ensembleId;
-          emit(GetAllEnsemblesSuccess(
-            ensembles: updatedList,
-            currentEnsemble: isCurrent ? updated : previousSuccess?.currentEnsemble,
-          ));
+        _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updated);
+      },
+    );
+  }
+
+  Future<void> _onCheckEnsembleNameExists(
+    CheckEnsembleNameExistsEvent event,
+    Emitter<EnsembleState> emit,
+  ) async {
+    emit(CheckEnsembleNameExistsLoading(ensembleName: event.ensembleName));
+
+    final result = await checkEnsembleNameExistsUseCase.call(
+      event.ensembleName,
+      excludeEnsembleId: event.excludeEnsembleId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(CheckEnsembleNameExistsFailure(
+          ensembleName: event.ensembleName,
+          error: failure.message,
+        ));
+        emit(EnsembleInitial());
+      },
+      (exists) {
+        emit(CheckEnsembleNameExistsSuccess(
+          ensembleName: event.ensembleName,
+          exists: exists,
+        ));
+        emit(EnsembleInitial());
+      },
+    );
+  }
+
+  Future<void> _onUpdateEnsembleName(
+    UpdateEnsembleNameEvent event,
+    Emitter<EnsembleState> emit,
+  ) async {
+    final previousSuccess = state is GetAllEnsemblesSuccess ? state as GetAllEnsemblesSuccess : null;
+    final previousList = previousSuccess?.ensembles ?? <EnsembleEntity>[];
+    dev.log(
+      'UpdateEnsembleNameEvent(ensembleId=${event.ensembleId}) state=${state.runtimeType} previousList.length=${previousList.length}',
+      name: 'EnsembleBloc',
+    );
+
+    emit(UpdateEnsembleNameLoading());
+    final artistId = await _getCurrentArtistId();
+    if (artistId == null) {
+      emit(UpdateEnsembleNameFailure(error: 'Usuário não autenticado'));
+      _restoreEnsemblesState(emit, previousSuccess, previousList);
+      return;
+    }
+
+    final result = await updateEnsembleNameUseCase.call(
+      artistId,
+      event.ensembleId,
+      event.ensembleName,
+    );
+
+    await result.fold(
+      (failure) async {
+        emit(UpdateEnsembleNameFailure(error: failure.message));
+        _restoreEnsemblesState(emit, previousSuccess, previousList);
+      },
+      (updatedEnsemble) async {
+        dev.log('UpdateEnsembleName SUCCESS: nome=${updatedEnsemble.ensembleName}', name: 'EnsembleBloc');
+        emit(UpdateEnsembleNameSuccess(ensemble: updatedEnsemble));
+        if (previousList.isEmpty) {
+          dev.log('UpdateEnsembleName: previousList vazia (estado perdido) -> refetch e emit com atualizado', name: 'EnsembleBloc');
+          final refetchArtistId = await _getCurrentArtistId();
+          if (refetchArtistId == null) {
+            emit(GetAllEnsemblesSuccess(ensembles: [updatedEnsemble], currentEnsemble: updatedEnsemble));
+            return;
+          }
+          final fetchResult = await getAllEnsemblesUseCase.call(refetchArtistId, forceRemote: false);
+          fetchResult.fold(
+            (_) {
+              dev.log('UpdateEnsembleName: refetch falhou -> emit [updatedEnsemble] apenas', name: 'EnsembleBloc');
+              emit(GetAllEnsemblesSuccess(ensembles: [updatedEnsemble], currentEnsemble: updatedEnsemble));
+            },
+            (list) {
+              final merged = list
+                  .map((e) => e.id == updatedEnsemble.id ? updatedEnsemble : e)
+                  .toList();
+              dev.log('UpdateEnsembleName: refetch ok -> emit(ensembles: ${merged.length}, current: ${updatedEnsemble.id})', name: 'EnsembleBloc');
+              emit(GetAllEnsemblesSuccess(ensembles: merged, currentEnsemble: updatedEnsemble));
+            },
+          );
         } else {
-          emit(EnsembleInitial());
+          _emitEnsemblesWithUpdated(emit, previousSuccess, previousList, updatedEnsemble);
         }
       },
     );

@@ -39,6 +39,10 @@ abstract class IEnsembleRepository {
     required String ensembleId,
   });
 
+  /// Verifica se já existe um conjunto com o nome informado.
+  /// [excludeEnsembleId] opcional: ao editar, excluir este conjunto da verificação.
+  Future<Either<Failure, bool>> ensembleNameExists(String ensembleName, {String? excludeEnsembleId});
+
   /// Limpa o cache de conjuntos do artista.
   Future<Either<Failure, void>> clearCache({required String artistId});
 }

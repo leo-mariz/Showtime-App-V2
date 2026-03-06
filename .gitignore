@@ -14,7 +14,7 @@ migrate_working_dir/
 
 /serviceAccountKey.json
 scripts/
-.env
+/.env
 
 # IntelliJ related
 *.iml

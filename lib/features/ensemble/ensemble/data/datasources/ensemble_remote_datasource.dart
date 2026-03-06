@@ -42,6 +42,10 @@ abstract class IEnsembleRemoteDataSource {
 
   /// Remove um conjunto.
   Future<void> delete(String artistId, String ensembleId);
+
+  /// Verifica se já existe um conjunto com o nome informado.
+  /// [excludeEnsembleId] opcional: ao editar, excluir este conjunto da verificação.
+  Future<bool> ensembleNameExists(String ensembleName, {String? excludeEnsembleId});
 }
 
 /// Implementação usando Firestore.
@@ -184,6 +188,39 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       throw ServerException(
         'Erro ao remover conjunto: ${e.message}',
         statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<bool> ensembleNameExists(String ensembleName, {String? excludeEnsembleId}) async {
+    try {
+      final ref =
+          EnsembleEntityReference.firebaseEnsemblesCollectionReference(firestore);
+      final querySnapshot = await ref
+          .where(EnsembleEntityKeys.ensembleName, isEqualTo: ensembleName)
+          .get();
+
+      if (excludeEnsembleId != null && excludeEnsembleId.isNotEmpty) {
+        final filteredDocs = querySnapshot.docs
+            .where((doc) => doc.id != excludeEnsembleId)
+            .toList();
+        return filteredDocs.isNotEmpty;
+      }
+
+      return querySnapshot.docs.isNotEmpty;
+    } on FirebaseException catch (e, stackTrace) {
+      throw ServerException(
+        'Erro ao verificar se nome do conjunto existe: ${e.message}',
+        statusCode: ErrorHandler.getStatusCode(e),
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      throw ServerException(
+        'Erro inesperado ao verificar nome do conjunto',
         originalError: e,
         stackTrace: stackTrace,
       );

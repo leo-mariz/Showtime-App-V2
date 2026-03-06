@@ -21,6 +21,7 @@ import 'package:app/features/artists/artists/presentation/bloc/states/artists_st
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:developer' as dev;
 
 @RoutePage(deferredLoading: true)
 class EnsemblesListScreen extends StatefulWidget {
@@ -34,24 +35,37 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   @override
   void initState() {
     super.initState();
+    dev.log('EnsemblesListScreen initState -> _onGetAllEnsembles()', name: 'EnsemblesList');
     _onGetAllEnsembles();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    dev.log('EnsemblesListScreen didChangeDependencies -> _onGetAllEnsembles()', name: 'EnsemblesList');
     _onGetAllEnsembles();
     context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
   }
 
   void _onGetAllEnsembles() {
     final currentState = context.read<EnsembleBloc>().state;
+    final successState = currentState is GetAllEnsemblesSuccess ? currentState : null;
+    final count = successState?.ensembles.length ?? 0;
+    final hasCurrent = successState?.currentEnsemble != null;
+    dev.log(
+      '_onGetAllEnsembles: state=${currentState.runtimeType} ensembles.length=$count currentEnsemble=$hasCurrent',
+      name: 'EnsemblesList',
+    );
     if (currentState is! GetAllEnsemblesSuccess) {
+      dev.log('_onGetAllEnsembles: dispatch GetAllEnsemblesByArtistEvent()', name: 'EnsemblesList');
       context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent());
     } else {
       final ensembles = currentState.ensembles;
       if (ensembles.isEmpty) {
+        dev.log('_onGetAllEnsembles: ensembles vazia -> dispatch GetAllEnsemblesByArtistEvent(forceRemote: false)', name: 'EnsemblesList');
         context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: false));
+      } else {
+        dev.log('_onGetAllEnsembles: não dispara evento (já tem lista com $count itens)', name: 'EnsemblesList');
       }
     }
   }
@@ -147,9 +161,107 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
 
   /// Título do card: apenas "Nome + num" (sem a palavra "integrantes").
   String _ensembleDisplayName(EnsembleEntity e) {
+    final ensembleName = e.ensembleName;
+    if (ensembleName != null && ensembleName.isNotEmpty) {
+      return ensembleName;
+    }
     final artistName = _getArtistName();
     final total = _totalMembersCount(e);
     return '$artistName + $total';
+  }
+
+  Widget _buildListContent(
+    BuildContext context,
+    EnsembleState ensembleState,
+    MembersState membersState,
+  ) {
+    final successState = ensembleState is GetAllEnsemblesSuccess ? ensembleState : null;
+    final count = successState?.ensembles.length;
+    dev.log(
+      '_buildListContent: state=${ensembleState.runtimeType} ensembles.length=${count ?? "n/a"}',
+      name: 'EnsemblesList',
+    );
+    if (ensembleState is GetAllEnsemblesLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (ensembleState is CreateEnsembleLoading) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            SizedBox(height: DSSize.height(16)),
+            Text(
+              'Criando conjunto...',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      );
+    }
+    if (ensembleState is DeleteEnsembleLoading) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            SizedBox(height: DSSize.height(16)),
+            Text(
+              'Excluindo conjunto...',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        ),
+      );
+    }
+    final memberIdToName = membersState is GetAllMembersSuccess
+        ? {
+            for (final m in membersState.members)
+              if (m.id != null && m.name != null && m.name!.trim().isNotEmpty)
+                m.id!: m.name!,
+          }
+        : <String, String>{};
+    final ensembles = ensembleState is GetAllEnsemblesSuccess
+        ? ensembleState.ensembles
+        : null;
+    if (ensembles != null) {
+      final isEmpty = ensembles.isEmpty;
+      if (isEmpty) {
+        return EmptyEnsemblesPlaceholder(
+          message: 'Você ainda não possui conjuntos cadastrados.',
+          buttonLabel: 'Adicionar conjunto',
+          onButtonPressed: _onAddEnsemble,
+        );
+      }
+      return Column(
+        children: [
+          DSSizedBoxSpacing.vertical(16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: ensembles.length,
+              itemBuilder: (context, index) {
+                final e = ensembles[index];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: DSSize.height(12)),
+                  child: EnsembleCard(
+                    displayName: _ensembleDisplayName(e),
+                    photoUrl: e.profilePhotoUrl,
+                    membersFirstNames: _membersFirstNames(e, memberIdToName),
+                    allApproved: e.allMembersApproved ?? false,
+                    onTap: () => _onEditEnsemble(e),
+                    onOptionsTap: () => _showOptionsModalFor(context, e),
+                  ),
+                );
+              },
+            ),
+          ),
+          DSSizedBoxSpacing.vertical(16),
+        ],
+      );
+    }
+    return EmptyEnsemblesPlaceholder(
+      message: 'Você ainda não possui conjuntos cadastrados.',
+    );
   }
 
   @override
@@ -182,77 +294,42 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
           context.showError(state.error);
         }
       },
-      child: BasePage(
-        showAppBar: true,
-        appBarTitle: 'Meus Conjuntos',
-        showAppBarBackButton: true,
-        appBarActions: [
-          IconButton(
-            onPressed: _onAddEnsemble,
-            icon: const Icon(Icons.add),
-          ),
-        ],
-        child: BlocBuilder<MembersBloc, MembersState>(
-          buildWhen: (previous, current) => current is GetAllMembersSuccess || current is GetAllMembersLoading,
-          builder: (context, membersState) {
-            final memberIdToName = membersState is GetAllMembersSuccess
-                ? {
-                    for (final m in membersState.members)
-                      if (m.id != null && m.name != null && m.name!.trim().isNotEmpty)
-                        m.id!: m.name!,
-                  }
-                : <String, String>{};
-            return BlocBuilder<EnsembleBloc, EnsembleState>(
-              builder: (context, state) {
-                if (state is GetAllEnsemblesLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final ensembles = state is GetAllEnsemblesSuccess
-                    ? state.ensembles
-                    : null;
-                if (ensembles != null) {
-                  final isEmpty = ensembles.isEmpty;
-                  if (isEmpty) {
-                    return EmptyEnsemblesPlaceholder(
-                      message: 'Você ainda não possui conjuntos cadastrados.',
-                      buttonLabel: 'Adicionar conjunto',
-                      onButtonPressed: _onAddEnsemble,
-                    );
-                  }
-                  return Column(
-                    children: [
-                      DSSizedBoxSpacing.vertical(16),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: ensembles.length,
-                          itemBuilder: (context, index) {
-                            final e = ensembles[index];
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: DSSize.height(12)),
-                              child: EnsembleCard(
-                                displayName: _ensembleDisplayName(e),
-                                photoUrl: e.profilePhotoUrl,
-                                membersFirstNames: _membersFirstNames(e, memberIdToName),
-                                allApproved: e.allMembersApproved ?? false,
-                                onTap: () => _onEditEnsemble(e),
-                                onOptionsTap: () => _showOptionsModalFor(context, e),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      DSSizedBoxSpacing.vertical(16),
-                    ],
-                  );
-                }
-                // EnsembleInitial ou GetAllEnsemblesFailure (após emitir Initial)
-                return EmptyEnsemblesPlaceholder(
-                  message: 'Você ainda não possui conjuntos cadastrados.',
-                );
+      child: BlocBuilder<EnsembleBloc, EnsembleState>(
+        buildWhen: (previous, current) =>
+            current is GetAllEnsemblesLoading ||
+            current is GetAllEnsemblesSuccess ||
+            current is CreateEnsembleLoading ||
+            current is DeleteEnsembleLoading ||
+            current is EnsembleInitial ||
+            current is GetAllEnsemblesFailure,
+        builder: (context, ensembleState) {
+          final isActionLoading = ensembleState is CreateEnsembleLoading ||
+              ensembleState is DeleteEnsembleLoading;
+          return BasePage(
+            showAppBar: true,
+            appBarTitle: 'Meus Conjuntos',
+            showAppBarBackButton: true,
+            appBarActions: [
+              IconButton(
+                onPressed: isActionLoading ? null : _onAddEnsemble,
+                icon: ensembleState is CreateEnsembleLoading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.add),
+              ),
+            ],
+            child: BlocBuilder<MembersBloc, MembersState>(
+              buildWhen: (previous, current) =>
+                  current is GetAllMembersSuccess || current is GetAllMembersLoading,
+              builder: (context, membersState) {
+                return _buildListContent(context, ensembleState, membersState);
               },
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

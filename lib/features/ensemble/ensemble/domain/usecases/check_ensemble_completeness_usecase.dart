@@ -7,7 +7,6 @@ import 'package:app/core/domain/ensemble/member_documents/member_document_entity
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_completeness_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_info_status_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/enums/ensemble_info_type_enum.dart';
-import 'package:flutter/foundation.dart';
 
 /// Verifica a completude do conjunto (ensemble).
 ///
@@ -26,8 +25,6 @@ import 'package:flutter/foundation.dart';
 class CheckEnsembleCompletenessUseCase {
   const CheckEnsembleCompletenessUseCase();
 
-  static const _logTag = '[CheckEnsembleCompleteness]';
-
   EnsembleCompletenessEntity call({
     required EnsembleEntity ensemble,
     required List<DocumentsEntity> ownerDocuments,
@@ -44,11 +41,6 @@ class CheckEnsembleCompletenessUseCase {
       _checkOwnerBankAccount(ownerBankAccount),
     ];
     final completeness = EnsembleCompletenessEntity(infoStatuses: statuses);
-    final incomplete = completeness.incompleteStatuses;
-    debugPrint('$_logTag ensembleId=${ensemble.id} | incomplete=${incomplete.length} | types=${incomplete.map((s) => s.type.name).toList()}');
-    for (final s in statuses) {
-      debugPrint('$_logTag   ${s.type.name}: isComplete=${s.isComplete}');
-    }
     return completeness;
   }
 
@@ -88,7 +80,6 @@ class CheckEnsembleCompletenessUseCase {
       final antecedents = antecedentsList.isNotEmpty ? antecedentsList.first : null;
       final identityOk = identity != null && (identity.status == 1 || identity.status == 2);
       final antecedentsOk = antecedents != null && (antecedents.status == 1 || antecedents.status == 2);
-      debugPrint('$_logTag memberDocuments memberId=$memberId docs=${docs.length} identity=${identity?.status} ok=$identityOk antecedents=${antecedents?.status} ok=$antecedentsOk');
       if (!identityOk || !antecedentsOk) {
         missing.add('Cada integrante deve ter documentos (identidade e antecedentes) enviados ou aprovados.');
         break;
@@ -105,7 +96,6 @@ class CheckEnsembleCompletenessUseCase {
   EnsembleInfoStatusEntity _checkProfilePhoto(EnsembleEntity ensemble) {
     final hasPhoto = ensemble.profilePhotoUrl != null &&
         ensemble.profilePhotoUrl!.trim().isNotEmpty;
-    debugPrint('$_logTag profilePhoto hasUrl=${ensemble.profilePhotoUrl != null} hasPhoto=$hasPhoto');
     return EnsembleInfoStatusEntity(
       type: EnsembleInfoType.profilePhoto,
       isComplete: hasPhoto,

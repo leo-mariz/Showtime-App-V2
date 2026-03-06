@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:app/core/email_templates/contract_flow_templates.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_name_exists_usecase.dart';
+import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_name_usecase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/usecases/clear_contracts_cache_usecase.dart';
@@ -862,6 +864,12 @@ EnsembleBloc _createEnsembleBloc(
   final updateEnsembleMemberTalentsUseCase = UpdateEnsembleMemberTalentsUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase);
   final updateEnsembleActiveStatusUseCase = UpdateEnsembleActiveStatusUseCase(getEnsembleUseCase: getEnsembleUseCase, updateEnsembleUseCase: updateEnsembleUseCase);
   final deleteEnsembleUseCase = DeleteEnsembleUseCase(repository: ensembleRepository, getEnsembleByIdUseCase: getEnsembleUseCase, storageService: storageService);
+  final checkEnsembleNameExistsUseCase = CheckEnsembleNameExistsUseCase(repository: ensembleRepository);
+  final updateEnsembleNameUseCase = UpdateEnsembleNameUseCase(
+    getEnsembleUseCase: getEnsembleUseCase,
+    updateEnsembleUseCase: updateEnsembleUseCase,
+    checkEnsembleNameExistsUseCase: checkEnsembleNameExistsUseCase,
+  );
   return EnsembleBloc(
     getAllEnsemblesUseCase: getAllEnsemblesUseCase, 
     getEnsembleUseCase: getEnsembleUseCase, 
@@ -875,6 +883,8 @@ EnsembleBloc _createEnsembleBloc(
     updateEnsembleActiveStatusUseCase: updateEnsembleActiveStatusUseCase,
     deleteEnsembleUseCase: deleteEnsembleUseCase, 
     getUserUidUseCase: getUserUidUseCase,
+    updateEnsembleNameUseCase: updateEnsembleNameUseCase,
+    checkEnsembleNameExistsUseCase: checkEnsembleNameExistsUseCase,
   );
 }
 

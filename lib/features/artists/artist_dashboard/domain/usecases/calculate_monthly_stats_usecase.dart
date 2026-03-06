@@ -47,7 +47,7 @@ class CalculateMonthlyStatsUseCase {
         if (contract.status == ContractStatusEnum.paid ||
             contract.status == ContractStatusEnum.completed ||
             contract.status == ContractStatusEnum.rated) {
-          earnings += contract.value;
+          earnings += contract.showtimePaidToArtistAmount ?? contract.value;
           paidContracts++;
           acceptedRequests++;
         } else if (contract.status == ContractStatusEnum.pending ||

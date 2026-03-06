@@ -100,6 +100,22 @@ class EnsembleRepositoryImpl implements IEnsembleRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> ensembleNameExists(
+    String ensembleName, {
+    String? excludeEnsembleId,
+  }) async {
+    try {
+      final exists = await remoteDataSource.ensembleNameExists(
+        ensembleName,
+        excludeEnsembleId: excludeEnsembleId,
+      );
+      return Right(exists);
+    } catch (e) {
+      return Left(ErrorHandler.handle(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> clearCache({required String artistId}) async {
     try {
       await localDataSource.clearCache(artistId);

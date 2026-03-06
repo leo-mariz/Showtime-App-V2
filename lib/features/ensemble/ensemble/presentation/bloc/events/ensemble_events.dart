@@ -137,6 +137,37 @@ class UpdateEnsembleActiveStatusEvent extends EnsembleEvent {
   List<Object?> get props => [ensembleId, isActive];
 }
 
+// ==================== CHECK ENSEMBLE NAME EXISTS ====================
+
+class CheckEnsembleNameExistsEvent extends EnsembleEvent {
+  final String ensembleName;
+  /// Ao editar, excluir este conjunto da verificação.
+  final String? excludeEnsembleId;
+
+  CheckEnsembleNameExistsEvent({
+    required this.ensembleName,
+    this.excludeEnsembleId,
+  });
+
+  @override
+  List<Object?> get props => [ensembleName, excludeEnsembleId];
+}
+
+// ==================== UPDATE ENSEMBLE NAME ====================
+
+class UpdateEnsembleNameEvent extends EnsembleEvent {
+  final String ensembleId;
+  final String ensembleName;
+
+  UpdateEnsembleNameEvent({
+    required this.ensembleId,
+    required this.ensembleName,
+  });
+
+  @override
+  List<Object?> get props => [ensembleId, ensembleName];
+}
+
 // ==================== DELETE ENSEMBLE ====================
 
 class DeleteEnsembleEvent extends EnsembleEvent {

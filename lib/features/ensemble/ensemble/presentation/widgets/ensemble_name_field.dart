@@ -3,33 +3,34 @@ import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/shared/widgets/document_validation_indicator.dart';
 import 'package:app/core/shared/widgets/text_field.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
+import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
-import 'package:app/features/artists/artists/presentation/bloc/events/artists_events.dart';
-import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
 
-/// Campo de nome artístico com validação em tempo real.
-/// [considerEmptyAsValid]: quando true (padrão), nome vazio ou com menos de 2 caracteres
-/// reporta válido (para fluxos em que o campo é opcional). Quando false,
-/// reporta válido apenas após verificação retornar "disponível" (ex.: modal de edição).
-class ArtistNameField extends StatefulWidget {
+/// Campo de nome do conjunto com validação em tempo real (verifica se o nome já existe).
+/// [considerEmptyAsValid]: quando false (padrão), reporta válido apenas após
+/// verificação retornar "disponível". Quando true, nome vazio reporta válido.
+class EnsembleNameField extends StatefulWidget {
   final TextEditingController controller;
   final Function(bool) onValidationChanged;
+  final String? excludeEnsembleId;
   final bool considerEmptyAsValid;
 
-  const ArtistNameField({
+  const EnsembleNameField({
     super.key,
     required this.controller,
     required this.onValidationChanged,
-    this.considerEmptyAsValid = true,
+    this.excludeEnsembleId,
+    this.considerEmptyAsValid = false,
   });
 
   @override
-  State<ArtistNameField> createState() => _ArtistNameFieldState();
+  State<EnsembleNameField> createState() => _EnsembleNameFieldState();
 }
 
-class _ArtistNameFieldState extends State<ArtistNameField> {
+class _EnsembleNameFieldState extends State<EnsembleNameField> {
   Timer? _debounceTimer;
   String? _lastValidatedName;
   DocumentValidationStatus? _validationStatus;
@@ -58,7 +59,6 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
     if (_validationStatus == DocumentValidationStatus.loading) return;
 
     _debounceTimer?.cancel();
-    // Debounce de 2 segundos
     _debounceTimer = Timer(const Duration(milliseconds: 1500), () {
       final name = widget.controller.text.trim();
 
@@ -80,7 +80,6 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
         return;
       }
 
-      // Nome válido - buscar no banco se for diferente do último validado
       if (name != _lastValidatedName) {
         _validateName(name);
       }
@@ -93,22 +92,28 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
       _lastValidatedName = name;
     });
 
-    context.read<ArtistsBloc>().add(CheckArtistNameExistsEvent(artistName: name));
+    context.read<EnsembleBloc>().add(CheckEnsembleNameExistsEvent(
+          ensembleName: name,
+          excludeEnsembleId: widget.excludeEnsembleId,
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ArtistsBloc, ArtistsState>(
+    return BlocListener<EnsembleBloc, EnsembleState>(
       listener: (context, state) {
-        if (state is CheckArtistNameExistsSuccess && state.artistName == _lastValidatedName) {
+        if (state is CheckEnsembleNameExistsSuccess &&
+            state.ensembleName == _lastValidatedName) {
           setState(() {
             _validationStatus = state.exists
                 ? DocumentValidationStatus.exists
                 : DocumentValidationStatus.available;
-            _errorMessage = state.exists ? 'Este Nome Artístico já está em uso' : null;
+            _errorMessage =
+                state.exists ? 'Este nome de conjunto já está em uso' : null;
           });
           widget.onValidationChanged(!state.exists);
-        } else if (state is CheckArtistNameExistsFailure && state.artistName == _lastValidatedName) {
+        } else if (state is CheckEnsembleNameExistsFailure &&
+            state.ensembleName == _lastValidatedName) {
           setState(() {
             _validationStatus = DocumentValidationStatus.error;
             _errorMessage = state.error;
@@ -121,10 +126,9 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
         children: [
           Expanded(
             child: CustomTextField(
-              label: 'Nome Artístico (opcional)',
+              label: 'Nome do conjunto (opcional)',
               controller: widget.controller,
               onChanged: (value) {
-                // Reset status quando usuário edita; invalida até nova verificação
                 if (_validationStatus != null) {
                   setState(() {
                     _validationStatus = null;
@@ -138,7 +142,7 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
           ),
           DSSizedBoxSpacing.horizontal(8),
           Padding(
-            padding: EdgeInsets.only(top: DSSize.height(24)), // Alinha com o campo
+            padding: EdgeInsets.only(top: DSSize.height(24)),
             child: DocumentValidationIndicator(
               status: _validationStatus,
               errorMessage: _errorMessage,
@@ -149,4 +153,3 @@ class _ArtistNameFieldState extends State<ArtistNameField> {
     );
   }
 }
-

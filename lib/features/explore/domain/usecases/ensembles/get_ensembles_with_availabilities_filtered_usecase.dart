@@ -7,12 +7,11 @@ import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/distance_helper.dart';
 import 'package:app/core/utils/geohash_helper.dart';
 import 'package:app/core/utils/minimum_earliness_helper.dart'
-    show respectsMinimumEarliness, sameDayMinimumLeadTimeMinutes, isSlotAtOrAfterCutoff;
+    show getSameDayCutoffIfStillToday, respectsMinimumEarliness, slotContainsMoment;
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 
 /// UseCase: Buscar conjuntos com disponibilidades filtradas por data e localização.
 /// Espelho de [GetArtistsWithAvailabilitiesFilteredUseCase] para conjuntos.
@@ -73,24 +72,17 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
         );
       }
 
-      debugPrint(
-        '[GetEnsemblesFiltered] Chamando getEnsemblesForExplore forceRefresh=$forceRefresh',
-      );
       final ensemblesResult = await repository.getEnsemblesForExplore(
         forceRefresh: forceRefresh,
       );
 
       return await ensemblesResult.fold(
         (failure) {
-          debugPrint(
-            '[GetEnsemblesFiltered] getEnsemblesForExplore falhou: ${failure.message}',
-          );
+ 
           return Left(failure);
         },
         (ensembles) async {
-          debugPrint(
-            '[GetEnsemblesFiltered] getEnsemblesForExplore ok: ${ensembles.length} conjuntos',
-          );
+          
           final filtered = <EnsembleWithAvailabilitiesEntity>[];
           final safeStartIndex = startIndex.clamp(0, ensembles.length);
           final maxToCollect = pageSize <= 0 ? 10 : pageSize;
@@ -140,16 +132,25 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
                 return null;
               }
 
-              // Para o mesmo dia: conjunto deve ter pelo menos 1h30 de janela bookável à frente (evita mostrar no explorar quem não teria horário na request)
+              // Para o mesmo dia: usa o helper para obter o cutoff; se null, conjunto não aparece para hoje.
               final now = DateTime.now();
               final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
               final todayOnly = DateTime(now.year, now.month, now.day);
               if (selectedDateOnly.isAtSameMomentAs(todayOnly)) {
-                final cutoff = now.add(Duration(minutes: sameDayMinimumLeadTimeMinutes));
+                final cutoff = getSameDayCutoffIfStillToday(
+                  ensemble.professionalInfo?.requestMinimumEarliness,
+                  referenceDate: now,
+                );
+                if (cutoff == null) return null;
                 final hasBookableSlotToday = availabilityDay.slots?.any(
                   (slot) =>
                       slot.status == TimeSlotStatusEnum.available &&
-                      isSlotAtOrAfterCutoff(availabilityDay.date, slot.startTime, cutoff),
+                      slotContainsMoment(
+                        availabilityDay.date,
+                        slot.startTime,
+                        slot.endTime,
+                        cutoff,
+                      ),
                 ) ?? false;
                 if (!hasBookableSlotToday) return null;
               }
@@ -245,9 +246,7 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
           ));
         },
       );
-    } catch (e, stackTrace) {
-      debugPrint('[GetEnsemblesFiltered] exceção: $e');
-      debugPrint(stackTrace.toString());
+    } catch (e) {
       return Left(ErrorHandler.handle(e));
     }
   }

@@ -21,6 +21,8 @@ import 'package:app/features/artists/artists/presentation/widgets/artist_area_ac
 import 'package:app/features/artists/artists/presentation/widgets/artist_completeness_card.dart';
 import 'package:app/features/contracts/presentation/bloc/contracts_bloc.dart';
 import 'package:app/features/contracts/presentation/bloc/states/contracts_states.dart';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -37,6 +39,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
   // Chart carousel state
   late PageController _chartPageController;
   int _currentChartIndex = 0;
+  /// Ano selecionado para os gráficos (12 meses). Inicial: ano atual.
+  int _selectedChartYear = DateTime.now().year;
   bool _hasLoadedInitialData = false;
   /// Último artista conhecido; evita remontar a tela ao alternar ativar/desativar
   /// (quando o bloc emite GetArtistLoading após UpdateArtistActiveStatusSuccess).
@@ -72,10 +76,13 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
       artistsBloc.add(GetArtistEvent());
     }
     
-    // Carregar estatísticas do dashboard apenas se não tiver carregado ou se forçado
+    // Carregar estatísticas do dashboard (ano do gráfico = _selectedChartYear)
     final dashboardBloc = context.read<ArtistDashboardBloc>();
     if (forceRefresh || !_hasLoadedInitialData) {
-      dashboardBloc.add(GetArtistDashboardStatsEvent(forceRefresh: forceRefresh));
+      dashboardBloc.add(GetArtistDashboardStatsEvent(
+        forceRefresh: forceRefresh,
+        year: _selectedChartYear,
+      ));
       _hasLoadedInitialData = true;
     }
   }
@@ -439,6 +446,12 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
     );
   }
 
+  /// Anos disponíveis no dropdown (até 5 anos atrás).
+  List<int> get _availableYears {
+    final currentYear = DateTime.now().year;
+    return List.generate(6, (i) => currentYear - (5 - i));
+  }
+
   Widget _buildEarningsChart(
     TextTheme textTheme,
     ColorScheme colorScheme,
@@ -448,12 +461,44 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(
-            'Últimos 6 meses',
-            style: textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          // Título e seletor de ano (12 meses do ano escolhido)
+          Row(
+            children: [
+              Text(
+                'Ano',
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              DropdownButton<int>(
+                value: _selectedChartYear,
+                isDense: true,
+                underline: const SizedBox.shrink(),
+                items: _availableYears
+                    .map((y) => DropdownMenuItem<int>(
+                          value: y,
+                          child: Text(
+                            '$y',
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (int? newYear) {
+                  if (newYear == null || newYear == _selectedChartYear) return;
+                  setState(() => _selectedChartYear = newYear);
+                  context.read<ArtistDashboardBloc>().add(
+                        GetArtistDashboardStatsEvent(
+                          forceRefresh: true,
+                          year: newYear,
+                        ),
+                      );
+                },
+              ),
+            ],
           ),
           DSSizedBoxSpacing.vertical(12),
           // Navigation with metric name
@@ -604,11 +649,28 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                   ),
                 ),
                 DSSizedBoxSpacing.vertical(4),
-                Text(
-                  month.month,
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
+                // Área fixa para rótulos rotacionados (evita achatamento/overflow com 12 meses)
+                ClipRect(
+                  clipBehavior: Clip.none,
+                  child: SizedBox(
+                    height: DSSize.height(36),
+                    width: DSSize.width(double.infinity),
+                    child: Center(
+                      child: Transform.rotate(
+                        angle: -math.pi / 4,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            month.month,
+                            maxLines: 1,
+                            style: textTheme.bodySmall?.copyWith(
+                              fontSize: DSSize.width(11),
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

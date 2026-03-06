@@ -45,7 +45,11 @@ class GetArtistDashboardStatsUseCase {
     required this.calculateNextShowUseCase,
   });
 
-  Future<Either<Failure, ArtistDashboardStatsEntity>> call({bool forceRefresh = false}) async {
+  /// [year] ano para os gráficos mensais (12 meses). Se null, usa o ano atual.
+  Future<Either<Failure, ArtistDashboardStatsEntity>> call({
+    bool forceRefresh = false,
+    int? year,
+  }) async {
     try {
       // 1. Obter UID do usuário
       final uidResult = await getUserUidUseCase.call();
@@ -75,7 +79,8 @@ class GetArtistDashboardStatsUseCase {
               final upcomingEvents = calculateUpcomingEventsUseCase.call(contracts);
               final completedEvents = calculateCompletedEventsUseCase.call(contracts);
               final acceptanceRate = calculateAcceptanceRateUseCase.call(contracts);
-              final monthlyStats = calculateMonthlyStatsUseCase.call(contracts);
+              final chartYear = year ?? DateTime.now().year;
+              final monthlyStats = calculateMonthlyStatsUseCase.call(contracts, year: chartYear);
               final nextShow = calculateNextShowUseCase.call(contracts);
 
               // 5. Retornar estatísticas agregadas

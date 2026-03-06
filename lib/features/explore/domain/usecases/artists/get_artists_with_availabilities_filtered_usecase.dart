@@ -1,12 +1,13 @@
 import 'package:app/core/domain/addresses/address_info_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/enums/time_slot_status_enum.dart';
+import 'package:flutter/foundation.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/utils/distance_helper.dart';
 import 'package:app/core/utils/geohash_helper.dart';
 import 'package:app/core/utils/minimum_earliness_helper.dart'
-    show respectsMinimumEarliness, sameDayMinimumLeadTimeMinutes, isSlotAtOrAfterCutoff;
+    show getSameDayCutoffIfStillToday, respectsMinimumEarliness, slotContainsMoment;
 import 'package:app/features/addresses/domain/usecases/calculate_address_geohash_usecase.dart';
 import 'package:app/features/explore/domain/entities/artists/artist_with_availabilities_entity.dart';
 import 'package:app/features/explore/domain/repositories/explore_repository.dart';
@@ -178,25 +179,83 @@ class GetArtistsWithAvailabilitiesFilteredUseCase {
               }
 
               // Filtro: antecedência mínima (dia selecionado deve respeitar requestMinimumEarliness do artista)
-              if (!respectsMinimumEarliness(
+              final requestMinEarliness = artist.professionalInfo?.requestMinimumEarliness;
+              final respectsEarliness = respectsMinimumEarliness(
                 selectedDate,
-                artist.professionalInfo?.requestMinimumEarliness,
-              )) {
+                requestMinEarliness,
+              );
+              if (kDebugMode) {
+                debugPrint(
+                  '[ExploreEarliness] Artista "${artist.artistName ?? artist.uid}" | '
+                  'selectedDate=${selectedDate.toIso8601String().split('T').first} | '
+                  'requestMinimumEarliness=${requestMinEarliness ?? 0} min | '
+                  'respectsMinimumEarliness=$respectsEarliness',
+                );
+              }
+              if (!respectsEarliness) {
+                if (kDebugMode) {
+                  debugPrint('[ExploreEarliness] Excluído: antecedência mínima não respeitada para o dia selecionado.');
+                }
                 return null;
               }
 
-              // Para o mesmo dia: artista deve ter pelo menos 1h30 de janela bookável à frente (evita mostrar no explorar quem não teria horário na request)
+              // Para o mesmo dia: usa o helper para obter o cutoff; se null, artista não aparece para hoje.
+              // Caso contrário, exige pelo menos um slot disponível a partir do cutoff.
               final now = DateTime.now();
               final selectedDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
               final todayOnly = DateTime(now.year, now.month, now.day);
+              final isSameDay = selectedDateOnly.isAtSameMomentAs(todayOnly);
+              if (kDebugMode && isSameDay) {
+                debugPrint(
+                  '[ExploreEarliness] Mesmo dia: now=${now.toIso8601String()} | '
+                  'requestMinimumEarliness=${requestMinEarliness ?? 0} min',
+                );
+              }
               if (selectedDateOnly.isAtSameMomentAs(todayOnly)) {
-                final cutoff = now.add(Duration(minutes: sameDayMinimumLeadTimeMinutes));
+                final cutoff = getSameDayCutoffIfStillToday(
+                  artist.professionalInfo?.requestMinimumEarliness,
+                  referenceDate: now,
+                );
+                if (kDebugMode) {
+                  final slotsDesc = availabilityDay.slots
+                      ?.where((s) => s.status == TimeSlotStatusEnum.available)
+                      .map((s) => '${s.startTime}-${s.endTime}')
+                      .join(', ') ?? '—';
+                  debugPrint(
+                    '[ExploreEarliness] getSameDayCutoffIfStillToday → '
+                    '${cutoff != null ? "cutoff=${cutoff.toIso8601String()}" : "null (cutoff em outro dia)"} | '
+                    'slots disponíveis: [$slotsDesc]',
+                  );
+                }
+                if (cutoff == null) {
+                  if (kDebugMode) {
+                    debugPrint('[ExploreEarliness] Excluído: cutoff cai em outro dia (ex.: antecedência 24h).');
+                  }
+                  return null;
+                }
+                // Slot deve conter o horário do cutoff (ex.: 13:15-18:00 contém 16:27 → bookável)
                 final hasBookableSlotToday = availabilityDay.slots?.any(
                   (slot) =>
                       slot.status == TimeSlotStatusEnum.available &&
-                      isSlotAtOrAfterCutoff(availabilityDay.date, slot.startTime, cutoff),
+                      slotContainsMoment(
+                        availabilityDay.date,
+                        slot.startTime,
+                        slot.endTime,
+                        cutoff,
+                      ),
                 ) ?? false;
-                if (!hasBookableSlotToday) return null;
+                if (kDebugMode) {
+                  debugPrint(
+                    '[ExploreEarliness] hasBookableSlotToday=$hasBookableSlotToday '
+                    '(precisa de slot que contenha ${cutoff.hour.toString().padLeft(2, '0')}:${cutoff.minute.toString().padLeft(2, '0')})',
+                  );
+                }
+                if (!hasBookableSlotToday) {
+                  if (kDebugMode) {
+                    debugPrint('[ExploreEarliness] Excluído: nenhum slot disponível a partir do cutoff.');
+                  }
+                  return null;
+                }
               }
 
               // Aplicar filtros em memória

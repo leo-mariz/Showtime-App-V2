@@ -21,7 +21,7 @@ class ContractStatusBadge extends StatelessWidget {
       case ContractStatusEnum.rejected:
         return Colors.red;
       case ContractStatusEnum.paymentPending:
-        return Colors.orange;
+        return colorScheme.onTertiaryContainer;
       case ContractStatusEnum.paymentExpired:
         return colorScheme.onError;
       case ContractStatusEnum.paymentRefused:

@@ -9,11 +9,13 @@ abstract class ArtistDashboardEvent extends Equatable {
 
 class GetArtistDashboardStatsEvent extends ArtistDashboardEvent {
   final bool? forceRefresh;
+  /// Ano para os gráficos (12 meses). Se null, usa o ano atual.
+  final int? year;
 
-  GetArtistDashboardStatsEvent({this.forceRefresh = false});
+  GetArtistDashboardStatsEvent({this.forceRefresh = false, this.year});
 
   @override
-  List<Object?> get props => [forceRefresh];
+  List<Object?> get props => [forceRefresh, year];
 }
 
 // ==================== RESET EVENT ====================

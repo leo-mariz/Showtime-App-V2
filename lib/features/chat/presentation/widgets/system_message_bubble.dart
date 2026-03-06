@@ -41,7 +41,7 @@ class SystemMessageBubble extends StatelessWidget {
                     vertical: DSPadding.vertical(10),
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                    color: Colors.green.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(DSSize.width(20)),
                     border: Border.all(
                       color: colorScheme.outline.withOpacity(0.2),

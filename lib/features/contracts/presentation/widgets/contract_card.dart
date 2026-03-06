@@ -84,61 +84,39 @@ class ContractCard extends StatelessWidget {
     return address.title;
   }
 
-  /// Constrói o indicador de prazo para aceitar
+  /// Constrói o indicador de prazo para aceitar (visto pelo artista: é o prazo dele agir → texto em error).
+  /// Fundo sempre primary container.
   Widget _buildDeadlineIndicator(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    
     final isExpired = contract.isAcceptDeadlineExpired;
     final isCritical = contract.isDeadlineCritical;
     final isNear = contract.isDeadlineNear;
-    
-    // Cor baseada no estado do prazo
-    Color backgroundColor;
-    Color textColor;
-    IconData icon;
-    
-    if (isExpired) {
-      backgroundColor = colorScheme.errorContainer;
-      textColor = colorScheme.onErrorContainer;
-      icon = Icons.error_outline_rounded;
-    } else if (isCritical) {
-      backgroundColor = colorScheme.errorContainer.withOpacity(0.3);
-      textColor = colorScheme.error;
-      icon = Icons.warning_amber_rounded;
-    } else if (isNear) {
-      backgroundColor = colorScheme.tertiaryContainer.withOpacity(0.3);
-      textColor = colorScheme.onTertiaryContainer;
-      icon = Icons.access_time_rounded;
-    } else {
-      backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
-      textColor = colorScheme.onPrimaryContainer;
-      icon = Icons.schedule_rounded;
-    }
-    
+    final backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
+    final textColor = colorScheme.error; // Artista é quem deve agir
+    final icon = isExpired
+        ? Icons.error_outline_rounded
+        : isCritical
+            ? Icons.warning_amber_rounded
+            : isNear
+                ? Icons.access_time_rounded
+                : Icons.schedule_rounded;
     return Container(
       padding: EdgeInsets.all(DSSize.width(12)),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(DSSize.width(8)),
-        border: isExpired || isCritical
-            ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1)
-            : null,
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: DSSize.width(18),
-            color: textColor,
-          ),
+          Icon(icon, size: DSSize.width(18), color: textColor),
           DSSizedBoxSpacing.horizontal(8),
           Expanded(
             child: Text(
               contract.formattedAcceptDeadline ?? 'Prazo não disponível',
               style: textTheme.bodyMedium?.copyWith(
                 color: textColor,
-                fontWeight: isExpired || isCritical ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -180,7 +158,7 @@ class ContractCard extends StatelessWidget {
               message,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onErrorContainer,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -213,6 +191,7 @@ class ContractCard extends StatelessWidget {
               text,
               style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -221,38 +200,22 @@ class ContractCard extends StatelessWidget {
     );
   }
 
-  /// Indicador de prazo de pagamento: para o cliente "Você tem até X para pagar";
-  /// para o artista "O anfitrião tem até X para pagar".
+  /// Indicador de prazo de pagamento. Fundo sempre primary container.
+  /// Cliente (quem deve pagar) → texto/ícone em error; artista (aguardando) → texto/ícone em onPrimaryContainer.
   Widget _buildPaymentDeadlineIndicator(BuildContext context, {String? textOverride}) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isCritical = contract.isPaymentDeadlineCritical;
     final isNear = contract.isPaymentDeadlineNear;
-    Color backgroundColor;
-    Color textColor;
-    IconData icon;
-    if (isCritical) {
-      backgroundColor = colorScheme.errorContainer.withOpacity(0.3);
-      textColor = colorScheme.error;
-      icon = Icons.warning_amber_rounded;
-    } else if (isNear) {
-      backgroundColor = colorScheme.tertiaryContainer.withOpacity(0.3);
-      textColor = colorScheme.onTertiaryContainer;
-      icon = Icons.access_time_rounded;
-    } else {
-      backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
-      textColor = colorScheme.onPrimaryContainer;
-      icon = Icons.schedule_rounded;
-    }
+    final backgroundColor = colorScheme.primaryContainer.withOpacity(0.2);
+    final textColor = isArtist ? colorScheme.onPrimaryContainer : colorScheme.error;
+    final icon = isCritical ? Icons.warning_amber_rounded : (isNear ? Icons.access_time_rounded : Icons.schedule_rounded);
     final text = textOverride ?? contract.formattedPaymentDeadline ?? 'Prazo não disponível';
     return Container(
       padding: EdgeInsets.all(DSSize.width(12)),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(DSSize.width(8)),
-        border: isCritical || isNear
-            ? Border.all(color: colorScheme.error.withOpacity(0.3), width: 1)
-            : null,
       ),
       child: Row(
         children: [
@@ -263,7 +226,7 @@ class ContractCard extends StatelessWidget {
               text,
               style: textTheme.bodyMedium?.copyWith(
                 color: textColor,
-                fontWeight: isCritical || isNear ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

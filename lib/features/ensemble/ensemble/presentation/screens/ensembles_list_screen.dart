@@ -186,10 +186,12 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         showAppBar: true,
         appBarTitle: 'Meus Conjuntos',
         showAppBarBackButton: true,
-        floatingActionButton: FloatingActionButton(
-          onPressed: _onAddEnsemble,
-          child: const Icon(Icons.add),
-        ),
+        appBarActions: [
+          IconButton(
+            onPressed: _onAddEnsemble,
+            icon: const Icon(Icons.add),
+          ),
+        ],
         child: BlocBuilder<MembersBloc, MembersState>(
           buildWhen: (previous, current) => current is GetAllMembersSuccess || current is GetAllMembersLoading,
           builder: (context, membersState) {

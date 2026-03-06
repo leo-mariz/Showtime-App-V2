@@ -38,10 +38,6 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
   /// UID do contrato para o qual disparou "Realizar Pagamento" (para remover do cubit em caso de falha).
   String? _lastMakePaymentContractUid;
 
-  /// Últimos totais do índice (cliente) para detectar mudança e disparar force refresh apenas quando alterar.
-  int? _lastClientTab0Total;
-  int? _lastClientTab1Total;
-  int? _lastClientTab2Total;
   /// Marcar a aba atual como vista ao abrir a tela (apenas uma vez).
   bool _didMarkInitialTabAsSeen = false;
 
@@ -127,26 +123,49 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
     return null;
   }
 
+  /// Ordena por [lastUpdatedAt] descendente (mais recente primeiro). Nulls por último.
+  static int _compareByLastUpdatedAtDesc(ContractEntity a, ContractEntity b) {
+    final at = a.lastUpdatedAt;
+    final bt = b.lastUpdatedAt;
+    if (at == null && bt == null) return 0;
+    if (at == null) return 1;
+    if (bt == null) return -1;
+    return bt.compareTo(at);
+  }
+
+  /// Ordena por data do evento (e hora) ascendente — do mais próximo ao mais distante.
+  static int _compareByEventDateAsc(ContractEntity a, ContractEntity b) {
+    final dateCompare = a.date.compareTo(b.date);
+    if (dateCompare != 0) return dateCompare;
+    return (a.time).compareTo(b.time);
+  }
+
   List<ContractEntity> get _filteredContracts {
     switch (_selectedTabIndex) {
-      case 0: // Abertas
-        return _allContracts.where((contract) {
+      case 0: // Abertas — por última atualização (mais recente primeiro)
+        final list = _allContracts.where((contract) {
           return contract.status == ContractStatusEnum.pending ||
               contract.status == ContractStatusEnum.paymentPending ||
               contract.status == ContractStatusEnum.paymentExpired ||
               contract.status == ContractStatusEnum.paymentRefused;
         }).toList();
-      case 1: // Confirmadas
-        return _allContracts.where((contract) {
+        list.sort(_compareByLastUpdatedAtDesc);
+        return list;
+      case 1: // Confirmadas — por data do evento (mais próximo primeiro)
+        final list = _allContracts.where((contract) {
           return contract.status == ContractStatusEnum.paid;
         }).toList();
-      case 2: // Finalizadas
-        return _allContracts.where((contract) {
+        list.sort(_compareByEventDateAsc);
+        return list;
+      case 2: // Finalizadas — por última atualização (mais recente primeiro)
+        final list = _allContracts.where((contract) {
           return contract.status == ContractStatusEnum.rejected ||
               contract.status == ContractStatusEnum.completed ||
               contract.status == ContractStatusEnum.rated ||
               contract.status == ContractStatusEnum.canceled;
         }).toList();
+        list.sort(_compareByLastUpdatedAtDesc);
+        return list;
       default:
         return [];
     }
@@ -185,17 +204,10 @@ class _ClientContractsScreenState extends State<ClientContractsScreen>
               }
 
               // Force refresh apenas quando o índice realmente mudar (não na primeira emissão).
-              final tab0 = state.tab0Total;
-              final tab1 = state.tab1Total;
-              final tab2 = state.tab2Total;
-              final changed = _lastClientTab0Total != null &&
-                  (tab0 != _lastClientTab0Total || tab1 != _lastClientTab1Total || tab2 != _lastClientTab2Total);
-              if (changed) {
+              // Force refresh sempre que houver unseen em qualquer tab (ao abrir a tela ou quando surgir novo unseen).
+              if (state.hasUnseenContracts) {
                 _loadContracts(forceRefresh: true);
               }
-              _lastClientTab0Total = tab0;
-              _lastClientTab1Total = tab1;
-              _lastClientTab2Total = tab2;
             },
           ),
           BlocListener<ContractsBloc, ContractsState>(

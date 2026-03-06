@@ -172,7 +172,7 @@ class ProfileHeader extends StatelessWidget {
                           padding: EdgeInsets.all(DSSize.width(4)),
                           child: Icon(
                             Icons.swap_horiz,
-                            size: DSSize.width(20),
+                            size: DSSize.width(26),
                             color: colorScheme.onPrimaryContainer,
                           ),
                         ),

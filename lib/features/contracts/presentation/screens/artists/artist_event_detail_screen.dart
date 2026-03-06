@@ -81,6 +81,21 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
     return time;
   }
 
+  /// Traduz [canceledBy] para exibição: CLIENT → Cliente, ARTIST → Artista, SYSTEM → Sistema.
+  String _canceledByLabel(String? canceledBy) {
+    if (canceledBy == null || canceledBy.trim().isEmpty) return '—';
+    switch (canceledBy.toUpperCase()) {
+      case 'CLIENT':
+        return 'Cliente';
+      case 'ARTIST':
+        return 'Artista';
+      case 'SYSTEM':
+        return 'Sistema';
+      default:
+        return canceledBy;
+    }
+  }
+
   ContractStatusEnum get _status => _contract.status;
 
   void _handleRefresh() {
@@ -648,6 +663,33 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     ),
                   ),
 
+                  // Cancelado: quem cancelou e motivo (quando for sistema)
+                  if (_status == ContractStatusEnum.canceled) ...[
+                    DSSizedBoxSpacing.vertical(16),
+                    _buildInfoRow(
+                      icon: Icons.cancel_outlined,
+                      label: 'Cancelado por',
+                      value: _canceledByLabel(_contract.canceledBy),
+                      textTheme: textTheme,
+                      onSurfaceVariant: onSurfaceVariant,
+                      onPrimary: onPrimary,
+                      isHighlighted: false,
+                    ),
+                    if (_contract.canceledBy?.toUpperCase() == 'SYSTEM' &&
+                        _contract.cancelReason != null &&
+                        _contract.cancelReason!.trim().isNotEmpty) ...[
+                      DSSizedBoxSpacing.vertical(12),
+                      _buildInfoRow(
+                        icon: Icons.info_outline_rounded,
+                        label: 'Motivo',
+                        value: _contract.cancelReason!.trim(),
+                        textTheme: textTheme,
+                        onSurfaceVariant: onSurfaceVariant,
+                        onPrimary: onPrimary,
+                        isHighlighted: false,
+                      ),
+                    ],
+                  ],
                   // Cancelado com reembolso em análise
                   if (_status == ContractStatusEnum.canceled &&
                       _contract.financialStatus ==
@@ -798,7 +840,8 @@ class _ArtistEventDetailScreenState extends State<ArtistEventDetailScreen> {
                     ),
                   ] else if (_status == ContractStatusEnum.rejected ||
                             _status == ContractStatusEnum.completed ||
-                            _status == ContractStatusEnum.canceled) ...[
+                            _status == ContractStatusEnum.canceled ||
+                            _status == ContractStatusEnum.rated) ...[
                     // REJECTED, CONFIRMED, COMPLETED, CANCELED -> Sem botões (já está cancelado ou finalizado)
                   ] else ...[
                     // PAYMENT_PENDING, PAID -> Botões de ajuda e cancelamento

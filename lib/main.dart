@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:app/core/email_templates/contract_flow_templates.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:app/core/services/firebase_functions_service.dart';
 import 'package:app/features/contracts/domain/usecases/clear_contracts_cache_usecase.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -102,6 +104,7 @@ import 'package:app/features/contracts/domain/usecases/make_payment_usecase.dart
 import 'package:app/features/contracts/domain/usecases/rate_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/rate_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/reject_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/send_contract_flow_emails_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/skip_rating_artist_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/skip_rating_client_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
@@ -191,6 +194,7 @@ import 'package:app/core/config/auto_router_config.dart';
 import 'package:flutter_auto_cache/flutter_auto_cache.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 // Authentication imports
 import 'package:app/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -742,10 +746,16 @@ ContractsBloc _createContractsBloc(
   IContractsFunctionsService contractsFunctionsService,
   MercadoPagoService mercadoPagoService,
   IEnsembleRepository ensembleRepository,
+  GetUserDataUseCase getUserDataUseCase,
+  MailService mailService,
 ) {
   // Criar UseCase de atualização de índice (compartilhado) — índice continua no client
   final updateContractsIndexUseCase = UpdateContractsIndexUseCase(repository: contractRepository);
-  
+  final sendContractFlowEmailsUseCase = SendContractFlowEmailsUseCase(
+    getUserDataUseCase: getUserDataUseCase,
+    mailService: mailService,
+  );
+
   // Criar UseCases
   final getContractUseCase = GetContractUseCase(repository: contractRepository);
   final getContractsByClientUseCase = GetContractsByClientUseCase(repository: contractRepository);
@@ -753,15 +763,15 @@ ContractsBloc _createContractsBloc(
   final getContractsByGroupUseCase = GetContractsByGroupUseCase(repository: contractRepository);
   final getEnsembleIdsByOwnerUseCase = GetEnsembleIdsByOwnerUseCase(repository: ensembleRepository);
   final getContractsForArtistIncludingEnsemblesUseCase = GetContractsForArtistIncludingEnsemblesUseCase(repository: contractRepository);
-  final addContractUseCase = AddContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final addContractUseCase = AddContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
   final updateContractUseCase = UpdateContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final deleteContractUseCase = DeleteContractUseCase(repository: contractRepository, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
-  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final cancelContractUseCase = CancelContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
+  final acceptContractUseCase = AcceptContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
+  final rejectContractUseCase = RejectContractUseCase(repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
   final makePaymentUseCase = MakePaymentUseCase(mercadoPagoService: mercadoPagoService, repository: contractRepository, contractsFunctions: contractsFunctionsService);
-  final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase);
-  final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, contractRepository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
+  final verifyPaymentUseCase = VerifyPaymentUseCase(getContractUseCase: getContractUseCase, updateContractUseCase: updateContractUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
+  final confirmShowUseCase = ConfirmShowUseCase(getContractUseCase: getContractUseCase, contractRepository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase, sendContractFlowEmailsUseCase: sendContractFlowEmailsUseCase);
   final rateArtistUseCase = RateArtistUseCase(getContractUseCase: getContractUseCase, repository: contractRepository, contractsFunctions: contractsFunctionsService, updateContractsIndexUseCase: updateContractsIndexUseCase);
   final skipRatingArtistUseCase = SkipRatingArtistUseCase(contractsFunctions: contractsFunctionsService);
   final skipRatingClientUseCase = SkipRatingClientUseCase(contractsFunctions: contractsFunctionsService);
@@ -971,11 +981,13 @@ AppListsBloc _createAppListsBloc(
 SupportBloc _createSupportBloc(
   ISupportRepository supportRepository,
   GetUserUidUseCase getUserUidUseCase,
+  GetUserDataUseCase getUserDataUseCase,
   MailService mailService,
 ) {
   final sendSupportMessageUseCase = SendSupportMessageUseCase(
     repository: supportRepository,
     mailService: mailService,
+    getUserDataUseCase: getUserDataUseCase,
   );
   return SupportBloc(
     sendSupportMessageUseCase: sendSupportMessageUseCase,
@@ -1119,24 +1131,17 @@ EnsembleAvailabilityBloc _createEnsembleAvailabilityBloc(
 Future <void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
+  // Carregar .env antes de qualquer serviço que use variáveis de ambiente (ex.: MailService SMTP).
+  await dotenv.load(fileName: '.env');
   tz_data.initializeTimeZones();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   // Configurar Firebase App Check
   await FirebaseAppCheck.instance.activate(
-    // Default provider for Android is the Play Integrity provider. You can use the "AndroidProvider" enum to choose
-    // your preferred provider. Choose from:
-    // 1. Debug provider
-    // 2. Safety Net provider
-    // 3. Play Integrity provider
-    androidProvider: AndroidProvider.playIntegrity,
-    // Default provider for iOS/macOS is the Device Check provider. You can use the "AppleProvider" enum to choose
-        // your preferred provider. Choose from:
-        // 1. Debug provider
-        // 2. Device Check provider
-        // 3. App Attest provider
-         // 4. App Attest provider with fallback to Device Check provider (App Attest provider is only available on iOS 14.0+, macOS 14.0+)
-     appleProvider: AppleProvider.appAttest, // Use debug para obter token de debug no Xcode
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    // Em debug: usa debug provider para evitar 403 "App attestation failed" (simulador/debug).
+    // Em release: usa App Attest. Registrar token de debug no Firebase Console > App Check quando em debug.
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
   );
   
   await AutoCacheInitializer.initialize(
@@ -1149,6 +1154,9 @@ Future <void> main() async {
     ),
   );
   setupLocator();
+
+  // Logo dos e-mails (templates de contrato)
+  await initShowtimeLogoFromAsset();
   
   //Services
   final authServices = getIt<IAuthServices>();
@@ -1414,6 +1422,8 @@ Future <void> main() async {
               contractsFunctionsService,
               mercadoPagoService,
               ensembleRepository,
+              getUserDataUseCase,
+              mailService,
             ),
           ),
           BlocProvider(
@@ -1475,6 +1485,7 @@ Future <void> main() async {
             create: (context) => _createSupportBloc(
               supportRepository,
               getUserUidUseCase,
+              getUserDataUseCase,
               mailService,
             ),
           ),

@@ -343,6 +343,38 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       v.invoiceStatusUpdatedAt;
   static const Field<ContractEntity, DateTime> _f$invoiceStatusUpdatedAt =
       Field('invoiceStatusUpdatedAt', _$invoiceStatusUpdatedAt, opt: true);
+  static String? _$invoiceUrl(ContractEntity v) => v.invoiceUrl;
+  static const Field<ContractEntity, String> _f$invoiceUrl = Field(
+    'invoiceUrl',
+    _$invoiceUrl,
+    opt: true,
+  );
+  static InvoiceStatus? _$artistToClientInvoiceStatus(ContractEntity v) =>
+      v.artistToClientInvoiceStatus;
+  static const Field<ContractEntity, InvoiceStatus>
+  _f$artistToClientInvoiceStatus = Field(
+    'artistToClientInvoiceStatus',
+    _$artistToClientInvoiceStatus,
+    opt: true,
+  );
+  static String? _$artistToClientInvoiceUrl(ContractEntity v) =>
+      v.artistToClientInvoiceUrl;
+  static const Field<ContractEntity, String> _f$artistToClientInvoiceUrl =
+      Field('artistToClientInvoiceUrl', _$artistToClientInvoiceUrl, opt: true);
+  static DateTime? _$artistToClientInvoiceStatusUpdatedAt(ContractEntity v) =>
+      v.artistToClientInvoiceStatusUpdatedAt;
+  static const Field<ContractEntity, DateTime>
+  _f$artistToClientInvoiceStatusUpdatedAt = Field(
+    'artistToClientInvoiceStatusUpdatedAt',
+    _$artistToClientInvoiceStatusUpdatedAt,
+    opt: true,
+  );
+  static DateTime? _$lastUpdatedAt(ContractEntity v) => v.lastUpdatedAt;
+  static const Field<ContractEntity, DateTime> _f$lastUpdatedAt = Field(
+    'lastUpdatedAt',
+    _$lastUpdatedAt,
+    opt: true,
+  );
   static PaymentMethodIdEnum? _$paymentMethod(ContractEntity v) =>
       v.paymentMethod;
   static const Field<ContractEntity, PaymentMethodIdEnum> _f$paymentMethod =
@@ -415,6 +447,12 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
     #contestedReason: _f$contestedReason,
     #invoiceStatus: _f$invoiceStatus,
     #invoiceStatusUpdatedAt: _f$invoiceStatusUpdatedAt,
+    #invoiceUrl: _f$invoiceUrl,
+    #artistToClientInvoiceStatus: _f$artistToClientInvoiceStatus,
+    #artistToClientInvoiceUrl: _f$artistToClientInvoiceUrl,
+    #artistToClientInvoiceStatusUpdatedAt:
+        _f$artistToClientInvoiceStatusUpdatedAt,
+    #lastUpdatedAt: _f$lastUpdatedAt,
     #paymentMethod: _f$paymentMethod,
     #netReceivedAmount: _f$netReceivedAmount,
     #mercadoPagoFeeAmount: _f$mercadoPagoFeeAmount,
@@ -478,6 +516,13 @@ class ContractEntityMapper extends ClassMapperBase<ContractEntity> {
       contestedReason: data.dec(_f$contestedReason),
       invoiceStatus: data.dec(_f$invoiceStatus),
       invoiceStatusUpdatedAt: data.dec(_f$invoiceStatusUpdatedAt),
+      invoiceUrl: data.dec(_f$invoiceUrl),
+      artistToClientInvoiceStatus: data.dec(_f$artistToClientInvoiceStatus),
+      artistToClientInvoiceUrl: data.dec(_f$artistToClientInvoiceUrl),
+      artistToClientInvoiceStatusUpdatedAt: data.dec(
+        _f$artistToClientInvoiceStatusUpdatedAt,
+      ),
+      lastUpdatedAt: data.dec(_f$lastUpdatedAt),
       paymentMethod: data.dec(_f$paymentMethod),
       netReceivedAmount: data.dec(_f$netReceivedAmount),
       mercadoPagoFeeAmount: data.dec(_f$mercadoPagoFeeAmount),
@@ -622,6 +667,11 @@ abstract class ContractEntityCopyWith<$R, $In extends ContractEntity, $Out>
     String? contestedReason,
     InvoiceStatus? invoiceStatus,
     DateTime? invoiceStatusUpdatedAt,
+    String? invoiceUrl,
+    InvoiceStatus? artistToClientInvoiceStatus,
+    String? artistToClientInvoiceUrl,
+    DateTime? artistToClientInvoiceStatusUpdatedAt,
+    DateTime? lastUpdatedAt,
     PaymentMethodIdEnum? paymentMethod,
     double? netReceivedAmount,
     double? mercadoPagoFeeAmount,
@@ -734,6 +784,11 @@ class _ContractEntityCopyWithImpl<$R, $Out>
     Object? contestedReason = $none,
     Object? invoiceStatus = $none,
     Object? invoiceStatusUpdatedAt = $none,
+    Object? invoiceUrl = $none,
+    Object? artistToClientInvoiceStatus = $none,
+    Object? artistToClientInvoiceUrl = $none,
+    Object? artistToClientInvoiceStatusUpdatedAt = $none,
+    Object? lastUpdatedAt = $none,
     Object? paymentMethod = $none,
     Object? netReceivedAmount = $none,
     Object? mercadoPagoFeeAmount = $none,
@@ -798,6 +853,15 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       if (invoiceStatus != $none) #invoiceStatus: invoiceStatus,
       if (invoiceStatusUpdatedAt != $none)
         #invoiceStatusUpdatedAt: invoiceStatusUpdatedAt,
+      if (invoiceUrl != $none) #invoiceUrl: invoiceUrl,
+      if (artistToClientInvoiceStatus != $none)
+        #artistToClientInvoiceStatus: artistToClientInvoiceStatus,
+      if (artistToClientInvoiceUrl != $none)
+        #artistToClientInvoiceUrl: artistToClientInvoiceUrl,
+      if (artistToClientInvoiceStatusUpdatedAt != $none)
+        #artistToClientInvoiceStatusUpdatedAt:
+            artistToClientInvoiceStatusUpdatedAt,
+      if (lastUpdatedAt != $none) #lastUpdatedAt: lastUpdatedAt,
       if (paymentMethod != $none) #paymentMethod: paymentMethod,
       if (netReceivedAmount != $none) #netReceivedAmount: netReceivedAmount,
       if (mercadoPagoFeeAmount != $none)
@@ -894,6 +958,20 @@ class _ContractEntityCopyWithImpl<$R, $Out>
       #invoiceStatusUpdatedAt,
       or: $value.invoiceStatusUpdatedAt,
     ),
+    invoiceUrl: data.get(#invoiceUrl, or: $value.invoiceUrl),
+    artistToClientInvoiceStatus: data.get(
+      #artistToClientInvoiceStatus,
+      or: $value.artistToClientInvoiceStatus,
+    ),
+    artistToClientInvoiceUrl: data.get(
+      #artistToClientInvoiceUrl,
+      or: $value.artistToClientInvoiceUrl,
+    ),
+    artistToClientInvoiceStatusUpdatedAt: data.get(
+      #artistToClientInvoiceStatusUpdatedAt,
+      or: $value.artistToClientInvoiceStatusUpdatedAt,
+    ),
+    lastUpdatedAt: data.get(#lastUpdatedAt, or: $value.lastUpdatedAt),
     paymentMethod: data.get(#paymentMethod, or: $value.paymentMethod),
     netReceivedAmount: data.get(
       #netReceivedAmount,

@@ -1,5 +1,6 @@
 import 'package:app/core/domain/email/email_entity.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
@@ -41,12 +42,18 @@ class MailService {
         ssl: true,
       );
 
-      // Preparar mensagem
+      // Preparar mensagem (suporta texto ou HTML)
       final message = Message()
         ..from = Address(user, 'Showtime')
         ..recipients.addAll(recipients)
-        ..subject = email.subject
-        ..text = email.body;
+        ..subject = email.subject;
+
+      if (email.isHtml) {
+        message.html = email.body;
+        message.text = email.body; // fallback para clientes que não exibem HTML
+      } else {
+        message.text = email.body;
+      }
 
       // Enviar email
       await send(message, smtpServer);
@@ -54,8 +61,15 @@ class MailService {
       // Re-lança exceções já tipadas
       rethrow;
     } catch (e, stackTrace) {
+      debugPrint('MailService.sendEmail: exceção ao enviar');
+      debugPrint('  tipo: ${e.runtimeType}');
+      debugPrint('  mensagem: $e');
+      if (e.toString() != e.runtimeType.toString()) {
+        debugPrint('  toString: ${e.toString()}');
+      }
+      debugPrint('  stackTrace: $stackTrace');
       throw ServerException(
-        'Erro ao enviar email',
+        'Erro ao enviar email: $e',
         originalError: e,
         stackTrace: stackTrace,
       );

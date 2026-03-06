@@ -27,8 +27,35 @@ bool respectsMinimumEarliness(
     selectedDate.month,
     selectedDate.day,
   );
+
+  // Mesmo dia: retorna true; o use case usa [getSameDayCutoffIfStillToday] para a regra completa.
+  if (refStart.isAtSameMomentAs(selectedStart)) return true;
+
   final diffMinutes = selectedStart.difference(refStart).inMinutes;
   return diffMinutes >= minMinutes;
+}
+
+/// Minutos de antecedência efetivos para o mesmo dia: max(antecedência do artista, 1h30).
+int effectiveLeadMinutesForSameDay(int? requestMinimumEarlinessMinutes) {
+  final m = requestMinimumEarlinessMinutes ?? 0;
+  return m >= sameDayMinimumLeadTimeMinutes ? m : sameDayMinimumLeadTimeMinutes;
+}
+
+/// Para o mesmo dia: retorna o cutoff (referência + max(antecedência, 1h30)) se esse
+/// cutoff ainda estiver no mesmo dia que [referenceDate]; caso contrário retorna null.
+/// Usado no explorar: se null, artista/conjunto não aparece para hoje; se não null,
+/// o use case exige pelo menos um slot disponível a partir do cutoff.
+DateTime? getSameDayCutoffIfStillToday(
+  int? requestMinimumEarlinessMinutes, {
+  DateTime? referenceDate,
+}) {
+  final ref = referenceDate ?? DateTime.now();
+  final effectiveLead = effectiveLeadMinutesForSameDay(requestMinimumEarlinessMinutes);
+  final cutoff = ref.add(Duration(minutes: effectiveLead));
+  final refDateOnly = DateTime(ref.year, ref.month, ref.day);
+  final cutoffDateOnly = DateTime(cutoff.year, cutoff.month, cutoff.day);
+  if (!cutoffDateOnly.isAtSameMomentAs(refDateOnly)) return null;
+  return cutoff;
 }
 
 /// Retorna o primeiro momento em que uma solicitação pode ser feita
@@ -63,4 +90,25 @@ bool isSlotAtOrAfterCutoff(
     minute,
   );
   return !slotStart.isBefore(cutoff);
+}
+
+/// Verifica se o [moment] está dentro do slot (início inclusive, fim exclusive).
+/// Usado no explorar para "mesmo dia": o artista aparece se algum slot contiver
+/// o horário do cutoff (ex.: slot 13:15-18:00 contém 16:27 → pode ser contratado a partir das 16:27).
+bool slotContainsMoment(
+  DateTime day,
+  String startTimeHHmm,
+  String endTimeHHmm,
+  DateTime moment,
+) {
+  final startParts = startTimeHHmm.split(':');
+  final endParts = endTimeHHmm.split(':');
+  if (startParts.length < 2 || endParts.length < 2) return false;
+  final startHour = int.tryParse(startParts[0]) ?? 0;
+  final startMinute = int.tryParse(startParts[1]) ?? 0;
+  final endHour = int.tryParse(endParts[0]) ?? 0;
+  final endMinute = int.tryParse(endParts[1]) ?? 0;
+  final slotStart = DateTime(day.year, day.month, day.day, startHour, startMinute);
+  final slotEnd = DateTime(day.year, day.month, day.day, endHour, endMinute);
+  return !moment.isBefore(slotStart) && moment.isBefore(slotEnd);
 }

@@ -5,6 +5,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/send_contract_flow_emails_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -20,11 +21,13 @@ class AddContractUseCase {
   final IContractRepository repository;
   final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
+  final SendContractFlowEmailsUseCase? sendContractFlowEmailsUseCase;
 
   AddContractUseCase({
     required this.repository,
     required this.contractsFunctions,
     this.updateContractsIndexUseCase,
+    this.sendContractFlowEmailsUseCase,
   });
 
   static tz.Location get _saoPaulo => tz.getLocation('America/Sao_Paulo');
@@ -171,15 +174,24 @@ class AddContractUseCase {
       final contractUid = await contractsFunctions.addContract(payload);
       
 
-      // Atualizar índice no client (sempre, mesmo se getContract falhar).
-      // Garantir status PENDING para que o índice incremente tab 0 (Em aberto) do artista, não tab 1.
+      // Atualizar índice no client e enviar e-mails de notificação (pedido enviado).
+      final getResult = await repository.getContract(contractUid);
+      final createdContract = getResult.fold(
+        (_) => contract.copyWith(uid: contractUid, statusChangedAt: DateTime.now()),
+        (c) => c.copyWith(statusChangedAt: DateTime.now()),
+      ).copyWith(status: ContractStatusEnum.pending);
       if (updateContractsIndexUseCase != null) {
-        final getResult = await repository.getContract(contractUid);
-        final toIndex = getResult.fold(
-          (_) => contract.copyWith(uid: contractUid, statusChangedAt: DateTime.now()),
-          (createdContract) => createdContract.copyWith(statusChangedAt: DateTime.now()),
-        ).copyWith(status: ContractStatusEnum.pending);
-        await updateContractsIndexUseCase!.call(contract: toIndex);
+        await updateContractsIndexUseCase!.call(contract: createdContract);
+      }
+      if (sendContractFlowEmailsUseCase != null) {
+        final contractForEmail = getResult.fold(
+          (_) => contract.copyWith(uid: contractUid),
+          (c) => c,
+        );
+        await sendContractFlowEmailsUseCase!.call(
+          contract: contractForEmail,
+          event: ContractFlowEmailEvent.requestSent,
+        );
       }
       return Right(contractUid);
     } catch (e) {

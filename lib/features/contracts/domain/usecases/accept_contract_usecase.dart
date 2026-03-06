@@ -2,6 +2,7 @@ import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/send_contract_flow_emails_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -13,11 +14,13 @@ class AcceptContractUseCase {
   final IContractRepository repository;
   final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
+  final SendContractFlowEmailsUseCase? sendContractFlowEmailsUseCase;
 
   AcceptContractUseCase({
     required this.repository,
     required this.contractsFunctions,
     this.updateContractsIndexUseCase,
+    this.sendContractFlowEmailsUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -52,7 +55,7 @@ class AcceptContractUseCase {
       // Aceitar contrato via Cloud Function (cria link de pagamento e atualiza status no backend)
       await contractsFunctions.acceptContract(contractUid);
 
-      // Buscar contrato atualizado e atualizar índice no client
+      // Buscar contrato atualizado, atualizar índice e enviar e-mails (artista aceitou).
       final getResult2 = await repository.getContract(contractUid, forceRefresh: true);
       await getResult2.fold(
         (_) async {},
@@ -61,6 +64,12 @@ class AcceptContractUseCase {
             await updateContractsIndexUseCase!.call(
               contract: updatedContract,
               oldStatus: contract.status,
+            );
+          }
+          if (sendContractFlowEmailsUseCase != null) {
+            await sendContractFlowEmailsUseCase!.call(
+              contract: updatedContract,
+              event: ContractFlowEmailEvent.artistAccepted,
             );
           }
         },

@@ -1,8 +1,8 @@
-
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/data/datasources/contracts_functions.dart';
 import 'package:app/features/contracts/domain/repositories/contract_repository.dart';
+import 'package:app/features/contracts/domain/usecases/send_contract_flow_emails_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contracts_index_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -19,11 +19,13 @@ class RejectContractUseCase {
   final IContractRepository repository;
   final IContractsFunctionsService contractsFunctions;
   final UpdateContractsIndexUseCase? updateContractsIndexUseCase;
+  final SendContractFlowEmailsUseCase? sendContractFlowEmailsUseCase;
 
   RejectContractUseCase({
     required this.repository,
     required this.contractsFunctions,
     this.updateContractsIndexUseCase,
+    this.sendContractFlowEmailsUseCase,
   });
 
   Future<Either<Failure, void>> call({
@@ -65,6 +67,12 @@ class RejectContractUseCase {
             await updateContractsIndexUseCase!.call(
               contract: updatedContract,
               oldStatus: contract.status,
+            );
+          }
+          if (sendContractFlowEmailsUseCase != null) {
+            await sendContractFlowEmailsUseCase!.call(
+              contract: updatedContract,
+              event: ContractFlowEmailEvent.artistRejected,
             );
           }
         },

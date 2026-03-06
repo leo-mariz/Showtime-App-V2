@@ -112,6 +112,18 @@ class ContractEntity with ContractEntityMappable {
   final InvoiceStatus? invoiceStatus;
   /// Última atualização do status da nota fiscal.
   final DateTime? invoiceStatusUpdatedAt;
+  /// URL da nota fiscal (NFS-e).
+  final String? invoiceUrl;
+
+  /// Status da nota fiscal artista→cliente (NFS-e enviada pelo artista ao cliente).
+  final InvoiceStatus? artistToClientInvoiceStatus;
+  /// URL da nota fiscal artista→cliente.
+  final String? artistToClientInvoiceUrl;
+  /// Última atualização do status da nota fiscal artista→cliente.
+  final DateTime? artistToClientInvoiceStatusUpdatedAt;
+
+  /// Data/hora da última atualização do contrato.
+  final DateTime? lastUpdatedAt;
 
   /// Método de pagamento usado (Mercado Pago), preenchido ao processar o webhook.
   final PaymentMethodIdEnum? paymentMethod;
@@ -174,6 +186,11 @@ class ContractEntity with ContractEntityMappable {
     this.contestedReason,
     this.invoiceStatus,
     this.invoiceStatusUpdatedAt,
+    this.invoiceUrl,
+    this.artistToClientInvoiceStatus,
+    this.artistToClientInvoiceUrl,
+    this.artistToClientInvoiceStatusUpdatedAt,
+    this.lastUpdatedAt,
     this.paymentMethod,
     this.netReceivedAmount,
     this.mercadoPagoFeeAmount,
@@ -309,6 +326,11 @@ extension ContractEntityReference on ContractEntity {
     'contestedReason',
     'invoiceStatus',
     'invoiceStatusUpdatedAt',
+    'invoiceUrl',
+    'artistToClientInvoiceStatus',
+    'artistToClientInvoiceUrl',
+    'artistToClientInvoiceStatusUpdatedAt',
+    'lastUpdatedAt',
     'paymentMethod',
     'netReceivedAmount',
     'mercadoPagoFeeAmount',

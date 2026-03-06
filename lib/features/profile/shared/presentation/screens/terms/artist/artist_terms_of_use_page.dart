@@ -81,6 +81,8 @@ TERMOS DE USO DO APLICATIVO SHOWTIME
 
 9.3. Quando uma apresentação for contratada em cidade diferente da de residência do artista, este poderá exigir que o anfitrião forneça transfer e hospedagem. As partes devem combinar todos os detalhes por mensagens dentro do App, para que, em caso de problema, a plataforma possa interceder. Caso o anfitrião concorde com as despesas, ficará responsável por realizar as reservas e todos os pagamentos; não é permitido o envio de dinheiro diretamente aos artistas. Em apresentações realizadas na mesma cidade em que o artista está baseado, não serão permitidas cobranças extras por transfer ou hospedagem.
 
+9.4. Comissão da plataforma: o Showtime cobra uma comissão de 14% (catorze por cento) sobre o valor total do contrato, incidente sobre cada transação realizada através do aplicativo. O artista está ciente de que esse percentual será descontado do valor acordado antes do repasse dos valores referentes à apresentação.
+
 ---
 
 10. Cancelamentos

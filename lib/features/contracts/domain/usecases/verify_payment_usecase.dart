@@ -2,6 +2,7 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/contracts/domain/usecases/get_contract_usecase.dart';
+import 'package:app/features/contracts/domain/usecases/send_contract_flow_emails_usecase.dart';
 import 'package:app/features/contracts/domain/usecases/update_contract_usecase.dart';
 import 'package:dartz/dartz.dart';
 
@@ -14,10 +15,12 @@ import 'package:dartz/dartz.dart';
 class VerifyPaymentUseCase {
   final GetContractUseCase getContractUseCase;
   final UpdateContractUseCase updateContractUseCase;
+  final SendContractFlowEmailsUseCase? sendContractFlowEmailsUseCase;
 
   VerifyPaymentUseCase({
     required this.getContractUseCase,
     required this.updateContractUseCase,
+    this.sendContractFlowEmailsUseCase,
   });
 
   Future<Either<Failure, void>> call(String contractUid) async {
@@ -37,6 +40,12 @@ class VerifyPaymentUseCase {
         return const Left(ValidationFailure('Pagamento não realizado. Caso já tenha realizado o pagamento, aguarde alguns minutos para o status ser atualizado.'));
       }
 
+      if (sendContractFlowEmailsUseCase != null) {
+        await sendContractFlowEmailsUseCase!.call(
+          contract: contract,
+          event: ContractFlowEmailEvent.paymentMade,
+        );
+      }
       return const Right(null);
     } catch (e) {
       return Left(ErrorHandler.handle(e));

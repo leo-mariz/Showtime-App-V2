@@ -50,7 +50,7 @@ class ArtistCard extends StatelessWidget {
     
     final contractsText = contracts == 0 
         ? '0' 
-        : 'Contratos: $contracts';
+        : '$contracts';
     final ratingText = rating == 0 
         ? 'Sem avaliações' 
         : rating.toStringAsFixed(1);

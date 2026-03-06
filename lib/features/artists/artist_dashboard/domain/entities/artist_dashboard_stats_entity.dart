@@ -17,7 +17,7 @@ class ArtistDashboardStatsEntity extends Equatable {
   // Próximo show
   final NextShowEntity? nextShow;
   
-  // Dados mensais para gráficos (últimos 6 meses)
+  // Dados mensais para gráficos (12 meses do ano selecionado)
   final List<MonthlyStatsEntity> monthlyStats;
 
   const ArtistDashboardStatsEntity({

@@ -23,8 +23,6 @@ const List<String> _defaultSubjects = [
 
 /// Assuntos quando a tela está vinculada a um contrato.
 const List<String> _contractSubjects = [
-  'Cancelamento',
-  'Reembolso',
   'Problema durante show',
   'Outros (relacionado ao contrato)',
 ];
@@ -172,43 +170,43 @@ class _SupportPageState extends State<SupportPage> {
                 onPressed: () {},
               ),
               Divider(height: DSSize.height(30)),
-              // DSSizedBoxSpacing.vertical(30),
-              // Text(
-              //   'Ou envie uma mensagem pelo formulário abaixo:',
-              //   style: Theme.of(context).textTheme.titleSmall,
-              // ),
-              // DSSizedBoxSpacing.vertical(16),
-              // Form(
-              //   key: _formKey,
-              //   autovalidateMode:
-              //       _showValidation ? AutovalidateMode.always : AutovalidateMode.disabled,
-              //   child: BlocBuilder<SupportBloc, SupportState>(
-              //     buildWhen: (previous, current) => current is SupportInitial || current is SendSupportMessageLoading,
-              //     builder: (context, state) {
-              //       final isLoading = state is SendSupportMessageLoading;
-              //       return Column(
-              //         children: [
-              //           SupportForm(
-              //             nameController: nameController,
-              //             messageController: messageController,
-              //             selectedSubject: selectedSubject,
-              //             subjects: _subjects,
-              //             onSubjectChanged: (value) => setState(() => selectedSubject = value),
-              //             onMessageChanged: (_) {},
-              //           ),
-              //           DSSizedBoxSpacing.vertical(16),
-              //           CustomButton(
-              //             label: 'Enviar',
-              //             backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-              //             textColor: Theme.of(context).colorScheme.primaryContainer,
-              //             onPressed: isLoading ? null : _submitForm,
-              //             isLoading: isLoading,
-              //           ),
-              //         ],
-              //       );
-              //     },
-              //   ),
-              // ),
+              DSSizedBoxSpacing.vertical(30),
+              Text(
+                'Ou envie uma mensagem pelo formulário abaixo:',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              DSSizedBoxSpacing.vertical(16),
+              Form(
+                key: _formKey,
+                autovalidateMode:
+                    _showValidation ? AutovalidateMode.always : AutovalidateMode.disabled,
+                child: BlocBuilder<SupportBloc, SupportState>(
+                  buildWhen: (previous, current) => current is SupportInitial || current is SendSupportMessageLoading,
+                  builder: (context, state) {
+                    final isLoading = state is SendSupportMessageLoading;
+                    return Column(
+                      children: [
+                        SupportForm(
+                          nameController: nameController,
+                          messageController: messageController,
+                          selectedSubject: selectedSubject,
+                          subjects: _subjects,
+                          onSubjectChanged: (value) => setState(() => selectedSubject = value),
+                          onMessageChanged: (_) {},
+                        ),
+                        DSSizedBoxSpacing.vertical(16),
+                        CustomButton(
+                          label: 'Enviar',
+                          backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                          textColor: Theme.of(context).colorScheme.primaryContainer,
+                          onPressed: isLoading ? null : _submitForm,
+                          isLoading: isLoading,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),

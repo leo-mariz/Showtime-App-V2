@@ -61,6 +61,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     minimumShowDurationController.addListener(_onFieldChanged);
     preparationTimeController.addListener(_onFieldChanged);
     bioController.addListener(_onFieldChanged);
+    requestMinimumEarlinessController.addListener(_onFieldChanged);
     
     // Carregar dados do artista após o frame ser construído
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -119,6 +120,7 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
     minimumShowDurationController.dispose();
     preparationTimeController.dispose();
     bioController.dispose();
+    requestMinimumEarlinessController.dispose();
     super.dispose();
   }
 
@@ -179,6 +181,15 @@ class ProfessionalInfoScreenState extends State<ProfessionalInfoScreen> {
         bioController.text = professionalInfo.bio!;
       } else {
         bioController.text = '';
+      }
+
+      // Carregar requestMinimumEarliness
+      if (professionalInfo?.requestMinimumEarliness != null) {
+        _selectedRequestMinimumEarliness = Duration(minutes: professionalInfo!.requestMinimumEarliness!);
+        requestMinimumEarlinessController.text = _formatDuration(_selectedRequestMinimumEarliness!);
+      } else {
+        _selectedRequestMinimumEarliness = null;
+        requestMinimumEarlinessController.text = '';
       }
     });
   }

@@ -197,7 +197,8 @@ class ContractRemoteDataSourceImpl implements IContractRemoteDataSource {
 
       final contractMap = snapshot.data() as Map<String, dynamic>;
       try {
-        // Converter Timestamps para DateTime antes do mapeamento
+        // Converte todos os Timestamps do documento (recursivo), incluindo campos de data
+        // como invoiceStatusUpdatedAt, artistToClientInvoiceStatusUpdatedAt, lastUpdatedAt, etc.
         final convertedMap = convertFirestoreMapForMapper(contractMap);
         final contract = ContractEntityMapper.fromMap(convertedMap);
       return contract.copyWith(uid: snapshot.id);

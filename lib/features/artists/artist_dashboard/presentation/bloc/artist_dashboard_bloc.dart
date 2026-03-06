@@ -29,6 +29,7 @@ class ArtistDashboardBloc extends Bloc<ArtistDashboardEvent, ArtistDashboardStat
 
     final result = await getArtistDashboardStatsUseCase.call(
       forceRefresh: event.forceRefresh ?? false,
+      year: event.year,
     );
 
     result.fold(

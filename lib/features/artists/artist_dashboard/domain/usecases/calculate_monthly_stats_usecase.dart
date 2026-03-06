@@ -3,22 +3,23 @@ import 'package:app/core/enums/contract_status_enum.dart';
 import 'package:app/features/artists/artist_dashboard/domain/entities/artist_dashboard_stats_entity.dart';
 import 'package:intl/intl.dart';
 
-/// UseCase: Calcular estatísticas mensais para gráficos (últimos 6 meses)
-/// 
+/// UseCase: Calcular estatísticas mensais para gráficos (12 meses do ano)
+///
 /// RESPONSABILIDADES:
 /// - Agrupar contratos por mês
 /// - Calcular receita, contratos, solicitações e taxa de aceitação por mês
-/// - Retornar lista ordenada dos últimos 6 meses
+/// - Retornar lista dos 12 meses do ano indicado (jan–dez)
 class CalculateMonthlyStatsUseCase {
   const CalculateMonthlyStatsUseCase();
 
-  List<MonthlyStatsEntity> call(List<ContractEntity> contracts) {
-    final now = DateTime.now();
+  /// [year] ano a considerar; se null, usa o ano atual.
+  List<MonthlyStatsEntity> call(List<ContractEntity> contracts, {int? year}) {
+    final targetYear = year ?? DateTime.now().year;
     final months = <DateTime>[];
-    
-    // Gerar lista dos últimos 6 meses
-    for (int i = 5; i >= 0; i--) {
-      months.add(DateTime(now.year, now.month - i));
+
+    // 12 meses do ano (jan–dez)
+    for (int m = 1; m <= 12; m++) {
+      months.add(DateTime(targetYear, m));
     }
 
     final monthlyStats = <MonthlyStatsEntity>[];

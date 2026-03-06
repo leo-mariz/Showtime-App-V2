@@ -70,8 +70,8 @@ class _NavigationPageState extends State<NavigationPage> {
   // Items do menu para alunos
   List<BottomNavigationBarItem> get _clientNavItems => const [
     BottomNavigationBarItem(
-      icon: Icon(Icons.explore),
-      label: 'Explorar',
+      icon: Icon(Icons.home),
+      label: 'Início',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.favorite),
@@ -94,8 +94,8 @@ class _NavigationPageState extends State<NavigationPage> {
   // Items do menu para professores
   List<BottomNavigationBarItem> get _artistNavItems => const [
     BottomNavigationBarItem(
-      icon: Icon(Icons.analytics),
-      label: 'Dashboard',
+      icon: Icon(Icons.home),
+      label: 'Início',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.calendar_today),

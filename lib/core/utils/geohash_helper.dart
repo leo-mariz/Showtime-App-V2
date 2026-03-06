@@ -56,11 +56,8 @@ class GeohashHelper {
     // Truncar o geohash central para a precisão desejada
     final truncatedGeohash = truncate(centerGeohash, precision);
     
-    print('🔹 [GEOHASH] getRange - Calculando range para geohash: $centerGeohash');
-    print('🔹 [GEOHASH] Geohash truncado para precisão $precision: $truncatedGeohash');
     
     final neighborsMap = _geoHasher.neighbors(truncatedGeohash);
-    print('🔹 [GEOHASH] Vizinhos calculados: $neighborsMap');
     
     // Coletar todos os Geohashes (central + 8 vizinhos)
     // O pacote dart_geohash retorna chaves em MAIÚSCULAS
@@ -76,17 +73,13 @@ class GeohashHelper {
       neighborsMap['SOUTHWEST'] ?? neighborsMap['sw'] ?? '',
     ].where((h) => h.isNotEmpty).toList();
     
-    print('🔹 [GEOHASH] Todos os geohashes coletados: $allHashes');
     
     // Ordenar para encontrar min e max
     allHashes.sort();
     
     final min = allHashes.first;
     final max = allHashes.last;
-    
-    print('🔹 [GEOHASH] Range final: min=$min, max=$max');
-    print('🔹 [GEOHASH] Geohash central truncado ($truncatedGeohash) está no range? ${truncatedGeohash.compareTo(min) >= 0 && truncatedGeohash.compareTo(max) <= 0}');
-    
+
     return {
       'min': min,
       'max': max,

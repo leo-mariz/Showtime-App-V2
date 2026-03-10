@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 /// (Aprovação / Visibilidade) em conteúdo expandível, no mesmo padrão do ensemble.
 class ArtistCompletenessCard extends StatefulWidget {
   final ArtistEntity artist;
+  
 
   const ArtistCompletenessCard({
     super.key,

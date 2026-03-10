@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 class ArtistAreaActivationCard extends StatelessWidget {
   final String title;
   final String description;
+  final String? warningMessage;
   final IconData icon;
   final Color iconColor;
   final bool isActive;
@@ -15,6 +16,7 @@ class ArtistAreaActivationCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.description,
+    this.warningMessage,
     required this.icon,
     required this.iconColor,
     required this.isActive,
@@ -57,6 +59,14 @@ class ArtistAreaActivationCard extends StatelessWidget {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (warningMessage != null) ...[
+                  Text(
+                    warningMessage!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

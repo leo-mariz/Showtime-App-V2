@@ -240,7 +240,7 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
 
                         // Incompleto: card de pendências. Completo e não aprovado: pendente de aprovação. Completo e aprovado: ativar/desativar.
                         if (artist != null && hasIncompleteSections) ...[
-                          ArtistCompletenessCard(artist: artist),
+                          ArtistCompletenessCard(artist: artist,),
                           DSSizedBoxSpacing.vertical(24),
                         ] else if (artist != null && !isApproved) ...[
                           _ArtistPendingApprovalCard(iconColor: colorScheme.onTertiaryContainer),
@@ -249,8 +249,8 @@ class _ArtistDashboardScreenState extends State<ArtistDashboardScreen>
                           ArtistAreaActivationCard(
                             title: isActive ? 'Visualização ativada' : 'Ativar visualização',
                             description: isActive
-                                ? 'Seu perfil está ativo e visível para clientes.'
-                                : 'Ative seu perfil para aparecer nas buscas.',
+                                ? 'Seu perfil está ativo e visível para clientes. Lembre-se de criar disponibilidades no calendário para que os clientes possam solicitar sua apresentação.'
+                                : 'Ative seu perfil e crie disponibilidades no calendário para aparecer nas buscas.',
                             icon: isActive ? Icons.public_outlined : Icons.visibility_off_outlined,
                             iconColor: colorScheme.onPrimaryContainer,
                             isActive: isActive,

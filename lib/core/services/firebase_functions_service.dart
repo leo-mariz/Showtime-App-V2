@@ -31,20 +31,20 @@ abstract class IFirebaseFunctionsService {
 
 /// Implementação do serviço para chamadas de Cloud Functions
 /// 
-/// Para configurar uma região específica (se necessário):
+/// Functions estão em [southamerica-east1]. Para outra região:
 /// ```dart
 /// FirebaseFunctionsService(
 ///   functions: FirebaseFunctions.instanceFor(region: 'us-central1'),
 /// )
 /// ```
 class FirebaseFunctionsService implements IFirebaseFunctionsService {
+  static const String _functionsRegion = 'southamerica-east1';
+
   final FirebaseFunctions _functions;
 
   FirebaseFunctionsService({
     FirebaseFunctions? functions,
-    // Se sua função estiver em uma região diferente, configure aqui:
-    // Exemplo: String? region, // 'us-central1', 'southamerica-east1', etc.
-  }) : _functions = functions ?? FirebaseFunctions.instance;
+  }) : _functions = functions ?? FirebaseFunctions.instanceFor(region: _functionsRegion);
 
   @override
   Future<Map<String, dynamic>> callFunction(

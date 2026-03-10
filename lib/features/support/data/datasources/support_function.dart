@@ -19,7 +19,7 @@ Future<void> contestContract({
   required String contestedBy,
   String? contestedReason,
 }) async {
-  final callable = FirebaseFunctions.instance.httpsCallable('contestContract');
+  final callable = FirebaseFunctions.instanceFor(region: 'southamerica-east1').httpsCallable('contestContract');
 
   final result = await callable.call({
     'contractUid': contractUid,

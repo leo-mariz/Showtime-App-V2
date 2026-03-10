@@ -50,19 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBlFqjG5fS4qKRe358QnO0lxDAQbJFuylg',
-    appId: '1:45946172412:android:d2c7659efb326b9e347879',
-    messagingSenderId: '45946172412',
-    projectId: 'showtime-v2-homolog',
-    storageBucket: 'showtime-v2-homolog.firebasestorage.app',
+    apiKey: 'AIzaSyAMDxV_YssMsMy1uqLbf3xF6qw0MJXLjt4',
+    appId: '1:879488622281:android:8039ee943b7a579f977718',
+    messagingSenderId: '879488622281',
+    projectId: 'showtime-v2-prod',
+    storageBucket: 'showtime-v2-prod.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCEKEbtHuJ1XzuuXtp4PUfCluQWZq6gplk',
-    appId: '1:45946172412:ios:569dd03df5aeff06347879',
-    messagingSenderId: '45946172412',
-    projectId: 'showtime-v2-homolog',
-    storageBucket: 'showtime-v2-homolog.firebasestorage.app',
+    apiKey: 'AIzaSyAkJdgrJfZ1H-fUduBQ4Tx50qPKv83nJE0',
+    appId: '1:879488622281:ios:e70e5bd74fa2c661977718',
+    messagingSenderId: '879488622281',
+    projectId: 'showtime-v2-prod',
+    storageBucket: 'showtime-v2-prod.firebasestorage.app',
     iosBundleId: 'com.itsshowtime.app',
   );
+
 }

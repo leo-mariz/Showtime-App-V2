@@ -1,9 +1,9 @@
 import 'package:app/core/config/setup_locator.dart';
 import 'package:app/core/domain/email/email_entity.dart';
-import 'package:app/core/users/domain/entities/user_entity.dart';
-import 'package:app/core/templates/email_templates.dart';
+import 'package:app/core/email_templates/onboarding_welcome_templates.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/mail_services.dart';
+import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:dartz/dartz.dart';
 
 class SendWelcomeEmailUsecase {
@@ -18,11 +18,12 @@ class SendWelcomeEmailUsecase {
       final toUser = [userEmail];
       final mailService = getIt<MailService>();
       final userWelcomeEmailSubject = 'Bem-vindo ao Showtime';
-      final userWelcomeTo = toUser;
       String userName = isCnpj ? user.cnpjUser!.companyName! : user.cpfUser!.firstName!;
-      final userWelcomeMessage = isArtist ? EmailTemplates.buildArtistWelcomeEmail(userName) : EmailTemplates.buildClientWelcomeEmail(userName);
+      final userWelcomeMessage = isArtist
+          ? welcomeAfterArtistOnboardingTemplate(artistName: userName)
+          : welcomeAfterClientOnboardingTemplate(userName: userName);
       final userWelcomeEmailEntity = EmailEntity(
-        to: userWelcomeTo,
+        to: toUser,
         subject: userWelcomeEmailSubject,
         body: userWelcomeMessage,
         isHtml: true,

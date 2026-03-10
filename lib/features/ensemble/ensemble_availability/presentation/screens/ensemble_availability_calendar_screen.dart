@@ -709,11 +709,6 @@ class _EnsembleAvailabilityCalendarScreenState
     // Guardar o DTO original para usar depois na criação do OpenPeriodDto
     _lastCheckOverlapsDto = dto;
     
-    debugPrint('🟢 [CALENDAR_SCREEN] _onSavePeriod chamado - isClose: $isClose');
-    debugPrint('🟢 [CALENDAR_SCREEN] PatternId: ${dto.patternMetadata?.patternId}');
-    debugPrint('🟢 [CALENDAR_SCREEN] StartTime: ${dto.startTime}');
-    debugPrint('🟢 [CALENDAR_SCREEN] EndTime: ${dto.endTime}');
-    
     context.read<EnsembleAvailabilityBloc>().add(
       GetOrganizedAvailabilitiesAfterVerificationEvent(
         ensembleId: widget.ensembleId,
@@ -735,21 +730,11 @@ class _EnsembleAvailabilityCalendarScreenState
     final daysWithBookedSlot = result.daysWithBookedSlot;
     final daysWithoutOverlap = result.daysWithoutOverlap;
 
-    debugPrint('🟡 [CALENDAR_SCREEN] _handleOrganizedAvailabilitiesResult - isClose: $isClose');
-    debugPrint('🟡 [CALENDAR_SCREEN] daysWithOverlap: ${daysWithOverlap.length}');
-    debugPrint('🟡 [CALENDAR_SCREEN] daysWithBookedSlot: ${daysWithBookedSlot.length}');
-    debugPrint('🟡 [CALENDAR_SCREEN] daysWithoutOverlap: ${daysWithoutOverlap.length}');
-    
     // Log detalhado dos dias com overlap
     for (var i = 0; i < daysWithOverlap.length; i++) {
       final overlap = daysWithOverlap[i];
-      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - Date: ${overlap.date}, hasOverlap: ${overlap.hasOverlap}');
-      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - OldSlots: ${overlap.oldTimeSlots?.length ?? 0}');
-      debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - NewSlots: ${overlap.newTimeSlots?.length ?? 0}');
       if (overlap.newTimeSlots != null) {
         for (var j = 0; j < overlap.newTimeSlots!.length; j++) {
-          final slot = overlap.newTimeSlots![j];
-          debugPrint('🟡 [CALENDAR_SCREEN] Overlap[$i] - NewSlot[$j]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
         }
       }
     }
@@ -777,12 +762,7 @@ class _EnsembleAvailabilityCalendarScreenState
         daysWithoutOverlap: daysWithoutOverlap,
       );
 
-      debugPrint('🟠 [CALENDAR_SCREEN] Criando OpenPeriodDto para ${isClose ? "FECHAR" : "ABRIR"}');
-      debugPrint('🟠 [CALENDAR_SCREEN] dayOverlapInfos: ${openPeriodDto.dayOverlapInfos.length}');
-      debugPrint('🟠 [CALENDAR_SCREEN] daysWithBookedSlot: ${openPeriodDto.daysWithBookedSlot.length}');
-
       if (isClose) {
-        debugPrint('🔴 [CALENDAR_SCREEN] Disparando ClosePeriodEvent');
         context.read<EnsembleAvailabilityBloc>().add(
           ClosePeriodEvent(
             ensembleId: widget.ensembleId,
@@ -790,7 +770,6 @@ class _EnsembleAvailabilityCalendarScreenState
           ),
         );
       } else {
-        debugPrint('🟢 [CALENDAR_SCREEN] Disparando OpenPeriodEvent');
         context.read<EnsembleAvailabilityBloc>().add(
           OpenPeriodEvent(
             ensembleId: widget.ensembleId,

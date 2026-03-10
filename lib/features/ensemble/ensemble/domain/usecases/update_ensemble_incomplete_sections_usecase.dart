@@ -5,7 +5,6 @@ import 'package:app/features/ensemble/ensemble/domain/enums/ensemble_info_type_e
 import 'package:app/features/ensemble/ensemble/domain/repositories/ensemble_repository.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 
 /// Atualiza [hasIncompleteSections] e [incompleteSections] do conjunto no Firestore.
 ///
@@ -51,9 +50,6 @@ class UpdateEnsembleIncompleteSectionsUseCase {
           // Quando a seção incompleta é memberDocuments (documentos dos integrantes), garantir allMembersApproved = false.
           final hasMemberDocumentsIncomplete = incompleteSections.containsKey(EnsembleInfoType.memberDocuments.name);
           final allMembersApproved = hasMemberDocumentsIncomplete ? false : current.allMembersApproved;
-
-          debugPrint('[UpdateEnsembleIncompleteSections] ensembleId=$ensembleId hasIncomplete=$hasIncomplete keys=${incompleteSections.keys.toList()} isActive=$isActive allMembersApproved=$allMembersApproved');
-          debugPrint('[UpdateEnsembleIncompleteSections] current.hasIncomplete=${current.hasIncompleteSections} current.keys=${current.incompleteSections?.keys.toList()}');
 
           final updated = current.copyWith(
             hasIncompleteSections: hasIncomplete,

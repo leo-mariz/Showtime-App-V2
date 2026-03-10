@@ -12,7 +12,8 @@
 .swiftpm/
 migrate_working_dir/
 
-/serviceAccountKey.json
+../serviceAccountKeyHomolog.json
+../serviceAccountKeyProd.json
 scripts/
 /.env
 

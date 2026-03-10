@@ -10,7 +10,6 @@ import 'package:app/features/availability/domain/entities/day_overlap_info.dart'
 import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/create_availability_day_usecase.dart';
 import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/update_availability_day_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 /// Use Case para abrir um período de disponibilidade
@@ -65,18 +64,7 @@ class OpenEnsemblePeriodUseCase {
 
       final validDates = _generateValidDatesFromPattern(firstPattern);
 
-      debugPrint('🟢 [OPEN_PERIOD] Iniciando abertura de período');
-      debugPrint('🟢 [OPEN_PERIOD] EnsembleId: $ensembleId');
-      debugPrint('🟢 [OPEN_PERIOD] StartDate: ${firstPattern.recurrence?.originalStartDate}');
-      debugPrint('🟢 [OPEN_PERIOD] EndDate: ${firstPattern.recurrence?.originalEndDate}');
-      debugPrint('🟢 [OPEN_PERIOD] Weekdays: ${firstPattern.recurrence?.weekdays}');
-      debugPrint('🟢 [OPEN_PERIOD] ValidDates geradas: ${validDates.length}');
-      for (var i = 0; i < validDates.length; i++) {
-        debugPrint('🟢 [OPEN_PERIOD] ValidDate[$i]: ${validDates[i].toString().split(' ')[0]}');
-      }
-
       if (validDates.isEmpty) {
-        debugPrint('🔴 [OPEN_PERIOD] ERRO: Nenhuma data válida encontrada no padrão');
         return const Left(
           ValidationFailure('Nenhuma data válida encontrada no padrão'),
         );
@@ -86,7 +74,6 @@ class OpenEnsemblePeriodUseCase {
       // 2. Criar mapa de overlaps por data para busca rápida
       // ════════════════════════════════════════════════════════════════
       final overlapMap = <DateTime, DayOverlapInfo>{};
-      debugPrint('🟢 [OPEN_PERIOD] dayOverlapInfos recebidos: ${dto.dayOverlapInfos.length}');
       for (final overlapInfo in dto.dayOverlapInfos) {
         // Normalizar a data (remover hora) para comparação
         final normalizedDate = DateTime(
@@ -95,14 +82,12 @@ class OpenEnsemblePeriodUseCase {
           overlapInfo.date.day,
         );
         overlapMap[normalizedDate] = overlapInfo;
-        debugPrint('🟢 [OPEN_PERIOD] OverlapInfo adicionado ao mapa: ${normalizedDate.toString().split(' ')[0]}');
       }
 
       // ════════════════════════════════════════════════════════════════
       // 2.1. Criar mapa de dias com slots reservados para busca rápida
       // ════════════════════════════════════════════════════════════════
       final bookedSlotMap = <DateTime, AvailabilityDayEntity>{};
-      debugPrint('🟢 [OPEN_PERIOD] daysWithBookedSlot recebidos: ${dto.daysWithBookedSlot.length}');
       for (final dayEntity in dto.daysWithBookedSlot) {
         // Normalizar a data (remover hora) para comparação
         final normalizedDate = DateTime(
@@ -111,15 +96,12 @@ class OpenEnsemblePeriodUseCase {
           dayEntity.date.day,
         );
         bookedSlotMap[normalizedDate] = dayEntity;
-        debugPrint('🟢 [OPEN_PERIOD] BookedSlot adicionado ao mapa: ${normalizedDate.toString().split(' ')[0]}');
       }
 
       // ════════════════════════════════════════════════════════════════
       // 3. Processar cada data
       // ════════════════════════════════════════════════════════════════
       final createdDays = <AvailabilityDayEntity>[];
-
-      debugPrint('🟢 [OPEN_PERIOD] Iniciando processamento de ${validDates.length} datas');
 
       for (var i = 0; i < validDates.length; i++) {
         final date = validDates[i];
@@ -130,13 +112,10 @@ class OpenEnsemblePeriodUseCase {
           date.day,
         );
 
-        debugPrint('🟢 [OPEN_PERIOD] Processando data[$i]: ${normalizedDate.toString().split(' ')[0]}');
-
         // ════════════════════════════════════════════════════════════
         // 3.0. Verificar se o dia tem slot reservado - se sim, pular
         // ════════════════════════════════════════════════════════════
         if (bookedSlotMap.containsKey(normalizedDate)) {
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - PULANDO (tem booked slot)');
           // Dia tem slot reservado, não modificar
           continue;
         }
@@ -147,15 +126,8 @@ class OpenEnsemblePeriodUseCase {
           // ════════════════════════════════════════════════════════════
           // 3.1. Data não tem overlap - criar usando modelo base
           // ════════════════════════════════════════════════════════════
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - SEM OVERLAP - Criando dia usando modelo base');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - BaseDay slots: ${dto.baseAvailabilityDay.slots?.length ?? 0}');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - BaseDay endereco: ${dto.baseAvailabilityDay.endereco?.title ?? 'Não definido'}');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - BaseDay raio: ${dto.baseAvailabilityDay.raioAtuacao}');
-          
           // Gerar slots a partir do patternMetadata
           final slots = _generateSlotsFromPattern(firstPattern);
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Slots gerados do pattern: ${slots.length}');
-          
           final newDay = dto.baseAvailabilityDay.copyWith(
             date: normalizedDate,
             slots: slots,
@@ -163,7 +135,6 @@ class OpenEnsemblePeriodUseCase {
             isActive: true,
           );
 
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Chamando createAvailabilityDayUseCase');
           final createResult = await createEnsembleAvailabilityDayUseCase(
             ensembleId,
             newDay,
@@ -171,11 +142,9 @@ class OpenEnsemblePeriodUseCase {
 
           createResult.fold(
             (failure) {
-              debugPrint('🔴 [OPEN_PERIOD] Data[$i] - ERRO ao criar: ${failure.message}');
               throw failure;
             },
             (createdDay) {
-              debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Sucesso! Dia criado com ${createdDay.slots?.length ?? 0} slots');
               createdDays.add(createdDay);
             },
           );
@@ -183,30 +152,22 @@ class OpenEnsemblePeriodUseCase {
           // ════════════════════════════════════════════════════════════
           // 3.2. Data tem overlap - criar usando informações do overlap
           // ════════════════════════════════════════════════════════════
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - COM OVERLAP - Criando dia usando informações do overlap');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Overlap hasOverlap: ${overlapInfo.hasOverlap}');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Overlap oldSlots: ${overlapInfo.oldTimeSlots?.length ?? 0}');
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Overlap newSlots: ${overlapInfo.newTimeSlots?.length ?? 0}');
-          
           final updatedDay = _createDayFromOverlapInfo(
             baseDay: dto.baseAvailabilityDay,
             overlapInfo: overlapInfo,
             date: normalizedDate,
           );
 
-          debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Chamando updateAvailabilityDayUseCase');
           final updateResult = await updateEnsembleAvailabilityDayUseCase(
             ensembleId,
             updatedDay,
           );
 
           updateResult.fold(
-            (failure) {
-              debugPrint('🔴 [OPEN_PERIOD] Data[$i] - ERRO ao atualizar: ${failure.message}');
+            (failure) {   
               throw failure;
             },
             (updatedDayEntity) {
-              debugPrint('🟢 [OPEN_PERIOD] Data[$i] - Sucesso! Dia atualizado com ${updatedDayEntity.slots?.length ?? 0} slots');
               createdDays.add(updatedDayEntity);
             },
           );
@@ -216,7 +177,6 @@ class OpenEnsemblePeriodUseCase {
       // ════════════════════════════════════════════════════════════════
       // 4. Retornar lista de dias criados/atualizados
       // ════════════════════════════════════════════════════════════════
-      debugPrint('🟢 [OPEN_PERIOD] Finalizado - Total de dias criados/atualizados: ${createdDays.length}');
       return Right(createdDays);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
@@ -273,7 +233,6 @@ class OpenEnsemblePeriodUseCase {
   /// Cria um slot baseado nas informações de horário e valor do patternMetadata
   List<TimeSlot> _generateSlotsFromPattern(PatternMetadata patternMetadata) {
     if (patternMetadata.recurrence == null) {
-      debugPrint('🟢 [OPEN_PERIOD] _generateSlotsFromPattern - Recurrence é null');
       return [];
     }
 
@@ -284,11 +243,9 @@ class OpenEnsemblePeriodUseCase {
     final endTime = recurrence.originalEndTime;
     final valorHora = recurrence.originalValorHora;
 
-    debugPrint('🟢 [OPEN_PERIOD] _generateSlotsFromPattern - StartTime: $startTime, EndTime: $endTime, ValorHora: $valorHora');
 
     // Se startTime e endTime são iguais ou inválidos, não criar slot
     if (startTime.isEmpty || endTime.isEmpty || startTime == endTime) {
-      debugPrint('🟢 [OPEN_PERIOD] _generateSlotsFromPattern - Horários inválidos, não criando slot');
       return [];
     }
 
@@ -302,7 +259,6 @@ class OpenEnsemblePeriodUseCase {
       sourcePatternId: patternMetadata.patternId,
     );
 
-    debugPrint('🟢 [OPEN_PERIOD] _generateSlotsFromPattern - Slot criado: ${slot.startTime}-${slot.endTime}, R\$ ${slot.valorHora}');
     return [slot];
   }
 }

@@ -9,7 +9,6 @@ import 'package:app/features/availability/domain/entities/day_overlap_info.dart'
 import 'package:app/features/availability/domain/entities/organized_availabilities_after_verification_result_entity.dart';
 import 'package:app/features/ensemble/ensemble_availability/domain/usecases/validation/get_organized_day_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
 
 /// Use Case para checagem de overlaps
 ///
@@ -59,13 +58,8 @@ class GetOrganizedEnsembleAvailabilitesAfterVerificationUseCase {
         patternId: dto.patternMetadata?.patternId,
       );
 
-      debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Processando ${validDates.length} datas - isClose: $isClose');
-      debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] StartTime: ${dto.startTime}, EndTime: ${dto.endTime}');
-      debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] ValorHora: ${dto.valorHora}');
-
       for (var i = 0; i < validDates.length; i++) {
         final date = validDates[i];
-        debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Processando data[$i]: ${date.toString().split(' ')[0]}');
 
         final result = await getOrganizedDayAfterVerificationUseCase(
           ensembleId,
@@ -77,21 +71,16 @@ class GetOrganizedEnsembleAvailabilitesAfterVerificationUseCase {
         result.fold(
           (failure) => throw failure,
           (dayResult) {
-            debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - hasChanges: ${dayResult.hasChanges}, hasBookedSlot: ${dayResult.hasBookedSlot}');
 
             if (dayResult.hasChanges) {
               if (dayResult.overlapInfo != null) {
-                debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - Adicionando a daysWithOverlap');
-                debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - NewSlots: ${dayResult.overlapInfo!.newTimeSlots?.length ?? 0}');
                 daysWithOverlap.add(dayResult.overlapInfo!);
               }
             } else if (dayResult.dayEntity != null) {
               // Só adiciona se o dia existe
               if (dayResult.hasBookedSlot) {
-                debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - Adicionando a daysWithBookedSlot');
                 daysWithBookedSlot.add(dayResult.dayEntity!);
               } else {
-                debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Resultado[$i] - Adicionando a daysWithoutOverlap');
                 daysWithoutOverlap.add(dayResult.dayEntity!);
               }
             }
@@ -99,8 +88,6 @@ class GetOrganizedEnsembleAvailabilitesAfterVerificationUseCase {
           },
         );
       }
-
-      debugPrint('🟣 [GET_ORGANIZED_AVAILABILITIES] Final - daysWithOverlap: ${daysWithOverlap.length}, daysWithBookedSlot: ${daysWithBookedSlot.length}, daysWithoutOverlap: ${daysWithoutOverlap.length}');
 
       // ════════════════════════════════════════════════════════════════
       // 3. Retornar resultado

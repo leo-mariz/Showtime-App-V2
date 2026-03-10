@@ -93,16 +93,13 @@ class EnsembleAvailabilityLocalDataSourceImpl
       if (availabilities.isEmpty) {
         throw NotFoundException('Disponibilidade não encontrada para o conjunto: $ensembleId');
       }
-      print('[LocalDataSource] 🔍 Buscando disponibilidade. dayId: $dayId, total: ${availabilities.length}');
       
       final day = availabilities.firstWhere(
         (day) => day.documentId == dayId,
         orElse: () {
-          print('[LocalDataSource] ❌ Dia não encontrado: $dayId');
           throw NotFoundException('Dia $dayId não encontrado');
         },
       );
-      print('[LocalDataSource] ✅ Dia encontrado: $dayId');
       return day;
     } catch (e) {
       throw CacheException('Erro ao buscar disponibilidade: $e');

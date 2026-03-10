@@ -9,7 +9,6 @@ import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_co
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
 import 'package:app/features/ensemble/member_documents/domain/usecases/get_all_member_documents_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/foundation.dart';
 
 /// Busca a completude do conjunto (ensemble).
 ///
@@ -42,13 +41,11 @@ class GetEnsembleCompletenessUseCase {
         return const Left(ValidationFailure('ensembleId é obrigatório'));
       }
 
-      debugPrint('[GetEnsembleCompleteness] call artistId=$artistId ensembleId=$ensembleId');
       final ensembleResult = await getEnsembleUseCase.call(artistId, ensembleId);
       return await ensembleResult.fold(
         (f) => Left(f),
         (ensemble) async {
           if (ensemble == null) {
-            debugPrint('[GetEnsembleCompleteness] ensemble null');
             return const Left(NotFoundFailure('Conjunto não encontrado'));
           }
 
@@ -83,8 +80,6 @@ class GetEnsembleCompletenessUseCase {
             ownerBankAccount: ownerBank,
             memberDocumentsByMemberId: memberDocsMap,
           );
-          final incompleteCount = completeness.incompleteStatuses.length;
-          debugPrint('[GetEnsembleCompleteness] done ensembleId=$ensembleId | nonOwnerMembers=${nonOwnerMembers.length} | memberDocsKeys=${memberDocsMap.keys.toList()} | incompleteSections=$incompleteCount');
           return Right(completeness);
         },
       );

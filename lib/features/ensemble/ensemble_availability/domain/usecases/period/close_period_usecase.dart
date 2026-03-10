@@ -5,7 +5,6 @@ import 'package:app/features/availability/domain/dtos/open_period_dto.dart';
 import 'package:app/features/availability/domain/entities/day_overlap_info.dart';
 import 'package:app/features/ensemble/ensemble_availability/domain/usecases/day/update_availability_day_usecase.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter/material.dart';
 
 /// Use Case para fechar um período de disponibilidade
 /// 
@@ -32,11 +31,7 @@ class CloseEnsemblePeriodUseCase {
     OpenPeriodDto dto,
   ) async {
     try {
-      debugPrint('⚫ [CLOSE_PERIOD] Iniciando fechamento de período');
-      debugPrint('⚫ [CLOSE_PERIOD] EnsembleId: $ensembleId');
-      debugPrint('⚫ [CLOSE_PERIOD] dayOverlapInfos: ${dto.dayOverlapInfos.length}');
-      debugPrint('⚫ [CLOSE_PERIOD] daysWithBookedSlot: ${dto.daysWithBookedSlot.length}');
-      
+        
       if (ensembleId.isEmpty) {
         return const Left(ValidationFailure('ID do conjunto é obrigatório'));
       }
@@ -53,7 +48,6 @@ class CloseEnsemblePeriodUseCase {
           dayEntity.date.day,
         );
         bookedSlotMap[normalizedDate] = dayEntity;
-        debugPrint('⚫ [CLOSE_PERIOD] Dia com booked slot: ${normalizedDate.toString().split(' ')[0]}');
       }
 
       // ════════════════════════════════════════════════════════════════
@@ -70,16 +64,10 @@ class CloseEnsemblePeriodUseCase {
           overlapInfo.date.day,
         );
 
-        debugPrint('⚫ [CLOSE_PERIOD] Processando overlap[$i] - Date: ${normalizedDate.toString().split(' ')[0]}');
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - hasOverlap: ${overlapInfo.hasOverlap}');
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - OldSlots: ${overlapInfo.oldTimeSlots?.length ?? 0}');
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - NewSlots: ${overlapInfo.newTimeSlots?.length ?? 0}');
-
         // ════════════════════════════════════════════════════════════
         // 2.1. Verificar se o dia tem slot reservado - se sim, pular
         // ════════════════════════════════════════════════════════════
         if (bookedSlotMap.containsKey(normalizedDate)) {
-          debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - PULANDO (tem booked slot)');
           // Dia tem slot reservado, não modificar
           continue;
         }
@@ -93,16 +81,9 @@ class CloseEnsemblePeriodUseCase {
           date: normalizedDate,
         );
 
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Dia criado com ${updatedDay.slots?.length ?? 0} slots');
-        for (var j = 0; j < updatedDay.slots!.length; j++) {
-          final slot = updatedDay.slots![j];
-          debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Slot[$j]: ${slot.startTime}-${slot.endTime}, status: ${slot.status}, valorHora: ${slot.valorHora}');
-        }
-
         // ════════════════════════════════════════════════════════════
         // 2.3. Atualizar o dia usando o usecase
         // ════════════════════════════════════════════════════════════
-        debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Chamando updateAvailabilityDayUseCase');
         final updateResult = await updateAvailabilityDayUseCase(
           ensembleId,
           updatedDay,
@@ -110,11 +91,9 @@ class CloseEnsemblePeriodUseCase {
 
         updateResult.fold(
           (failure) {
-            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - ERRO ao atualizar: ${failure.message}');
             throw failure;
           },
           (updatedDayEntity) {
-            debugPrint('⚫ [CLOSE_PERIOD] Overlap[$i] - Sucesso! Dia atualizado com ${updatedDayEntity.slots?.length ?? 0} slots');
             updatedDays.add(updatedDayEntity);
           },
         );
@@ -123,7 +102,6 @@ class CloseEnsemblePeriodUseCase {
       // ════════════════════════════════════════════════════════════════
       // 3. Retornar lista de dias atualizados
       // ════════════════════════════════════════════════════════════════
-      debugPrint('⚫ [CLOSE_PERIOD] Finalizado - Total de dias atualizados: ${updatedDays.length}');
       return Right(updatedDays);
     } catch (e) {
       return Left(ErrorHandler.handle(e));
@@ -139,17 +117,12 @@ class CloseEnsemblePeriodUseCase {
     // Usar novos slots se disponíveis, senão usar slots antigos
     final slots = overlapInfo.newTimeSlots ?? overlapInfo.oldTimeSlots ?? [];
 
-    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Date: ${date.toString().split(' ')[0]}');
-    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Usando newTimeSlots: ${overlapInfo.newTimeSlots != null}');
-    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Total de slots: ${slots.length}');
-
     // ════════════════════════════════════════════════════════════════
     // REGRA: Se não houver slots, o dia DEVE estar inativo
     // ════════════════════════════════════════════════════════════════
     final isActive = slots.isNotEmpty ? baseDay.isActive : false;
     
     if (slots.isEmpty) {
-      debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Sem slots, forçando isActive = false');
     }
 
     // Usar novo endereço se disponível, senão usar endereço antigo ou base
@@ -170,9 +143,7 @@ class CloseEnsemblePeriodUseCase {
       updatedAt: DateTime.now(),
       isActive: isActive,
     );
-    
-    debugPrint('⚫ [CLOSE_PERIOD] _createDayFromOverlapInfo - Dia criado com ${createdDay.slots?.length ?? 0} slots');
-    
+
     return createdDay;
   }
 }

@@ -3,9 +3,8 @@ import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.da
 import 'package:app/core/enums/notification_type_enum.dart';
 import 'package:flutter/material.dart';
 
-/// Widget de toast personalizado para notificações in-app
-/// 
-/// Segue o design system do app e suporta diferentes tipos de notificação
+/// Widget de toast personalizado para notificações in-app.
+/// Exibe até 3 linhas de texto (quebra automática ou quebras de linha na mensagem).
 class AppToastWidget extends StatelessWidget {
   final String message;
   final NotificationType type;
@@ -58,6 +57,7 @@ class AppToastWidget extends StatelessWidget {
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
+                softWrap: true,
               ),
             ),
             DSSizedBoxSpacing.horizontal(8),

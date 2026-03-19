@@ -656,7 +656,7 @@ class CalendarWidgetState extends State<CalendarWidget> {
 
                   DSSizedBoxSpacing.vertical(8),
 
-                  // Estrela + quantidade de slots booked (shows) no dia
+                  // Estrela + quantidade de shows: número só a partir de 2
                   if (bookedCount > 0 && !isPast) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -667,15 +667,17 @@ class CalendarWidgetState extends State<CalendarWidget> {
                           size: DSSize.width(16),
                           color: Colors.yellowAccent,
                         ),
-                        DSSizedBoxSpacing.horizontal(2),
-                        Text(
-                          '$bookedCount',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: isSelected
-                                ? colorScheme.primaryContainer
-                                : colorScheme.onSurfaceVariant,
+                        if (bookedCount >= 2) ...[
+                          DSSizedBoxSpacing.horizontal(2),
+                          Text(
+                            '$bookedCount',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: isSelected
+                                  ? colorScheme.primaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                       DSSizedBoxSpacing.vertical(4),
@@ -692,14 +694,14 @@ class CalendarWidgetState extends State<CalendarWidget> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.close,
+                          Icons.circle,
                           size: DSSize.width(16),
                           color: colorScheme.error,
                         ),
                       ],
                     ),
                   ] else if (hasAvailability && !isPast) ...[    
-                    // Disponibilidade ativa com slots
+                    // Disponibilidade ativa com slots: número só a partir de 2 intervalos
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -709,16 +711,17 @@ class CalendarWidgetState extends State<CalendarWidget> {
                           size: DSSize.width(12), 
                           color: colorScheme.onSecondaryContainer,
                         ),
-                        DSSizedBoxSpacing.horizontal(4),
-
-                        Text(
-                          '$slotsCount',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: isSelected
-                                ? colorScheme.primaryContainer
-                                : colorScheme.onSurfaceVariant,
+                        if (slotsCount >= 2) ...[
+                          DSSizedBoxSpacing.horizontal(4),
+                          Text(
+                            '$slotsCount',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: isSelected
+                                  ? colorScheme.primaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     )
                   ] else if (isPast) ...[
@@ -740,11 +743,6 @@ class CalendarWidgetState extends State<CalendarWidget> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.circle_outlined,
-                          size: DSSize.width(14),
-                          color: colorScheme.onTertiaryContainer,
-                        ),
                       ],
                     ),
                   ],

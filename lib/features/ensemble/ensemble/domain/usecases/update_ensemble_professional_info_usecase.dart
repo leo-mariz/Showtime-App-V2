@@ -1,6 +1,8 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/update_ensemble_usecase.dart';
@@ -36,9 +38,15 @@ class UpdateEnsembleProfessionalInfoUseCase {
           if (ensemble == null) {
             return const Left(NotFoundFailure('Conjunto não encontrado'));
           }
+          final now = DateTime.now();
           final updated = ensemble.copyWith(
             professionalInfo: professionalInfo,
-            updatedAt: DateTime.now(),
+            updatedAt: now,
+            lastUpdatedAt: now,
+            updatedInfos: mergeUpdatedInfo(
+              ensemble.updatedInfos,
+              UpdatedInfoType.bio,
+            ),
           );
           final updateResult = await updateEnsembleUseCase.call(artistId, updated);
           return await updateResult.fold(

@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 class EnsembleCard extends StatelessWidget {
   final String groupName;
   final int totalMembers;
+  /// Tipo do conjunto (ex.: Orquestra, Banda). Se null/vazio, exibe "Conjunto".
+  final String? ensembleType;
   final String talents;
   final String description;
   final int contracts;
@@ -27,6 +29,7 @@ class EnsembleCard extends StatelessWidget {
     super.key,
     required this.groupName,
     required this.totalMembers,
+    this.ensembleType,
     required this.talents,
     required this.description,
     required this.contracts,
@@ -135,16 +138,20 @@ class EnsembleCard extends StatelessWidget {
           //   ],
           // ),
           // DSSizedBoxSpacing.vertical(4),
-          if (talents.isNotEmpty) ...[
-            Wrap(
-              spacing: DSSize.width(8),
-              runSpacing: DSSize.height(8),
-              children: [
+          Wrap(
+            spacing: DSSize.width(8),
+            runSpacing: DSSize.height(8),
+            children: [
+              GenreChip(
+                label: (ensembleType != null && ensembleType!.trim().isNotEmpty)
+                    ? ensembleType!.trim()
+                    : 'Conjunto',
+              ),
+              if (talents.isNotEmpty)
                 for (final t in talents.split(', '))
                   GenreChip(label: t),
-              ],
-            )
-          ],
+            ],
+          ),
           DSSizedBoxSpacing.vertical(16),
           Text(
             description,

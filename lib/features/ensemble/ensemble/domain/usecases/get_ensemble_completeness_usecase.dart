@@ -1,5 +1,4 @@
 import 'package:app/core/domain/artist/artist_individual/documents/documents_entity.dart';
-import 'package:app/core/domain/ensemble/member_documents/member_document_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/artists/artist_bank_account/domain/repositories/bank_account_repository.dart';
@@ -7,25 +6,22 @@ import 'package:app/features/artists/artist_documents/domain/repositories/docume
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_completeness_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_completeness_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
-import 'package:app/features/ensemble/member_documents/domain/usecases/get_all_member_documents_usecase.dart';
 import 'package:dartz/dartz.dart';
 
 /// Busca a completude do conjunto (ensemble).
 ///
-/// Obtém ensemble, documentos e banco do dono, documentos de cada integrante (não dono)
-/// e retorna [EnsembleCompletenessEntity].
+/// Obtém ensemble, documentos e banco do dono e retorna [EnsembleCompletenessEntity].
+/// Aprovação do grupo é dada quando o artista dono está aprovado (não é mais por documentos de membros).
 class GetEnsembleCompletenessUseCase {
   final GetEnsembleUseCase getEnsembleUseCase;
   final IDocumentsRepository documentsRepository;
   final IBankAccountRepository bankAccountRepository;
-  final GetAllMemberDocumentsUseCase getAllMemberDocumentsUseCase;
   final CheckEnsembleCompletenessUseCase checkEnsembleCompletenessUseCase;
 
   GetEnsembleCompletenessUseCase({
     required this.getEnsembleUseCase,
     required this.documentsRepository,
     required this.bankAccountRepository,
-    required this.getAllMemberDocumentsUseCase,
     required this.checkEnsembleCompletenessUseCase,
   });
 
@@ -56,29 +52,10 @@ class GetEnsembleCompletenessUseCase {
           final ownerDocs = documentsResult.fold((_) => <DocumentsEntity>[], (l) => l);
           final ownerBank = bankResult.fold((_) => null, (b) => b);
 
-          final memberDocsMap = <String, List<MemberDocumentEntity>>{};
-          final nonOwnerMembers = ensemble.members
-                  ?.where((m) => !m.isOwner && m.memberId.isNotEmpty)
-                  .toList() ??
-              [];
-          for (final member in nonOwnerMembers) {
-            final memberId = member.memberId;
-            final result = await getAllMemberDocumentsUseCase.call(
-              artistId,
-              ensembleId,
-              memberId,
-            );
-            result.fold(
-              (_) => memberDocsMap[memberId] = [],
-              (list) => memberDocsMap[memberId] = list,
-            );
-          }
-
           final completeness = checkEnsembleCompletenessUseCase.call(
             ensemble: ensemble,
             ownerDocuments: ownerDocs,
             ownerBankAccount: ownerBank,
-            memberDocumentsByMemberId: memberDocsMap,
           );
           return Right(completeness);
         },

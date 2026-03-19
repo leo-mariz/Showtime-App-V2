@@ -60,6 +60,11 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
   
   /// Verifica se o dia tem disponibilidade ativa
   bool get _hasAvailability => widget.availability != null;
+
+  /// Verifica se o dia tem slots cadastrados (para mostrar ou não o card de toggle)
+  bool get _hasSlots =>
+      widget.availability?.slots != null &&
+      widget.availability!.slots!.isNotEmpty;
   
   /// Verifica se a disponibilidade está ativa
   bool get _isActive => widget.availability?.isActive ?? false;
@@ -175,7 +180,7 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
           
           SizedBox(height: DSSize.height(16)),
 
-          // Layout: Card Disponível (esquerda) + TabBarView (direita)
+          // Layout: Card Disponível (esquerda, só se tiver slots) + TabBarView (direita)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: DSSize.width(20)),
             child: SizedBox(
@@ -183,19 +188,18 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Card de toggle disponível (esquerda)
-                  _buildAvailabilityToggleCard(colorScheme),
-                  
-                  SizedBox(width: DSSize.width(12)),
-                  
-                  // TabBarView (direita) - alterna entre cards
+                  // Card de toggle disponível (esquerda) — só quando o dia tem slots
+                  if (_hasSlots) ...[
+                    _buildAvailabilityToggleCard(colorScheme),
+                    SizedBox(width: DSSize.width(12)),
+                  ],
+                  // TabBarView (ocupa o resto ou largura toda se não tiver card à esquerda)
                   Expanded(
                     child: TabBarView(
                       controller: _tabController,
                       children: [
                         // Tab 1: Disponibilidade
                         _buildAvailabilityCard(colorScheme),
-                          
                         // Tab 2: Shows
                         _buildShowsCard(colorScheme),
                       ],
@@ -214,6 +218,15 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
 
   /// Card de toggle Disponível/Indisponível (esquerda)
   Widget _buildAvailabilityToggleCard(ColorScheme colorScheme) {
+    final isActive = _isActive;
+    final dotColor = isActive
+        ? colorScheme.onSecondaryContainer
+        : colorScheme.error;
+    final title = isActive ? 'Disponível' : 'Indisponível';
+    final description = isActive
+        ? 'Ativo para agendamentos.'
+        : 'Não aceita agendamentos.';
+
     return Container(
       width: DSSize.width(120),
       constraints: BoxConstraints(
@@ -229,121 +242,114 @@ class _DayEditBottomSheetState extends State<DayEditBottomSheet> with SingleTick
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.max,
         children: [
-          // Header com título e bolinha
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          // Header com título e bolinha (dinâmicos conforme status)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      'Disponível',
-                      style: TextStyle(
-                        fontSize: calculateFontSize(14),
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primaryContainer,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: calculateFontSize(14),
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primaryContainer,
                   ),
-                  SizedBox(width: DSSize.width(4)),
-                  Container(
-                    width: DSSize.width(6),
-                    height: DSSize.width(6),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSecondaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(width: DSSize.width(8)),
+              Container(
+                width: DSSize.width(6),
+                height: DSSize.width(6),
+                decoration: BoxDecoration(
+                  color: dotColor,
+                  shape: BoxShape.circle,
+                ),
               ),
             ],
           ),
 
+          // Texto descritivo do estado atual
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: calculateFontSize(11),
+              color: colorScheme.primaryContainer.withOpacity(0.9),
+              height: 1.2,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+
           const Spacer(),
-          
-          // Switch customizado com ícones
+
+          // Legenda + switch deslizante (liga/desliga)
           Center(
-            child: GestureDetector(
-              onTap: () => widget.onToggleStatus?.call(!_isActive),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: DSSize.width(80),
-                height: DSSize.height(36),
-                padding: EdgeInsets.all(DSSize.width(2)),
-                decoration: BoxDecoration(
-                  color: _isActive 
-                      ? colorScheme.surfaceContainerHighest
-                      : colorScheme.error.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(DSSize.width(18)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isActive
+                      ? 'Arraste para fechar'
+                      : 'Arraste para abrir',
+                  style: TextStyle(
+                    fontSize: calculateFontSize(10),
+                    color: colorScheme.primaryContainer.withOpacity(0.85),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Ícones de fundo (X e ✓) - centralizados
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Center(
-                          child: Icon(
-                            Icons.close,
-                            size: DSSize.width(16),
-                            color: _isActive
-                                ? colorScheme.primaryContainer.withOpacity(0.5)
-                                : colorScheme.error,
-                          ),
-                        ),
-                        Center(
-                          child: Icon(
-                            Icons.check,
-                            size: DSSize.width(16),
-                            color: _isActive
-                                ? colorScheme.primaryContainer
-                                : colorScheme.onSurface.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Thumb (bolinha) animada
-                    AnimatedAlign(
+                SizedBox(height: DSSize.height(6)),
+                GestureDetector(
+                    onTap: () => widget.onToggleStatus?.call(!_isActive),
+                    child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      alignment: _isActive 
-                          ? Alignment.centerRight 
-                          : Alignment.centerLeft,
-                      child: Container(
-                        width: DSSize.width(32),
-                        height: DSSize.height(32),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            _isActive ? Icons.check : Icons.close,
-                            size: DSSize.width(18),
-                            color: _isActive
-                                ? colorScheme.onPrimaryContainer
-                                : colorScheme.error,
+                      width: DSSize.width(80),
+                      height: DSSize.height(36),
+                      padding: EdgeInsets.all(DSSize.width(2)),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? colorScheme.onSecondaryContainer
+                            : colorScheme.error,
+                        borderRadius: BorderRadius.circular(DSSize.width(18)),
+                      ),
+                      child: AnimatedAlign(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: isActive
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          width: DSSize.width(32),
+                          height: DSSize.width(32),
+                          decoration: BoxDecoration(
+                            color: colorScheme.onPrimary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            // child: Icon(
+                            //   isActive
+                            //       ? Icons.check_circle
+                            //       : Icons.circle,
+                            //   size: DSSize.width(20),
+                            //   color: isActive
+                            //       ? colorScheme.onSecondaryContainer
+                            //       : colorScheme.error,
+                            // ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ),
         ],
       ),
     );

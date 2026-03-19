@@ -5,10 +5,6 @@ import 'package:app/features/artists/artist_dashboard/presentation/bloc/events/a
 import 'package:app/features/contracts/presentation/bloc/events/contracts_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
-import 'package:app/features/ensemble/member_documents/presentation/bloc/events/member_documents_events.dart';
-import 'package:app/features/ensemble/member_documents/presentation/bloc/member_documents_bloc.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
 import 'package:app/features/explore/presentation/bloc/events/explore_events.dart';
 import 'package:app/features/favorites/presentation/bloc/events/favorites_events.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/events/availability_events.dart';
@@ -90,11 +86,8 @@ class BlocResetHelper {
       // Resetar PendingContractsCountBloc (cancela stream de contador de contratos pendentes)
       context.read<PendingContractsCountBloc>().add(ResetPendingContractsCountEvent());
       // Resetar MembersBloc (cancela stream de membros)
-      context.read<MembersBloc>().add(ResetMembersEvent());
       // Resetar EnsembleBloc (cancela stream de conjuntos)
       context.read<EnsembleBloc>().add(ResetEnsembleEvent());
-      // Resetar MemberDocumentsBloc (cancela stream de documentos de membros)
-      context.read<MemberDocumentsBloc>().add(ResetMemberDocumentsEvent());
       // Resetar AuthBloc para AuthInitial (deve ser o último)
       context.read<AuthBloc>().add(ResetAuthEvent());
     } catch (e) {

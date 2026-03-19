@@ -15,7 +15,6 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = EnsembleEntityMapper._());
       ProfessionalInfoEntityMapper.ensureInitialized();
-      EnsembleMemberMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -61,22 +60,28 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     _$presentationVideoUrl,
     opt: true,
   );
-  static List<EnsembleMember>? _$members(EnsembleEntity v) => v.members;
-  static const Field<EnsembleEntity, List<EnsembleMember>> _f$members = Field(
+  static int? _$members(EnsembleEntity v) => v.members;
+  static const Field<EnsembleEntity, int> _f$members = Field(
     'members',
     _$members,
+    opt: true,
+  );
+  static List<String>? _$talents(EnsembleEntity v) => v.talents;
+  static const Field<EnsembleEntity, List<String>> _f$talents = Field(
+    'talents',
+    _$talents,
+    opt: true,
+  );
+  static String? _$ensembleType(EnsembleEntity v) => v.ensembleType;
+  static const Field<EnsembleEntity, String> _f$ensembleType = Field(
+    'ensembleType',
+    _$ensembleType,
     opt: true,
   );
   static bool? _$isActive(EnsembleEntity v) => v.isActive;
   static const Field<EnsembleEntity, bool> _f$isActive = Field(
     'isActive',
     _$isActive,
-    opt: true,
-  );
-  static bool? _$allMembersApproved(EnsembleEntity v) => v.allMembersApproved;
-  static const Field<EnsembleEntity, bool> _f$allMembersApproved = Field(
-    'allMembersApproved',
-    _$allMembersApproved,
     opt: true,
   );
   static bool? _$hasIncompleteSections(EnsembleEntity v) =>
@@ -106,6 +111,18 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     _$updatedAt,
     opt: true,
   );
+  static DateTime? _$lastUpdatedAt(EnsembleEntity v) => v.lastUpdatedAt;
+  static const Field<EnsembleEntity, DateTime> _f$lastUpdatedAt = Field(
+    'lastUpdatedAt',
+    _$lastUpdatedAt,
+    opt: true,
+  );
+  static Map<String, int>? _$updatedInfos(EnsembleEntity v) => v.updatedInfos;
+  static const Field<EnsembleEntity, Map<String, int>> _f$updatedInfos = Field(
+    'updatedInfos',
+    _$updatedInfos,
+    opt: true,
+  );
   static double? _$rating(EnsembleEntity v) => v.rating;
   static const Field<EnsembleEntity, double> _f$rating = Field(
     'rating',
@@ -132,12 +149,15 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
     #professionalInfo: _f$professionalInfo,
     #presentationVideoUrl: _f$presentationVideoUrl,
     #members: _f$members,
+    #talents: _f$talents,
+    #ensembleType: _f$ensembleType,
     #isActive: _f$isActive,
-    #allMembersApproved: _f$allMembersApproved,
     #hasIncompleteSections: _f$hasIncompleteSections,
     #incompleteSections: _f$incompleteSections,
     #createdAt: _f$createdAt,
     #updatedAt: _f$updatedAt,
+    #lastUpdatedAt: _f$lastUpdatedAt,
+    #updatedInfos: _f$updatedInfos,
     #rating: _f$rating,
     #rateCount: _f$rateCount,
     #contractsRatedUids: _f$contractsRatedUids,
@@ -152,12 +172,15 @@ class EnsembleEntityMapper extends ClassMapperBase<EnsembleEntity> {
       professionalInfo: data.dec(_f$professionalInfo),
       presentationVideoUrl: data.dec(_f$presentationVideoUrl),
       members: data.dec(_f$members),
+      talents: data.dec(_f$talents),
+      ensembleType: data.dec(_f$ensembleType),
       isActive: data.dec(_f$isActive),
-      allMembersApproved: data.dec(_f$allMembersApproved),
       hasIncompleteSections: data.dec(_f$hasIncompleteSections),
       incompleteSections: data.dec(_f$incompleteSections),
       createdAt: data.dec(_f$createdAt),
       updatedAt: data.dec(_f$updatedAt),
+      lastUpdatedAt: data.dec(_f$lastUpdatedAt),
+      updatedInfos: data.dec(_f$updatedInfos),
       rating: data.dec(_f$rating),
       rateCount: data.dec(_f$rateCount),
       contractsRatedUids: data.dec(_f$contractsRatedUids),
@@ -232,12 +255,7 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     ProfessionalInfoEntity
   >?
   get professionalInfo;
-  ListCopyWith<
-    $R,
-    EnsembleMember,
-    EnsembleMemberCopyWith<$R, EnsembleMember, EnsembleMember>
-  >?
-  get members;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get talents;
   MapCopyWith<
     $R,
     String,
@@ -245,6 +263,7 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     ObjectCopyWith<$R, List<String>, List<String>>
   >?
   get incompleteSections;
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>? get updatedInfos;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
   get contractsRatedUids;
   $R call({
@@ -254,13 +273,16 @@ abstract class EnsembleEntityCopyWith<$R, $In extends EnsembleEntity, $Out>
     String? ensembleName,
     ProfessionalInfoEntity? professionalInfo,
     String? presentationVideoUrl,
-    List<EnsembleMember>? members,
+    int? members,
+    List<String>? talents,
+    String? ensembleType,
     bool? isActive,
-    bool? allMembersApproved,
     bool? hasIncompleteSections,
     Map<String, List<String>>? incompleteSections,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastUpdatedAt,
+    Map<String, int>? updatedInfos,
     double? rating,
     int? rateCount,
     List<String>? contractsRatedUids,
@@ -288,16 +310,12 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     (v) => call(professionalInfo: v),
   );
   @override
-  ListCopyWith<
-    $R,
-    EnsembleMember,
-    EnsembleMemberCopyWith<$R, EnsembleMember, EnsembleMember>
-  >?
-  get members => $value.members != null
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get talents =>
+      $value.talents != null
       ? ListCopyWith(
-          $value.members!,
-          (v, t) => v.copyWith.$chain(t),
-          (v) => call(members: v),
+          $value.talents!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(talents: v),
         )
       : null;
   @override
@@ -312,6 +330,15 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
           $value.incompleteSections!,
           (v, t) => ObjectCopyWith(v, $identity, t),
           (v) => call(incompleteSections: v),
+        )
+      : null;
+  @override
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>?
+  get updatedInfos => $value.updatedInfos != null
+      ? MapCopyWith(
+          $value.updatedInfos!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(updatedInfos: v),
         )
       : null;
   @override
@@ -332,12 +359,15 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     Object? professionalInfo = $none,
     Object? presentationVideoUrl = $none,
     Object? members = $none,
+    Object? talents = $none,
+    Object? ensembleType = $none,
     Object? isActive = $none,
-    Object? allMembersApproved = $none,
     Object? hasIncompleteSections = $none,
     Object? incompleteSections = $none,
     Object? createdAt = $none,
     Object? updatedAt = $none,
+    Object? lastUpdatedAt = $none,
+    Object? updatedInfos = $none,
     Object? rating = $none,
     Object? rateCount = $none,
     Object? contractsRatedUids = $none,
@@ -351,13 +381,16 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
       if (presentationVideoUrl != $none)
         #presentationVideoUrl: presentationVideoUrl,
       if (members != $none) #members: members,
+      if (talents != $none) #talents: talents,
+      if (ensembleType != $none) #ensembleType: ensembleType,
       if (isActive != $none) #isActive: isActive,
-      if (allMembersApproved != $none) #allMembersApproved: allMembersApproved,
       if (hasIncompleteSections != $none)
         #hasIncompleteSections: hasIncompleteSections,
       if (incompleteSections != $none) #incompleteSections: incompleteSections,
       if (createdAt != $none) #createdAt: createdAt,
       if (updatedAt != $none) #updatedAt: updatedAt,
+      if (lastUpdatedAt != $none) #lastUpdatedAt: lastUpdatedAt,
+      if (updatedInfos != $none) #updatedInfos: updatedInfos,
       if (rating != $none) #rating: rating,
       if (rateCount != $none) #rateCount: rateCount,
       if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
@@ -375,11 +408,9 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
       or: $value.presentationVideoUrl,
     ),
     members: data.get(#members, or: $value.members),
+    talents: data.get(#talents, or: $value.talents),
+    ensembleType: data.get(#ensembleType, or: $value.ensembleType),
     isActive: data.get(#isActive, or: $value.isActive),
-    allMembersApproved: data.get(
-      #allMembersApproved,
-      or: $value.allMembersApproved,
-    ),
     hasIncompleteSections: data.get(
       #hasIncompleteSections,
       or: $value.hasIncompleteSections,
@@ -390,6 +421,8 @@ class _EnsembleEntityCopyWithImpl<$R, $Out>
     ),
     createdAt: data.get(#createdAt, or: $value.createdAt),
     updatedAt: data.get(#updatedAt, or: $value.updatedAt),
+    lastUpdatedAt: data.get(#lastUpdatedAt, or: $value.lastUpdatedAt),
+    updatedInfos: data.get(#updatedInfos, or: $value.updatedInfos),
     rating: data.get(#rating, or: $value.rating),
     rateCount: data.get(#rateCount, or: $value.rateCount),
     contractsRatedUids: data.get(

@@ -13,6 +13,7 @@ import 'package:app/features/availability/domain/entities/organized_availabiliti
 import 'package:app/features/artists/artist_availability/presentation/bloc/availability_bloc.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/events/availability_events.dart';
 import 'package:app/features/artists/artist_availability/presentation/bloc/states/availability_states.dart';
+import 'package:app/features/availability/presentation/widgets/calendar_tab/calendar_legend_widget.dart';
 import 'package:app/features/availability/presentation/widgets/calendar_tab/calendar_widget.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/events/pending_contracts_count_events.dart';
 import 'package:app/features/contracts/presentation/bloc/pending_contracts_count/pending_contracts_count_bloc.dart';
@@ -146,7 +147,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
         // ════════════════════════════════════════════════════════════════
         if (state is ToggleAvailabilityStatusSuccess) {
           context.showSuccess('Status atualizado com sucesso');
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
         } else if (state is ToggleAvailabilityStatusFailure) {
           context.showError(state.error);
         }
@@ -186,14 +187,11 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
             state is UpdateTimeSlotSuccess || 
             state is DeleteTimeSlotSuccess) {
           context.showSuccess('Alteração realizada com sucesso');
-          _loadAvailabilities(forceRemote: true);
-          // Fechar bottom sheet se estiver aberto
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
+          _loadAvailabilities(forceRemote: false);
+          // Manter modal aberto: BlocBuilder do sheet atualiza com a nova lista
         } else if (state is UpdateAddressAndRadiusSuccess) {
           context.showSuccess('Endereço e raio atualizados com sucesso');
-          _loadAvailabilities(forceRemote: true);
+          _loadAvailabilities(forceRemote: false);
           // Não fechar o bottom sheet automaticamente para update de endereço/raio
           // O usuário pode querer continuar editando
         } else if (state is AddTimeSlotFailure) {
@@ -422,43 +420,62 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
   }
 
   void _showDayEditSheet(DateTime day) {
-    // Buscar disponibilidade do dia
-    final availability = _getAvailabilityForDay(day);
-    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DayEditBottomSheet(
-        selectedDate: day,
-        availability: availability,
-        onClose: () {
-          Navigator.of(context).pop();
-          setState(() {
-            _selectedDay = null;
-          });
+      builder: (context) => BlocBuilder<AvailabilityBloc, AvailabilityState>(
+        buildWhen: (previous, current) =>
+            current is GetAllAvailabilitiesSuccess ||
+            current is ToggleAvailabilityStatusSuccess ||
+            current is ToggleAvailabilityStatusLoading,
+        builder: (context, state) {
+          final list = state is GetAllAvailabilitiesSuccess
+              ? state.availabilities
+              : _availabilities;
+          final availability = _getAvailabilityForDayFromList(day, list);
+          return DayEditBottomSheet(
+            selectedDate: day,
+            availability: availability,
+            onClose: () {
+              Navigator.of(context).pop();
+              setState(() => _selectedDay = null);
+            },
+            onToggleStatus: (isActive) =>
+                _onToggleAvailabilityStatus(day, availability, isActive),
+            onAddAvailability: () => _onAddAvailabilityForDay(day),
+            onUpdateAddressRadius: (address, radius) =>
+                _onUpdateAddressRadius(day, address, radius),
+            onAddSlot: (startTime, endTime, pricePerHour) =>
+                _onAddSlot(day, startTime, endTime, pricePerHour),
+            onUpdateSlot: (slotId, startTime, endTime, pricePerHour) =>
+                _onUpdateSlot(day, slotId, startTime, endTime, pricePerHour),
+            onDeleteSlot: (slotId) => _onDeleteSlot(day, slotId),
+          );
         },
-        onToggleStatus: (isActive) => _onToggleAvailabilityStatus(day, availability, isActive),
-        onAddAvailability: () => _onAddAvailabilityForDay(day),
-        onUpdateAddressRadius: (address, radius) => _onUpdateAddressRadius(day, address, radius),
-        onAddSlot: (startTime, endTime, pricePerHour) => _onAddSlot(day, startTime, endTime, pricePerHour),
-        onUpdateSlot: (slotId, startTime, endTime, pricePerHour) => _onUpdateSlot(day, slotId, startTime, endTime, pricePerHour),
-        onDeleteSlot: (slotId) => _onDeleteSlot(day, slotId),
       ),
     );
   }
   
   /// Busca disponibilidade de um dia específico
   AvailabilityDayEntity? _getAvailabilityForDay(DateTime day) {
+    return _getAvailabilityForDayFromList(day, _availabilities);
+  }
+
+  /// Busca disponibilidade de um dia em uma lista específica (para uso no BlocBuilder do sheet)
+  AvailabilityDayEntity? _getAvailabilityForDayFromList(
+    DateTime day,
+    List<AvailabilityDayEntity> list,
+  ) {
     final dateKey = _getDateKey(day);
-    for (final availability in _availabilities) {
+    for (final availability in list) {
       if (_getDateKey(availability.date) == dateKey) {
         return availability;
       }
     }
     return null;
   }
-  
+
   /// Retorna chave de data no formato YYYY-MM-DD
   String _getDateKey(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -495,15 +512,10 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     context.read<AvailabilityBloc>().add(
       ToggleAvailabilityDayEvent(dayEntity: updatedDay),
     );
-    
-    Navigator.of(context).pop();
   }
 
   /// Callback para adicionar disponibilidade em um dia específico
   Future<void> _onAddAvailabilityForDay(DateTime day) async {
-    // Fecha o bottom sheet atual
-    Navigator.of(context).pop();
-    
     // Abre o modal de disponibilidade com o dia pré-preenchido
     await _showAvailabilityFormModal(
       initialStartDate: day,
@@ -661,9 +673,6 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
     context.read<AvailabilityBloc>().add(
       DeleteTimeSlotEvent(dayEntity: updatedDay),
     );
-    
-    // Fechar o bottom sheet após deletar
-    Navigator.of(context).pop();
   }
 
   /// Abre o modal de disponibilidade com datas específicas
@@ -997,163 +1006,7 @@ class _AvailabilityCalendarScreenState extends State<AvailabilityCalendarScreen>
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildLegendBottomSheet(),
-    );
-  }
-
-  Widget _buildLegendBottomSheet() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final onSecondaryContainer = colorScheme.onSecondaryContainer;
-    final onTertiaryContainer = colorScheme.onTertiaryContainer;
-    final error = colorScheme.error;
-    final showColor = Colors.yellow;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(DSSize.width(20)),
-          topRight: Radius.circular(DSSize.width(20)),
-        ),
-      ),
-      padding: EdgeInsets.all(DSSize.width(24)),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              margin: EdgeInsets.only(bottom: DSSize.height(16)),
-              width: DSSize.width(40),
-              height: DSSize.height(4),
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(DSSize.width(2)),
-              ),
-            ),
-          ),
-
-          // Título
-          Text(
-            'Legenda',
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-
-          SizedBox(height: DSSize.height(8)),
-
-          Text(
-            'Entenda os ícones do calendário',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-
-          SizedBox(height: DSSize.height(24)),
-
-          // Lista de legendas
-          _buildLegendItem(
-            icon: Icons.check_circle,
-            label: 'Intervalos disponíveis',
-            description: 'Número de slots de horário livres',
-            color: onSecondaryContainer,
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-
-          SizedBox(height: DSSize.height(16)),
-
-          _buildLegendItem(
-            icon: Icons.circle_outlined,
-            label: 'Fechado',
-            description: 'Dia sem disponibilidades cadastradas',
-            color: onTertiaryContainer,
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-
-          SizedBox(height: DSSize.height(16)),
-
-          _buildLegendItem(
-            icon: Icons.close,
-            label: 'Indisponível',
-            description: 'Disponibilidade desativada',
-            color: error,
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-
-          SizedBox(height: DSSize.height(16)),
-
-          _buildLegendItem(
-            icon: Icons.star,
-            label: 'Shows',
-            description: 'Número de apresentações confirmadas',
-            color: showColor,
-            colorScheme: colorScheme,
-            textTheme: textTheme,
-          ),
-
-          SizedBox(height: DSSize.height(24)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem({
-    required IconData icon,
-    required String label,
-    required String description,
-    required Color color,
-    required ColorScheme colorScheme,
-    required TextTheme textTheme,
-  }) {
-    return Row(
-      children: [
-        // Ícone
-        Container(
-          width: DSSize.width(40),
-          height: DSSize.width(40),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(DSSize.width(8)),
-          ),
-          child: Icon(
-            icon,
-            size: DSSize.width(20),
-            color: color,
-          ),
-        ),
-
-        SizedBox(width: DSSize.width(16)),
-
-        // Textos
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              SizedBox(height: DSSize.height(2)),
-              Text(
-                description,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      builder: (context) => const CalendarLegendWidget(),
     );
   }
 }

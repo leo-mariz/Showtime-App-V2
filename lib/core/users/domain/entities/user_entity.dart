@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:app/core/users/domain/entities/cnpj/cnpj_user_entity.dart';
 import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
+import 'package:app/core/users/domain/entities/suspended_entity.dart';
 part 'user_entity.mapper.dart';
 
 
@@ -22,6 +23,14 @@ class UserEntity with UserEntityMappable{
   bool? isDeleted = false;
   bool? isDeletedByAdmin = false;
   DateTime? deletedAt;
+  /// Banimento permanente. Quando true, usuário não pode acessar.
+  bool? isBanned;
+  /// Suspensão temporária. Se não nulo e no futuro, usuário suspenso até esta data.
+  DateTime? suspendedUntil;
+  /// Motivo da penalidade ativa (id da lista pré-definida, ex.: applists).
+  String? currentPenaltyReasonId;
+  /// Histórico de suspensões (snapshots) para o painel visualizar antes de banir.
+  final List<SuspendedEntity>? suspensionHistory;
 
   UserEntity({
     this.uid,
@@ -38,8 +47,18 @@ class UserEntity with UserEntityMappable{
     this.isDeleted,
     this.isDeletedByAdmin,
     this.deletedAt,
+    this.isBanned,
+    this.suspendedUntil,
+    this.currentPenaltyReasonId,
+    this.suspensionHistory,
   });
 
+  /// Usuário está impedido de acessar (banido ou suspenso).
+  bool get isPenalized {
+    if (isBanned == true) return true;
+    final until = suspendedUntil;
+    return until != null && until.isAfter(DateTime.now());
+  }
 }
 
 

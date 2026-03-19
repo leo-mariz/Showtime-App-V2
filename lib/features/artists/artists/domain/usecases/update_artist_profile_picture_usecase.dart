@@ -1,5 +1,7 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
@@ -70,9 +72,14 @@ class UpdateArtistProfilePictureUseCase {
             localFilePath,
           );
 
-          // Criar nova entidade com apenas profilePicture atualizado
+          final now = DateTime.now();
           final updatedArtist = currentArtist.copyWith(
             profilePicture: newProfilePictureUrl,
+            lastUpdatedAt: now,
+            updatedInfos: mergeUpdatedInfo(
+              currentArtist.updatedInfos,
+              UpdatedInfoType.profilePhoto,
+            ),
           );
 
           // Atualizar artista no Firestore

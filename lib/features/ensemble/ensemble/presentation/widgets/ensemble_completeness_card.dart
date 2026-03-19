@@ -36,16 +36,16 @@ class _EnsembleCompletenessCardState extends State<EnsembleCompletenessCard> {
 
   /// Uma mensagem por verificação incompleta (chave = tipo em incompleteSections).
   static const Map<String, String> _approvalMessages = {
-    'memberDocuments': 'Cada integrante deve ter documentos (identidade e antecedentes) enviados ou aprovados.',
     'ownerDocuments': 'O administrador deve ter todos os documentos enviados.',
     'ownerBankAccount': 'O administrador deve ter PIX ou conta bancária preenchidos.',
   };
 
   static const Map<String, String> _visibilityMessages = {
-    'members': 'O grupo precisa de pelo menos um integrante (além do administrador).',
-    'profilePhoto': 'É necessário foto de perfil do grupo.',
-    'presentations': 'É necessário o vídeo de apresentação do conjunto.',
+    'ensembleName': 'Informe o nome do grupo.',
+    'talents': 'Informe o tipo do grupo e ao menos um talento.',
     'professionalInfo': 'É necessário preencher todos os dados profissionais do conjunto.',
+    'profilePhoto': 'É necessário foto de perfil do grupo.',
+    'presentations': 'É necessário adicionar o vídeo de apresentação do conjunto (até 1 min).',
   };
 
   /// Mensagens de Aprovação: seções incompletas relacionadas a documentos/aprovação.

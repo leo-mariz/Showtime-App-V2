@@ -33,9 +33,9 @@ class UpdateArtistActiveStatusUseCase {
       return getResult.fold(
         (failure) => Left(failure),
         (currentArtist) async {
-          // Criar nova entidade com apenas isActive atualizado
           final updatedArtist = currentArtist.copyWith(
             isActive: isActive,
+            lastUpdatedAt: DateTime.now(),
           );
 
           // Atualizar artista

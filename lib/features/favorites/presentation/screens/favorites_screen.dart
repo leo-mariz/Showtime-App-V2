@@ -310,18 +310,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         final ownerArtist = item.ownerArtist;
         final ensembleId = ensemble.id ?? '';
         final isFavorite = _favoriteEnsembleIds.contains(ensembleId);
-        final memberCount = ensemble.members?.length ?? 0;
-        final groupName = memberCount > 0
+        final memberCount = ensemble.members ?? 0;
+        final groupName = memberCount >= 2
             ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount - 1}'
             : (ownerArtist?.artistName ?? 'Conjunto');
         var talentsSource = <String>[];
         if (ownerArtist?.professionalInfo?.specialty != null) {
           talentsSource.addAll(ownerArtist!.professionalInfo!.specialty ?? []);
         }
-        for (final member in ensemble.members ?? []) {
-          if (member.specialty != null) {
-            talentsSource.addAll(member.specialty ?? []);
-          }
+        if (ensemble.talents != null) {
+          talentsSource.addAll(ensemble.talents!);
         }
         talentsSource = talentsSource.toSet().toList();
         String? pricePerHour;
@@ -342,6 +340,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         return EnsembleCard(
           groupName: groupName,
           totalMembers: memberCount,
+          ensembleType: ensemble.ensembleType?.trim().isNotEmpty == true
+              ? ensemble.ensembleType!.trim()
+              : null,
           talents: talentsSource.join(', '),
           description: description,
           contracts: ensemble.rateCount ?? 0,

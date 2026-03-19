@@ -4,7 +4,7 @@ import 'package:app/core/errors/exceptions.dart';
 import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Normaliza tipos numéricos vindos do Firestore (num pode vir como int ou double).
+/// Após [convertFirestoreMapForMapper]: numéricos + mapas que o painel pode gravar com tipo errado.
 Map<String, dynamic> _normalizeEnsembleMap(Map<String, dynamic> map) {
   final normalized = Map<String, dynamic>.from(map);
   if (normalized[EnsembleEntityKeys.rating] != null &&
@@ -17,7 +17,60 @@ Map<String, dynamic> _normalizeEnsembleMap(Map<String, dynamic> map) {
     normalized[EnsembleEntityKeys.rateCount] =
         (normalized[EnsembleEntityKeys.rateCount] as num).toInt();
   }
+  _sanitizeEnsembleUpdatedInfos(normalized);
+  _sanitizeEnsembleIncompleteSections(normalized);
   return normalized;
+}
+
+/// [updatedInfos] = Map<String, int> (ms). Painel pode gravar double/string.
+void _sanitizeEnsembleUpdatedInfos(Map<String, dynamic> m) {
+  final raw = m[EnsembleEntityKeys.updatedInfos];
+  if (raw == null) return;
+  if (raw is! Map) {
+    m.remove(EnsembleEntityKeys.updatedInfos);
+    return;
+  }
+  final out = <String, int>{};
+  for (final e in raw.entries) {
+    final v = e.value;
+    if (v is int) {
+      out[e.key.toString()] = v;
+    } else if (v is num) {
+      out[e.key.toString()] = v.toInt();
+    } else if (v is String) {
+      final p = int.tryParse(v);
+      if (p != null) out[e.key.toString()] = p;
+    }
+  }
+  if (out.isEmpty) {
+    m.remove(EnsembleEntityKeys.updatedInfos);
+  } else {
+    m[EnsembleEntityKeys.updatedInfos] = out;
+  }
+}
+
+/// [incompleteSections] = Map<String, List<String>>. Painel pode gravar string única.
+void _sanitizeEnsembleIncompleteSections(Map<String, dynamic> m) {
+  final raw = m[EnsembleEntityKeys.incompleteSections];
+  if (raw == null) return;
+  if (raw is! Map) {
+    m.remove(EnsembleEntityKeys.incompleteSections);
+    return;
+  }
+  final out = <String, List<String>>{};
+  for (final e in raw.entries) {
+    final v = e.value;
+    if (v is List) {
+      out[e.key.toString()] = v.map((x) => x.toString()).toList();
+    } else if (v is String) {
+      out[e.key.toString()] = [v];
+    }
+  }
+  if (out.isEmpty) {
+    m.remove(EnsembleEntityKeys.incompleteSections);
+  } else {
+    m[EnsembleEntityKeys.incompleteSections] = out;
+  }
 }
 
 /// Interface do DataSource remoto para Ensembles (conjuntos).
@@ -95,7 +148,9 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       );
       final snapshot = await docRef.get();
       if (!snapshot.exists) return null;
-      final raw = snapshot.data()! as Map<String, dynamic>;
+      final data = snapshot.data();
+      if (data == null) return null;
+      final raw = Map<String, dynamic>.from(data as Map);
       final converted = convertFirestoreMapForMapper(raw);
       final map = _normalizeEnsembleMap(converted);
       map[EnsembleEntityKeys.id] = snapshot.id;
@@ -244,6 +299,7 @@ class EnsembleRemoteDataSourceImpl implements IEnsembleRemoteDataSource {
       data[EnsembleEntityKeys.createdAt] = FieldValue.serverTimestamp();
     }
     data[EnsembleEntityKeys.updatedAt] = FieldValue.serverTimestamp();
+    data[EnsembleEntityKeys.lastUpdatedAt] = FieldValue.serverTimestamp();
   }
 
 }

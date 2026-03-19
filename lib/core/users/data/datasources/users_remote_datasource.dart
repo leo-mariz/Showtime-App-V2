@@ -6,6 +6,36 @@ import 'package:app/core/users/domain/entities/cpf/cpf_user_entity.dart';
 import 'package:app/core/users/domain/entities/user_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Converte [DateTime] aninhados em [Timestamp] para persistência no Firestore.
+/// Mantém [Timestamp], [FieldValue] e demais tipos inalterados.
+dynamic _toFirestoreWriteValue(dynamic value) {
+  if (value == null) return null;
+  if (value is FieldValue || value is Timestamp) return value;
+  if (value is DateTime) {
+    return Timestamp.fromDate(value);
+  }
+  if (value is Map) {
+    final out = <String, dynamic>{};
+    for (final e in value.entries) {
+      out[e.key.toString()] = _toFirestoreWriteValue(e.value);
+    }
+    return out;
+  }
+  if (value is List) {
+    return value.map(_toFirestoreWriteValue).toList();
+  }
+  return value;
+}
+
+/// Mapa do documento Users → formato aceito pelo dart_mappable ([Timestamp] → ms).
+Map<String, dynamic> _userDocumentDataToMapperMap(Object? data) {
+  if (data == null || data is! Map) {
+    return <String, dynamic>{};
+  }
+  final flat = Map<String, dynamic>.from(data);
+  return convertFirestoreMapForMapper(flat);
+}
+
 /// Interface do DataSource remoto (Firestore)
 /// Responsável APENAS por operações CRUD no Firestore
 /// 
@@ -82,7 +112,10 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
             key == 'cnpjUser'
       );
 
-      await documentReference.set(userMap, SetOptions(merge: true));
+      final payload = Map<String, dynamic>.from(
+        _toFirestoreWriteValue(userMap) as Map,
+      );
+      await documentReference.set(payload, SetOptions(merge: true));
     } on FirebaseException catch (e, stackTrace) {
       throw ServerException(
         'Erro ao salvar dados do usuário no Firestore: ${e.message}',
@@ -109,8 +142,11 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
         uid,
       );
       final cpfUserMap = data.toMap();
+      final cpfPayload = Map<String, dynamic>.from(
+        _toFirestoreWriteValue(cpfUserMap) as Map,
+      );
       await documentReference.set(
-        {'cpfUser': cpfUserMap},
+        {'cpfUser': cpfPayload},
         SetOptions(merge: true),
       );
     } on FirebaseException catch (e, stackTrace) {
@@ -137,8 +173,11 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
         uid,
       );
       final cnpjUserMap = data.toMap();
+      final cnpjPayload = Map<String, dynamic>.from(
+        _toFirestoreWriteValue(cnpjUserMap) as Map,
+      );
       await documentReference.set(
-        {'cnpjUser': cnpjUserMap},
+        {'cnpjUser': cnpjPayload},
         SetOptions(merge: true),
       );
     } on FirebaseException catch (e, stackTrace) {
@@ -168,8 +207,7 @@ class UsersRemoteDataSourceImpl implements IUsersRemoteDataSource {
       final snapshot = await documentReference.get();
       
       if (snapshot.exists) {
-        final userMap = snapshot.data() as Map<String, dynamic>;
-        final cleanedMap = convertFirestoreMapForMapper(userMap);
+        final cleanedMap = _userDocumentDataToMapperMap(snapshot.data());
         return UserEntityMapper.fromMap(cleanedMap);
       }
       

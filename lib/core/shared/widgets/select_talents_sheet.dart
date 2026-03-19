@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 
 /// Sheet reutilizável para seleção de talentos (checkbox + busca).
 /// Usado em: dados profissionais do artista, talentos do integrante no ensemble.
+/// [maxSelections]: quando definido, permite no máximo essa quantidade (ex.: número de integrantes do conjunto).
 class SelectTalentsSheet extends StatefulWidget {
   final String title;
   final String? subtitle;
   final List<String> talentNames;
   final List<String> initialSelected;
+  /// Máximo de talentos que podem ser selecionados (ex.: igual ao número de integrantes).
+  final int? maxSelections;
   final bool loading;
   final String confirmButtonLabel;
   final void Function(List<String> selected) onConfirm;
@@ -20,6 +23,7 @@ class SelectTalentsSheet extends StatefulWidget {
     this.subtitle,
     required this.talentNames,
     required this.initialSelected,
+    this.maxSelections,
     this.loading = false,
     this.confirmButtonLabel = 'Salvar',
     required this.onConfirm,
@@ -36,7 +40,12 @@ class _SelectTalentsSheetState extends State<SelectTalentsSheet> {
   @override
   void initState() {
     super.initState();
-    _selected = Set<String>.from(widget.initialSelected);
+    final initial = widget.initialSelected.toSet();
+    if (widget.maxSelections != null && initial.length > widget.maxSelections!) {
+      _selected = initial.take(widget.maxSelections!).toSet();
+    } else {
+      _selected = initial;
+    }
     _searchController.addListener(() => setState(() {}));
   }
 
@@ -156,17 +165,25 @@ class _SelectTalentsSheetState extends State<SelectTalentsSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: filtered.map((name) {
                             final isSelected = _selected.contains(name);
+                            final atLimit = widget.maxSelections != null &&
+                                _selected.length >= widget.maxSelections! &&
+                                !isSelected;
                             return CheckboxListTile(
                               value: isSelected,
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selected.add(name);
-                                  } else {
-                                    _selected.remove(name);
-                                  }
-                                });
-                              },
+                              onChanged: atLimit
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          if (widget.maxSelections == null ||
+                                              _selected.length < widget.maxSelections!) {
+                                            _selected.add(name);
+                                          }
+                                        } else {
+                                          _selected.remove(name);
+                                        }
+                                      });
+                                    },
                               title: Text(
                                 name,
                                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -192,7 +209,14 @@ class _SelectTalentsSheetState extends State<SelectTalentsSheet> {
               isLoading: widget.loading,
               onPressed: widget.loading
                   ? null
-                  : () => widget.onConfirm(_selected.toList()..sort()),
+                  : () {
+                      var list = _selected.toList()..sort();
+                      if (widget.maxSelections != null &&
+                          list.length > widget.maxSelections!) {
+                        list = list.take(widget.maxSelections!).toList();
+                      }
+                      widget.onConfirm(list);
+                    },
               backgroundColor: colorScheme.onPrimaryContainer,
               textColor: colorScheme.primaryContainer,
             ),

@@ -17,6 +17,10 @@ class GetTalentsEvent extends AppListsEvent {}
 
 class GetEventTypesEvent extends AppListsEvent {}
 
+// ==================== GET ENSEMBLE TYPES EVENTS ====================
+
+class GetEnsembleTypesEvent extends AppListsEvent {}
+
 // ==================== GET SUPPORT SUBJECTS EVENTS ====================
 
 class GetSupportSubjectsEvent extends AppListsEvent {}

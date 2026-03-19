@@ -7,14 +7,12 @@ import 'package:flutter/material.dart';
 /// Card de UI pura para exibir um conjunto (ensemble).
 /// Recebe apenas dados de exibição e callbacks.
 class EnsembleCard extends StatelessWidget {
-  /// Nome ou título do conjunto para exibição (ex.: "Nome + 2")
+  /// Nome ou título do conjunto para exibição
   final String displayName;
   /// URL da foto do conjunto (opcional)
   final String? photoUrl;
-  /// Primeiros nomes dos integrantes (exceto dono), separados por vírgula; exibido como "+ João, Maria"
-  final String? membersFirstNames;
-  /// Se todos os integrantes estão aprovados
-  final bool allApproved;
+  /// Quantidade de integrantes do conjunto; exibido como "X integrante(s)" abaixo do nome
+  final int? membersCount;
   /// Callback ao tocar no card
   final VoidCallback? onTap;
   /// Callback ao tocar no ícone de três pontos (opções); a tela decide o que exibir (ex.: modal)
@@ -24,8 +22,7 @@ class EnsembleCard extends StatelessWidget {
     super.key,
     required this.displayName,
     this.photoUrl,
-    this.membersFirstNames,
-    this.allApproved = false,
+    this.membersCount,
     this.onTap,
     this.onOptionsTap,
   });
@@ -65,35 +62,17 @@ class EnsembleCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (membersFirstNames != null && membersFirstNames!.isNotEmpty) ...[
+                if (membersCount != null) ...[
                   DSSizedBoxSpacing.vertical(4),
                   Text(
-                    '+ ${membersFirstNames!}',
+                    membersCount == 1
+                        ? '1 integrante'
+                        : '$membersCount integrantes',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant.withOpacity(0.9),
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                if (allApproved) ...[
-                  DSSizedBoxSpacing.vertical(8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: DSSize.width(14),
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                      DSSizedBoxSpacing.horizontal(4),
-                      Text(
-                        'Membros aprovados',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ],

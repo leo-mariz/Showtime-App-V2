@@ -1,5 +1,7 @@
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
@@ -162,9 +164,14 @@ class UpdateArtistPresentationMediasUseCase {
             await Future.wait(uploadFutures);
           }
 
-          // Criar nova entidade com apenas presentationMedias atualizado
+          final now = DateTime.now();
           final updatedArtist = currentArtist.copyWith(
             presentationMedias: updatedMedias,
+            lastUpdatedAt: now,
+            updatedInfos: mergeUpdatedInfo(
+              currentArtist.updatedInfos,
+              UpdatedInfoType.presentations,
+            ),
           );
 
           // Atualizar artista no Firestore

@@ -369,7 +369,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen>{
                                               title: 'Termos de uso',
                                               showDivider: true,
                                               onTap: () {
-                                                router.push(const ClientTermsOfUseRoute());
+                                                router.push(const TermsOfUseRoute());
                                               },
                                             ),
                                             ProfileOptionTile(
@@ -772,7 +772,7 @@ class _ArtistTermsModal extends StatelessWidget {
                   ),
                   recognizer: TapGestureRecognizer()
                     ..onTap = () {
-                      router.push(const ArtistsTermsOfUseRoute());
+                      router.push(const TermsOfUseRoute());
                     },
                 ),
                 const TextSpan(text: '.'),

@@ -30,12 +30,14 @@ class SwitchToClientUseCase {
       // 1. Obter UID do usuário
       final uidResult = await getUserUidUseCase.call();
       final uid = uidResult.fold(
-        (failure) => throw failure,
-        (uid) => uid,
+        (failure) => null as String?,
+        (id) => id,
       );
-
       if (uid == null || uid.isEmpty) {
-        return const Left(ValidationFailure('UID do usuário não encontrado'));
+        return uidResult.fold(
+          (failure) => Left(failure),
+          (_) => const Left(ValidationFailure('UID do usuário não encontrado')),
+        );
       }
 
       // 2. Verificar se cliente já existe

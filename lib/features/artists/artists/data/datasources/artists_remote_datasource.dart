@@ -1,7 +1,7 @@
-
 import 'package:app/core/domain/artist/artist_individual/artist_entity.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/exceptions.dart';
+import 'package:app/core/utils/firestore_mapper_helper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Interface do DataSource remoto (Firestore)
@@ -64,21 +64,75 @@ class ArtistsRemoteDataSourceImpl implements IArtistsRemoteDataSource {
     }
   }
 
-  /// Normaliza tipos vindos do Firestore para o formato esperado pelo mapper:
-  /// - Timestamp -> millisecondsSinceEpoch (DateTime?)
-  /// - rating/rateCount num -> double/int
+  /// Prepara o mapa do Firestore para [ArtistEntityMapper.fromMap]:
+  /// - Converte [Timestamp] recursivamente (incl. [lastUpdatedAt], aninhados).
+  /// - Ajusta [rating]/[rateCount] quando vierem como [num].
+  /// - Corrige [updatedInfos] e [incompleteSections] se o painel gravar tipos soltos.
   static Map<String, dynamic> _normalizeArtistMap(Map<String, dynamic> map) {
-    final normalized = Map<String, dynamic>.from(map);
-    if (normalized['dateRegistered'] != null && normalized['dateRegistered'] is Timestamp) {
-      normalized['dateRegistered'] = (normalized['dateRegistered'] as Timestamp).millisecondsSinceEpoch;
-    }
+    final normalized = convertFirestoreMapForMapper(Map<String, dynamic>.from(map));
+
     if (normalized['rating'] != null && normalized['rating'] is num) {
       normalized['rating'] = (normalized['rating'] as num).toDouble();
     }
     if (normalized['rateCount'] != null && normalized['rateCount'] is num) {
       normalized['rateCount'] = (normalized['rateCount'] as num).toInt();
     }
+
+    _sanitizeUpdatedInfos(normalized);
+    _sanitizeIncompleteSections(normalized);
+
     return normalized;
+  }
+
+  /// [updatedInfos] deve ser Map<String, int> (ms). Painel pode gravar double ou string.
+  static void _sanitizeUpdatedInfos(Map<String, dynamic> m) {
+    final raw = m['updatedInfos'];
+    if (raw == null) return;
+    if (raw is! Map) {
+      m.remove('updatedInfos');
+      return;
+    }
+    final out = <String, int>{};
+    for (final e in raw.entries) {
+      final v = e.value;
+      if (v is int) {
+        out[e.key.toString()] = v;
+      } else if (v is num) {
+        out[e.key.toString()] = v.toInt();
+      } else if (v is String) {
+        final p = int.tryParse(v);
+        if (p != null) out[e.key.toString()] = p;
+      }
+    }
+    if (out.isEmpty) {
+      m.remove('updatedInfos');
+    } else {
+      m['updatedInfos'] = out;
+    }
+  }
+
+  /// [incompleteSections] deve ser Map<String, List<String>>. Painel pode gravar string única.
+  static void _sanitizeIncompleteSections(Map<String, dynamic> m) {
+    final raw = m['incompleteSections'];
+    if (raw == null) return;
+    if (raw is! Map) {
+      m.remove('incompleteSections');
+      return;
+    }
+    final out = <String, List<String>>{};
+    for (final e in raw.entries) {
+      final v = e.value;
+      if (v is List) {
+        out[e.key.toString()] = v.map((x) => x.toString()).toList();
+      } else if (v is String) {
+        out[e.key.toString()] = [v];
+      }
+    }
+    if (out.isEmpty) {
+      m.remove('incompleteSections');
+    } else {
+      m['incompleteSections'] = out;
+    }
   }
 
   @override

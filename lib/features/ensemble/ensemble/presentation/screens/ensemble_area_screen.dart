@@ -70,10 +70,9 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
     return null;
   }
 
-  /// Número de integrantes além do dono.
-  int _additionalMembersCount(EnsembleEntity ensemble) {
-    final members = ensemble.members ?? [];
-    return members.where((m) => !m.isOwner).length;
+  /// Total de integrantes (inclui o dono).
+  int _membersCount(EnsembleEntity ensemble) {
+    return ensemble.members ?? 0;
   }
 
   /// Nome de exibição do conjunto: "Nome do Artista" ou "Nome do Artista + N".
@@ -83,8 +82,8 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
       return ensembleName;
     }
     final artistName = _getArtistName();
-    final count = _additionalMembersCount(ensemble);
-    return count > 0 ? '$artistName + $count' : artistName;
+    final count = _membersCount(ensemble);
+    return count >= 2 ? '$artistName + ${count - 1}' : artistName;
   }
 
   /// Verifica se a seção [type] está marcada como incompleta em [ensemble.incompleteSections].
@@ -93,12 +92,6 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
     final sections = ensemble.incompleteSections;
     if (sections == null) return false;
     return sections.values.any((types) => types.contains(type));
-  }
-
-  bool _hasIncompleteMembers(EnsembleEntity ensemble) {
-    final sections = ensemble.incompleteSections;
-    if (sections == null) return false;
-    return sections.values.any((types) => types.contains(EnsembleInfoType.members.name) || types.contains(EnsembleInfoType.memberDocuments.name));
   }
 
   /// Modal de opções e handlers para foto de perfil do conjunto.
@@ -300,6 +293,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
         final success = state is GetAllEnsemblesSuccess ? state : null;
         final currentEnsemble = success?.currentEnsemble;
         final isRequestedEnsemble = currentEnsemble?.id == widget.ensembleId;
+        final artist = _getArtist();
 
         if (success == null || currentEnsemble == null || !isRequestedEnsemble) {
           if (success != null && currentEnsemble == null) {
@@ -320,10 +314,6 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
 
         final ensemble = currentEnsemble;
         final displayName = _displayName(ensemble);
-        // final appBarTitle = displayName.length > 24
-        //     ? '${displayName.substring(0, 24)}...'
-        //     : displayName;
-        final membersCount = _additionalMembersCount(ensemble)+1;
 
         final hasIncompleteSections = ensemble.hasIncompleteSections ?? true;
         final isActive = ensemble.isActive ?? false;
@@ -379,7 +369,7 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
                   // Incompleto: card com mensagem e detalhes. Completo e aprovado: botão de ativar. Completo e não aprovado: mensagem "em análise".
                   if (hasIncompleteSections) ...[
                     EnsembleCompletenessCard(ensemble: ensemble),
-                  ] else if (ensemble.allMembersApproved != true) ...[
+                  ] else if (artist!.approved != true) ...[
                     _EnsembleUnderReviewCard(iconColor: onTertiaryContainer),
                   ] else ...[
                     ArtistAreaActivationCard(
@@ -404,14 +394,15 @@ class _EnsembleAreaScreenState extends State<EnsembleAreaScreen> {
                   ],
                   DSSizedBoxSpacing.vertical(24),
                   ArtistAreaOptionCard(
-                    title: 'Integrantes',
-                    description:
-                        'Gerencie os integrantes do conjunto ($membersCount cadastrado${membersCount == 1 ? '' : 's'}).',
+                    title: 'Sobre o Conjunto',
+                    description: 'Informações sobre o conjunto.',
                     icon: Icons.people_outline_rounded,
                     iconColor: onPrimaryContainer,
-                    hasIncompleteInfo: _hasIncompleteMembers(ensemble),
+                    hasIncompleteInfo: _hasIncompleteSection(ensemble, EnsembleInfoType.talents.name),
                     onTap: () {
-                      context.router.push(EnsembleMembersRoute(ensembleId: widget.ensembleId));
+                      context.router.push(
+                        EnsembleIntegrantsRoute(ensembleId: widget.ensembleId),
+                      );
                     },
                   ),
                   DSSizedBoxSpacing.vertical(8),

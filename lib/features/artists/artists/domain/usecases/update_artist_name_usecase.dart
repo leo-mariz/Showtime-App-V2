@@ -1,5 +1,7 @@
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
 import 'package:app/features/artists/artists/domain/usecases/update_artist_usecase.dart';
 import 'package:app/features/artists/artists/domain/usecases/check_artist_name_exists_usecase.dart';
@@ -58,9 +60,14 @@ class UpdateArtistNameUseCase {
           return getResult.fold(
             (failure) => Left(failure),
             (currentArtist) async {
-              // Criar nova entidade com apenas artistName atualizado
+              final now = DateTime.now();
               final updatedArtist = currentArtist.copyWith(
                 artistName: artistName,
+                lastUpdatedAt: now,
+                updatedInfos: mergeUpdatedInfo(
+                  currentArtist.updatedInfos,
+                  UpdatedInfoType.name,
+                ),
               );
 
               // Atualizar artista

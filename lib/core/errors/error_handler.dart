@@ -25,12 +25,17 @@ class ErrorHandler {
   /// Converte qualquer erro para Failure correspondente
   /// 
   /// Ordem de verificação:
+  /// 0. Failure (já é resultado de domínio; ex.: rethrow em use case)
   /// 1. AppException (custom exceptions)
   /// 2. FirebaseAuthException (Firebase específico)
   /// 3. Exceções de rede (SocketException, TimeoutException, etc.)
   /// 4. Exception genérica
   /// 5. Objeto desconhecido
   static Failure handle(dynamic error) {
+    // 0. Se já for Failure (ex.: lançada por use case), preserva a mensagem
+    if (error is Failure) {
+      return error;
+    }
     // 1. Nossas exceções customizadas
     if (error is AppException) {
       return _handleAppException(error);
@@ -145,7 +150,11 @@ class ErrorHandler {
       'too-many-requests' => 'Muitas tentativas. Tente novamente mais tarde',
       'network-request-failed' => 'Erro de conexão. Verifique sua internet',
       'requires-recent-login' => 'Sessão expirada. Faça login novamente',
-      _ => 'Erro de autenticação: ${e.message ?? e.code}',
+      'operation-not-allowed' => 'Operação não permitida',
+      'invalid-verification-code' => 'Código de verificação inválido',
+      'invalid-verification-id' => 'Link de verificação inválido ou expirado',
+      'expired-action-code' => 'Link expirado. Solicite novamente',
+      _ => 'Erro de autenticação. Tente novamente.',
     };
 
     return AuthFailure(message, originalError: e);

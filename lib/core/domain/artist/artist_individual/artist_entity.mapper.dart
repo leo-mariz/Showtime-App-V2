@@ -124,6 +124,18 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     _$contractsRatedUids,
     opt: true,
   );
+  static DateTime? _$lastUpdatedAt(ArtistEntity v) => v.lastUpdatedAt;
+  static const Field<ArtistEntity, DateTime> _f$lastUpdatedAt = Field(
+    'lastUpdatedAt',
+    _$lastUpdatedAt,
+    opt: true,
+  );
+  static Map<String, int>? _$updatedInfos(ArtistEntity v) => v.updatedInfos;
+  static const Field<ArtistEntity, Map<String, int>> _f$updatedInfos = Field(
+    'updatedInfos',
+    _$updatedInfos,
+    opt: true,
+  );
 
   @override
   final MappableFields<ArtistEntity> fields = const {
@@ -144,6 +156,8 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
     #rating: _f$rating,
     #rateCount: _f$rateCount,
     #contractsRatedUids: _f$contractsRatedUids,
+    #lastUpdatedAt: _f$lastUpdatedAt,
+    #updatedInfos: _f$updatedInfos,
   };
 
   static ArtistEntity _instantiate(DecodingData data) {
@@ -165,6 +179,8 @@ class ArtistEntityMapper extends ClassMapperBase<ArtistEntity> {
       rating: data.dec(_f$rating),
       rateCount: data.dec(_f$rateCount),
       contractsRatedUids: data.dec(_f$contractsRatedUids),
+      lastUpdatedAt: data.dec(_f$lastUpdatedAt),
+      updatedInfos: data.dec(_f$updatedInfos),
     );
   }
 
@@ -250,6 +266,7 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>? get groupsUids;
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>>?
   get contractsRatedUids;
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>? get updatedInfos;
   $R call({
     String? uid,
     String? profilePicture,
@@ -268,6 +285,8 @@ abstract class ArtistEntityCopyWith<$R, $In extends ArtistEntity, $Out>
     double? rating,
     int? rateCount,
     List<String>? contractsRatedUids,
+    DateTime? lastUpdatedAt,
+    Map<String, int>? updatedInfos,
   });
   ArtistEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -336,6 +355,15 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
         )
       : null;
   @override
+  MapCopyWith<$R, String, int, ObjectCopyWith<$R, int, int>>?
+  get updatedInfos => $value.updatedInfos != null
+      ? MapCopyWith(
+          $value.updatedInfos!,
+          (v, t) => ObjectCopyWith(v, $identity, t),
+          (v) => call(updatedInfos: v),
+        )
+      : null;
+  @override
   $R call({
     Object? uid = $none,
     Object? profilePicture = $none,
@@ -354,6 +382,8 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
     Object? rating = $none,
     Object? rateCount = $none,
     Object? contractsRatedUids = $none,
+    Object? lastUpdatedAt = $none,
+    Object? updatedInfos = $none,
   }) => $apply(
     FieldCopyWithData({
       if (uid != $none) #uid: uid,
@@ -375,6 +405,8 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       if (rating != $none) #rating: rating,
       if (rateCount != $none) #rateCount: rateCount,
       if (contractsRatedUids != $none) #contractsRatedUids: contractsRatedUids,
+      if (lastUpdatedAt != $none) #lastUpdatedAt: lastUpdatedAt,
+      if (updatedInfos != $none) #updatedInfos: updatedInfos,
     }),
   );
   @override
@@ -411,6 +443,8 @@ class _ArtistEntityCopyWithImpl<$R, $Out>
       #contractsRatedUids,
       or: $value.contractsRatedUids,
     ),
+    lastUpdatedAt: data.get(#lastUpdatedAt, or: $value.lastUpdatedAt),
+    updatedInfos: data.get(#updatedInfos, or: $value.updatedInfos),
   );
 
   @override

@@ -39,11 +39,9 @@ class TermsStep extends StatelessWidget {
         _TermsCheckbox(
           value: isTermsOfUseAccepted,
           onChanged: onTermsOfUseChanged,
-          label: isArtist 
-              ? 'Li e aceito os Termos de Uso para Artistas'
-              : 'Li e aceito os Termos de Uso para Anfitriões',
+          label: 'Li e aceito os Termos de Uso',
           onLinkTap: () {
-            router.push(isArtist ? ArtistsTermsOfUseRoute() : ClientTermsOfUseRoute());
+            router.push(const TermsOfUseRoute());
           },
         ),
         

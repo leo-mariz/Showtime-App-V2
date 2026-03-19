@@ -18,7 +18,7 @@ import 'package:app/features/addresses/presentation/screens/address_form_page.da
 import 'package:app/features/addresses/presentation/screens/addresses_list_page.dart'
     deferred as _i2;
 import 'package:app/features/app_navigation/presentation/pages/navigation_page.dart'
-    deferred as _i28;
+    deferred as _i27;
 import 'package:app/features/artists/artist_bank_account/presentation/screens/bank_account_screen.dart'
     deferred as _i7;
 import 'package:app/features/artists/artist_documents/presentation/screens/documents_screen.dart'
@@ -26,13 +26,13 @@ import 'package:app/features/artists/artist_documents/presentation/screens/docum
 import 'package:app/features/artists/artists/presentation/screens/artist_area/artist_area_page.dart'
     deferred as _i3;
 import 'package:app/features/artists/artists/presentation/screens/artist_area/presentations/presentations_screen.dart'
-    deferred as _i31;
+    deferred as _i30;
 import 'package:app/features/artists/artists/presentation/screens/artist_area/professional_info/professional_info_screen.dart'
-    deferred as _i32;
+    deferred as _i31;
 import 'package:app/features/artists/artists/presentation/screens/artist_explore_screen/artist_explore_screen.dart'
     deferred as _i5;
 import 'package:app/features/artists/artists/presentation/screens/register_data/register_data_area_screen.dart'
-    deferred as _i33;
+    deferred as _i32;
 import 'package:app/features/authentication/presentation/screens/check_email_verification_page.dart'
     deferred as _i13;
 import 'package:app/features/authentication/presentation/screens/forgot_password_screen.dart'
@@ -42,9 +42,9 @@ import 'package:app/features/authentication/presentation/screens/initial_screen.
 import 'package:app/features/authentication/presentation/screens/login_screen.dart'
     deferred as _i25;
 import 'package:app/features/authentication/presentation/screens/onboarding_screen.dart'
-    deferred as _i29;
+    deferred as _i28;
 import 'package:app/features/authentication/presentation/screens/register_screen.dart'
-    deferred as _i34;
+    deferred as _i33;
 import 'package:app/features/contracts/presentation/screens/artists/artist_event_detail_screen.dart'
     deferred as _i4;
 import 'package:app/features/contracts/presentation/screens/clients/client_event_detail_screen.dart'
@@ -52,12 +52,12 @@ import 'package:app/features/contracts/presentation/screens/clients/client_event
 import 'package:app/features/contracts/presentation/screens/clients/event_request/event_type_selection_screen.dart'
     deferred as _i21;
 import 'package:app/features/contracts/presentation/screens/clients/event_request/request_screen.dart'
-    deferred as _i35;
+    deferred as _i34;
 import 'package:app/features/ensemble/ensemble/presentation/screens/ensemble_area_screen.dart'
     deferred as _i14;
 import 'package:app/features/ensemble/ensemble/presentation/screens/ensembles_list_screen.dart'
     deferred as _i20;
-import 'package:app/features/ensemble/ensemble/presentation/screens/members/ensemble_members_screen.dart'
+import 'package:app/features/ensemble/ensemble/presentation/screens/integrants/ensemble_integrants_screen.dart'
     deferred as _i17;
 import 'package:app/features/ensemble/ensemble/presentation/screens/page_view/ensemble_explore_screen.dart'
     deferred as _i16;
@@ -67,10 +67,8 @@ import 'package:app/features/ensemble/ensemble/presentation/screens/professional
     deferred as _i19;
 import 'package:app/features/ensemble/ensemble_availability/presentation/screens/ensemble_availability_calendar_screen.dart'
     deferred as _i15;
-import 'package:app/features/ensemble/member_documents/presentation/screens/member_documents_screen.dart'
-    deferred as _i27;
 import 'package:app/features/explore/domain/entities/ensembles/ensemble_with_availabilities_entity.dart'
-    as _i45;
+    as _i44;
 import 'package:app/features/profile/shared/presentation/screens/login_security/delete_account/delete_account_page.dart'
     deferred as _i11;
 import 'package:app/features/profile/shared/presentation/screens/login_security/login_history/login_history_page.dart'
@@ -80,18 +78,19 @@ import 'package:app/features/profile/shared/presentation/screens/login_security/
 import 'package:app/features/profile/shared/presentation/screens/login_security/password/change_password_page.dart'
     deferred as _i8;
 import 'package:app/features/profile/shared/presentation/screens/personal_info/personal_info_page.dart'
-    deferred as _i30;
+    deferred as _i29;
 import 'package:app/features/profile/shared/presentation/screens/terms/artist/artist_terms_of_use_page.dart'
     deferred as _i6;
 import 'package:app/features/profile/shared/presentation/screens/terms/client/client_terms_of_use_page.dart'
     deferred as _i10;
 import 'package:app/features/profile/shared/presentation/screens/terms/terms_of_privacy_page.dart'
+    deferred as _i36;
+import 'package:app/features/profile/shared/presentation/screens/terms/terms_of_use_page.dart'
     deferred as _i37;
 import 'package:app/features/support/presentation/screens/support_page.dart'
-    deferred as _i36;
+    deferred as _i35;
 import 'package:auto_route/auto_route.dart' as _i38;
-import 'package:collection/collection.dart' as _i44;
-import 'package:flutter/foundation.dart' as _i43;
+import 'package:collection/collection.dart' as _i43;
 import 'package:flutter/material.dart' as _i39;
 
 /// generated route for
@@ -779,28 +778,28 @@ class EnsembleExploreRouteArgs {
 }
 
 /// generated route for
-/// [_i17.EnsembleMembersScreen]
-class EnsembleMembersRoute
-    extends _i38.PageRouteInfo<EnsembleMembersRouteArgs> {
-  EnsembleMembersRoute({
-    _i43.Key? key,
+/// [_i17.EnsembleIntegrantsScreen]
+class EnsembleIntegrantsRoute
+    extends _i38.PageRouteInfo<EnsembleIntegrantsRouteArgs> {
+  EnsembleIntegrantsRoute({
+    _i39.Key? key,
     required String ensembleId,
     List<_i38.PageRouteInfo>? children,
   }) : super(
-         EnsembleMembersRoute.name,
-         args: EnsembleMembersRouteArgs(key: key, ensembleId: ensembleId),
+         EnsembleIntegrantsRoute.name,
+         args: EnsembleIntegrantsRouteArgs(key: key, ensembleId: ensembleId),
          initialChildren: children,
        );
 
-  static const String name = 'EnsembleMembersRoute';
+  static const String name = 'EnsembleIntegrantsRoute';
 
   static _i38.PageInfo page = _i38.PageInfo(
     name,
     builder: (data) {
-      final args = data.argsAs<EnsembleMembersRouteArgs>();
+      final args = data.argsAs<EnsembleIntegrantsRouteArgs>();
       return _i38.DeferredWidget(
         _i17.loadLibrary,
-        () => _i17.EnsembleMembersScreen(
+        () => _i17.EnsembleIntegrantsScreen(
           key: args.key,
           ensembleId: args.ensembleId,
         ),
@@ -809,22 +808,22 @@ class EnsembleMembersRoute
   );
 }
 
-class EnsembleMembersRouteArgs {
-  const EnsembleMembersRouteArgs({this.key, required this.ensembleId});
+class EnsembleIntegrantsRouteArgs {
+  const EnsembleIntegrantsRouteArgs({this.key, required this.ensembleId});
 
-  final _i43.Key? key;
+  final _i39.Key? key;
 
   final String ensembleId;
 
   @override
   String toString() {
-    return 'EnsembleMembersRouteArgs{key: $key, ensembleId: $ensembleId}';
+    return 'EnsembleIntegrantsRouteArgs{key: $key, ensembleId: $ensembleId}';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! EnsembleMembersRouteArgs) return false;
+    if (other is! EnsembleIntegrantsRouteArgs) return false;
     return key == other.key && ensembleId == other.ensembleId;
   }
 
@@ -1030,7 +1029,7 @@ class EventTypeSelectionRouteArgs {
     if (identical(this, other)) return true;
     if (other is! EventTypeSelectionRouteArgs) return false;
     return key == other.key &&
-        const _i44.ListEquality<String>().equals(
+        const _i43.ListEquality<String>().equals(
           eventTypes,
           other.eventTypes,
         ) &&
@@ -1041,7 +1040,7 @@ class EventTypeSelectionRouteArgs {
   @override
   int get hashCode =>
       key.hashCode ^
-      const _i44.ListEquality<String>().hash(eventTypes) ^
+      const _i43.ListEquality<String>().hash(eventTypes) ^
       selectedEventType.hashCode ^
       onEventTypeSelected.hashCode;
 }
@@ -1136,75 +1135,7 @@ class LoginSecurityRoute extends _i38.PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [_i27.MemberDocumentsScreen]
-class MemberDocumentsRoute
-    extends _i38.PageRouteInfo<MemberDocumentsRouteArgs> {
-  MemberDocumentsRoute({
-    _i39.Key? key,
-    required String ensembleId,
-    required String memberId,
-    List<_i38.PageRouteInfo>? children,
-  }) : super(
-         MemberDocumentsRoute.name,
-         args: MemberDocumentsRouteArgs(
-           key: key,
-           ensembleId: ensembleId,
-           memberId: memberId,
-         ),
-         initialChildren: children,
-       );
-
-  static const String name = 'MemberDocumentsRoute';
-
-  static _i38.PageInfo page = _i38.PageInfo(
-    name,
-    builder: (data) {
-      final args = data.argsAs<MemberDocumentsRouteArgs>();
-      return _i38.DeferredWidget(
-        _i27.loadLibrary,
-        () => _i27.MemberDocumentsScreen(
-          key: args.key,
-          ensembleId: args.ensembleId,
-          memberId: args.memberId,
-        ),
-      );
-    },
-  );
-}
-
-class MemberDocumentsRouteArgs {
-  const MemberDocumentsRouteArgs({
-    this.key,
-    required this.ensembleId,
-    required this.memberId,
-  });
-
-  final _i39.Key? key;
-
-  final String ensembleId;
-
-  final String memberId;
-
-  @override
-  String toString() {
-    return 'MemberDocumentsRouteArgs{key: $key, ensembleId: $ensembleId, memberId: $memberId}';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other is! MemberDocumentsRouteArgs) return false;
-    return key == other.key &&
-        ensembleId == other.ensembleId &&
-        memberId == other.memberId;
-  }
-
-  @override
-  int get hashCode => key.hashCode ^ ensembleId.hashCode ^ memberId.hashCode;
-}
-
-/// generated route for
-/// [_i28.NavigationPage]
+/// [_i27.NavigationPage]
 class NavigationRoute extends _i38.PageRouteInfo<NavigationRouteArgs> {
   NavigationRoute({
     _i39.Key? key,
@@ -1225,8 +1156,8 @@ class NavigationRoute extends _i38.PageRouteInfo<NavigationRouteArgs> {
         orElse: () => const NavigationRouteArgs(),
       );
       return _i38.DeferredWidget(
-        _i28.loadLibrary,
-        () => _i28.NavigationPage(key: args.key, isArtist: args.isArtist),
+        _i27.loadLibrary,
+        () => _i27.NavigationPage(key: args.key, isArtist: args.isArtist),
       );
     },
   );
@@ -1256,7 +1187,7 @@ class NavigationRouteArgs {
 }
 
 /// generated route for
-/// [_i29.OnboardingScreen]
+/// [_i28.OnboardingScreen]
 class OnboardingRoute extends _i38.PageRouteInfo<OnboardingRouteArgs> {
   OnboardingRoute({
     _i39.Key? key,
@@ -1275,8 +1206,8 @@ class OnboardingRoute extends _i38.PageRouteInfo<OnboardingRouteArgs> {
     builder: (data) {
       final args = data.argsAs<OnboardingRouteArgs>();
       return _i38.DeferredWidget(
-        _i29.loadLibrary,
-        () => _i29.OnboardingScreen(key: args.key, email: args.email),
+        _i28.loadLibrary,
+        () => _i28.OnboardingScreen(key: args.key, email: args.email),
       );
     },
   );
@@ -1306,7 +1237,7 @@ class OnboardingRouteArgs {
 }
 
 /// generated route for
-/// [_i30.PersonalInfoPage]
+/// [_i29.PersonalInfoPage]
 class PersonalInfoRoute extends _i38.PageRouteInfo<void> {
   const PersonalInfoRoute({List<_i38.PageRouteInfo>? children})
     : super(PersonalInfoRoute.name, initialChildren: children);
@@ -1317,15 +1248,15 @@ class PersonalInfoRoute extends _i38.PageRouteInfo<void> {
     name,
     builder: (data) {
       return _i38.DeferredWidget(
-        _i30.loadLibrary,
-        () => _i30.PersonalInfoPage(),
+        _i29.loadLibrary,
+        () => _i29.PersonalInfoPage(),
       );
     },
   );
 }
 
 /// generated route for
-/// [_i31.PresentationsScreen]
+/// [_i30.PresentationsScreen]
 class PresentationsRoute extends _i38.PageRouteInfo<void> {
   const PresentationsRoute({List<_i38.PageRouteInfo>? children})
     : super(PresentationsRoute.name, initialChildren: children);
@@ -1336,15 +1267,15 @@ class PresentationsRoute extends _i38.PageRouteInfo<void> {
     name,
     builder: (data) {
       return _i38.DeferredWidget(
-        _i31.loadLibrary,
-        () => _i31.PresentationsScreen(),
+        _i30.loadLibrary,
+        () => _i30.PresentationsScreen(),
       );
     },
   );
 }
 
 /// generated route for
-/// [_i32.ProfessionalInfoScreen]
+/// [_i31.ProfessionalInfoScreen]
 class ProfessionalInfoRoute extends _i38.PageRouteInfo<void> {
   const ProfessionalInfoRoute({List<_i38.PageRouteInfo>? children})
     : super(ProfessionalInfoRoute.name, initialChildren: children);
@@ -1355,15 +1286,15 @@ class ProfessionalInfoRoute extends _i38.PageRouteInfo<void> {
     name,
     builder: (data) {
       return _i38.DeferredWidget(
-        _i32.loadLibrary,
-        () => _i32.ProfessionalInfoScreen(),
+        _i31.loadLibrary,
+        () => _i31.ProfessionalInfoScreen(),
       );
     },
   );
 }
 
 /// generated route for
-/// [_i33.RegisterDataAreaScreen]
+/// [_i32.RegisterDataAreaScreen]
 class RegisterDataAreaRoute extends _i38.PageRouteInfo<void> {
   const RegisterDataAreaRoute({List<_i38.PageRouteInfo>? children})
     : super(RegisterDataAreaRoute.name, initialChildren: children);
@@ -1374,15 +1305,15 @@ class RegisterDataAreaRoute extends _i38.PageRouteInfo<void> {
     name,
     builder: (data) {
       return _i38.DeferredWidget(
-        _i33.loadLibrary,
-        () => _i33.RegisterDataAreaScreen(),
+        _i32.loadLibrary,
+        () => _i32.RegisterDataAreaScreen(),
       );
     },
   );
 }
 
 /// generated route for
-/// [_i34.RegisterScreen]
+/// [_i33.RegisterScreen]
 class RegisterRoute extends _i38.PageRouteInfo<void> {
   const RegisterRoute({List<_i38.PageRouteInfo>? children})
     : super(RegisterRoute.name, initialChildren: children);
@@ -1392,20 +1323,20 @@ class RegisterRoute extends _i38.PageRouteInfo<void> {
   static _i38.PageInfo page = _i38.PageInfo(
     name,
     builder: (data) {
-      return _i38.DeferredWidget(_i34.loadLibrary, () => _i34.RegisterScreen());
+      return _i38.DeferredWidget(_i33.loadLibrary, () => _i33.RegisterScreen());
     },
   );
 }
 
 /// generated route for
-/// [_i35.RequestScreen]
+/// [_i34.RequestScreen]
 class RequestRoute extends _i38.PageRouteInfo<RequestRouteArgs> {
   RequestRoute({
     _i39.Key? key,
     required DateTime selectedDate,
     required _i40.AddressInfoEntity selectedAddress,
     required _i42.ArtistEntity artist,
-    _i45.EnsembleWithAvailabilitiesEntity? ensemble,
+    _i44.EnsembleWithAvailabilitiesEntity? ensemble,
     List<_i38.PageRouteInfo>? children,
   }) : super(
          RequestRoute.name,
@@ -1426,8 +1357,8 @@ class RequestRoute extends _i38.PageRouteInfo<RequestRouteArgs> {
     builder: (data) {
       final args = data.argsAs<RequestRouteArgs>();
       return _i38.DeferredWidget(
-        _i35.loadLibrary,
-        () => _i35.RequestScreen(
+        _i34.loadLibrary,
+        () => _i34.RequestScreen(
           key: args.key,
           selectedDate: args.selectedDate,
           selectedAddress: args.selectedAddress,
@@ -1456,7 +1387,7 @@ class RequestRouteArgs {
 
   final _i42.ArtistEntity artist;
 
-  final _i45.EnsembleWithAvailabilitiesEntity? ensemble;
+  final _i44.EnsembleWithAvailabilitiesEntity? ensemble;
 
   @override
   String toString() {
@@ -1484,7 +1415,7 @@ class RequestRouteArgs {
 }
 
 /// generated route for
-/// [_i36.SupportPage]
+/// [_i35.SupportPage]
 class SupportRoute extends _i38.PageRouteInfo<SupportRouteArgs> {
   SupportRoute({
     _i39.Key? key,
@@ -1505,8 +1436,8 @@ class SupportRoute extends _i38.PageRouteInfo<SupportRouteArgs> {
         orElse: () => const SupportRouteArgs(),
       );
       return _i38.DeferredWidget(
-        _i36.loadLibrary,
-        () => _i36.SupportPage(key: args.key, contract: args.contract),
+        _i35.loadLibrary,
+        () => _i35.SupportPage(key: args.key, contract: args.contract),
       );
     },
   );
@@ -1536,7 +1467,7 @@ class SupportRouteArgs {
 }
 
 /// generated route for
-/// [_i37.TermsOfPrivacyScreen]
+/// [_i36.TermsOfPrivacyScreen]
 class TermsOfPrivacyRoute extends _i38.PageRouteInfo<void> {
   const TermsOfPrivacyRoute({List<_i38.PageRouteInfo>? children})
     : super(TermsOfPrivacyRoute.name, initialChildren: children);
@@ -1547,8 +1478,27 @@ class TermsOfPrivacyRoute extends _i38.PageRouteInfo<void> {
     name,
     builder: (data) {
       return _i38.DeferredWidget(
+        _i36.loadLibrary,
+        () => _i36.TermsOfPrivacyScreen(),
+      );
+    },
+  );
+}
+
+/// generated route for
+/// [_i37.TermsOfUseScreen]
+class TermsOfUseRoute extends _i38.PageRouteInfo<void> {
+  const TermsOfUseRoute({List<_i38.PageRouteInfo>? children})
+    : super(TermsOfUseRoute.name, initialChildren: children);
+
+  static const String name = 'TermsOfUseRoute';
+
+  static _i38.PageInfo page = _i38.PageInfo(
+    name,
+    builder: (data) {
+      return _i38.DeferredWidget(
         _i37.loadLibrary,
-        () => _i37.TermsOfPrivacyScreen(),
+        () => _i37.TermsOfUseScreen(),
       );
     },
   );

@@ -7,21 +7,14 @@ import 'package:app/core/shared/widgets/video_thumbnail.dart';
 import 'package:flutter/material.dart';
 
 /// Seção de tabs para Show, Vídeos e Disponibilidades.
-/// Para grupos (ensemble), passe [ensemble] e [ownerDisplayName] para exibir dados do grupo e tab "Integrantes" com nome + talentos.
+/// Para grupos (ensemble), passe [ensemble] para exibir dados do grupo (professionalInfo, vídeo).
 /// [artist] é opcional quando [ensemble] está presente (ex.: tela do conjunto aberta pela aba Conjuntos).
 class TabsSection extends StatelessWidget {
   final ArtistEntity? artist;
   final Function(String videoUrl)? onVideoTap;
   final Widget? calendarTab; // Tab customizada para calendário
-  /// Nomes dos integrantes (para artista com lista simples); quando não vazio, adiciona tab "Integrantes"
-  final List<String>? memberNames;
-  /// Quando informado, exibe dados do conjunto (professionalInfo, vídeo único, integrantes com nome + talentos)
+  /// Quando informado, exibe dados do conjunto (professionalInfo, vídeo único).
   final EnsembleEntity? ensemble;
-  /// Nome do dono do conjunto (exibido na tab Integrantes para o membro owner)
-  final String? ownerDisplayName;
-  /// Nomes dos integrantes na mesma ordem de [ensemble].members (para tab Integrantes).
-  /// Índice i corresponde ao slot ensemble.members[i]; para slot com isOwner usa-se [ownerDisplayName].
-  final List<String>? ensembleMemberDisplayNames;
   /// Talentos do artista dono do conjunto (exibidos na aba "Sobre o Show" quando [ensemble] está presente).
   final List<String>? ownerArtistSpecialty;
 
@@ -30,10 +23,7 @@ class TabsSection extends StatelessWidget {
     this.artist,
     this.onVideoTap,
     this.calendarTab,
-    this.memberNames,
     this.ensemble,
-    this.ownerDisplayName,
-    this.ensembleMemberDisplayNames,
     this.ownerArtistSpecialty,
   }) : assert(artist != null || ensemble != null, 'Informe artist ou ensemble');
 
@@ -42,19 +32,19 @@ class TabsSection extends StatelessWidget {
           ? (ensemble!.presentationVideoUrl != null && ensemble!.presentationVideoUrl!.isNotEmpty)
           : (artist?.presentationMedias?.isNotEmpty ?? false);
 
-  bool get _hasMembersTab =>
-      ensemble != null
-          ? true // Conjunto sempre tem pelo menos o dono (exibido na tab)
-          : (memberNames != null && memberNames!.isNotEmpty);
+
 
   @override
   Widget build(BuildContext context) {
     final List<String> tabs = [];
     tabs.add('Sobre o Show');
     tabs.add('Vídeos');
-    if (_hasMembersTab) {
-      tabs.add('Integrantes');
+
+    final isEnsembleWithTalents = ensemble != null;
+    if (isEnsembleWithTalents) {
+      tabs.add('Talentos');
     }
+
     if (calendarTab != null) {
       tabs.add('Disponibilidades');
     }
@@ -63,8 +53,8 @@ class TabsSection extends StatelessWidget {
       _buildGenresTab(context),
       _buildTalentsTab(context),
     ];
-    if (_hasMembersTab) {
-      tabViews.add(_buildMembersTab(context));
+    if (isEnsembleWithTalents) {
+      tabViews.add(_buildEnsembleTalentsListTab(context));
     }
     if (calendarTab != null) {
       tabViews.add(calendarTab!);
@@ -101,111 +91,10 @@ class TabsSection extends StatelessWidget {
     if (calendarTab != null) {
       return DSSize.height(500);
     }
-    if (_hasMembersTab) {
-      return DSSize.height(200);
+    if (ensemble != null) {
+      return DSSize.height(280);
     }
     return _hasTalents ? DSSize.height(220) : DSSize.height(120);
-  }
-
-  Widget _buildMembersTab(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (ensemble != null) {
-      final members = ensemble!.members ?? [];
-      final displayNames = ensembleMemberDisplayNames;
-      return Padding(
-        padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: members.length,
-          itemBuilder: (context, index) {
-            final slot = members[index];
-            final displayName = slot.isOwner
-                ? (ownerDisplayName ?? 'Dono')
-                : (displayNames != null && index < displayNames.length
-                    ? displayNames[index]
-                    : 'Integrante');
-            List<String> specialties = [];
-            if (slot.isOwner) {
-              specialties = ownerArtistSpecialty ?? [];
-            } else {
-              specialties = slot.specialty ?? [];
-            }
-
-
-            return Padding(
-              padding: EdgeInsets.only(bottom: DSSize.height(16)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: DSSize.width(20),
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      SizedBox(width: DSSize.width(12)),
-                      Expanded(
-                        child: Text(
-                          displayName,
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (specialties.isNotEmpty) ...[
-                    SizedBox(height: DSSize.height(8)),
-                    Wrap(
-                      spacing: DSSize.width(8),
-                      runSpacing: DSSize.height(6),
-                      children: specialties
-                          .map((t) => GenreChip(label: t))
-                          .toList(),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    final names = memberNames!;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: names.length,
-        itemBuilder: (context, index) {
-          final memberName = names[index];
-          return Padding(
-            padding: EdgeInsets.only(bottom: DSSize.height(8)),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  size: DSSize.width(20),
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                SizedBox(width: DSSize.width(12)),
-                Text(
-                  memberName,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onPrimary,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildGenresTab(BuildContext context) {
@@ -381,6 +270,37 @@ class TabsSection extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Aba "Talentos" do conjunto: lista de talentos (repertório) do grupo.
+  Widget _buildEnsembleTalentsListTab(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final talents = ensemble?.talents ?? const [];
+
+    if (talents.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
+          child: Text(
+            'O conjunto não possui talentos cadastrados',
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(vertical: DSSize.height(12)),
+      child: Wrap(
+        spacing: DSSize.width(8),
+        runSpacing: DSSize.height(8),
+        children: talents.map((t) => GenreChip(label: t)).toList(),
+      ),
     );
   }
 }

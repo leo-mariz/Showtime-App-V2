@@ -8,6 +8,7 @@ enum AppListType {
   specialties, // Especialidades
   talents, // Talentos
   eventTypes, // Tipos de evento
+  ensembleTypes, // Tipos de conjunto
   supportSubjects, // Assuntos de suporte
 }
 
@@ -65,6 +66,8 @@ extension AppListItemEntityReference on AppListItemEntity {
         return 'talents';
       case AppListType.eventTypes:
         return 'eventTypes';
+      case AppListType.ensembleTypes:
+        return 'ensembleTypes';
       case AppListType.supportSubjects:
         return 'supportSubjects';
     }

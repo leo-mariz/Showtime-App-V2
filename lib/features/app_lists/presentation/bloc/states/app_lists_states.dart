@@ -81,6 +81,30 @@ class GetEventTypesFailure extends AppListsState {
   List<Object?> get props => [error];
 }
 
+// ==================== GET ENSEMBLE TYPES STATES ====================
+
+class GetEnsembleTypesLoading extends AppListsState {}
+
+class GetEnsembleTypesSuccess extends AppListsState {
+  final List<AppListItemEntity> ensembleTypes;
+
+  GetEnsembleTypesSuccess({
+    required this.ensembleTypes,
+  });
+
+  @override
+  List<Object?> get props => [ensembleTypes];
+}
+
+class GetEnsembleTypesFailure extends AppListsState {
+  final String error;
+
+  GetEnsembleTypesFailure({required this.error});
+
+  @override
+  List<Object?> get props => [error];
+}
+
 // ==================== GET SUPPORT SUBJECTS STATES ====================
 
 class GetSupportSubjectsLoading extends AppListsState {}

@@ -36,9 +36,11 @@ class UpdateEnsembleActiveStatusUseCase {
           if (ensemble == null) {
             return const Left(NotFoundFailure('Conjunto não encontrado'));
           }
+          final now = DateTime.now();
           final updated = ensemble.copyWith(
             isActive: isActive,
-            updatedAt: DateTime.now(),
+            updatedAt: now,
+            lastUpdatedAt: now,
           );
           final updateResult = await updateEnsembleUseCase.call(artistId, updated);
           return updateResult.fold(

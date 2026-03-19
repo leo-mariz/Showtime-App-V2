@@ -1,3 +1,4 @@
+import 'package:app/features/app_lists/domain/usecases/get_ensemble_types_usecase.dart';
 import 'package:app/features/app_lists/domain/usecases/get_event_types_usecase.dart';
 import 'package:app/features/app_lists/domain/usecases/get_specialties_usecase.dart';
 import 'package:app/features/app_lists/domain/usecases/get_support_subjects_usecase.dart';
@@ -10,17 +11,20 @@ class AppListsBloc extends Bloc<AppListsEvent, AppListsState> {
   final GetSpecialtiesUseCase getSpecialtiesUseCase;
   final GetTalentsUseCase getTalentsUseCase;
   final GetEventTypesUseCase getEventTypesUseCase;
+  final GetEnsembleTypesUseCase getEnsembleTypesUseCase;
   final GetSupportSubjectsUseCase getSupportSubjectsUseCase;
 
   AppListsBloc({
     required this.getSpecialtiesUseCase,
     required this.getTalentsUseCase,
     required this.getEventTypesUseCase,
+    required this.getEnsembleTypesUseCase,
     required this.getSupportSubjectsUseCase,
   }) : super(AppListsInitial()) {
     on<GetSpecialtiesEvent>(_onGetSpecialtiesEvent);
     on<GetTalentsEvent>(_onGetTalentsEvent);
     on<GetEventTypesEvent>(_onGetEventTypesEvent);
+    on<GetEnsembleTypesEvent>(_onGetEnsembleTypesEvent);
     on<GetSupportSubjectsEvent>(_onGetSupportSubjectsEvent);
     on<ResetAppListsEvent>(_onResetAppListsEvent);
   }
@@ -86,6 +90,28 @@ class AppListsBloc extends Bloc<AppListsEvent, AppListsState> {
       },
       (eventTypes) {
         emit(GetEventTypesSuccess(eventTypes: eventTypes));
+        emit(AppListsInitial());
+      },
+    );
+  }
+
+  // ==================== GET ENSEMBLE TYPES ====================
+
+  Future<void> _onGetEnsembleTypesEvent(
+    GetEnsembleTypesEvent event,
+    Emitter<AppListsState> emit,
+  ) async {
+    emit(GetEnsembleTypesLoading());
+
+    final result = await getEnsembleTypesUseCase.call();
+
+    result.fold(
+      (failure) {
+        emit(GetEnsembleTypesFailure(error: failure.message));
+        emit(AppListsInitial());
+      },
+      (ensembleTypes) {
+        emit(GetEnsembleTypesSuccess(ensembleTypes: ensembleTypes));
         emit(AppListsInitial());
       },
     );

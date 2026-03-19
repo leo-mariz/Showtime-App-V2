@@ -15,16 +15,18 @@ class EnsembleInfoStatusEntity extends Equatable {
 
   String get typeDescription {
     switch (type) {
-      case EnsembleInfoType.members:
-        return 'Integrantes';
-      case EnsembleInfoType.memberDocuments:
-        return 'Documentos dos integrantes';
-      case EnsembleInfoType.profilePhoto:
-        return 'Foto de perfil do grupo';
-      case EnsembleInfoType.presentations:
-        return 'Apresentações';
+      case EnsembleInfoType.ensembleName:
+        return 'Nome do grupo';
+      case EnsembleInfoType.talents:
+        return 'Talentos';
       case EnsembleInfoType.professionalInfo:
         return 'Dados profissionais';
+      case EnsembleInfoType.profilePhoto:
+        return 'Foto de perfil do grupo';
+      case EnsembleInfoType.ensembleType:
+        return 'Tipo do conjunto';
+      case EnsembleInfoType.presentations:
+        return 'Apresentações';
       case EnsembleInfoType.ownerDocuments:
         return 'Documentos do administrador';
       case EnsembleInfoType.ownerBankAccount:

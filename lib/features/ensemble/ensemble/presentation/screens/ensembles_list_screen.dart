@@ -2,7 +2,6 @@ import 'package:app/core/config/auto_router_config.gr.dart';
 import 'package:app/core/design_system/size/ds_size.dart';
 import 'package:app/core/design_system/sized_box_spacing/ds_sized_box_spacing.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:app/core/shared/extensions/context_notification_extension.dart';
 import 'package:app/core/shared/widgets/base_page_widget.dart';
 import 'package:app/core/shared/widgets/confirmation_dialog.dart';
@@ -13,9 +12,6 @@ import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble
 import 'package:app/features/ensemble/ensemble/presentation/screens/new_ensemble_modal.dart';
 import 'package:app/features/ensemble/ensemble/presentation/widgets/empty_ensembles_placeholder.dart';
 import 'package:app/features/ensemble/ensemble/presentation/widgets/ensemble_card.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
 import 'package:app/features/artists/artists/presentation/bloc/artists_bloc.dart';
 import 'package:app/features/artists/artists/presentation/bloc/states/artists_states.dart';
 import 'package:auto_route/auto_route.dart';
@@ -44,7 +40,6 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     super.didChangeDependencies();
     dev.log('EnsemblesListScreen didChangeDependencies -> _onGetAllEnsembles()', name: 'EnsemblesList');
     _onGetAllEnsembles();
-    context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
   }
 
   void _onGetAllEnsembles() {
@@ -71,17 +66,11 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
   }
 
   void _onAddEnsemble() async {
-    final selected = await NewEnsembleModal.show(context: context);
-    if (selected != null && mounted) {
-      final slots = selected
-          .where((e) => e.id != null && e.id!.isNotEmpty)
-          .map((e) => EnsembleMember(
-                memberId: e.id!,
-                specialty: e.specialty,
-                isOwner: false,
-              ))
-          .toList();
-      context.read<EnsembleBloc>().add(CreateEnsembleEvent(members: slots));
+    final created = await NewEnsembleModal.show(context: context);
+    if (!mounted) return;
+    if (created != null) {
+      context.showSuccess('Conjunto criado com sucesso.');
+      AutoRouter.of(context).push(EnsembleAreaRoute(ensembleId: created.id ?? ''));
     }
   }
 
@@ -127,7 +116,8 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         },
       ),
     ];
-    OptionsModal.show(context: context, title: 'Conjunto +${_totalMembersCount(ensemble)}', actions: actions);
+    final total = _totalMembersCount(ensemble);
+    OptionsModal.show(context: context, title: total > 0 ? 'Conjunto ($total integrantes)' : 'Conjunto', actions: actions);
   }
 
   String _getArtistName() {
@@ -138,28 +128,12 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     return 'Artista';
   }
 
-  /// Total de integrantes (apenas os que não são dono).
+  /// Total de integrantes (número informado no conjunto).
   int _totalMembersCount(EnsembleEntity e) {
-    final members = e.members ?? [];
-    return members.where((m) => !m.isOwner).length;
+    return e.members ?? 0;
   }
 
-  /// Primeiros nomes dos integrantes que não são dono, resolvidos via [memberIdToName], separados por vírgula.
-  String? _membersFirstNames(EnsembleEntity e, Map<String, String> memberIdToName) {
-    final members = e.members ?? [];
-    final names = <String>[];
-    for (final m in members) {
-      if (m.isOwner) continue;
-      final full = memberIdToName[m.memberId]?.trim();
-      if (full == null || full.isEmpty) continue;
-      final first = full.split(RegExp(r'\s+')).first;
-      if (first.isNotEmpty) names.add(first);
-    }
-    if (names.isEmpty) return null;
-    return names.join(', ');
-  }
-
-  /// Título do card: apenas "Nome + num" (sem a palavra "integrantes").
+  /// Título do card: nome do conjunto ou "Nome do artista + N" (N = total - 1 para exibição).
   String _ensembleDisplayName(EnsembleEntity e) {
     final ensembleName = e.ensembleName;
     if (ensembleName != null && ensembleName.isNotEmpty) {
@@ -167,14 +141,10 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
     }
     final artistName = _getArtistName();
     final total = _totalMembersCount(e);
-    return '$artistName + $total';
+    return total >= 2 ? '$artistName + ${total - 1}' : artistName;
   }
 
-  Widget _buildListContent(
-    BuildContext context,
-    EnsembleState ensembleState,
-    MembersState membersState,
-  ) {
+  Widget _buildListContent(BuildContext context, EnsembleState ensembleState) {
     final successState = ensembleState is GetAllEnsemblesSuccess ? ensembleState : null;
     final count = successState?.ensembles.length;
     dev.log(
@@ -214,13 +184,6 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         ),
       );
     }
-    final memberIdToName = membersState is GetAllMembersSuccess
-        ? {
-            for (final m in membersState.members)
-              if (m.id != null && m.name != null && m.name!.trim().isNotEmpty)
-                m.id!: m.name!,
-          }
-        : <String, String>{};
     final ensembles = ensembleState is GetAllEnsemblesSuccess
         ? ensembleState.ensembles
         : null;
@@ -246,8 +209,7 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
                   child: EnsembleCard(
                     displayName: _ensembleDisplayName(e),
                     photoUrl: e.profilePhotoUrl,
-                    membersFirstNames: _membersFirstNames(e, memberIdToName),
-                    allApproved: e.allMembersApproved ?? false,
+                    membersCount: e.members ?? 0,
                     onTap: () => _onEditEnsemble(e),
                     onOptionsTap: () => _showOptionsModalFor(context, e),
                   ),
@@ -282,7 +244,6 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
         }
         if (state is CreateEnsembleSuccess) {
           context.read<EnsembleBloc>().add(GetAllEnsemblesByArtistEvent(forceRemote: false));
-          context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
         }
         if (state is CreateEnsembleFailure) {
           context.showError(state.error);
@@ -321,13 +282,7 @@ class _EnsemblesListScreenState extends State<EnsemblesListScreen> {
                     : const Icon(Icons.add),
               ),
             ],
-            child: BlocBuilder<MembersBloc, MembersState>(
-              buildWhen: (previous, current) =>
-                  current is GetAllMembersSuccess || current is GetAllMembersLoading,
-              builder: (context, membersState) {
-                return _buildListContent(context, ensembleState, membersState);
-              },
-            ),
+            child: _buildListContent(context, ensembleState),
           );
         },
       ),

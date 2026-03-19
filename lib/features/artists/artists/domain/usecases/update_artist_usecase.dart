@@ -29,8 +29,8 @@ class UpdateArtistUseCase {
         return const Left(ValidationFailure('Data de registro não pode ser vazia'));
       }
 
-      // Atualizar artista
-      final result = await repository.updateArtist(uid, artist);
+      final toSave = artist.copyWith(lastUpdatedAt: DateTime.now());
+      final result = await repository.updateArtist(uid, toSave);
 
       return result.fold(
         (failure) => Left(failure),

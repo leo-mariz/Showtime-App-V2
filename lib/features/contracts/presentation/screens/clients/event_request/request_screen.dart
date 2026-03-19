@@ -86,8 +86,8 @@ class _RequestScreenState extends State<RequestScreen> {
     if (widget.ensemble == null) {
       return 0;
     }
-    final members = widget.ensemble!.ensemble.members ?? [];
-    return members.where((m) => !m.isOwner).length;
+    final members = widget.ensemble!.ensemble.members ?? 0;
+    return members;
   }
 
   // Getters

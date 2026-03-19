@@ -44,6 +44,7 @@ class UpdateArtistIncompleteSectionsUseCase {
             hasIncompleteSections: hasIncomplete,
             incompleteSections: incompleteSections.isEmpty ? null : incompleteSections,
             isActive: hasIncomplete ? false : true,
+            lastUpdatedAt: DateTime.now(),
           );
 
           return repository.updateArtist(uid, updatedArtist);

@@ -33,9 +33,9 @@ class UpdateArtistAgreementUseCase {
       return getResult.fold(
         (failure) => Left(failure),
         (currentArtist) async {
-          // Criar nova entidade com apenas agreedToArtistTermsOfUse atualizado
           final updatedArtist = currentArtist.copyWith(
             agreedToArtistTermsOfUse: agreedToTerms,
+            lastUpdatedAt: DateTime.now(),
           );
 
           // Atualizar artista

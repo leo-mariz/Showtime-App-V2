@@ -22,9 +22,6 @@ import 'package:app/features/addresses/presentation/widgets/addresses_modal.dart
 import 'package:app/features/ensemble/ensemble/presentation/bloc/ensemble_bloc.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/events/ensemble_events.dart';
 import 'package:app/features/ensemble/ensemble/presentation/bloc/states/ensemble_states.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/events/members_events.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/members_bloc.dart';
-import 'package:app/features/ensemble/members/presentation/bloc/states/members_states.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/ensemble_availability_bloc.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/events/ensemble_availability_events.dart';
 import 'package:app/features/ensemble/ensemble_availability/presentation/bloc/states/ensemble_availability_states.dart';
@@ -203,7 +200,7 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
     final artist = widget.artist;
     final ensemble = _currentEnsemble;
     final profilePhotoUrl = ensemble?.profilePhotoUrl ?? artist?.profilePicture;
-    final totalDisplayMembers = (ensemble?.members?.length ?? 0) - 1;
+    final totalDisplayMembers = (ensemble?.members ?? 0);
     final ensembleName = ensemble?.ensembleName?.trim();
     final displayTitle = (ensembleName != null && ensembleName.isNotEmpty)
         ? ensembleName
@@ -236,7 +233,6 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() => _currentEnsemble = state.currentEnsemble);
-              context.read<MembersBloc>().add(GetAllMembersEvent(forceRemote: false));
             }
           });
         }
@@ -386,20 +382,23 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
                       DSSizedBoxSpacing.vertical(4),
 
 
-                      // Linha superior: Conjunto + X Integrantes (estilo talentos/GenreChip)
+                      // Linha superior: tipo do conjunto + X Integrantes (estilo talentos/GenreChip)
                       Row(
                         children: [
                           Wrap(
                             spacing: DSSize.width(8),
                             runSpacing: DSSize.height(8),
                             children: [
-                              GenreChip(label: 'Conjunto'),
-                              GenreChip(label: '${totalDisplayMembers+1} Integrantes'),
+                              GenreChip(
+                                label: (ensemble?.ensembleType?.trim().isNotEmpty ?? false)
+                                    ? ensemble!.ensembleType!.trim()
+                                    : 'Conjunto',
+                              ),
+                              GenreChip(label: '${totalDisplayMembers} Integrantes'),
                             ],
                           ),
-                          
-
-                      ],),
+                        ],
+                      ),
 
                       // Linha inferior: rating, contratos e favorito
                       
@@ -419,33 +418,12 @@ class _EnsembleExploreScreenState extends State<EnsembleExploreScreen> {
 
                       // Só monta TabsSection quando já temos artist ou ensemble (ensemble carrega de forma assíncrona)
                       if (artist != null || ensemble != null)
-                        BlocBuilder<MembersBloc, MembersState>(
-                          buildWhen: (p, c) => c is GetAllMembersSuccess,
-                          builder: (context, membersState) {
-                            List<String>? displayNames;
-                            if (ensemble?.members != null &&
-                                membersState is GetAllMembersSuccess) {
-                              final allMembers = membersState.members;
-                              final byId = {
-                                for (final m in allMembers) if (m.id != null) m.id!: m
-                              };
-                              displayNames = ensemble!.members!.map((slot) {
-                                if (slot.isOwner) {
-                                  return artist?.artistName ?? 'Dono';
-                                }
-                                return byId[slot.memberId]?.name ?? 'Integrante';
-                              }).toList();
-                            }
-                            return TabsSection(
-                              artist: widget.artist,
-                              onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
-                              ensemble: ensemble,
-                              ownerDisplayName: artist?.artistName,
-                              ensembleMemberDisplayNames: displayNames,
-                              ownerArtistSpecialty: artist?.professionalInfo?.specialty,
-                              calendarTab: _buildCalendarTab(colorScheme, textTheme),
-                            );
-                          },
+                        TabsSection(
+                          artist: widget.artist,
+                          onVideoTap: (videoUrl) => _onVideoTap(videoUrl),
+                          ensemble: ensemble,
+                          ownerArtistSpecialty: artist?.professionalInfo?.specialty,
+                          calendarTab: _buildCalendarTab(colorScheme, textTheme),
                         )
                       else
                         Padding(

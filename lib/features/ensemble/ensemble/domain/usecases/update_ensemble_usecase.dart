@@ -27,9 +27,14 @@ class UpdateEnsembleUseCase {
       if (ensemble.id == null || ensemble.id!.isEmpty) {
         return const Left(ValidationFailure('ensemble.id é obrigatório'));
       }
+      final now = DateTime.now();
+      final toSave = ensemble.copyWith(
+        updatedAt: now,
+        lastUpdatedAt: now,
+      );
       final result = await repository.update(
         artistId: artistId,
-        ensemble: ensemble,
+        ensemble: toSave,
       );
       if (result.isRight()) {
         await syncEnsembleCompletenessIfChangedUseCase.call(

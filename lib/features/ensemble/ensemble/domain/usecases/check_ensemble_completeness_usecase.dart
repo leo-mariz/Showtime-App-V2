@@ -1,27 +1,18 @@
 import 'package:app/core/domain/artist/bank_account_entity/bank_account_entity.dart';
 import 'package:app/core/domain/artist/artist_individual/documents/documents_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/enums/document_status_enum.dart';
-import 'package:app/core/enums/document_type_enum.dart';
-import 'package:app/core/domain/ensemble/member_documents/member_document_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_completeness_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_info_status_entity.dart';
 import 'package:app/features/ensemble/ensemble/domain/enums/ensemble_info_type_enum.dart';
 
 /// Verifica a completude do conjunto (ensemble).
 ///
-/// São 7 verificações, cada uma com mensagem própria quando incompleta:
-///
-/// **Conjunto:**
-/// 1. Há pelo menos um integrante além do administrador (isOwner = false).
-/// 2. O(s) integrante(s) têm ambos os documentos (identidade e antecedentes) enviados ou aprovados.
-/// 3. Há foto de perfil do grupo.
-/// 4. Há vídeo de apresentação.
-/// 5. Dados profissionais do conjunto preenchidos.
-///
-/// **Administrador:**
-/// 6. Administrador tem documentos obrigatórios enviados (identidade, residência, antecedentes; currículo não é obrigatório).
-/// 7. Administrador tem PIX ou conta bancária preenchidos.
+/// Informações incompletas verificadas:
+/// - nome do grupo → não vazio
+/// - talentos → não vazio
+/// - dados profissionais → todos os campos preenchidos (bio, duração mín., preparação, antecedência mín.)
+/// - foto de perfil → não vazio
+/// - vídeo de apresentação → obrigatório
 class CheckEnsembleCompletenessUseCase {
   const CheckEnsembleCompletenessUseCase();
 
@@ -29,93 +20,47 @@ class CheckEnsembleCompletenessUseCase {
     required EnsembleEntity ensemble,
     required List<DocumentsEntity> ownerDocuments,
     BankAccountEntity? ownerBankAccount,
-    required Map<String, List<MemberDocumentEntity>> memberDocumentsByMemberId,
   }) {
     final statuses = <EnsembleInfoStatusEntity>[
-      _checkMembers(ensemble),
-      _checkMemberDocuments(ensemble, memberDocumentsByMemberId),
+      _checkEnsembleName(ensemble),
+      _checkTalents(ensemble),
+      _checkProfessionalInfo(ensemble),
       _checkProfilePhoto(ensemble),
       _checkPresentations(ensemble),
-      _checkProfessionalInfo(ensemble),
-      _checkOwnerDocuments(ownerDocuments),
-      _checkOwnerBankAccount(ownerBankAccount),
     ];
-    final completeness = EnsembleCompletenessEntity(infoStatuses: statuses);
-    return completeness;
+    return EnsembleCompletenessEntity(infoStatuses: statuses);
   }
 
-  /// 1. Há pelo menos um integrante além do administrador.
-  EnsembleInfoStatusEntity _checkMembers(EnsembleEntity ensemble) {
-    final nonOwner =
-        ensemble.members?.where((m) => !m.isOwner).toList() ?? [];
-    final isComplete = nonOwner.isNotEmpty;
+  /// Nome do grupo não vazio.
+  EnsembleInfoStatusEntity _checkEnsembleName(EnsembleEntity ensemble) {
+    final name = ensemble.ensembleName?.trim() ?? '';
+    final isComplete = name.isNotEmpty;
     return EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.members,
+      type: EnsembleInfoType.ensembleName,
       isComplete: isComplete,
-      missingItems: isComplete ? [] : ['O grupo precisa de pelo menos um integrante (além do administrador).'],
+      missingItems: isComplete ? [] : ['Informe o nome do grupo.'],
     );
   }
 
-  /// 2. Cada integrante (não dono) tem identidade e antecedentes enviados (1) ou aprovados (2).
-  EnsembleInfoStatusEntity _checkMemberDocuments(
-    EnsembleEntity ensemble,
-    Map<String, List<MemberDocumentEntity>> memberDocumentsByMemberId,
-  ) {
-    final nonOwner =
-        ensemble.members?.where((m) => !m.isOwner).toList() ?? [];
-    if (nonOwner.isEmpty) {
-      return const EnsembleInfoStatusEntity(
-        type: EnsembleInfoType.memberDocuments,
-        isComplete: true,
-        missingItems: [],
-      );
-    }
-    final missing = <String>[];
-    for (final member in nonOwner) {
-      final memberId = member.memberId;
-      final docs = memberDocumentsByMemberId[memberId] ?? [];
-      final identityList = docs.where((d) => d.documentType == MemberDocumentType.identity).toList();
-      final antecedentsList = docs.where((d) => d.documentType == MemberDocumentType.antecedents).toList();
-      final identity = identityList.isNotEmpty ? identityList.first : null;
-      final antecedents = antecedentsList.isNotEmpty ? antecedentsList.first : null;
-      final identityOk = identity != null && (identity.status == 1 || identity.status == 2);
-      final antecedentsOk = antecedents != null && (antecedents.status == 1 || antecedents.status == 2);
-      if (!identityOk || !antecedentsOk) {
-        missing.add('Cada integrante deve ter documentos (identidade e antecedentes) enviados ou aprovados.');
-        break;
-      }
-    }
+  /// Tipo do grupo e talentos preenchidos (seção "Sobre o Conjunto" / integrantes).
+  /// Incompleto se tipo do conjunto ou lista de talentos estiver vazio.
+  EnsembleInfoStatusEntity _checkTalents(EnsembleEntity ensemble) {
+    final typeOk = ensemble.ensembleType != null &&
+        ensemble.ensembleType!.trim().isNotEmpty;
+    final list = ensemble.talents;
+    final hasTalents = list != null &&
+        list.isNotEmpty &&
+        list.any((t) => t.trim().isNotEmpty);
+    final isComplete = typeOk && hasTalents;
     return EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.memberDocuments,
-      isComplete: missing.isEmpty,
-      missingItems: missing,
+      type: EnsembleInfoType.talents,
+      isComplete: isComplete,
+      missingItems: isComplete ? [] : ['Informe o tipo do grupo e ao menos um talento.'],
     );
   }
 
-  /// 3. Há foto de perfil do grupo.
-  EnsembleInfoStatusEntity _checkProfilePhoto(EnsembleEntity ensemble) {
-    final hasPhoto = ensemble.profilePhotoUrl != null &&
-        ensemble.profilePhotoUrl!.trim().isNotEmpty;
-    return EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.profilePhoto,
-      isComplete: hasPhoto,
-      missingItems: hasPhoto ? [] : ['É necessário foto de perfil do grupo.'],
-    );
-  }
-
-  /// 4. Há vídeo de apresentação.
-  EnsembleInfoStatusEntity _checkPresentations(EnsembleEntity ensemble) {
-    final hasVideo = ensemble.presentationVideoUrl != null &&
-        ensemble.presentationVideoUrl!.trim().isNotEmpty;
-    return EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.presentations,
-      isComplete: hasVideo,
-      missingItems: hasVideo ? [] : ['É necessário o vídeo de apresentação do conjunto.'],
-    );
-  }
-
-  /// 5. Dados profissionais do conjunto preenchidos (campos do formulário: duração, preparação, bio).
-  /// Não exige specialty pois o formulário do conjunto não coleta esse campo.
+  /// Dados profissionais: bio, minimumShowDuration, preparationTime e requestMinimumEarliness preenchidos.
+  /// (Especialidade não é obrigatória para conjunto; talentos são verificados em [talents].)
   EnsembleInfoStatusEntity _checkProfessionalInfo(EnsembleEntity ensemble) {
     final info = ensemble.professionalInfo;
     if (info == null) {
@@ -128,6 +73,7 @@ class CheckEnsembleCompletenessUseCase {
     final missing = <String>[];
     if (info.minimumShowDuration == null) missing.add('Duração mínima do show');
     if (info.preparationTime == null) missing.add('Tempo de preparação');
+    if (info.requestMinimumEarliness == null) missing.add('Antecedência mínima');
     if (info.bio == null || info.bio!.trim().isEmpty) missing.add('Bio');
     return EnsembleInfoStatusEntity(
       type: EnsembleInfoType.professionalInfo,
@@ -136,53 +82,25 @@ class CheckEnsembleCompletenessUseCase {
     );
   }
 
-  /// 6. Administrador tem documentos obrigatórios enviados (submitted ou approved):
-  /// identidade, comprovante de residência e certidão de antecedentes. Currículo não é obrigatório.
-  EnsembleInfoStatusEntity _checkOwnerDocuments(List<DocumentsEntity> ownerDocuments) {
-    const requiredTypes = <DocumentTypeEnum>[
-      DocumentTypeEnum.identity,
-      DocumentTypeEnum.residence,
-      DocumentTypeEnum.antecedents,
-    ];
-    for (final docType in requiredTypes) {
-      DocumentsEntity? doc;
-      for (final d in ownerDocuments) {
-        if (d.documentType == docType.name) {
-          doc = d;
-          break;
-        }
-      }
-      if (doc == null ||
-          doc.status == DocumentStatusEnum.pending.value ||
-          doc.status == DocumentStatusEnum.rejected.value) {
-        return const EnsembleInfoStatusEntity(
-          type: EnsembleInfoType.ownerDocuments,
-          isComplete: false,
-          missingItems: ['O administrador deve ter todos os documentos enviados.'],
-        );
-      }
-    }
-    return const EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.ownerDocuments,
-      isComplete: true,
-      missingItems: [],
+  /// Foto de perfil não vazio.
+  EnsembleInfoStatusEntity _checkProfilePhoto(EnsembleEntity ensemble) {
+    final hasPhoto = ensemble.profilePhotoUrl != null &&
+        ensemble.profilePhotoUrl!.trim().isNotEmpty;
+    return EnsembleInfoStatusEntity(
+      type: EnsembleInfoType.profilePhoto,
+      isComplete: hasPhoto,
+      missingItems: hasPhoto ? [] : ['É necessário foto de perfil do grupo.'],
     );
   }
 
-  /// 7. Administrador tem PIX ou conta bancária preenchidos.
-  EnsembleInfoStatusEntity _checkOwnerBankAccount(BankAccountEntity? ownerBankAccount) {
-    final hasBank = ownerBankAccount != null &&
-        (ownerBankAccount.fullName?.trim().isNotEmpty ?? false) &&
-        (ownerBankAccount.cpfOrCnpj?.trim().isNotEmpty ?? false) &&
-        ((ownerBankAccount.pixKey?.trim().isNotEmpty ?? false) &&
-                (ownerBankAccount.pixType?.trim().isNotEmpty ?? false) ||
-            ((ownerBankAccount.agency?.trim().isNotEmpty ?? false) &&
-                (ownerBankAccount.accountNumber?.trim().isNotEmpty ?? false) &&
-                (ownerBankAccount.accountType?.trim().isNotEmpty ?? false)));
+  /// Vídeo de apresentação obrigatório.
+  EnsembleInfoStatusEntity _checkPresentations(EnsembleEntity ensemble) {
+    final hasVideo = ensemble.presentationVideoUrl != null &&
+        ensemble.presentationVideoUrl!.trim().isNotEmpty;
     return EnsembleInfoStatusEntity(
-      type: EnsembleInfoType.ownerBankAccount,
-      isComplete: hasBank,
-      missingItems: hasBank ? [] : ['O administrador deve ter PIX ou conta bancária preenchidos.'],
+      type: EnsembleInfoType.presentations,
+      isComplete: hasVideo,
+      missingItems: hasVideo ? [] : ['É necessário adicionar o vídeo de apresentação do conjunto (até 1 min).'],
     );
   }
 }

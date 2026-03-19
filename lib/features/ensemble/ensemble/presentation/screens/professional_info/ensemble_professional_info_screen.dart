@@ -198,9 +198,7 @@ class EnsembleProfessionalInfoScreenState extends State<EnsembleProfessionalInfo
         title: 'Antecedência mínima para solicitações',
         initialHours: hours,
         initialMinutes: minutes,
-        type: WheelPickerType.duration,
-        minimumDuration: const Duration(minutes: 0),
-        maxHours: 96,
+        type: WheelPickerType.requestMinimumEarliness,
       ),
     );
 

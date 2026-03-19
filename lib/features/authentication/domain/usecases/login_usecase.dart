@@ -82,6 +82,20 @@ class LoginUseCase {
         (user) => user,
       );
 
+      // 4.1. Verificar penalidades (banimento ou suspensão)
+      if (userEntity.isBanned == true) {
+        return Left(AuthFailure(
+          'Sua conta foi banida. Entre em contato com o suporte para mais informações.',
+        ));
+      }
+      final suspendedUntil = userEntity.suspendedUntil;
+      if (suspendedUntil != null && suspendedUntil.isAfter(DateTime.now())) {
+        final period = '${suspendedUntil.day.toString().padLeft(2, '0')}/${suspendedUntil.month.toString().padLeft(2, '0')}/${suspendedUntil.year}';
+        return Left(AuthFailure(
+          'Sua conta está suspensa até $period. Entre em contato com o suporte para mais informações.',
+        ));
+      }
+
       // 5. Verificar se possui CPF ou CNPJ
       var isCnpj = false;
       if (userEntity.cpfUser != null && userEntity.cpfUser != CpfUserEntity()) {

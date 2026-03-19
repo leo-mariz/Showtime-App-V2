@@ -1,6 +1,7 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
-import 'package:app/core/domain/ensemble/ensemble_member.dart';
+import 'package:app/features/ensemble/ensemble/domain/entities/create_ensemble_dto.dart';
+import 'package:app/features/ensemble/ensemble/domain/entities/update_ensemble_integrants_dto.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class EnsembleEvent extends Equatable {
@@ -35,12 +36,12 @@ class GetEnsembleByIdEvent extends EnsembleEvent {
 // ==================== CREATE ENSEMBLE ====================
 
 class CreateEnsembleEvent extends EnsembleEvent {
-  final List<EnsembleMember> members;
+  final CreateEnsembleDto dto;
 
-  CreateEnsembleEvent({required this.members});
+  CreateEnsembleEvent({required this.dto});
 
   @override
-  List<Object?> get props => [members];
+  List<Object?> get props => [dto];
 }
 
 // ==================== UPDATE ENSEMBLE ====================
@@ -68,18 +69,18 @@ class UpdateEnsembleProfessionalInfoEvent extends EnsembleEvent {
   List<Object?> get props => [ensembleId, professionalInfo];
 }
 
-/// Atualiza a lista de integrantes persistida no conjunto.
+/// Atualiza número de integrantes, talentos e tipo de conjunto.
 class UpdateEnsembleMembersEvent extends EnsembleEvent {
   final String ensembleId;
-  final List<EnsembleMember> members;
+  final UpdateEnsembleIntegrantsDto dto;
 
   UpdateEnsembleMembersEvent({
     required this.ensembleId,
-    required this.members,
+    required this.dto,
   });
 
   @override
-  List<Object?> get props => [ensembleId, members];
+  List<Object?> get props => [ensembleId, dto];
 }
 
 // ==================== UPDATE ENSEMBLE PROFILE PHOTO ====================
@@ -112,14 +113,19 @@ class UpdateEnsemblePresentationVideoEvent extends EnsembleEvent {
   List<Object?> get props => [ensembleId, localFilePath];
 }
 
-// ==================== UPDATE ENSEMBLE MEMBER TALENTS ====================
+// ==================== UPDATE ENSEMBLE TALENTS ====================
 
 class UpdateEnsembleMemberTalentsEvent extends EnsembleEvent {
   final String ensembleId;
-  final String memberId;
   final List<String> talents;
 
-  UpdateEnsembleMemberTalentsEvent({required this.ensembleId, required this.memberId, required this.talents});
+  UpdateEnsembleMemberTalentsEvent({
+    required this.ensembleId,
+    required this.talents,
+  });
+
+  @override
+  List<Object?> get props => [ensembleId, talents];
 }
 
 // ==================== UPDATE ENSEMBLE ACTIVE STATUS ====================

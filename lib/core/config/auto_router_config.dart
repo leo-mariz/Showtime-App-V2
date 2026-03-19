@@ -38,11 +38,10 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: EnsemblesListRoute.page, path: '/ensembles-list'),
     AutoRoute(page: EnsembleExploreRoute.page, path: '/ensemble-explore/:ensembleId'),
     AutoRoute(page: EnsembleAreaRoute.page, path: '/ensemble-area/:ensembleId'),
-    AutoRoute(page: EnsembleMembersRoute.page, path: '/ensemble-members/:ensembleId'),
     AutoRoute(page: EnsemblePresentationsRoute.page, path: '/ensemble-presentations/:ensembleId'),
     AutoRoute(page: EnsembleProfessionalInfoRoute.page, path: '/ensemble-professional-info/:ensembleId'),
+    AutoRoute(page: EnsembleIntegrantsRoute.page, path: '/ensemble-integrants/:ensembleId'),
     AutoRoute(page: EnsembleAvailabilityCalendarRoute.page, path: '/ensemble-availability-calendar/:ensembleId'),
-    AutoRoute(page: MemberDocumentsRoute.page, path: '/member-documents/:ensembleId/:memberId'),
 
     //Profile Routes
     AutoRoute(page: PersonalInfoRoute.page, path: '/personal-info'),
@@ -55,8 +54,7 @@ class AppRouter extends RootStackRouter {
     
 
     //Terms and Privacy Routes
-    AutoRoute(page: ArtistsTermsOfUseRoute.page, path: '/artists-terms-of-use'),
-    AutoRoute(page: ClientTermsOfUseRoute.page, path: '/client-terms-of-use'),
+    AutoRoute(page: TermsOfUseRoute.page, path: '/terms-of-use'),
     AutoRoute(page: TermsOfPrivacyRoute.page, path: '/terms-of-privacy'),
 
     //Support Routes

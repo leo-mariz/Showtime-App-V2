@@ -1,5 +1,4 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
-import 'package:app/core/domain/ensemble/ensemble_member.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:dart_mappable/dart_mappable.dart';
@@ -26,19 +25,20 @@ class EnsembleEntity with EnsembleEntityMappable {
   final ProfessionalInfoEntity? professionalInfo;
 
   /// Integrantes do conjunto (referência + talentos no grupo). Dados completos em members feature.
-  final List<EnsembleMember>? members;
+  final int? members;
+
+  final List<String>? talents;
+
+  final String? ensembleType;
 
   /// URL do vídeo de apresentação (até 60s)
   final String? presentationVideoUrl;
 
   bool? isActive;
 
-  bool? allMembersApproved;
-
   bool? hasIncompleteSections;
 
   Map<String, List<String>>? incompleteSections;
-
 
   double? rating;
   int? rateCount;
@@ -47,8 +47,15 @@ class EnsembleEntity with EnsembleEntityMappable {
   /// Data de criação
   final DateTime? createdAt;
 
-  /// Data de atualização
+  /// Data de atualização (qualquer campo). Atualizado em todo update.
   final DateTime? updatedAt;
+
+  /// Última atualização (alias semântico; mantido igual a [updatedAt]).
+  final DateTime? lastUpdatedAt;
+
+  /// Data da última alteração por campo (foto, apresentações, bio, nome).
+  /// Chave = [UpdatedInfoType.name], valor = millisecondsSinceEpoch.
+  final Map<String, int>? updatedInfos;
 
   EnsembleEntity({
     this.id,
@@ -58,12 +65,15 @@ class EnsembleEntity with EnsembleEntityMappable {
     this.professionalInfo,
     this.presentationVideoUrl,
     this.members,
+    this.talents,
+    this.ensembleType,
     this.isActive,
-    this.allMembersApproved,
     this.hasIncompleteSections,
     this.incompleteSections,
     this.createdAt,
     this.updatedAt,
+    this.lastUpdatedAt,
+    this.updatedInfos,
     this.rating,
     this.rateCount,
     this.contractsRatedUids,
@@ -80,12 +90,14 @@ abstract class EnsembleEntityKeys {
   static const String professionalInfo = 'professionalInfo';
   static const String presentationVideoUrl = 'presentationVideoUrl';
   static const String members = 'members';
+  static const String talents = 'talents';
   static const String isActive = 'isActive';
-  static const String allMembersApproved = 'allMembersApproved';
   static const String hasIncompleteSections = 'hasIncompleteSections';
   static const String incompleteSections = 'incompleteSections';
   static const String createdAt = 'createdAt';
   static const String updatedAt = 'updatedAt';
+  static const String lastUpdatedAt = 'lastUpdatedAt';
+  static const String updatedInfos = 'updatedInfos';
   static const String rating = 'rating';
   static const String rateCount = 'rateCount';
   static const String contractsRatedUids = 'contractsRatedUids';

@@ -1,7 +1,6 @@
 import 'package:app/core/errors/error_handler.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/ensemble/ensemble/domain/entities/ensemble_completeness_entity.dart';
-import 'package:app/features/ensemble/ensemble/domain/enums/ensemble_info_type_enum.dart';
 import 'package:app/features/ensemble/ensemble/domain/repositories/ensemble_repository.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
 import 'package:dartz/dartz.dart';
@@ -47,15 +46,14 @@ class UpdateEnsembleIncompleteSectionsUseCase {
           final hasIncomplete = incompleteSections.isNotEmpty;
           // Quando há seções incompletas, desativa a visibilidade do conjunto.
           final isActive = hasIncomplete ? false : (current.isActive ?? false);
-          // Quando a seção incompleta é memberDocuments (documentos dos integrantes), garantir allMembersApproved = false.
-          final hasMemberDocumentsIncomplete = incompleteSections.containsKey(EnsembleInfoType.memberDocuments.name);
-          final allMembersApproved = hasMemberDocumentsIncomplete ? false : current.allMembersApproved;
 
+          final now = DateTime.now();
           final updated = current.copyWith(
             hasIncompleteSections: hasIncomplete,
             incompleteSections: incompleteSections.isEmpty ? null : incompleteSections,
             isActive: isActive,
-            allMembersApproved: allMembersApproved,
+            updatedAt: now,
+            lastUpdatedAt: now,
           );
 
           return await repository.update(

@@ -1,5 +1,7 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/check_ensemble_name_exists_usecase.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
@@ -63,7 +65,16 @@ class UpdateEnsembleNameUseCase {
               if (currentEnsemble == null) {
                 return const Left(ValidationFailure('Conjunto não encontrado'));
               }
-              final updated = currentEnsemble.copyWith(ensembleName: name);
+              final now = DateTime.now();
+              final updated = currentEnsemble.copyWith(
+                ensembleName: name,
+                updatedAt: now,
+                lastUpdatedAt: now,
+                updatedInfos: mergeUpdatedInfo(
+                  currentEnsemble.updatedInfos,
+                  UpdatedInfoType.name,
+                ),
+              );
               final updateResult = await updateEnsembleUseCase(artistId, updated);
               return updateResult.fold(
                 (f) => Left(f),

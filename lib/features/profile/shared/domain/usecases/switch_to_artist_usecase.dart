@@ -36,13 +36,15 @@ class SwitchToArtistUseCase {
       // 1. Obter UID do usuário
       final uidResult = await getUserUidUseCase.call();
       final uid = uidResult.fold(
-        (failure) => throw failure,
-        (uid) => uid,
+        (failure) => null as String?,
+        (id) => id,
       );
-
       if (uid == null || uid.isEmpty) {
         if (kDebugMode) debugPrint('🔴 [SwitchToArtistUseCase] UID vazio ou nulo');
-        return const Left(ValidationFailure('UID do usuário não encontrado'));
+        return uidResult.fold(
+          (failure) => Left(failure),
+          (_) => const Left(ValidationFailure('UID do usuário não encontrado')),
+        );
       }
 
       if (kDebugMode) {

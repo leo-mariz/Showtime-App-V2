@@ -28,6 +28,13 @@ class ArtistEntity with ArtistEntityMappable {
   List<String>? contractsRatedUids;
   DateTime? dateRegistered;
 
+  /// Última atualização (qualquer campo). Atualizado em todo update.
+  DateTime? lastUpdatedAt;
+
+  /// Data da última alteração por campo (foto, apresentações, bio, nome).
+  /// Chave = [UpdatedInfoType.name], valor = millisecondsSinceEpoch.
+  Map<String, int>? updatedInfos;
+
   ArtistEntity({
     this.uid,
     this.profilePicture,
@@ -46,6 +53,8 @@ class ArtistEntity with ArtistEntityMappable {
     this.rating,
     this.rateCount,
     this.contractsRatedUids,
+    this.lastUpdatedAt,
+    this.updatedInfos,
   });
 
   // Método de fábrica para criar uma entidade padrão

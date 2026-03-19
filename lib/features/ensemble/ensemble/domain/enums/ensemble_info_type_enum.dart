@@ -1,24 +1,27 @@
 /// Tipos de informação verificados na completude do conjunto.
 /// Uma verificação por tipo; cada uma com mensagem própria quando incompleta.
 enum EnsembleInfoType {
-  /// 1. Há pelo menos um integrante além do administrador (isOwner = false).
-  members,
+  /// Nome do grupo não vazio.
+  ensembleName,
 
-  /// 2. O(s) integrante(s) têm ambos os documentos (identidade e antecedentes) enviados ou aprovados.
-  memberDocuments,
+  /// Talentos não vazio.
+  talents,
 
-  /// 3. Há foto de perfil do grupo.
-  profilePhoto,
-
-  /// 4. Há vídeo de apresentação.
-  presentations,
-
-  /// 5. Dados profissionais do conjunto preenchidos.
+  /// Dados profissionais: todos os campos preenchidos.
   professionalInfo,
 
-  /// 6. Administrador tem documentos obrigatórios (identidade, residência, antecedentes; currículo opcional).
+  /// Foto de perfil não vazio.
+  profilePhoto,
+
+  /// (Legado) Tipo do conjunto preenchido.
+  ensembleType,
+
+  /// (Legado) Vídeo de apresentação.
+  presentations,
+
+  /// (Legado) Documentos do administrador.
   ownerDocuments,
 
-  /// 7. Administrador tem informações bancárias (PIX ou Ag/Conta).
+  /// (Legado) Dados bancários do administrador.
   ownerBankAccount,
 }

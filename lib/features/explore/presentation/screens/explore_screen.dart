@@ -700,21 +700,19 @@ class _ExploreScreenState extends State<ExploreScreen>
         final ownerArtist = item.ownerArtist;
         final availabilities = item.availabilities;
         final info = ensemble.professionalInfo;
-        final memberCount = ensemble.members?.length ?? 0;
+        final memberCount = ensemble.members ?? 0;
         final ensembleName = ensemble.ensembleName?.trim();
         final groupName = (ensembleName != null && ensembleName.isNotEmpty)
             ? ensembleName
-            : (memberCount > 0
+            : (memberCount >= 2
                 ? '${ownerArtist?.artistName ?? 'Conjunto'} + ${memberCount - 1}'
                 : (ownerArtist?.artistName ?? 'Conjunto'));
         var talentsSource = <String>[];
         if (ownerArtist?.professionalInfo?.specialty != null) {
-          talentsSource.addAll(ownerArtist?.professionalInfo?.specialty ?? []);
+          talentsSource.addAll(ownerArtist!.professionalInfo!.specialty ?? []);
         }
-        for (final member in ensemble.members ?? []) {
-          if (member.specialty != null) {
-            talentsSource.addAll(member.specialty ?? []);
-          }
+        if (ensemble.talents != null) {
+          talentsSource.addAll(ensemble.talents!);
         }
         talentsSource = talentsSource.toSet().toList();
 
@@ -737,6 +735,9 @@ class _ExploreScreenState extends State<ExploreScreen>
         return EnsembleCard(
           groupName: groupName,
           totalMembers: memberCount,
+          ensembleType: ensemble.ensembleType?.trim().isNotEmpty == true
+              ? ensemble.ensembleType!.trim()
+              : null,
           talents: talentsSource.join(', '),
           description: description,
           contracts: ensemble.rateCount ?? 0,

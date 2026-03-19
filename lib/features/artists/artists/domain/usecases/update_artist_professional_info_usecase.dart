@@ -1,5 +1,7 @@
 import 'package:app/core/domain/artist/professional_info_entity/professional_info_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/features/artists/artists/domain/usecases/get_artist_usecase.dart';
 import 'package:app/features/artists/artists/domain/usecases/sync_artist_completeness_if_changed_usecase.dart';
@@ -41,9 +43,14 @@ class UpdateArtistProfessionalInfoUseCase {
       return getResult.fold(
         (failure) => Left(failure),
         (currentArtist) async {
-          // Criar nova entidade com apenas professionalInfo atualizado
+          final now = DateTime.now();
           final updatedArtist = currentArtist.copyWith(
             professionalInfo: professionalInfo,
+            lastUpdatedAt: now,
+            updatedInfos: mergeUpdatedInfo(
+              currentArtist.updatedInfos,
+              UpdatedInfoType.bio,
+            ),
           );
 
           // Atualizar artista

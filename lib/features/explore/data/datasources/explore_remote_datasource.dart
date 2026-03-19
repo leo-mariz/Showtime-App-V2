@@ -272,8 +272,10 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
   static const String _firestoreFieldEnsembleIsActive = 'isActive';
   static const String _firestoreFieldHasIncompleteSections =
       'hasIncompleteSections';
-  static const String _firestoreFieldAllMembersApproved = 'allMembersApproved';
 
+  /// Conjuntos ativos e sem seções incompletas.
+  /// Aprovação do grupo é determinada pelo artista dono (owner) estar aprovado;
+  /// não há mais filtro por allMembersApproved.
   @override
   Future<List<EnsembleEntity>> getActiveApprovedEnsembles() async {
     try {
@@ -284,7 +286,6 @@ class ExploreRemoteDataSourceImpl implements IExploreRemoteDataSource {
       final querySnapshot = await ref
           .where(_firestoreFieldEnsembleIsActive, isEqualTo: true)
           .where(_firestoreFieldHasIncompleteSections, isEqualTo: false)
-          .where(_firestoreFieldAllMembersApproved, isEqualTo: true)
           .get();
 
       if (querySnapshot.docs.isEmpty) {

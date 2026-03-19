@@ -16,6 +16,7 @@ class UserEntityMapper extends ClassMapperBase<UserEntity> {
       MapperContainer.globals.use(_instance = UserEntityMapper._());
       CpfUserEntityMapper.ensureInitialized();
       CnpjUserEntityMapper.ensureInitialized();
+      SuspendedEntityMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -103,6 +104,29 @@ class UserEntityMapper extends ClassMapperBase<UserEntity> {
     _$deletedAt,
     opt: true,
   );
+  static bool? _$isBanned(UserEntity v) => v.isBanned;
+  static const Field<UserEntity, bool> _f$isBanned = Field(
+    'isBanned',
+    _$isBanned,
+    opt: true,
+  );
+  static DateTime? _$suspendedUntil(UserEntity v) => v.suspendedUntil;
+  static const Field<UserEntity, DateTime> _f$suspendedUntil = Field(
+    'suspendedUntil',
+    _$suspendedUntil,
+    opt: true,
+  );
+  static String? _$currentPenaltyReasonId(UserEntity v) =>
+      v.currentPenaltyReasonId;
+  static const Field<UserEntity, String> _f$currentPenaltyReasonId = Field(
+    'currentPenaltyReasonId',
+    _$currentPenaltyReasonId,
+    opt: true,
+  );
+  static List<SuspendedEntity>? _$suspensionHistory(UserEntity v) =>
+      v.suspensionHistory;
+  static const Field<UserEntity, List<SuspendedEntity>> _f$suspensionHistory =
+      Field('suspensionHistory', _$suspensionHistory, opt: true);
 
   @override
   final MappableFields<UserEntity> fields = const {
@@ -120,6 +144,10 @@ class UserEntityMapper extends ClassMapperBase<UserEntity> {
     #isDeleted: _f$isDeleted,
     #isDeletedByAdmin: _f$isDeletedByAdmin,
     #deletedAt: _f$deletedAt,
+    #isBanned: _f$isBanned,
+    #suspendedUntil: _f$suspendedUntil,
+    #currentPenaltyReasonId: _f$currentPenaltyReasonId,
+    #suspensionHistory: _f$suspensionHistory,
   };
 
   static UserEntity _instantiate(DecodingData data) {
@@ -138,6 +166,10 @@ class UserEntityMapper extends ClassMapperBase<UserEntity> {
       isDeleted: data.dec(_f$isDeleted),
       isDeletedByAdmin: data.dec(_f$isDeletedByAdmin),
       deletedAt: data.dec(_f$deletedAt),
+      isBanned: data.dec(_f$isBanned),
+      suspendedUntil: data.dec(_f$suspendedUntil),
+      currentPenaltyReasonId: data.dec(_f$currentPenaltyReasonId),
+      suspensionHistory: data.dec(_f$suspensionHistory),
     );
   }
 
@@ -203,6 +235,12 @@ abstract class UserEntityCopyWith<$R, $In extends UserEntity, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   CpfUserEntityCopyWith<$R, CpfUserEntity, CpfUserEntity>? get cpfUser;
   CnpjUserEntityCopyWith<$R, CnpjUserEntity, CnpjUserEntity>? get cnpjUser;
+  ListCopyWith<
+    $R,
+    SuspendedEntity,
+    SuspendedEntityCopyWith<$R, SuspendedEntity, SuspendedEntity>
+  >?
+  get suspensionHistory;
   $R call({
     String? uid,
     String? email,
@@ -218,6 +256,10 @@ abstract class UserEntityCopyWith<$R, $In extends UserEntity, $Out>
     bool? isDeleted,
     bool? isDeletedByAdmin,
     DateTime? deletedAt,
+    bool? isBanned,
+    DateTime? suspendedUntil,
+    String? currentPenaltyReasonId,
+    List<SuspendedEntity>? suspensionHistory,
   });
   UserEntityCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -237,6 +279,19 @@ class _UserEntityCopyWithImpl<$R, $Out>
   CnpjUserEntityCopyWith<$R, CnpjUserEntity, CnpjUserEntity>? get cnpjUser =>
       $value.cnpjUser?.copyWith.$chain((v) => call(cnpjUser: v));
   @override
+  ListCopyWith<
+    $R,
+    SuspendedEntity,
+    SuspendedEntityCopyWith<$R, SuspendedEntity, SuspendedEntity>
+  >?
+  get suspensionHistory => $value.suspensionHistory != null
+      ? ListCopyWith(
+          $value.suspensionHistory!,
+          (v, t) => v.copyWith.$chain(t),
+          (v) => call(suspensionHistory: v),
+        )
+      : null;
+  @override
   $R call({
     Object? uid = $none,
     String? email,
@@ -252,6 +307,10 @@ class _UserEntityCopyWithImpl<$R, $Out>
     Object? isDeleted = $none,
     Object? isDeletedByAdmin = $none,
     Object? deletedAt = $none,
+    Object? isBanned = $none,
+    Object? suspendedUntil = $none,
+    Object? currentPenaltyReasonId = $none,
+    Object? suspensionHistory = $none,
   }) => $apply(
     FieldCopyWithData({
       if (uid != $none) #uid: uid,
@@ -269,6 +328,11 @@ class _UserEntityCopyWithImpl<$R, $Out>
       if (isDeleted != $none) #isDeleted: isDeleted,
       if (isDeletedByAdmin != $none) #isDeletedByAdmin: isDeletedByAdmin,
       if (deletedAt != $none) #deletedAt: deletedAt,
+      if (isBanned != $none) #isBanned: isBanned,
+      if (suspendedUntil != $none) #suspendedUntil: suspendedUntil,
+      if (currentPenaltyReasonId != $none)
+        #currentPenaltyReasonId: currentPenaltyReasonId,
+      if (suspensionHistory != $none) #suspensionHistory: suspensionHistory,
     }),
   );
   @override
@@ -290,6 +354,16 @@ class _UserEntityCopyWithImpl<$R, $Out>
     isDeleted: data.get(#isDeleted, or: $value.isDeleted),
     isDeletedByAdmin: data.get(#isDeletedByAdmin, or: $value.isDeletedByAdmin),
     deletedAt: data.get(#deletedAt, or: $value.deletedAt),
+    isBanned: data.get(#isBanned, or: $value.isBanned),
+    suspendedUntil: data.get(#suspendedUntil, or: $value.suspendedUntil),
+    currentPenaltyReasonId: data.get(
+      #currentPenaltyReasonId,
+      or: $value.currentPenaltyReasonId,
+    ),
+    suspensionHistory: data.get(
+      #suspensionHistory,
+      or: $value.suspensionHistory,
+    ),
   );
 
   @override

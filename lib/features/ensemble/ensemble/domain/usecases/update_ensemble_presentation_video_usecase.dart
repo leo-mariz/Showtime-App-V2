@@ -1,5 +1,7 @@
 import 'package:app/core/domain/ensemble/ensemble_entity.dart';
+import 'package:app/core/domain/updated_info_type.dart';
 import 'package:app/core/errors/error_handler.dart';
+import 'package:app/core/utils/updated_info_helper.dart';
 import 'package:app/core/errors/failure.dart';
 import 'package:app/core/services/storage_service.dart';
 import 'package:app/features/ensemble/ensemble/domain/usecases/get_ensemble_usecase.dart';
@@ -62,9 +64,15 @@ class UpdateEnsemblePresentationVideoUseCase {
             );
           }
 
+          final now = DateTime.now();
           final updated = currentEnsemble.copyWith(
             presentationVideoUrl: newUrl,
-            updatedAt: DateTime.now(),
+            updatedAt: now,
+            lastUpdatedAt: now,
+            updatedInfos: mergeUpdatedInfo(
+              currentEnsemble.updatedInfos,
+              UpdatedInfoType.presentations,
+            ),
           );
 
           final updateResult = await updateEnsembleUseCase.call(artistId, updated);

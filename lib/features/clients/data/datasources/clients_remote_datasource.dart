@@ -58,7 +58,7 @@ class ClientsRemoteDataSourceImpl implements IClientsRemoteDataSource {
       
       if (!documentSnapshot.exists) {
         throw NotFoundException(
-          'Cliente não encontrado',
+          'Perfil de cliente não encontrado. Crie um perfil de cliente ou acesse com a conta correta.',
         );
       }
 

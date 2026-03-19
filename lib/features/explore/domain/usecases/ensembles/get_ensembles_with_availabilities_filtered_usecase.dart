@@ -205,18 +205,16 @@ class GetEnsemblesWithAvailabilitiesFilteredUseCase {
 
               if (isValid) {
                 ArtistEntity? ownerArtist;
-                final ownerSlots =
-                    ensemble.members?.where((m) => m.isOwner).toList() ?? [];
-                if (ownerSlots.isNotEmpty) {
-                  final ownerId = ownerSlots.first.memberId;
-                  if (ownerId.isNotEmpty) {
-                    final artistResult = await repository.getArtistForExplore(
-                      ownerId,
-                      forceRefresh: forceRefresh,
-                    );
-                    ownerArtist = artistResult.fold((_) => null, (a) => a);
-                  }
+                final ownerId = ensemble.ownerArtistId;
+                if (ownerId.isNotEmpty) {
+                  final artistResult = await repository.getArtistForExplore(
+                    ownerId,
+                    forceRefresh: forceRefresh,
+                  );
+                  ownerArtist = artistResult.fold((_) => null, (a) => a);
                 }
+                // Aprovação do grupo = dono aprovado
+                if (ownerArtist?.approved != true) return null;
                 return EnsembleWithAvailabilitiesEntity(
                   ensemble: ensemble,
                   availabilities: [availabilityDay],

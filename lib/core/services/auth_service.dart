@@ -36,13 +36,9 @@ class FirebaseAuthServicesImpl implements IAuthServices {
         password: password,
       );
       return userCredential;
-    } on FirebaseAuthException catch (e, stackTrace) {
-      throw AuthException(
-        'Erro ao registrar usuário: ${e.message}',
-        code: e.code,
-        originalError: e,
-        stackTrace: stackTrace,
-      );
+    } on FirebaseAuthException {
+      // FirebaseAuthException é tratada pelo ErrorHandler (mensagens centralizadas em PT-BR)
+      rethrow;
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao registrar usuário',
@@ -87,13 +83,8 @@ class FirebaseAuthServicesImpl implements IAuthServices {
       );
       
       await currentUser.reauthenticateWithCredential(credential);
-    } on FirebaseAuthException catch (e, stackTrace) {
-      throw AuthException(
-        'Erro ao reautenticar: ${e.message}',
-        code: e.code,
-        originalError: e,
-        stackTrace: stackTrace,
-      );
+    } on FirebaseAuthException {
+      rethrow;
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao reautenticar',
@@ -107,15 +98,8 @@ class FirebaseAuthServicesImpl implements IAuthServices {
   Future<void> verifyBeforeUpdateUserEmail(String email) async {
     try {
       await firebaseAuth.currentUser?.verifyBeforeUpdateEmail(email);
-    } on FirebaseAuthException catch (e, stackTrace) {
-      throw AuthException(
-        e.code == 'email-already-in-use' 
-            ? 'O novo e-mail já está em uso. Por favor, tente outro e-mail'
-            : 'Erro ao atualizar email: ${e.message}',
-        code: e.code,
-        originalError: e,
-        stackTrace: stackTrace,
-      );
+    } on FirebaseAuthException {
+      rethrow;
     } catch (e, stackTrace) {
       throw ServerException(
         'Erro inesperado ao atualizar email',
@@ -169,6 +153,7 @@ class FirebaseAuthServicesImpl implements IAuthServices {
   @override
   Future<void> sendEmailVerification() async {
     try {
+      await _auth.setLanguageCode('pt');
       await _auth.currentUser?.sendEmailVerification();
     } on FirebaseAuthException catch (e, stackTrace) {
       throw AuthException(
